@@ -35,9 +35,8 @@ public:
     /**
      * Clears the code cache of all compiled code.
      * Cannot be called from a callback.
-     * @param poison_memory If true, poisons memory to crash if any stray code pointers are called.
      */
-    void ClearCache(bool poison_memory = true);
+    void ClearCache();
 
     /**
      * Reset CPU state to state at startup. Does not clear code cache.

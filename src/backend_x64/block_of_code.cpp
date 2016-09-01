@@ -18,10 +18,10 @@ namespace Dynarmic {
 namespace BackendX64 {
 
 BlockOfCode::BlockOfCode(UserCallbacks cb) : Xbyak::CodeGenerator(128 * 1024 * 1024), cb(cb) {
-    ClearCache(false);
+    ClearCache();
 }
 
-void BlockOfCode::ClearCache(bool poison_memory) {
+void BlockOfCode::ClearCache() {
     consts.~Consts();
     new (&consts) Consts();
     reset();

@@ -21,7 +21,7 @@ public:
     explicit BlockOfCode(UserCallbacks cb);
 
     /// Clears this block of code and resets code pointer to beginning.
-    void ClearCache(bool poison_memory);
+    void ClearCache();
 
     /// Runs emulated code for approximately `cycles_to_run` cycles.
     size_t RunCode(JitState* jit_state, CodePtr basic_block, size_t cycles_to_run) const;

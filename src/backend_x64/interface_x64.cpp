@@ -123,9 +123,9 @@ size_t Jit::Run(size_t cycle_count) {
     return cycles_executed;
 }
 
-void Jit::ClearCache(bool poison_memory) {
+void Jit::ClearCache() {
     ASSERT(!is_executing);
-    impl->block_of_code.ClearCache(poison_memory);
+    impl->block_of_code.ClearCache();
     impl->emitter.ClearCache();
     impl->jit_state.ResetRSB();
 }
