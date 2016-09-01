@@ -291,7 +291,7 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
 
             size_t num_insts = 0;
             while (num_insts < instructions_to_execute_count) {
-                Dynarmic::Arm::LocationDescriptor descriptor = {u32(num_insts * 4), false, false, 0};
+                Dynarmic::Arm::LocationDescriptor descriptor = {u32(num_insts * 4), Dynarmic::Arm::PSR{}, 0};
                 Dynarmic::IR::Block ir_block = Dynarmic::Arm::Translate(descriptor, &MemoryRead32);
                 Dynarmic::Optimization::GetSetElimination(ir_block);
                 Dynarmic::Optimization::DeadCodeElimination(ir_block);

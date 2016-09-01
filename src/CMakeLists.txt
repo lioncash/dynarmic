@@ -54,6 +54,7 @@ set(HEADERS
     common/scope_exit.h
     common/string_util.h
     frontend/arm/FPSCR.h
+    frontend/arm/PSR.h
     frontend/arm_types.h
     frontend/decoder/arm.h
     frontend/decoder/decoder_detail.h
