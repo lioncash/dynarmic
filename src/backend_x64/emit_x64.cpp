@@ -473,7 +473,7 @@ void EmitX64::EmitMostSignificantWord(IR::Block& block, IR::Inst* inst) {
 
     if (carry_inst) {
         EraseInstruction(block, carry_inst);
-        reg_alloc.DecrementRemainingUses(inst);
+        inst->DecrementRemainingUses();
         Xbyak::Reg64 carry = reg_alloc.DefGpr(carry_inst);
 
         code->setc(carry.cvt8());
@@ -524,7 +524,7 @@ void EmitX64::EmitLogicalShiftLeft(IR::Block& block, IR::Inst* inst) {
     if (!carry_inst) {
         if (!inst->GetArg(2).IsImmediate()) {
             // TODO: Remove redundant argument.
-            reg_alloc.DecrementRemainingUses(inst->GetArg(2).GetInst());
+            inst->GetArg(2).GetInst()->DecrementRemainingUses();
         }
 
         auto shift_arg = inst->GetArg(1);
@@ -553,7 +553,7 @@ void EmitX64::EmitLogicalShiftLeft(IR::Block& block, IR::Inst* inst) {
         }
     } else {
         EraseInstruction(block, carry_inst);
-        reg_alloc.DecrementRemainingUses(inst);
+        inst->DecrementRemainingUses();
 
         auto shift_arg = inst->GetArg(1);
 
@@ -617,7 +617,7 @@ void EmitX64::EmitLogicalShiftRight(IR::Block& block, IR::Inst* inst) {
     if (!carry_inst) {
         if (!inst->GetArg(2).IsImmediate()) {
             // TODO: Remove redundant argument.
-            reg_alloc.DecrementRemainingUses(inst->GetArg(2).GetInst());
+            inst->GetArg(2).GetInst()->DecrementRemainingUses();
         }
 
         auto shift_arg = inst->GetArg(1);
@@ -646,7 +646,7 @@ void EmitX64::EmitLogicalShiftRight(IR::Block& block, IR::Inst* inst) {
         }
     } else {
         EraseInstruction(block, carry_inst);
-        reg_alloc.DecrementRemainingUses(inst);
+        inst->DecrementRemainingUses();
 
         auto shift_arg = inst->GetArg(1);
 
@@ -722,7 +722,7 @@ void EmitX64::EmitArithmeticShiftRight(IR::Block& block, IR::Inst* inst) {
     if (!carry_inst) {
         if (!inst->GetArg(2).IsImmediate()) {
             // TODO: Remove redundant argument.
-            reg_alloc.DecrementRemainingUses(inst->GetArg(2).GetInst());
+            inst->GetArg(2).GetInst()->DecrementRemainingUses();
         }
 
         auto shift_arg = inst->GetArg(1);
@@ -749,7 +749,7 @@ void EmitX64::EmitArithmeticShiftRight(IR::Block& block, IR::Inst* inst) {
         }
     } else {
         EraseInstruction(block, carry_inst);
-        reg_alloc.DecrementRemainingUses(inst);
+        inst->DecrementRemainingUses();
 
         auto shift_arg = inst->GetArg(1);
 
@@ -805,7 +805,7 @@ void EmitX64::EmitRotateRight(IR::Block& block, IR::Inst* inst) {
     if (!carry_inst) {
         if (!inst->GetArg(2).IsImmediate()) {
             // TODO: Remove redundant argument.
-            reg_alloc.DecrementRemainingUses(inst->GetArg(2).GetInst());
+            inst->GetArg(2).GetInst()->DecrementRemainingUses();
         }
 
         auto shift_arg = inst->GetArg(1);
@@ -824,7 +824,7 @@ void EmitX64::EmitRotateRight(IR::Block& block, IR::Inst* inst) {
         }
     } else {
         EraseInstruction(block, carry_inst);
-        reg_alloc.DecrementRemainingUses(inst);
+        inst->DecrementRemainingUses();
 
         auto shift_arg = inst->GetArg(1);
 
@@ -886,7 +886,7 @@ void EmitX64::EmitRotateRightExtended(IR::Block& block, IR::Inst* inst) {
 
     if (carry_inst) {
         EraseInstruction(block, carry_inst);
-        reg_alloc.DecrementRemainingUses(inst);
+        inst->DecrementRemainingUses();
         code->setc(carry);
     }
 }
@@ -946,12 +946,12 @@ void EmitX64::EmitAddWithCarry(IR::Block& block, IR::Inst* inst) {
 
     if (carry_inst) {
         EraseInstruction(block, carry_inst);
-        reg_alloc.DecrementRemainingUses(inst);
+        inst->DecrementRemainingUses();
         code->setc(carry);
     }
     if (overflow_inst) {
         EraseInstruction(block, overflow_inst);
-        reg_alloc.DecrementRemainingUses(inst);
+        inst->DecrementRemainingUses();
         code->seto(overflow);
     }
 }
@@ -1015,12 +1015,12 @@ void EmitX64::EmitSubWithCarry(IR::Block& block, IR::Inst* inst) {
 
     if (carry_inst) {
         EraseInstruction(block, carry_inst);
-        reg_alloc.DecrementRemainingUses(inst);
+        inst->DecrementRemainingUses();
         code->setnc(carry);
     }
     if (overflow_inst) {
         EraseInstruction(block, overflow_inst);
-        reg_alloc.DecrementRemainingUses(inst);
+        inst->DecrementRemainingUses();
         code->seto(overflow);
     }
 }

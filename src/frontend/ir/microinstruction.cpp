@@ -217,7 +217,11 @@ bool Inst::MayHaveSideEffects() const {
            WritesToFPSCR()        ||
            AltersExclusiveState() ||
            IsMemoryWrite();
+}
 
+void Inst::DecrementRemainingUses() {
+    ASSERT_MSG(HasUses(), "Microinstruction doesn't have any remaining uses");
+    use_count--;
 }
 
 Inst* Inst::GetAssociatedPseudoOperation(Opcode opcode) {

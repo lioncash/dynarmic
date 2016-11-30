@@ -73,7 +73,10 @@ public:
     /// Determines whether or not this instruction may have side-effects.
     bool MayHaveSideEffects() const;
 
+    size_t UseCount() const { return use_count; }
     bool HasUses() const { return use_count > 0; }
+    void DecrementRemainingUses();
+
     /// Gets a pseudo-operation associated with this instruction.
     Inst* GetAssociatedPseudoOperation(Opcode opcode);
 
@@ -91,13 +94,12 @@ public:
 
     void ReplaceUsesWith(Value& replacement);
 
-    size_t use_count = 0;
-
 private:
     void Use(Value& value);
     void UndoUse(Value& value);
 
     Opcode op;
+    size_t use_count = 0;
     std::array<Value, 3> args;
 
     Inst* carry_inst = nullptr;

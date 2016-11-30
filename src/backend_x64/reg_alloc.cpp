@@ -70,7 +70,7 @@ void RegAlloc::RegisterAddDef(IR::Inst* def_inst, const IR::Value& use_inst) {
     DEBUG_ASSERT_MSG(ValueLocation(use_inst.GetInst()), "use_inst must already be defined");
     HostLoc location = *ValueLocation(use_inst.GetInst());
     LocInfo(location).values.emplace_back(def_inst);
-    DecrementRemainingUses(use_inst.GetInst());
+    use_inst.GetInst()->DecrementRemainingUses();
     DEBUG_ASSERT(LocInfo(location).IsIdle());
 }
 
@@ -232,7 +232,7 @@ HostLoc RegAlloc::UseScratchHostLocReg(IR::Inst* use_inst, HostLocList desired_l
     if (HostLocIsSpill(current_location)) {
         EmitMove(new_location, current_location);
         LocInfo(new_location).is_being_used = true;
-        DecrementRemainingUses(use_inst);
+        use_inst->DecrementRemainingUses();
         DEBUG_ASSERT(LocInfo(new_location).IsScratch());
         return new_location;
     } else if (HostLocIsRegister(current_location)) {
@@ -248,7 +248,7 @@ HostLoc RegAlloc::UseScratchHostLocReg(IR::Inst* use_inst, HostLocList desired_l
 
         LocInfo(new_location).is_being_used = true;
         LocInfo(new_location).values.clear();
-        DecrementRemainingUses(use_inst);
+        use_inst->DecrementRemainingUses();
         DEBUG_ASSERT(LocInfo(new_location).IsScratch());
         return new_location;
     }
@@ -347,7 +347,7 @@ bool RegAlloc::IsRegisterAllocated(HostLoc loc) const {
 }
 
 bool RegAlloc::IsLastUse(const IR::Inst* inst) const {
-    if (inst->use_count > 1)
+    if (inst->UseCount() > 1)
         return false;
     return LocInfo(*ValueLocation(inst)).values.size() == 1;
 }
@@ -387,11 +387,6 @@ void RegAlloc::EndOfAllocScope() {
             iter.values.erase(to_erase, iter.values.end());
         }
     }
-}
-
-void RegAlloc::DecrementRemainingUses(IR::Inst* value) {
-    ASSERT_MSG(value->HasUses(), "value doesn't have any remaining uses");
-    value->use_count--;
 }
 
 void RegAlloc::AssertNoMoreUses() {
@@ -445,14 +440,14 @@ std::tuple<HostLoc, bool> RegAlloc::UseHostLoc(IR::Inst* use_inst, HostLocList d
             EmitMove(new_location, current_location);
             LocInfo(new_location).is_being_used = true;
             LocInfo(new_location).values.emplace_back(use_inst);
-            DecrementRemainingUses(use_inst);
+            use_inst->DecrementRemainingUses();
             DEBUG_ASSERT(LocInfo(new_location).IsUse());
             return std::make_tuple(new_location, false);
         } else {
             bool was_being_used = LocInfo(current_location).is_being_used;
             ASSERT(LocInfo(current_location).IsUse() || LocInfo(current_location).IsIdle());
             LocInfo(current_location).is_being_used = true;
-            DecrementRemainingUses(use_inst);
+            use_inst->DecrementRemainingUses();
             DEBUG_ASSERT(LocInfo(current_location).IsUse());
             return std::make_tuple(current_location, was_being_used);
         }
@@ -461,7 +456,7 @@ std::tuple<HostLoc, bool> RegAlloc::UseHostLoc(IR::Inst* use_inst, HostLocList d
     if (HostLocIsSpill(current_location)) {
         bool was_being_used = LocInfo(current_location).is_being_used;
         LocInfo(current_location).is_being_used = true;
-        DecrementRemainingUses(use_inst);
+        use_inst->DecrementRemainingUses();
         DEBUG_ASSERT(LocInfo(current_location).IsUse());
         return std::make_tuple(current_location, was_being_used);
     } else if (HostLocIsRegister(current_location)) {
@@ -470,7 +465,7 @@ std::tuple<HostLoc, bool> RegAlloc::UseHostLoc(IR::Inst* use_inst, HostLocList d
         EmitExchange(new_location, current_location);
         std::swap(LocInfo(new_location), LocInfo(current_location));
         LocInfo(new_location).is_being_used = true;
-        DecrementRemainingUses(use_inst);
+        use_inst->DecrementRemainingUses();
         DEBUG_ASSERT(LocInfo(new_location).IsUse());
         return std::make_tuple(new_location, false);
     }

@@ -37,7 +37,7 @@ void VerificationPass(const IR::Block& block) {
     }
 
     for (const auto& pair : actual_uses) {
-        ASSERT(pair.first->use_count == pair.second);
+        ASSERT(pair.first->UseCount() == pair.second);
     }
 }
 

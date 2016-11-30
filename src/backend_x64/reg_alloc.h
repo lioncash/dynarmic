@@ -143,8 +143,6 @@ public:
 
     // TODO: Values in host flags
 
-    void DecrementRemainingUses(IR::Inst* value);
-
     void EndOfAllocScope();
 
     void AssertNoMoreUses();
