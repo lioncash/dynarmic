@@ -20,13 +20,10 @@ static u32 ImmediateToU32(const IR::Value& imm) {
     switch (imm.GetType()) {
     case IR::Type::U1:
         return u32(imm.GetU1());
-        break;
     case IR::Type::U8:
         return u32(imm.GetU8());
-        break;
     case IR::Type::U32:
         return u32(imm.GetU32());
-        break;
     default:
         ASSERT_MSG(false, "This should never happen.");
     }
