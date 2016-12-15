@@ -40,7 +40,7 @@ struct ThumbTranslatorVisitor final {
     }
 
     bool thumb16_LSL_imm(Imm5 imm5, Reg m, Reg d) {
-        u8 shift_n = imm5;
+        u8 shift_n = static_cast<u8>(imm5);
         // LSLS <Rd>, <Rm>, #<imm5>
         auto cpsr_c = ir.GetCFlag();
         auto result = ir.LogicalShiftLeft(ir.GetRegister(m), ir.Imm8(shift_n), cpsr_c);
@@ -52,7 +52,7 @@ struct ThumbTranslatorVisitor final {
     }
 
     bool thumb16_LSR_imm(Imm5 imm5, Reg m, Reg d) {
-        u8 shift_n = imm5 != 0 ? imm5 : 32;
+        u8 shift_n = imm5 != 0 ? static_cast<u8>(imm5) : 32;
         // LSRS <Rd>, <Rm>, #<imm5>
         auto cpsr_c = ir.GetCFlag();
         auto result = ir.LogicalShiftRight(ir.GetRegister(m), ir.Imm8(shift_n), cpsr_c);
@@ -64,7 +64,7 @@ struct ThumbTranslatorVisitor final {
     }
 
     bool thumb16_ASR_imm(Imm5 imm5, Reg m, Reg d) {
-        u8 shift_n = imm5 != 0 ? imm5 : 32;
+        u8 shift_n = imm5 != 0 ? static_cast<u8>(imm5) : 32;
         // ASRS <Rd>, <Rm>, #<imm5>
         auto cpsr_c = ir.GetCFlag();
         auto result = ir.ArithmeticShiftRight(ir.GetRegister(m), ir.Imm8(shift_n), cpsr_c);

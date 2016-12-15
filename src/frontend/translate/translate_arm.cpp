@@ -122,16 +122,16 @@ bool ArmTranslatorVisitor::UnpredictableInstruction() {
 IR::IREmitter::ResultAndCarry ArmTranslatorVisitor::EmitImmShift(IR::Value value, ShiftType type, Imm5 imm5, IR::Value carry_in) {
     switch (type) {
     case ShiftType::LSL:
-        return ir.LogicalShiftLeft(value, ir.Imm8(imm5), carry_in);
+        return ir.LogicalShiftLeft(value, ir.Imm8(static_cast<u8>(imm5)), carry_in);
     case ShiftType::LSR:
         imm5 = imm5 ? imm5 : 32;
-        return ir.LogicalShiftRight(value, ir.Imm8(imm5), carry_in);
+        return ir.LogicalShiftRight(value, ir.Imm8(static_cast<u8>(imm5)), carry_in);
     case ShiftType::ASR:
         imm5 = imm5 ? imm5 : 32;
-        return ir.ArithmeticShiftRight(value, ir.Imm8(imm5), carry_in);
+        return ir.ArithmeticShiftRight(value, ir.Imm8(static_cast<u8>(imm5)), carry_in);
     case ShiftType::ROR:
         if (imm5)
-            return ir.RotateRight(value, ir.Imm8(imm5), carry_in);
+            return ir.RotateRight(value, ir.Imm8(static_cast<u8>(imm5)), carry_in);
         else
             return ir.RotateRightExtended(value, carry_in);
     }
