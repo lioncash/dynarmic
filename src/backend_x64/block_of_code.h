@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include <xbyak.h>
+#include <xbyak_util.h>
 
 #include "backend_x64/constant_pool.h"
 #include "backend_x64/jitstate.h"
@@ -118,6 +119,8 @@ public:
     static const Xbyak::Reg64 ABI_PARAM3;
     static const Xbyak::Reg64 ABI_PARAM4;
 
+    bool DoesCpuSupport(Xbyak::util::Cpu::Type type) const;
+
 private:
     UserCallbacks cb;
     LookupBlockCallback lookup_block;
@@ -160,6 +163,8 @@ private:
         std::unique_ptr<Impl> impl;
     };
     ExceptionHandler exception_handler;
+
+    Xbyak::util::Cpu cpu_info;
 };
 
 } // namespace BackendX64

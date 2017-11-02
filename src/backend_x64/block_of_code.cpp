@@ -244,5 +244,9 @@ void BlockOfCode::EnsurePatchLocationSize(CodePtr begin, size_t size) {
     nop(size - current_size);
 }
 
+bool BlockOfCode::DoesCpuSupport(Xbyak::util::Cpu::Type type) const {
+    return cpu_info.has(type);
+}
+
 } // namespace BackendX64
 } // namespace Dynarmic

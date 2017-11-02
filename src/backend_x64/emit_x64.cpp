@@ -1287,7 +1287,7 @@ void EmitX64::EmitByteReverseDual(RegAlloc& reg_alloc, IR::Block&, IR::Inst* ins
 
 void EmitX64::EmitCountLeadingZeros(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
-    if (cpu_info.has(Xbyak::util::Cpu::tLZCNT)) {
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tLZCNT)) {
         Xbyak::Reg32 source = reg_alloc.UseGpr(args[0]).cvt32();
         Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
 
@@ -1453,8 +1453,8 @@ void EmitX64::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::In
  * @param value The register containing the value to operate on. Result will be stored in the same register.
  * @param a_tmp A register which can be used as a scratch register.
  */
-static void ExtractMostSignificantBitFromPackedBytes(const Xbyak::util::Cpu& cpu_info, BlockOfCode* code, RegAlloc& reg_alloc, Xbyak::Reg32 value, boost::optional<Xbyak::Reg32> a_tmp = boost::none) {
-    if (cpu_info.has(Xbyak::util::Cpu::tBMI2)) {
+static void ExtractMostSignificantBitFromPackedBytes(BlockOfCode* code, RegAlloc& reg_alloc, Xbyak::Reg32 value, boost::optional<Xbyak::Reg32> a_tmp = boost::none) {
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
         Xbyak::Reg32 tmp = a_tmp ? *a_tmp : reg_alloc.ScratchGpr().cvt32();
         code->mov(tmp, 0x80808080);
         code->pext(value, value, tmp);
@@ -1501,7 +1501,7 @@ void EmitX64::EmitPackedAddU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
         code->movd(reg_ge, tmp);
         code->not_(reg_ge);
 
-        ExtractMostSignificantBitFromPackedBytes(cpu_info, code, reg_alloc, reg_ge);
+        ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -1532,7 +1532,7 @@ void EmitX64::EmitPackedAddS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
 
     if (ge_inst) {
         code->not_(reg_ge);
-        ExtractMostSignificantBitFromPackedBytes(cpu_info, code, reg_alloc, reg_ge);
+        ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -1560,7 +1560,7 @@ void EmitX64::EmitPackedAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
         code->movd(reg_ge, tmp);
         code->not_(reg_ge);
 
-        ExtractMostSignificantBitFromPackedBytes(cpu_info, code, reg_alloc, reg_ge);
+        ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -1620,7 +1620,7 @@ void EmitX64::EmitPackedSubU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
     code->psubb(xmm_a, xmm_b);
 
     if (ge_inst) {
-        ExtractMostSignificantBitFromPackedBytes(cpu_info, code, reg_alloc, reg_ge);
+        ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -1651,7 +1651,7 @@ void EmitX64::EmitPackedSubS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
 
     if (ge_inst) {
         code->not_(reg_ge);
-        ExtractMostSignificantBitFromPackedBytes(cpu_info, code, reg_alloc, reg_ge);
+        ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -1723,7 +1723,7 @@ void EmitX64::EmitPackedHalvingAddU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
 
     // This code path requires SSSE3 because of the PSHUFB instruction.
     // A fallback implementation is provided below.
-    if (cpu_info.has(Xbyak::util::Cpu::tSSSE3)) {
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
         Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Xmm xmm_b = reg_alloc.UseScratchXmm(args[1]);
 

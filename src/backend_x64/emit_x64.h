@@ -95,9 +95,6 @@ private:
     void EmitPatchJmp(const IR::LocationDescriptor& target_desc, CodePtr target_code_ptr = nullptr);
     void EmitPatchMovRcx(CodePtr target_code_ptr = nullptr);
 
-    // Global CPU information
-    Xbyak::util::Cpu cpu_info;
-
     // State
     BlockOfCode* code;
     UserCallbacks cb;
