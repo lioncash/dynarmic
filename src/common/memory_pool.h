@@ -21,8 +21,11 @@ public:
     Pool(size_t object_size, size_t initial_pool_size);
     ~Pool();
 
-    Pool(Pool&) = delete;
+    Pool(const Pool&) = delete;
     Pool(Pool&&) = delete;
+
+    Pool& operator=(const Pool&) = delete;
+    Pool& operator=(Pool&&) = delete;
 
     /// Returns a pointer to an `object_size`-bytes block of memory.
     void* Alloc();
