@@ -58,8 +58,7 @@ public:
 
     /**
      * Invalidate the cache at a range of addresses.
-     * @param start_address The starting address of the range to invalidate.
-     * @param length The length (in bytes) of the range to invalidate.
+     * @param range The range of addresses to invalidate the cache at.
      */
     void InvalidateCacheRange(const Common::AddressRange& range);
 
