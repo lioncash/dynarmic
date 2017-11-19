@@ -1554,11 +1554,22 @@ void EmitX64::EmitPackedAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
         Xbyak::Reg32 reg_ge = reg_alloc.ScratchGpr().cvt32();
         Xbyak::Xmm tmp = reg_alloc.ScratchXmm();
 
-        code->movdqa(tmp, xmm_a);
-        code->pminuw(tmp, xmm_b);
-        code->pcmpeqw(tmp, xmm_b);
-        code->movd(reg_ge, tmp);
-        code->not_(reg_ge);
+        if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+            code->movdqa(tmp, xmm_a);
+            code->pminuw(tmp, xmm_b);
+            code->pcmpeqw(tmp, xmm_b);
+            code->movd(reg_ge, tmp);
+            code->not_(reg_ge);
+        } else {
+            // !(b <= a+b) == b > a+b
+            Xbyak::Xmm tmp_b = reg_alloc.ScratchXmm();
+            code->movdqa(tmp, xmm_a);
+            code->movdqa(tmp_b, xmm_b);
+            code->paddw(tmp, code->MConst(0x80008000));
+            code->paddw(tmp_b, code->MConst(0x80008000));
+            code->pcmpgtw(tmp_b, tmp); // *Signed* comparison!
+            code->movd(reg_ge, tmp_b);
+        }
 
         ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
@@ -1672,10 +1683,20 @@ void EmitX64::EmitPackedSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
         reg_ge = reg_alloc.ScratchGpr().cvt32();
         Xbyak::Xmm xmm_ge = reg_alloc.ScratchXmm();
 
-        code->movdqa(xmm_ge, xmm_a);
-        code->pmaxuw(xmm_ge, xmm_b);
-        code->pcmpeqw(xmm_ge, xmm_a);
-        code->movd(reg_ge, xmm_ge);
+        if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+            code->movdqa(xmm_ge, xmm_a);
+            code->pmaxuw(xmm_ge, xmm_b); // Requires SSE 4.1
+            code->pcmpeqw(xmm_ge, xmm_a);
+            code->movd(reg_ge, xmm_ge);
+        } else {
+            // (a >= b) == !(b > a)
+            code->paddw(xmm_a, code->MConst(0x80008000));
+            code->paddw(xmm_b, code->MConst(0x80008000));
+            code->movdqa(xmm_ge, xmm_b);
+            code->pcmpgtw(xmm_ge, xmm_a); // *Signed* comparison!
+            code->movd(reg_ge, xmm_ge);
+            code->not_(reg_ge);
+        }
     }
 
     code->psubw(xmm_a, xmm_b);
