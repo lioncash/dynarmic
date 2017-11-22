@@ -2447,25 +2447,16 @@ void EmitX64::EmitFPSub64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst)
 }
 
 static void SetFpscrNzcvFromFlags(BlockOfCode* code, RegAlloc& reg_alloc) {
-    reg_alloc.ScratchGpr({HostLoc::RAX}); // lahf requires use of ah
-    Xbyak::Reg32 nzcv_imm = reg_alloc.ScratchGpr().cvt32();
+    reg_alloc.ScratchGpr({HostLoc::RCX}); // shifting requires use of cl
     Xbyak::Reg32 nzcv = reg_alloc.ScratchGpr().cvt32();
 
     using namespace Xbyak::util;
 
-    code->lahf();
-    code->mov(nzcv_imm, 0x30000000);
-    code->cmp(ah, 0b01000111);
-    code->cmove(nzcv, nzcv_imm);
-    code->mov(nzcv_imm, 0x20000000);
-    code->cmp(ah, 0b00000010);
-    code->cmove(nzcv, nzcv_imm);
-    code->mov(nzcv_imm, 0x80000000);
-    code->cmp(ah, 0b00000011);
-    code->cmove(nzcv, nzcv_imm);
-    code->mov(nzcv_imm, 0x60000000);
-    code->cmp(ah, 0b01000010);
-    code->cmove(nzcv, nzcv_imm);
+    code->mov(nzcv, 0x28630000);
+    code->sete(cl);
+    code->rcl(cl, 3);
+    code->shl(nzcv, cl);
+    code->and_(nzcv, 0xF0000000);
     code->mov(dword[r15 + offsetof(JitState, FPSCR_nzcv)], nzcv);
 }
 
