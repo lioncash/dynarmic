@@ -488,16 +488,16 @@ bool ArmTranslatorVisitor::vfp2_VCVT_to_s32(Cond cond, bool D, size_t Vd, bool s
 bool ArmTranslatorVisitor::vfp2_VCMP(Cond cond, bool D, size_t Vd, bool sz, bool E, bool M, size_t Vm) {
     ExtReg d = ToExtReg(sz, Vd, D);
     ExtReg m = ToExtReg(sz, Vm, M);
-    bool quiet = E;
+    bool exc_on_qnan = E;
     // VCMP{E}.F32 <Sd>, <Sm>
     // VCMP{E}.F64 <Dd>, <Dm>
     if (ConditionPassed(cond)) {
         auto reg_d = ir.GetExtendedRegister(d);
         auto reg_m = ir.GetExtendedRegister(m);
         if (sz) {
-            ir.FPCompare64(reg_d, reg_m, quiet, true);
+            ir.FPCompare64(reg_d, reg_m, exc_on_qnan, true);
         } else {
-            ir.FPCompare32(reg_d, reg_m, quiet, true);
+            ir.FPCompare32(reg_d, reg_m, exc_on_qnan, true);
         }
     }
     return true;
@@ -505,7 +505,7 @@ bool ArmTranslatorVisitor::vfp2_VCMP(Cond cond, bool D, size_t Vd, bool sz, bool
 
 bool ArmTranslatorVisitor::vfp2_VCMP_zero(Cond cond, bool D, size_t Vd, bool sz, bool E) {
     ExtReg d = ToExtReg(sz, Vd, D);
-    bool quiet = E;
+    bool exc_on_qnan = E;
     // VCMP{E}.F32 <Sd>, #0.0
     // VCMP{E}.F64 <Dd>, #0.0
     if (ConditionPassed(cond)) {
@@ -514,9 +514,9 @@ bool ArmTranslatorVisitor::vfp2_VCMP_zero(Cond cond, bool D, size_t Vd, bool sz,
                     ? ir.TransferToFP64(ir.Imm64(0))
                     : ir.TransferToFP32(ir.Imm32(0));
         if (sz) {
-            ir.FPCompare64(reg_d, zero, quiet, true);
+            ir.FPCompare64(reg_d, zero, exc_on_qnan, true);
         } else {
-            ir.FPCompare32(reg_d, zero, quiet, true);
+            ir.FPCompare32(reg_d, zero, exc_on_qnan, true);
         }
     }
     return true;

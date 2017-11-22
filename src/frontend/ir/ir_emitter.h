@@ -183,8 +183,8 @@ public:
     Value FPAbs64(const Value& a);
     Value FPAdd32(const Value& a, const Value& b, bool fpscr_controlled);
     Value FPAdd64(const Value& a, const Value& b, bool fpscr_controlled);
-    void FPCompare32(const Value& a, const Value& b, bool quiet, bool fpscr_controlled);
-    void FPCompare64(const Value& a, const Value& b, bool quiet, bool fpscr_controlled);
+    void FPCompare32(const Value& a, const Value& b, bool exc_on_qnan, bool fpscr_controlled);
+    void FPCompare64(const Value& a, const Value& b, bool exc_on_qnan, bool fpscr_controlled);
     Value FPDiv32(const Value& a, const Value& b, bool fpscr_controlled);
     Value FPDiv64(const Value& a, const Value& b, bool fpscr_controlled);
     Value FPMul32(const Value& a, const Value& b, bool fpscr_controlled);

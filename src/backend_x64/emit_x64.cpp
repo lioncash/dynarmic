@@ -2473,12 +2473,12 @@ void EmitX64::EmitFPCompare32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm reg_a = reg_alloc.UseXmm(args[0]);
     Xbyak::Xmm reg_b = reg_alloc.UseXmm(args[1]);
-    bool quiet = args[2].GetImmediateU1();
+    bool exc_on_qnan = args[2].GetImmediateU1();
 
-    if (quiet) {
-        code->ucomiss(reg_a, reg_b);
-    } else {
+    if (exc_on_qnan) {
         code->comiss(reg_a, reg_b);
+    } else {
+        code->ucomiss(reg_a, reg_b);
     }
 
     SetFpscrNzcvFromFlags(code, reg_alloc);
@@ -2488,12 +2488,12 @@ void EmitX64::EmitFPCompare64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm reg_a = reg_alloc.UseXmm(args[0]);
     Xbyak::Xmm reg_b = reg_alloc.UseXmm(args[1]);
-    bool quiet = args[2].GetImmediateU1();
+    bool exc_on_qnan = args[2].GetImmediateU1();
 
-    if (quiet) {
-        code->ucomisd(reg_a, reg_b);
-    } else {
+    if (exc_on_qnan) {
         code->comisd(reg_a, reg_b);
+    } else {
+        code->ucomisd(reg_a, reg_b);
     }
 
     SetFpscrNzcvFromFlags(code, reg_alloc);

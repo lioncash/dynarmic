@@ -120,7 +120,7 @@ void JitState::SetFpscr(u32 FPSCR) {
     if (Common::Bit<24>(FPSCR)) {
         // VFP Flush to Zero
         //guest_MXCSR |= (1 << 15); // SSE Flush to Zero
-        guest_MXCSR |= (1 << 6);  // SSE Denormals are Zero
+        //guest_MXCSR |= (1 << 6);  // SSE Denormals are Zero
     }
 }
 
