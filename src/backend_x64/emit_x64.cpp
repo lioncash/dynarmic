@@ -2128,6 +2128,24 @@ void EmitX64::EmitPackedAbsDiffSumS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
     EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psadbw);
 }
 
+void EmitX64::EmitPackedSelect(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+    auto args = reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Reg32 ge = reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 to = reg_alloc.UseScratchGpr(args[1]).cvt32();
+    Xbyak::Reg32 from = reg_alloc.UseScratchGpr(args[2]).cvt32();
+    Xbyak::Reg32 tmp = reg_alloc.ScratchGpr().cvt32();
+
+    code->mov(tmp, 0x01010101);
+    code->pdep(ge, ge, tmp);
+    code->imul(ge, ge, 0xFF);
+    code->and_(from, ge);
+    code->andn(to, ge, to);
+    code->or_(from, to);
+
+    reg_alloc.DefineValue(inst, from);
+}
+
 static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     using namespace Xbyak::util;
     Xbyak::Label end;

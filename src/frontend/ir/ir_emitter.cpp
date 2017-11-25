@@ -510,6 +510,10 @@ Value IREmitter::PackedAbsDiffSumS8(const Value& a, const Value& b) {
     return Inst(Opcode::PackedAbsDiffSumS8, {a, b});
 }
 
+Value IREmitter::PackedSelect(const Value& ge, const Value& a, const Value& b) {
+    return Inst(Opcode::PackedSelect, {ge, a, b});
+}
+
 Value IREmitter::TransferToFP32(const Value& a) {
     return Inst(Opcode::TransferToFP32, {a});
 }
