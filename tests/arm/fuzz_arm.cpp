@@ -949,6 +949,19 @@ TEST_CASE("Fuzz ARM parallel instructions", "[JitX64][parallel]") {
         return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111 && Bits<16, 19>(instr) != 0b1111;
     };
 
+    const auto is_sel_valid = [](u32 instr) -> bool {
+        // R15 as Rd, Rn, or Rm is UNPREDICTABLE
+        return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111 && Bits<16, 19>(instr) != 0b1111;
+    };
+
+    const auto is_msr_valid = [](u32 instr) -> bool {
+        // Mask can not be 0
+        return Bits<18, 19>(instr) != 0b00;
+    };
+
+    const InstructionGenerator cpsr_setter = InstructionGenerator("11100011001001001111rrrrvvvvvvvv", is_msr_valid); // MSR_Imm write GE
+    const InstructionGenerator sel_instr = InstructionGenerator("111001101000nnnndddd11111011mmmm", is_sel_valid); // SEL
+
     const std::array<InstructionGenerator, 4> modulo_add_instructions = {{
         InstructionGenerator("cccc01100001nnnndddd11111001mmmm", is_valid), // SADD8
         InstructionGenerator("cccc01100001nnnndddd11110001mmmm", is_valid), // SADD16
@@ -1000,33 +1013,55 @@ TEST_CASE("Fuzz ARM parallel instructions", "[JitX64][parallel]") {
         InstructionGenerator("cccc01100111nnnndddd11110111mmmm", is_valid), // UHSUB16
     }};
 
+    size_t index = 0;
+    const auto also_test_sel = [&](u32 inst) -> u32 {
+        switch (index++ % 3) {
+        case 1:
+            return cpsr_setter.Generate(false);
+        case 2:
+            return sel_instr.Generate(false);
+        }
+        return inst;
+    };
+
     SECTION("Parallel Add (Modulo)") {
-        FuzzJitArm(1, 1, 10000, [&modulo_add_instructions]() -> u32 {
-            return modulo_add_instructions[RandInt<size_t>(0, modulo_add_instructions.size() - 1)].Generate();
+        FuzzJitArm(4, 5, 10000, [&]() -> u32 {
+            return also_test_sel(modulo_add_instructions[RandInt<size_t>(0, modulo_add_instructions.size() - 1)].Generate());
         });
     }
 
     SECTION("Parallel Subtract (Modulo)") {
-        FuzzJitArm(1, 1, 10000, [&modulo_sub_instructions]() -> u32 {
-            return modulo_sub_instructions[RandInt<size_t>(0, modulo_sub_instructions.size() - 1)].Generate();
+        FuzzJitArm(4, 5, 10000, [&]() -> u32 {
+            return also_test_sel(modulo_sub_instructions[RandInt<size_t>(0, modulo_sub_instructions.size() - 1)].Generate());
         });
     }
 
     SECTION("Parallel Exchange (Modulo)") {
-        FuzzJitArm(1, 1, 10000, [&modulo_exchange_instructions]() -> u32 {
-            return modulo_exchange_instructions[RandInt<size_t>(0, modulo_exchange_instructions.size() - 1)].Generate();
+        FuzzJitArm(4, 5, 10000, [&]() -> u32 {
+            return also_test_sel(modulo_exchange_instructions[RandInt<size_t>(0, modulo_exchange_instructions.size() - 1)].Generate());
         });
     }
 
     SECTION("Parallel Add/Subtract (Saturating)") {
-        FuzzJitArm(1, 1, 10000, [&saturating_instructions]() -> u32 {
-            return saturating_instructions[RandInt<size_t>(0, saturating_instructions.size() - 1)].Generate();
+        FuzzJitArm(4, 5, 10000, [&]() -> u32 {
+            return also_test_sel(saturating_instructions[RandInt<size_t>(0, saturating_instructions.size() - 1)].Generate());
         });
     }
 
     SECTION("Parallel Add/Subtract (Halving)") {
-        FuzzJitArm(1, 1, 10000, [&halving_instructions]() -> u32 {
-            return halving_instructions[RandInt<size_t>(0, halving_instructions.size() - 1)].Generate();
+        FuzzJitArm(4, 5, 10000, [&]() -> u32 {
+            return also_test_sel(halving_instructions[RandInt<size_t>(0, halving_instructions.size() - 1)].Generate());
+        });
+    }
+
+    SECTION("Fuzz SEL") {
+        // Alternate between a SEL and a MSR to change the CPSR, thus changing the expected result of the next SEL
+        bool set_cpsr = true;
+        FuzzJitArm(5, 6, 10000, [&sel_instr, &cpsr_setter, &set_cpsr]() -> u32 {
+            set_cpsr ^= true;
+            if (set_cpsr)
+                return cpsr_setter.Generate(false);
+            return sel_instr.Generate(false);
         });
     }
 }
@@ -1103,35 +1138,12 @@ TEST_CASE("VFP: VPUSH, VPOP", "[JitX64][vfp]") {
 }
 
 TEST_CASE("Test ARM misc instructions", "[JitX64]") {
-    const auto is_sel_valid = [](u32 instr) -> bool {
-        // R15 as Rd, Rn, or Rm is UNPREDICTABLE
-        return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111 && Bits<16, 19>(instr) != 0b1111;
-    };
-
-    const auto is_msr_valid = [](u32 instr) -> bool {
-        // Mask can not be 0
-        return Bits<18, 19>(instr) != 0b00;
-    };
-
     const auto is_clz_valid = [](u32 instr) -> bool {
         // R15 as Rd, or Rm is UNPREDICTABLE
         return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111;
     };
 
-    const InstructionGenerator cpsr_setter = InstructionGenerator("11100011001001001111rrrrvvvvvvvv", is_msr_valid); // MSR_Imm write GE
-    const InstructionGenerator sel_instr = InstructionGenerator("111001101000nnnndddd11111011mmmm", is_sel_valid); // SEL
     const InstructionGenerator clz_instr = InstructionGenerator("cccc000101101111dddd11110001mmmm", is_clz_valid); // CLZ
-
-    SECTION("Fuzz SEL") {
-        // Alternate between a SEL and a MSR to change the CPSR, thus changing the expected result of the next SEL
-        bool set_cpsr = true;
-        FuzzJitArm(5, 6, 10000, [&sel_instr, &cpsr_setter, &set_cpsr]() -> u32 {
-            set_cpsr ^= true;
-            if (set_cpsr)
-                return cpsr_setter.Generate(false);
-            return sel_instr.Generate(false);
-        });
-    }
 
     SECTION("Fuzz CLZ") {
         FuzzJitArm(1, 1, 1000, [&clz_instr]() -> u32 {
