@@ -330,9 +330,23 @@ void EmitX64::EmitOrQFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
 
 void EmitX64::EmitGetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 tmp;
+
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
+        tmp = reg_alloc.ScratchGpr().cvt32();
+        code->mov(tmp, 0x01010101);
+    }
     code->mov(result, MJitStateCpsr());
     code->shr(result, 16);
-    code->and_(result, 0xF);
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
+        code->pdep(result, result, tmp);
+    } else {
+        code->and_(result, 0xF);
+        code->imul(result, result, 0x00204081);
+        code->and_(result, 0x01010101);
+    }
+    code->imul(result, result, 0xFF);
+
     reg_alloc.DefineValue(inst, result);
 }
 
@@ -340,18 +354,23 @@ void EmitX64::EmitSetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     constexpr size_t flag_bit = 16;
     constexpr u32 flag_mask = 0xFu << flag_bit;
     auto args = reg_alloc.GetArgumentInfo(inst);
-    if (args[0].IsImmediate()) {
-        u32 imm = (args[0].GetImmediateU32() << flag_bit) & flag_mask;
-        code->and_(MJitStateCpsr(), ~flag_mask);
-        code->or_(MJitStateCpsr(), imm);
-    } else {
-        Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
+    ASSERT(!args[0].IsImmediate());
 
-        code->shl(to_store, flag_bit);
-        code->and_(to_store, flag_mask);
-        code->and_(MJitStateCpsr(), ~flag_mask);
-        code->or_(MJitStateCpsr(), to_store);
+    Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
+
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
+        Xbyak::Reg32 tmp = reg_alloc.ScratchGpr().cvt32();
+        code->mov(tmp, 0x80808080);
+        code->pext(to_store, to_store, tmp);
+    } else {
+        code->and_(to_store, 0x80808080);
+        code->imul(to_store, to_store, 0x00204081);
+        code->shr(to_store, 28);
     }
+
+    code->shl(to_store, flag_bit);
+    code->and_(MJitStateCpsr(), ~flag_mask);
+    code->or_(MJitStateCpsr(), to_store);
 }
 
 void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
@@ -1444,40 +1463,16 @@ void EmitX64::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::In
     }
 }
 
-/**
- * Extracts the most significant bits from each of the packed bytes, and packs them together.
- *
- *     value before:    a-------b-------c-------d-------
- *     value after:     0000000000000000000000000000abcd
- *
- * @param value The register containing the value to operate on. Result will be stored in the same register.
- * @param a_tmp A register which can be used as a scratch register.
- */
-static void ExtractMostSignificantBitFromPackedBytes(BlockOfCode* code, RegAlloc& reg_alloc, Xbyak::Reg32 value, boost::optional<Xbyak::Reg32> a_tmp = boost::none) {
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
-        Xbyak::Reg32 tmp = a_tmp ? *a_tmp : reg_alloc.ScratchGpr().cvt32();
-        code->mov(tmp, 0x80808080);
-        code->pext(value, value, tmp);
-    } else {
-        code->and_(value, 0x80808080);
-        code->imul(value, value, 0x00204081);
-        code->shr(value, 28);
-    }
+static void MaskOfMostSignificantBitFromPackedBytes(BlockOfCode* code, RegAlloc&, Xbyak::Reg32 value, boost::optional<Xbyak::Reg32> = boost::none) {
+    code->and_(value, 0x80808080);
+    code->shr(value, 7);
+    code->imul(value, value, 0xFF);
 }
 
-/**
- * Extracts the most significant bits from each of the packed words, duplicates them, and packs them together.
- *
- *     value before:    a---------------b---------------
- *     value after:     0000000000000000000000000000aabb
- *
- * @param value The register containing the value to operate on. Result will be stored in the same register.
- */
-static void ExtractAndDuplicateMostSignificantBitFromPackedWords(BlockOfCode* code, Xbyak::Reg32 value) {
+static void MaskOfMostSignificantBitFromPackedWords(BlockOfCode* code, Xbyak::Reg32 value) {
     code->and_(value, 0x80008000);
-    code->shr(value, 1);
-    code->imul(value, value, 0xC003);
-    code->shr(value, 28);
+    code->shr(value, 15);
+    code->imul(value, value, 0xFFFF);
 }
 
 void EmitX64::EmitPackedAddU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
@@ -1501,7 +1496,6 @@ void EmitX64::EmitPackedAddU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
         code->movd(reg_ge, tmp);
         code->not_(reg_ge);
 
-        ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -1532,7 +1526,7 @@ void EmitX64::EmitPackedAddS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
 
     if (ge_inst) {
         code->not_(reg_ge);
-        ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
+        MaskOfMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -1571,7 +1565,6 @@ void EmitX64::EmitPackedAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
             code->movd(reg_ge, tmp_b);
         }
 
-        ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -1601,7 +1594,7 @@ void EmitX64::EmitPackedAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
 
     if (ge_inst) {
         code->not_(reg_ge);
-        ExtractAndDuplicateMostSignificantBitFromPackedWords(code, reg_ge);
+        MaskOfMostSignificantBitFromPackedWords(code, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -1626,14 +1619,11 @@ void EmitX64::EmitPackedSubU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
         code->pmaxub(xmm_ge, xmm_b);
         code->pcmpeqb(xmm_ge, xmm_a);
         code->movd(reg_ge, xmm_ge);
+
+        reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
     code->psubb(xmm_a, xmm_b);
-
-    if (ge_inst) {
-        ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
-        reg_alloc.DefineValue(ge_inst, reg_ge);
-    }
 
     reg_alloc.DefineValue(inst, xmm_a);
 }
@@ -1662,7 +1652,7 @@ void EmitX64::EmitPackedSubS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
 
     if (ge_inst) {
         code->not_(reg_ge);
-        ExtractMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
+        MaskOfMostSignificantBitFromPackedBytes(code, reg_alloc, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -1697,14 +1687,11 @@ void EmitX64::EmitPackedSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
             code->movd(reg_ge, xmm_ge);
             code->not_(reg_ge);
         }
+
+        reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
     code->psubw(xmm_a, xmm_b);
-
-    if (ge_inst) {
-        ExtractAndDuplicateMostSignificantBitFromPackedWords(code, reg_ge);
-        reg_alloc.DefineValue(ge_inst, reg_ge);
-    }
 
     reg_alloc.DefineValue(inst, xmm_a);
 }
@@ -1732,7 +1719,7 @@ void EmitX64::EmitPackedSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
 
     if (ge_inst) {
         code->not_(reg_ge);
-        ExtractAndDuplicateMostSignificantBitFromPackedWords(code, reg_ge);
+        MaskOfMostSignificantBitFromPackedWords(code, reg_ge);
         reg_alloc.DefineValue(ge_inst, reg_ge);
     }
 
@@ -2022,15 +2009,16 @@ void EmitPackedSubAdd(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, 
 
         if (!is_signed) {
             code->shl(ge_sum, 15);
-            code->sar(ge_sum, 16);
+            code->sar(ge_sum, 31);
         } else {
             code->not_(ge_sum);
+            code->sar(ge_sum, 31);
         }
         code->not_(ge_diff);
-        code->and_(ge_sum, hi_is_sum ? 0xC0000000 : 0x30000000);
-        code->and_(ge_diff, hi_is_sum ? 0x30000000 : 0xC0000000);
+        code->sar(ge_diff, 31);
+        code->and_(ge_sum, hi_is_sum ? 0xFFFF0000 : 0x0000FFFF);
+        code->and_(ge_diff, hi_is_sum ? 0x0000FFFF : 0xFFFF0000);
         code->or_(ge_sum, ge_diff);
-        code->shr(ge_sum, 28);
 
         reg_alloc.DefineValue(ge_inst, ge_sum);
     }
@@ -2131,19 +2119,38 @@ void EmitX64::EmitPackedAbsDiffSumS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
 void EmitX64::EmitPackedSelect(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 ge = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg32 to = reg_alloc.UseScratchGpr(args[1]).cvt32();
-    Xbyak::Reg32 from = reg_alloc.UseScratchGpr(args[2]).cvt32();
-    Xbyak::Reg32 tmp = reg_alloc.ScratchGpr().cvt32();
+    if (args[1].IsInXmm() && args[2].IsInXmm()) {
+        Xbyak::Xmm ge = reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm to = reg_alloc.UseXmm(args[1]);
+        Xbyak::Xmm from = reg_alloc.UseScratchXmm(args[2]);
 
-    code->mov(tmp, 0x01010101);
-    code->pdep(ge, ge, tmp);
-    code->imul(ge, ge, 0xFF);
-    code->and_(from, ge);
-    code->andn(to, ge, to);
-    code->or_(from, to);
+        code->pand(from, ge);
+        code->pandn(ge, to);
+        code->por(from, ge);
 
-    reg_alloc.DefineValue(inst, from);
+        reg_alloc.DefineValue(inst, from);
+    } else if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI1)) {
+        Xbyak::Reg32 ge = reg_alloc.UseGpr(args[0]).cvt32();
+        Xbyak::Reg32 to = reg_alloc.UseScratchGpr(args[1]).cvt32();
+        Xbyak::Reg32 from = reg_alloc.UseScratchGpr(args[2]).cvt32();
+
+        code->and_(from, ge);
+        code->andn(to, ge, to);
+        code->or_(from, to);
+
+        reg_alloc.DefineValue(inst, from);
+    } else {
+        Xbyak::Reg32 ge = reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 to = reg_alloc.UseScratchGpr(args[1]).cvt32();
+        Xbyak::Reg32 from = reg_alloc.UseScratchGpr(args[2]).cvt32();
+
+        code->and_(from, ge);
+        code->not_(ge);
+        code->and_(to, ge);
+        code->or_(from, to);
+
+        reg_alloc.DefineValue(inst, from);
+    }
 }
 
 static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
