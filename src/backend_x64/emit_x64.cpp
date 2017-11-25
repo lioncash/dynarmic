@@ -1742,56 +1742,25 @@ void EmitX64::EmitPackedSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
 void EmitX64::EmitPackedHalvingAddU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
-    // This code path requires SSSE3 because of the PSHUFB instruction.
-    // A fallback implementation is provided below.
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
-        Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Xmm xmm_b = reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Reg32 reg_a = reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 reg_b = reg_alloc.UseGpr(args[1]).cvt32();
+    Xbyak::Reg32 xor_a_b = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 and_a_b = reg_a;
+    Xbyak::Reg32 result = reg_a;
 
-        Xbyak::Xmm xmm_mask = reg_alloc.ScratchXmm();
-        Xbyak::Reg64 mask = reg_alloc.ScratchGpr();
+    // This relies on the equality x+y == ((x&y) << 1) + (x^y).
+    // Note that x^y always contains the LSB of the result.
+    // Since we want to calculate (x+y)/2, we can instead calculate (x&y) + ((x^y)>>1).
+    // We mask by 0x7F to remove the LSB so that it doesn't leak into the field below.
 
-        // Set the mask to expand the values
-        // 0xAABBCCDD becomes 0x00AA00BB00CC00DD
-        code->mov(mask, 0x8003800280018000);
-        code->movq(xmm_mask, mask);
+    code->mov(xor_a_b, reg_a);
+    code->and_(and_a_b, reg_b);
+    code->xor_(xor_a_b, reg_b);
+    code->shr(xor_a_b, 1);
+    code->and_(xor_a_b, 0x7F7F7F7F);
+    code->add(result, xor_a_b);
 
-        // Expand each 8-bit value to 16-bit
-        code->pshufb(xmm_a, xmm_mask);
-        code->pshufb(xmm_b, xmm_mask);
-
-        // Add the individual 16-bit values
-        code->paddw(xmm_a, xmm_b);
-
-        // Shift the 16-bit values to the right to halve them
-        code->psrlw(xmm_a, 1);
-
-        // Set the mask to pack the values again
-        // 0x00AA00BB00CC00DD becomes 0xAABBCCDD
-        code->mov(mask, 0x06040200);
-        code->movq(xmm_mask, mask);
-
-        // Shuffle them back to 8-bit values
-        code->pshufb(xmm_a, xmm_mask);
-
-        reg_alloc.DefineValue(inst, xmm_a);
-    } else {
-        // Fallback implementation in case the CPU doesn't support SSSE3
-        Xbyak::Reg32 reg_a = reg_alloc.UseScratchGpr(args[0]).cvt32();
-        Xbyak::Reg32 reg_b = reg_alloc.UseGpr(args[1]).cvt32();
-        Xbyak::Reg32 xor_a_b = reg_alloc.ScratchGpr().cvt32();
-        Xbyak::Reg32 and_a_b = reg_a;
-        Xbyak::Reg32 result = reg_a;
-
-        code->mov(xor_a_b, reg_a);
-        code->and_(and_a_b, reg_b);
-        code->xor_(xor_a_b, reg_b);
-        code->shr(xor_a_b, 1);
-        code->and_(xor_a_b, 0x7F7F7F7F);
-        code->add(result, xor_a_b);
-
-        reg_alloc.DefineValue(inst, result);
-    }
+    reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitPackedHalvingAddU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
