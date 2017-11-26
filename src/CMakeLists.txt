@@ -1,4 +1,5 @@
-set(SRCS
+add_library(dynarmic
+    # Source files
     common/memory_pool.cpp
     frontend/arm/types.cpp
     frontend/disassembler/disassembler_arm.cpp
@@ -31,9 +32,8 @@ set(SRCS
     ir_opt/dead_code_elimination_pass.cpp
     ir_opt/get_set_elimination_pass.cpp
     ir_opt/verification_pass.cpp
-    )
 
-set(HEADERS
+    # Header files
     ../include/dynarmic/callbacks.h
     ../include/dynarmic/coprocessor.h
     ../include/dynarmic/coprocessor_util.h
@@ -70,10 +70,11 @@ set(HEADERS
     frontend/translate/translate.h
     frontend/translate/translate_arm/translate_arm.h
     ir_opt/passes.h
-    )
+)
 
 if (ARCHITECTURE_x86_64)
-    list(APPEND SRCS
+    target_sources(dynarmic PRIVATE
+         # Source files
          backend_x64/abi.cpp
          backend_x64/block_of_code.cpp
          backend_x64/constant_pool.cpp
@@ -82,9 +83,8 @@ if (ARCHITECTURE_x86_64)
          backend_x64/interface_x64.cpp
          backend_x64/jitstate.cpp
          backend_x64/reg_alloc.cpp
-         )
 
-    list(APPEND HEADERS
+         # Headers
          backend_x64/abi.h
          backend_x64/block_of_code.h
          backend_x64/constant_pool.h
@@ -93,21 +93,20 @@ if (ARCHITECTURE_x86_64)
          backend_x64/jitstate.h
          backend_x64/oparg.h
          backend_x64/reg_alloc.h
-         )
+    )
 
     if (WIN32)
-        list(APPEND SRCS backend_x64/exception_handler_windows.cpp)
+        target_sources(dynarmic PRIVATE backend_x64/exception_handler_windows.cpp)
     else()
-        list(APPEND SRCS backend_x64/exception_handler_generic.cpp)
+        target_sources(dynarmic PRIVATE backend_x64/exception_handler_generic.cpp)
     endif()
 else()
     message(FATAL_ERROR "Unsupported architecture")
 endif()
 
 include(CreateDirectoryGroups)
-create_directory_groups(${SRCS} ${HEADERS})
+create_target_directory_groups(dynarmic)
 
-add_library(dynarmic ${SRCS} ${HEADERS})
 target_include_directories(dynarmic
                            PUBLIC ../include
                            PRIVATE .)
