@@ -483,41 +483,39 @@ void EmitX64::EmitSetFpscrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) 
     code->mov(dword[r15 + offsetof(JitState, FPSCR_nzcv)], value);
 }
 
-void EmitX64::EmitPushRSB(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void EmitX64::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, u64 target_hash) {
     using namespace Xbyak::util;
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    ASSERT(args[0].IsImmediate());
-    u64 unique_hash_of_target = args[0].GetImmediateU64();
-
-    auto iter = block_descriptors.find(unique_hash_of_target);
+    auto iter = block_descriptors.find(target_hash);
     CodePtr target_code_ptr = iter != block_descriptors.end()
                             ? iter->second.entrypoint
                             : code->GetReturnFromRunCodeAddress();
 
-    Xbyak::Reg64 code_ptr_reg = reg_alloc.ScratchGpr({HostLoc::RCX});
-    Xbyak::Reg64 loc_desc_reg = reg_alloc.ScratchGpr();
-    Xbyak::Reg32 index_reg = reg_alloc.ScratchGpr().cvt32();
+    code->mov(index_reg.cvt32(), dword[r15 + offsetof(JitState, rsb_ptr)]);
 
-    code->mov(index_reg, dword[r15 + offsetof(JitState, rsb_ptr)]);
-    code->add(index_reg, 1);
-    code->and_(index_reg, u32(JitState::RSBSize - 1));
+    code->mov(loc_desc_reg, target_hash);
 
-    code->mov(loc_desc_reg, unique_hash_of_target);
-
-    patch_information[unique_hash_of_target].mov_rcx.emplace_back(code->getCurr());
+    patch_information[target_hash].mov_rcx.emplace_back(code->getCurr());
     EmitPatchMovRcx(target_code_ptr);
 
-    Xbyak::Label label;
-    for (size_t i = 0; i < JitState::RSBSize; ++i) {
-        code->cmp(loc_desc_reg, qword[r15 + offsetof(JitState, rsb_location_descriptors) + i * sizeof(u64)]);
-        code->je(label, code->T_SHORT);
-    }
+    code->mov(qword[r15 + index_reg * 8 + offsetof(JitState, rsb_location_descriptors)], loc_desc_reg);
+    code->mov(qword[r15 + index_reg * 8 + offsetof(JitState, rsb_codeptrs)], rcx);
 
-    code->mov(dword[r15 + offsetof(JitState, rsb_ptr)], index_reg);
-    code->mov(qword[r15 + index_reg.cvt64() * 8 + offsetof(JitState, rsb_location_descriptors)], loc_desc_reg);
-    code->mov(qword[r15 + index_reg.cvt64() * 8 + offsetof(JitState, rsb_codeptrs)], code_ptr_reg);
-    code->L(label);
+    code->add(index_reg.cvt32(), 1);
+    code->and_(index_reg.cvt32(), u32(JitState::RSBPtrMask));
+    code->mov(dword[r15 + offsetof(JitState, rsb_ptr)], index_reg.cvt32());
+}
+
+void EmitX64::EmitPushRSB(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+    auto args = reg_alloc.GetArgumentInfo(inst);
+    ASSERT(args[0].IsImmediate());
+    u64 unique_hash_of_target = args[0].GetImmediateU64();
+
+    reg_alloc.ScratchGpr({HostLoc::RCX});
+    Xbyak::Reg64 loc_desc_reg = reg_alloc.ScratchGpr();
+    Xbyak::Reg64 index_reg = reg_alloc.ScratchGpr();
+
+    PushRSBHelper(loc_desc_reg, index_reg, unique_hash_of_target);
 }
 
 void EmitX64::EmitGetCarryFromOp(RegAlloc&, IR::Block&, IR::Inst*) {
@@ -3412,9 +3410,16 @@ void EmitX64::EmitTerminal(IR::Term::LinkBlock terminal, IR::LocationDescriptor 
     } else {
         EmitPatchJg(terminal.next);
     }
+    Xbyak::Label dest;
+    code->jmp(dest, Xbyak::CodeGenerator::T_NEAR);
 
+    code->SwitchToFarCode();
+    code->align(16);
+    code->L(dest);
     code->mov(MJitStateReg(Arm::Reg::PC), terminal.next.PC());
-    code->ForceReturnFromRunCode(); // TODO: Check cycles, Properly do a link
+    PushRSBHelper(rax, rbx, terminal.next.UniqueHash());
+    code->ForceReturnFromRunCode();
+    code->SwitchToNearCode();
 }
 
 void EmitX64::EmitTerminal(IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location) {
@@ -3455,12 +3460,13 @@ void EmitX64::EmitTerminal(IR::Term::PopRSBHint, IR::LocationDescriptor) {
     code->shl(rbx, 32);
     code->or_(rbx, rcx);
 
-    code->mov(rax, reinterpret_cast<u64>(code->GetReturnFromRunCodeAddress()));
-    for (size_t i = 0; i < JitState::RSBSize; ++i) {
-        code->cmp(rbx, qword[r15 + offsetof(JitState, rsb_location_descriptors) + i * sizeof(u64)]);
-        code->cmove(rax, qword[r15 + offsetof(JitState, rsb_codeptrs) + i * sizeof(u64)]);
-    }
-
+    code->mov(eax, dword[r15 + offsetof(JitState, rsb_ptr)]);
+    code->sub(eax, 1);
+    code->and_(eax, u32(JitState::RSBPtrMask));
+    code->mov(dword[r15 + offsetof(JitState, rsb_ptr)], eax);
+    code->cmp(rbx, qword[r15 + offsetof(JitState, rsb_location_descriptors) + rax * sizeof(u64)]);
+    code->jne(code->GetReturnFromRunCodeAddress());
+    code->mov(rax, qword[r15 + offsetof(JitState, rsb_codeptrs) + rax * sizeof(u64)]);
     code->jmp(rax);
 }
 
