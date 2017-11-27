@@ -172,6 +172,7 @@ std::string DumpBlock(const IR::Block& block) {
     for (const auto& inst : block) {
         const Opcode op = inst.GetOpcode();
 
+        ret += fmt::format("[{:016x}] ", reinterpret_cast<u64>(&inst));
         if (GetTypeOf(op) != Type::Void) {
             ret += fmt::format("%{:<5} = ", index);
         } else {
@@ -193,6 +194,8 @@ std::string DumpBlock(const IR::Block& block) {
                 ret += fmt::format("<type error: {} != {}>", GetNameOf(actual_type), GetNameOf(expected_type));
             }
         }
+
+        ret += fmt::format(" (uses: {})", inst.UseCount());
 
         ret += '\n';
         inst_to_index[&inst] = index++;
