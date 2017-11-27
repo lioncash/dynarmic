@@ -5,7 +5,6 @@
  */
 
 #include <algorithm>
-#include <vector>
 
 #include <xbyak.h>
 
@@ -100,11 +99,12 @@ void HostLocInfo::WriteLock() {
 }
 
 void HostLocInfo::AddValue(IR::Inst* inst) {
-    values.push_front(inst);
+    values.push_back(inst);
 }
 
 void HostLocInfo::EndOfAllocScope() {
-    values.remove_if([](const auto& inst) { return !inst->HasUses(); });
+    const auto to_erase = std::remove_if(values.begin(), values.end(), [](const auto& inst) { return !inst->HasUses(); });
+    values.erase(to_erase, values.end());
 
     is_being_used = false;
     is_scratch = false;

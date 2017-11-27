@@ -7,7 +7,7 @@
 #pragma once
 
 #include <array>
-#include <forward_list>
+#include <vector>
 
 #include <boost/optional.hpp>
 #include <xbyak.h>
@@ -40,7 +40,7 @@ public:
     void EndOfAllocScope();
 
 private:
-    std::forward_list<IR::Inst*> values;
+    std::vector<IR::Inst*> values;
     bool is_being_used = false;
     bool is_scratch = false;
 };
