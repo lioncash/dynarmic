@@ -246,11 +246,6 @@ bool Inst::AreAllArgsImmediates() const {
     return std::all_of(args.begin(), args.begin() + NumArgs(), [](const auto& value){ return value.IsImmediate(); });
 }
 
-void Inst::DecrementRemainingUses() {
-    ASSERT_MSG(HasUses(), "Microinstruction doesn't have any remaining uses");
-    use_count--;
-}
-
 bool Inst::HasAssociatedPseudoOperation() const {
     return carry_inst || overflow_inst || ge_inst;
 }
