@@ -5,6 +5,7 @@
  */
 
 #include <algorithm>
+#include <numeric>
 
 #include <xbyak.h>
 
@@ -80,7 +81,7 @@ bool HostLocInfo::IsEmpty() const {
 }
 
 bool HostLocInfo::IsLastUse() const {
-    return !is_being_used && std::all_of(values.begin(), values.end(), [](const auto& inst) { return !inst->HasUses(); });
+    return !is_being_used && current_references == 1;
 }
 
 bool HostLocInfo::ContainsValue(const IR::Inst* inst) const {
@@ -100,11 +101,25 @@ void HostLocInfo::WriteLock() {
 
 void HostLocInfo::AddValue(IR::Inst* inst) {
     values.push_back(inst);
+    total_uses += inst->UseCount();
+}
+
+void HostLocInfo::AddArgReference() {
+    current_references++;
+    ASSERT(accumulated_uses + current_references <= total_uses);
 }
 
 void HostLocInfo::EndOfAllocScope() {
-    const auto to_erase = std::remove_if(values.begin(), values.end(), [](const auto& inst) { return !inst->HasUses(); });
-    values.erase(to_erase, values.end());
+    accumulated_uses += current_references;
+    current_references = 0;
+
+    if (total_uses == accumulated_uses) {
+        values.clear();
+        accumulated_uses = 0;
+        total_uses = 0;
+    }
+
+    ASSERT(total_uses == std::accumulate(values.begin(), values.end(), size_t(0), [](size_t sum, IR::Inst* inst) { return sum + inst->UseCount(); }));
 
     is_being_used = false;
     is_scratch = false;
@@ -159,10 +174,11 @@ bool Argument::IsInMemory() const {
 std::array<Argument, 3> RegAlloc::GetArgumentInfo(IR::Inst* inst) {
     std::array<Argument, 3> ret = { Argument{*this}, Argument{*this}, Argument{*this} };
     for (size_t i = 0; i < inst->NumArgs(); i++) {
-        IR::Value arg = inst->GetArg(i);
+        const IR::Value& arg = inst->GetArg(i);
         ret[i].value = arg;
         if (!arg.IsImmediate()) {
-            arg.GetInst()->DecrementRemainingUses();
+            ASSERT_MSG(ValueLocation(arg.GetInst()), "argument must already been defined");
+            LocInfo(*ValueLocation(arg.GetInst())).AddArgReference();
         }
     }
     return ret;

@@ -37,12 +37,17 @@ public:
 
     void AddValue(IR::Inst* inst);
 
+    void AddArgReference();
     void EndOfAllocScope();
 
 private:
     std::vector<IR::Inst*> values;
     bool is_being_used = false;
     bool is_scratch = false;
+
+    size_t current_references = 0;
+    size_t accumulated_uses = 0;
+    size_t total_uses = 0;
 };
 
 struct Argument {
