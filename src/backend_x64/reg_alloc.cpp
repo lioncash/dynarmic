@@ -81,7 +81,7 @@ bool HostLocInfo::IsEmpty() const {
 }
 
 bool HostLocInfo::IsLastUse() const {
-    return !is_being_used && current_references == 1;
+    return !is_being_used && current_references == 1 && accumulated_uses + 1 == total_uses;
 }
 
 bool HostLocInfo::ContainsValue(const IR::Inst* inst) const {
@@ -283,7 +283,9 @@ HostLoc RegAlloc::UseScratchImpl(IR::Value use_value, HostLocList desired_locati
 
     const bool can_use_current_location = std::find(desired_locations.begin(), desired_locations.end(), current_location) != desired_locations.end();
     if (can_use_current_location && !LocInfo(current_location).IsLocked()) {
-        MoveOutOfTheWay(current_location);
+        if (!LocInfo(current_location).IsLastUse()) {
+            MoveOutOfTheWay(current_location);
+        }
         LocInfo(current_location).WriteLock();
         return current_location;
     }
