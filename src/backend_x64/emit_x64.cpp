@@ -540,18 +540,20 @@ void EmitX64::EmitLeastSignificantWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst
 }
 
 void EmitX64::EmitMostSignificantWord(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+    auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
+
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
     code->shr(result, 32);
-    reg_alloc.DefineValue(inst, result);
 
-    auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
     if (carry_inst) {
         EraseInstruction(block, carry_inst);
         Xbyak::Reg64 carry = reg_alloc.ScratchGpr();
         code->setc(carry.cvt8());
         reg_alloc.DefineValue(carry_inst, carry);
     }
+
+    reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitLeastSignificantHalf(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
@@ -985,8 +987,6 @@ void EmitX64::EmitRotateRightExtended(RegAlloc& reg_alloc, IR::Block& block, IR:
     code->bt(carry.cvt32(), 0);
     code->rcr(result, 1);
 
-    reg_alloc.DefineValue(inst, result);
-
     if (carry_inst) {
         EraseInstruction(block, carry_inst);
 
@@ -994,6 +994,8 @@ void EmitX64::EmitRotateRightExtended(RegAlloc& reg_alloc, IR::Block& block, IR:
 
         reg_alloc.DefineValue(carry_inst, carry);
     }
+
+    reg_alloc.DefineValue(inst, result);
 }
 
 const Xbyak::Reg64 INVALID_REG = Xbyak::Reg64(-1);
@@ -1048,8 +1050,6 @@ void EmitX64::EmitAddWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
         }
     }
 
-    reg_alloc.DefineValue(inst, result);
-
     if (carry_inst) {
         EraseInstruction(block, carry_inst);
         code->setc(carry);
@@ -1060,6 +1060,8 @@ void EmitX64::EmitAddWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
         code->seto(overflow);
         reg_alloc.DefineValue(overflow_inst, overflow);
     }
+
+    reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitAdd64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
@@ -1119,8 +1121,6 @@ void EmitX64::EmitSubWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
         }
     }
 
-    reg_alloc.DefineValue(inst, result);
-
     if (carry_inst) {
         EraseInstruction(block, carry_inst);
         code->setnc(carry);
@@ -1131,6 +1131,8 @@ void EmitX64::EmitSubWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
         code->seto(overflow);
         reg_alloc.DefineValue(overflow_inst, overflow);
     }
+
+    reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitSub64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
@@ -1344,8 +1346,6 @@ void EmitX64::EmitSignedSaturatedAdd(RegAlloc& reg_alloc, IR::Block& block, IR::
     code->add(result, addend);
     code->cmovo(result, overflow);
 
-    reg_alloc.DefineValue(inst, result);
-
     if (overflow_inst) {
         EraseInstruction(block, overflow_inst);
 
@@ -1353,6 +1353,8 @@ void EmitX64::EmitSignedSaturatedAdd(RegAlloc& reg_alloc, IR::Block& block, IR::
 
         reg_alloc.DefineValue(overflow_inst, overflow);
     }
+
+    reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitSignedSaturatedSub(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
@@ -1371,8 +1373,6 @@ void EmitX64::EmitSignedSaturatedSub(RegAlloc& reg_alloc, IR::Block& block, IR::
     code->sub(result, subend);
     code->cmovo(result, overflow);
 
-    reg_alloc.DefineValue(inst, result);
-
     if (overflow_inst) {
         EraseInstruction(block, overflow_inst);
 
@@ -1380,6 +1380,8 @@ void EmitX64::EmitSignedSaturatedSub(RegAlloc& reg_alloc, IR::Block& block, IR::
 
         reg_alloc.DefineValue(overflow_inst, overflow);
     }
+
+    reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitUnsignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
@@ -1402,8 +1404,6 @@ void EmitX64::EmitUnsignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::
     code->cmovle(result, overflow);
     code->cmovbe(result, reg_a);
 
-    reg_alloc.DefineValue(inst, result);
-
     if (overflow_inst) {
         EraseInstruction(block, overflow_inst);
 
@@ -1411,6 +1411,8 @@ void EmitX64::EmitUnsignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::
 
         reg_alloc.DefineValue(overflow_inst, overflow);
     }
+
+    reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
@@ -1421,11 +1423,11 @@ void EmitX64::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::In
     ASSERT(N >= 1 && N <= 32);
 
     if (N == 32) {
-        reg_alloc.DefineValue(inst, args[0]);
         if (overflow_inst) {
             auto no_overflow = IR::Value(false);
             overflow_inst->ReplaceUsesWith(no_overflow);
         }
+        reg_alloc.DefineValue(inst, args[0]);
         return;
     }
 
@@ -1452,8 +1454,6 @@ void EmitX64::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::In
     code->cmp(overflow, mask);
     code->cmovbe(result, reg_a);
 
-    reg_alloc.DefineValue(inst, result);
-
     if (overflow_inst) {
         EraseInstruction(block, overflow_inst);
 
@@ -1461,6 +1461,8 @@ void EmitX64::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::In
 
         reg_alloc.DefineValue(overflow_inst, overflow);
     }
+
+    reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitPackedAddU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
