@@ -14,6 +14,12 @@ option(DYNARMIC_USE_LLVM "Support disassembly of jitted x86_64 code using LLVM" 
 option(DYNARMIC_TESTS "Build tests" ${MASTER_PROJECT})
 option(DYNARMIC_WARNINGS_AS_ERRORS "Warnings as errors" ${MASTER_PROJECT})
 
+# Default to a Release build
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+    message(STATUS "Defaulting to a Release build")
+endif()
+
 # Set hard requirements for C++
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
