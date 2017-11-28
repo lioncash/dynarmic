@@ -124,7 +124,7 @@ boost::optional<EmitX64::BlockDescriptor> EmitX64::GetBasicBlock(IR::LocationDes
     auto iter = block_descriptors.find(descriptor.UniqueHash());
     if (iter == block_descriptors.end())
         return boost::none;
-    return boost::make_optional<BlockDescriptor>(iter->second);
+    return iter->second;
 }
 
 void EmitX64::EmitVoid(RegAlloc&, IR::Block&, IR::Inst*) {

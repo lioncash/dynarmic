@@ -327,7 +327,7 @@ boost::optional<const ArmMatcher<V>&> DecodeArm(u32 instruction) {
     const auto matches_instruction = [instruction](const auto& matcher) { return matcher.Matches(instruction); };
 
     auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
-    return iter != table.end() ? boost::make_optional<const ArmMatcher<V>&>(*iter) : boost::none;
+    return iter != table.end() ? boost::optional<const ArmMatcher<V>&>(*iter) : boost::none;
 }
 
 } // namespace Arm

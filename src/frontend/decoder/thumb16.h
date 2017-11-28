@@ -120,7 +120,7 @@ boost::optional<const Thumb16Matcher<V>&> DecodeThumb16(u16 instruction) {
     const auto matches_instruction = [instruction](const auto& matcher){ return matcher.Matches(instruction); };
 
     auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
-    return iter != table.end() ? boost::make_optional<const Thumb16Matcher<V>&>(*iter) : boost::none;
+    return iter != table.end() ? boost::optional<const Thumb16Matcher<V>&>(*iter) : boost::none;
 }
 
 } // namespace Arm

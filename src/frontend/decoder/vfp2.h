@@ -85,7 +85,7 @@ boost::optional<const VFP2Matcher<V>&> DecodeVFP2(u32 instruction) {
     const auto matches_instruction = [instruction](const auto& matcher){ return matcher.Matches(instruction); };
 
     auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
-    return iter != table.end() ? boost::make_optional<const VFP2Matcher<V>&>(*iter) : boost::none;
+    return iter != table.end() ? boost::optional<const VFP2Matcher<V>&>(*iter) : boost::none;
 }
 
 } // namespace Arm

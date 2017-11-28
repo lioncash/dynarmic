@@ -388,7 +388,7 @@ HostLoc RegAlloc::SelectARegister(HostLocList desired_locations) const {
 boost::optional<HostLoc> RegAlloc::ValueLocation(const IR::Inst* value) const {
     for (size_t i = 0; i < HostLocCount; i++)
         if (hostloc_info[i].ContainsValue(value))
-            return boost::make_optional<HostLoc>(static_cast<HostLoc>(i));
+            return static_cast<HostLoc>(i);
 
     return boost::none;
 }

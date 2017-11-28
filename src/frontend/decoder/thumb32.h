@@ -40,7 +40,7 @@ boost::optional<const Thumb32Matcher<V>&> DecodeThumb32(u32 instruction) {
     const auto matches_instruction = [instruction](const auto& matcher){ return matcher.Matches(instruction); };
 
     auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
-    return iter != table.end() ? boost::make_optional<const Thumb32Matcher<V>&>(*iter) : boost::none;
+    return iter != table.end() ? boost::optional<const Thumb32Matcher<V>&>(*iter) : boost::none;
 }
 
 } // namespace Arm
