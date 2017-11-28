@@ -117,6 +117,8 @@ private:
             static_assert(std::is_same<visitor_type, Visitor>::value, "Member function is not from Matcher's Visitor");
             return [fn, arg_masks, arg_shifts](Visitor& v, opcode_type instruction) {
                 (void)instruction;
+                (void)arg_masks;
+                (void)arg_shifts;
                 return (v.*fn)(static_cast<Args>((instruction & arg_masks[iota]) >> arg_shifts[iota])...);
             };
         }
@@ -132,6 +134,8 @@ private:
             static_assert(std::is_same<visitor_type, const Visitor>::value, "Member function is not from Matcher's Visitor");
             return [fn, arg_masks, arg_shifts](const Visitor& v, opcode_type instruction) {
                 (void)instruction;
+                (void)arg_masks;
+                (void)arg_shifts;
                 return (v.*fn)(static_cast<Args>((instruction & arg_masks[iota]) >> arg_shifts[iota])...);
             };
         }
