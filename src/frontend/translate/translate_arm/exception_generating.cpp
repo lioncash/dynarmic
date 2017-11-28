@@ -9,8 +9,7 @@
 namespace Dynarmic {
 namespace Arm {
 
-bool ArmTranslatorVisitor::arm_BKPT(Cond cond, Imm12 imm12, Imm4 imm4) {
-    UNUSED(cond, imm12, imm4);
+bool ArmTranslatorVisitor::arm_BKPT(Cond /*cond*/, Imm12 /*imm12*/, Imm4 /*imm4*/) {
     return InterpretThisInstruction();
 }
 

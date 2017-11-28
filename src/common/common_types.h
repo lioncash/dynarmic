@@ -27,5 +27,3 @@ using f32 = float;
 using f64 = double;
 static_assert(sizeof(f32) == sizeof(u32), "f32 must be 32 bits wide");
 static_assert(sizeof(f64) == sizeof(u64), "f64 must be 64 bits wide");
-
-#define UNUSED(...) (void)([__VA_ARGS__](){})
