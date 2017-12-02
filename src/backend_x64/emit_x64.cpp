@@ -60,9 +60,9 @@ static Xbyak::Address MJitStateExtReg(Arm::ExtReg reg) {
     ASSERT_MSG(false, "Should never happen.");
 }
 
-static Xbyak::Address MJitStateCpsr() {
+static Xbyak::Address MJitStateCpsr_other() {
     using namespace Xbyak::util;
-    return dword[r15 + offsetof(JitState, CPSR)];
+    return dword[r15 + offsetof(JitState, CPSR_other)];
 }
 
 static void EraseInstruction(IR::Block& block, IR::Inst* inst) {
@@ -219,7 +219,7 @@ void EmitX64::EmitSetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
 
 void EmitX64::EmitGetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
-    code->mov(result, MJitStateCpsr());
+    code->mov(result, MJitStateCpsr_other());
     code->shr(result, 31);
     reg_alloc.DefineValue(inst, result);
 }
@@ -230,22 +230,22 @@ void EmitX64::EmitSetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1()) {
-            code->or_(MJitStateCpsr(), flag_mask);
+            code->or_(MJitStateCpsr_other(), flag_mask);
         } else {
-            code->and_(MJitStateCpsr(), ~flag_mask);
+            code->and_(MJitStateCpsr_other(), ~flag_mask);
         }
     } else {
         Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->shl(to_store, flag_bit);
-        code->and_(MJitStateCpsr(), ~flag_mask);
-        code->or_(MJitStateCpsr(), to_store);
+        code->and_(MJitStateCpsr_other(), ~flag_mask);
+        code->or_(MJitStateCpsr_other(), to_store);
     }
 }
 
 void EmitX64::EmitGetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
-    code->mov(result, MJitStateCpsr());
+    code->mov(result, MJitStateCpsr_other());
     code->shr(result, 30);
     code->and_(result, 1);
     reg_alloc.DefineValue(inst, result);
@@ -257,22 +257,22 @@ void EmitX64::EmitSetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1()) {
-            code->or_(MJitStateCpsr(), flag_mask);
+            code->or_(MJitStateCpsr_other(), flag_mask);
         } else {
-            code->and_(MJitStateCpsr(), ~flag_mask);
+            code->and_(MJitStateCpsr_other(), ~flag_mask);
         }
     } else {
         Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->shl(to_store, flag_bit);
-        code->and_(MJitStateCpsr(), ~flag_mask);
-        code->or_(MJitStateCpsr(), to_store);
+        code->and_(MJitStateCpsr_other(), ~flag_mask);
+        code->or_(MJitStateCpsr_other(), to_store);
     }
 }
 
 void EmitX64::EmitGetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
-    code->mov(result, MJitStateCpsr());
+    code->mov(result, MJitStateCpsr_other());
     code->shr(result, 29);
     code->and_(result, 1);
     reg_alloc.DefineValue(inst, result);
@@ -284,22 +284,22 @@ void EmitX64::EmitSetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1()) {
-            code->or_(MJitStateCpsr(), flag_mask);
+            code->or_(MJitStateCpsr_other(), flag_mask);
         } else {
-            code->and_(MJitStateCpsr(), ~flag_mask);
+            code->and_(MJitStateCpsr_other(), ~flag_mask);
         }
     } else {
         Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->shl(to_store, flag_bit);
-        code->and_(MJitStateCpsr(), ~flag_mask);
-        code->or_(MJitStateCpsr(), to_store);
+        code->and_(MJitStateCpsr_other(), ~flag_mask);
+        code->or_(MJitStateCpsr_other(), to_store);
     }
 }
 
 void EmitX64::EmitGetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
-    code->mov(result, MJitStateCpsr());
+    code->mov(result, MJitStateCpsr_other());
     code->shr(result, 28);
     code->and_(result, 1);
     reg_alloc.DefineValue(inst, result);
@@ -311,16 +311,16 @@ void EmitX64::EmitSetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1()) {
-            code->or_(MJitStateCpsr(), flag_mask);
+            code->or_(MJitStateCpsr_other(), flag_mask);
         } else {
-            code->and_(MJitStateCpsr(), ~flag_mask);
+            code->and_(MJitStateCpsr_other(), ~flag_mask);
         }
     } else {
         Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->shl(to_store, flag_bit);
-        code->and_(MJitStateCpsr(), ~flag_mask);
-        code->or_(MJitStateCpsr(), to_store);
+        code->and_(MJitStateCpsr_other(), ~flag_mask);
+        code->or_(MJitStateCpsr_other(), to_store);
     }
 }
 
@@ -330,58 +330,36 @@ void EmitX64::EmitOrQFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1())
-            code->or_(MJitStateCpsr(), flag_mask);
+            code->or_(MJitStateCpsr_other(), flag_mask);
     } else {
         Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->shl(to_store, flag_bit);
-        code->or_(MJitStateCpsr(), to_store);
+        code->or_(MJitStateCpsr_other(), to_store);
     }
 }
 
 void EmitX64::EmitGetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Reg32 tmp;
+    using namespace Xbyak::util;
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
-        tmp = reg_alloc.ScratchGpr().cvt32();
-        code->mov(tmp, 0x01010101);
-    }
-    code->mov(result, MJitStateCpsr());
-    code->shr(result, 16);
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
-        code->pdep(result, result, tmp);
-    } else {
-        code->and_(result, 0xF);
-        code->imul(result, result, 0x00204081);
-        code->and_(result, 0x01010101);
-    }
-    code->imul(result, result, 0xFF);
-
+    Xbyak::Xmm result = reg_alloc.ScratchXmm();
+    code->movd(result, dword[r15 + offsetof(JitState, CPSR_ge)]);
     reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitSetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    constexpr size_t flag_bit = 16;
-    constexpr u32 flag_mask = 0xFu << flag_bit;
+    using namespace Xbyak::util;
+
     auto args = reg_alloc.GetArgumentInfo(inst);
     ASSERT(!args[0].IsImmediate());
 
-    Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
-
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
-        Xbyak::Reg32 tmp = reg_alloc.ScratchGpr().cvt32();
-        code->mov(tmp, 0x80808080);
-        code->pext(to_store, to_store, tmp);
+    if (args[0].IsInXmm()) {
+        Xbyak::Xmm to_store = reg_alloc.UseXmm(args[0]);
+        code->movd(dword[r15 + offsetof(JitState, CPSR_ge)], to_store);
     } else {
-        code->and_(to_store, 0x80808080);
-        code->imul(to_store, to_store, 0x00204081);
-        code->shr(to_store, 28);
+        Xbyak::Reg32 to_store = reg_alloc.UseGpr(args[0]).cvt32();
+        code->mov(dword[r15 + offsetof(JitState, CPSR_ge)], to_store);
     }
-
-    code->shl(to_store, flag_bit);
-    code->and_(MJitStateCpsr(), ~flag_mask);
-    code->or_(MJitStateCpsr(), to_store);
 }
 
 void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
@@ -404,11 +382,11 @@ void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
         if (Common::Bit<0>(new_pc)) {
             new_pc &= 0xFFFFFFFE;
             code->mov(MJitStateReg(Arm::Reg::PC), new_pc);
-            code->or_(MJitStateCpsr(), T_bit);
+            code->or_(MJitStateCpsr_other(), T_bit);
         } else {
             new_pc &= 0xFFFFFFFC;
             code->mov(MJitStateReg(Arm::Reg::PC), new_pc);
-            code->and_(MJitStateCpsr(), ~T_bit);
+            code->and_(MJitStateCpsr_other(), ~T_bit);
         }
     } else {
         using Xbyak::util::ptr;
@@ -417,13 +395,13 @@ void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
         Xbyak::Reg32 tmp1 = reg_alloc.ScratchGpr().cvt32();
         Xbyak::Reg32 tmp2 = reg_alloc.ScratchGpr().cvt32();
 
-        code->mov(tmp1, MJitStateCpsr());
+        code->mov(tmp1, MJitStateCpsr_other());
         code->mov(tmp2, tmp1);
         code->and_(tmp2, u32(~T_bit));         // CPSR.T = 0
         code->or_(tmp1, u32(T_bit));           // CPSR.T = 1
         code->test(new_pc, u32(1));
         code->cmove(tmp1, tmp2);               // CPSR.T = pc & 1
-        code->mov(MJitStateCpsr(), tmp1);
+        code->mov(MJitStateCpsr_other(), tmp1);
         code->lea(tmp2, ptr[new_pc.cvt64() + new_pc.cvt64() * 1]);
         code->or_(tmp2, u32(0xFFFFFFFC));      // tmp2 = pc & 1 ? 0xFFFFFFFE : 0xFFFFFFFC
         code->and_(new_pc, tmp2);
@@ -3248,7 +3226,7 @@ static Xbyak::Label EmitCond(BlockOfCode* code, Arm::Cond cond) {
     Xbyak::Label label;
 
     const Xbyak::Reg32 cpsr = eax;
-    code->mov(cpsr, MJitStateCpsr());
+    code->mov(cpsr, MJitStateCpsr_other());
 
     constexpr size_t n_shift = 31;
     constexpr size_t z_shift = 30;
@@ -3398,16 +3376,16 @@ void EmitX64::EmitTerminal(IR::Term::LinkBlock terminal, IR::LocationDescriptor 
 
     if (terminal.next.TFlag() != initial_location.TFlag()) {
         if (terminal.next.TFlag()) {
-            code->or_(MJitStateCpsr(), u32(1 << 5));
+            code->or_(MJitStateCpsr_other(), u32(1 << 5));
         } else {
-            code->and_(MJitStateCpsr(), u32(~(1 << 5)));
+            code->and_(MJitStateCpsr_other(), u32(~(1 << 5)));
         }
     }
     if (terminal.next.EFlag() != initial_location.EFlag()) {
         if (terminal.next.EFlag()) {
-            code->or_(MJitStateCpsr(), u32(1 << 9));
+            code->or_(MJitStateCpsr_other(), u32(1 << 9));
         } else {
-            code->and_(MJitStateCpsr(), u32(~(1 << 9)));
+            code->and_(MJitStateCpsr_other(), u32(~(1 << 9)));
         }
     }
 
@@ -3436,16 +3414,16 @@ void EmitX64::EmitTerminal(IR::Term::LinkBlockFast terminal, IR::LocationDescrip
 
     if (terminal.next.TFlag() != initial_location.TFlag()) {
         if (terminal.next.TFlag()) {
-            code->or_(MJitStateCpsr(), u32(1 << 5));
+            code->or_(MJitStateCpsr_other(), u32(1 << 5));
         } else {
-            code->and_(MJitStateCpsr(), u32(~(1 << 5)));
+            code->and_(MJitStateCpsr_other(), u32(~(1 << 5)));
         }
     }
     if (terminal.next.EFlag() != initial_location.EFlag()) {
         if (terminal.next.EFlag()) {
-            code->or_(MJitStateCpsr(), u32(1 << 9));
+            code->or_(MJitStateCpsr_other(), u32(1 << 9));
         } else {
-            code->and_(MJitStateCpsr(), u32(~(1 << 9)));
+            code->and_(MJitStateCpsr_other(), u32(~(1 << 9)));
         }
     }
 
@@ -3461,7 +3439,7 @@ void EmitX64::EmitTerminal(IR::Term::PopRSBHint, IR::LocationDescriptor) {
     using namespace Xbyak::util;
 
     // This calculation has to match up with IREmitter::PushRSB
-    code->mov(ebx, MJitStateCpsr());
+    code->mov(ebx, MJitStateCpsr_other());
     code->mov(ecx, MJitStateReg(Arm::Reg::PC));
     code->and_(ebx, u32((1 << 5) | (1 << 9)));
     code->shr(ebx, 2);

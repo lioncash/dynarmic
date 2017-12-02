@@ -28,7 +28,8 @@ struct JitState {
     std::array<u32, 16> Reg{}; // Current register file.
     // TODO: Mode-specific register sets unimplemented.
 
-    u32 CPSR = 0;
+    u32 CPSR_other = 0;
+    u32 CPSR_ge = 0;
     u32 Cpsr() const;
     void SetCpsr(u32 cpsr);
 
