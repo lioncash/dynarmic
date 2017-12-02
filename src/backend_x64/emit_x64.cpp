@@ -325,17 +325,16 @@ void EmitX64::EmitSetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
 }
 
 void EmitX64::EmitOrQFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    constexpr size_t flag_bit = 27;
-    constexpr u32 flag_mask = 1u << flag_bit;
+    using namespace Xbyak::util;
+
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1())
-            code->or_(MJitStateCpsr_other(), flag_mask);
+            code->mov(dword[r15 + offsetof(JitState, CPSR_q)], 1);
     } else {
-        Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg8 to_store = reg_alloc.UseGpr(args[0]).cvt8();
 
-        code->shl(to_store, flag_bit);
-        code->or_(MJitStateCpsr_other(), to_store);
+        code->or_(code->byte[r15 + offsetof(JitState, CPSR_q)], to_store);
     }
 }
 

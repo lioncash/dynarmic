@@ -47,6 +47,8 @@ namespace BackendX64 {
 u32 JitState::Cpsr() const {
     u32 cpsr = 0;
 
+    // Q flag
+    cpsr |= CPSR_q ? 1 << 27 : 0;
     // GE flags
     cpsr |= Common::Bit<31>(CPSR_ge) ? 1 << 19 : 0;
     cpsr |= Common::Bit<23>(CPSR_ge) ? 1 << 18 : 0;
@@ -62,6 +64,8 @@ u32 JitState::Cpsr() const {
 }
 
 void JitState::SetCpsr(u32 cpsr) {
+    // Q flag
+    CPSR_q = Common::Bit<27>(cpsr) ? 1 : 0;
     // GE flags
     CPSR_ge = 0;
     CPSR_ge |= Common::Bit<19>(cpsr) ? 0xFF000000 : 0;
@@ -73,7 +77,7 @@ void JitState::SetCpsr(u32 cpsr) {
     CPSR_et |= Common::Bit<9>(cpsr) ? 2 : 0;
     CPSR_et |= Common::Bit<5>(cpsr) ? 1 : 0;
     // Other flags
-    CPSR_other = cpsr & 0xFFF0FDDF;
+    CPSR_other = cpsr & 0xF7F0FDDF;
 }
 
 void JitState::ResetRSB() {
