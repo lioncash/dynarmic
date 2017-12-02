@@ -30,6 +30,7 @@ struct JitState {
 
     u32 CPSR_other = 0;
     u32 CPSR_ge = 0;
+    u32 CPSR_et = 0;
     u32 Cpsr() const;
     void SetCpsr(u32 cpsr);
 

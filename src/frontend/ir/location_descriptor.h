@@ -75,10 +75,10 @@ public:
     u64 UniqueHash() const {
         // This value MUST BE UNIQUE.
         // This calculation has to match up with EmitX64::EmitTerminalPopRSBHint
-        u64 pc_u64 = u64(arm_pc);
-        u64 fpscr_u64 = u64(fpscr.Value()) << 32;
-        u64 t_u64 = cpsr.T() ? (1ull << 35) : 0;
-        u64 e_u64 = cpsr.E() ? (1ull << 39) : 0;
+        u64 pc_u64 = u64(arm_pc) << 32;
+        u64 fpscr_u64 = u64(fpscr.Value());
+        u64 t_u64 = cpsr.T() ? 1 : 0;
+        u64 e_u64 = cpsr.E() ? 2 : 0;
         return pc_u64 | fpscr_u64 | t_u64 | e_u64;
     }
 

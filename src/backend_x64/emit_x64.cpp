@@ -362,11 +362,11 @@ void EmitX64::EmitSetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     }
 }
 
-void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+    using namespace Xbyak::util;
+
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto& arg = args[0];
-
-    const u32 T_bit = 1 << 5;
 
     // Pseudocode:
     // if (new_pc & 1) {
@@ -376,36 +376,41 @@ void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     //    new_pc &= 0xFFFFFFFC;
     //    cpsr.T = false;
     // }
+    // We rely on the fact we disallow EFlag from changing within a block.
 
     if (arg.IsImmediate()) {
         u32 new_pc = arg.GetImmediateU32();
-        if (Common::Bit<0>(new_pc)) {
-            new_pc &= 0xFFFFFFFE;
-            code->mov(MJitStateReg(Arm::Reg::PC), new_pc);
-            code->or_(MJitStateCpsr_other(), T_bit);
-        } else {
-            new_pc &= 0xFFFFFFFC;
-            code->mov(MJitStateReg(Arm::Reg::PC), new_pc);
-            code->and_(MJitStateCpsr_other(), ~T_bit);
-        }
+        u32 mask = Common::Bit<0>(new_pc) ? 0xFFFFFFFE : 0xFFFFFFFC;
+        u32 et = 0;
+        et |= block.Location().EFlag() ? 2 : 0;
+        et |= Common::Bit<0>(new_pc) ? 1 : 0;
+
+        code->mov(MJitStateReg(Arm::Reg::PC), new_pc & mask);
+        code->mov(dword[r15 + offsetof(JitState, CPSR_et)], et);
     } else {
-        using Xbyak::util::ptr;
+        if (block.Location().EFlag()) {
+            Xbyak::Reg32 new_pc = reg_alloc.UseScratchGpr(arg).cvt32();
+            Xbyak::Reg32 mask = reg_alloc.ScratchGpr().cvt32();
+            Xbyak::Reg32 et = reg_alloc.ScratchGpr().cvt32();
 
-        Xbyak::Reg32 new_pc = reg_alloc.UseScratchGpr(arg).cvt32();
-        Xbyak::Reg32 tmp1 = reg_alloc.ScratchGpr().cvt32();
-        Xbyak::Reg32 tmp2 = reg_alloc.ScratchGpr().cvt32();
+            code->mov(mask, new_pc);
+            code->and_(mask, 1);
+            code->lea(et, ptr[mask.cvt64() + 2]);
+            code->mov(dword[r15 + offsetof(JitState, CPSR_et)], et);
+            code->lea(mask, ptr[mask.cvt64() + mask.cvt64() * 1 - 4]); // mask = pc & 1 ? 0xFFFFFFFE : 0xFFFFFFFC
+            code->and_(new_pc, mask);
+            code->mov(MJitStateReg(Arm::Reg::PC), new_pc);
+        } else {
+            Xbyak::Reg32 new_pc = reg_alloc.UseScratchGpr(arg).cvt32();
+            Xbyak::Reg32 mask = reg_alloc.ScratchGpr().cvt32();
 
-        code->mov(tmp1, MJitStateCpsr_other());
-        code->mov(tmp2, tmp1);
-        code->and_(tmp2, u32(~T_bit));         // CPSR.T = 0
-        code->or_(tmp1, u32(T_bit));           // CPSR.T = 1
-        code->test(new_pc, u32(1));
-        code->cmove(tmp1, tmp2);               // CPSR.T = pc & 1
-        code->mov(MJitStateCpsr_other(), tmp1);
-        code->lea(tmp2, ptr[new_pc.cvt64() + new_pc.cvt64() * 1]);
-        code->or_(tmp2, u32(0xFFFFFFFC));      // tmp2 = pc & 1 ? 0xFFFFFFFE : 0xFFFFFFFC
-        code->and_(new_pc, tmp2);
-        code->mov(MJitStateReg(Arm::Reg::PC), new_pc);
+            code->mov(mask, new_pc);
+            code->and_(mask, 1);
+            code->mov(dword[r15 + offsetof(JitState, CPSR_et)], mask);
+            code->lea(mask, ptr[mask.cvt64() + mask.cvt64() * 1 - 4]); // mask = pc & 1 ? 0xFFFFFFFE : 0xFFFFFFFC
+            code->and_(new_pc, mask);
+            code->mov(MJitStateReg(Arm::Reg::PC), new_pc);
+        }
     }
 }
 
@@ -3371,22 +3376,18 @@ void EmitX64::EmitTerminal(IR::Term::ReturnToDispatch, IR::LocationDescriptor) {
     code->ReturnFromRunCode();
 }
 
+static u32 CalculateCpsr_et(const IR::LocationDescriptor& desc) {
+    u32 et = 0;
+    et |= desc.EFlag() ? 2 : 0;
+    et |= desc.TFlag() ? 1 : 0;
+    return et;
+}
+
 void EmitX64::EmitTerminal(IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location) {
     using namespace Xbyak::util;
 
-    if (terminal.next.TFlag() != initial_location.TFlag()) {
-        if (terminal.next.TFlag()) {
-            code->or_(MJitStateCpsr_other(), u32(1 << 5));
-        } else {
-            code->and_(MJitStateCpsr_other(), u32(~(1 << 5)));
-        }
-    }
-    if (terminal.next.EFlag() != initial_location.EFlag()) {
-        if (terminal.next.EFlag()) {
-            code->or_(MJitStateCpsr_other(), u32(1 << 9));
-        } else {
-            code->and_(MJitStateCpsr_other(), u32(~(1 << 9)));
-        }
+    if (CalculateCpsr_et(terminal.next) != CalculateCpsr_et(initial_location)) {
+        code->mov(dword[r15 + offsetof(JitState, CPSR_et)], CalculateCpsr_et(terminal.next));
     }
 
     code->cmp(qword[r15 + offsetof(JitState, cycles_remaining)], 0);
@@ -3412,19 +3413,8 @@ void EmitX64::EmitTerminal(IR::Term::LinkBlock terminal, IR::LocationDescriptor 
 void EmitX64::EmitTerminal(IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location) {
     using namespace Xbyak::util;
 
-    if (terminal.next.TFlag() != initial_location.TFlag()) {
-        if (terminal.next.TFlag()) {
-            code->or_(MJitStateCpsr_other(), u32(1 << 5));
-        } else {
-            code->and_(MJitStateCpsr_other(), u32(~(1 << 5)));
-        }
-    }
-    if (terminal.next.EFlag() != initial_location.EFlag()) {
-        if (terminal.next.EFlag()) {
-            code->or_(MJitStateCpsr_other(), u32(1 << 9));
-        } else {
-            code->and_(MJitStateCpsr_other(), u32(~(1 << 9)));
-        }
+    if (CalculateCpsr_et(terminal.next) != CalculateCpsr_et(initial_location)) {
+        code->mov(dword[r15 + offsetof(JitState, CPSR_et)], CalculateCpsr_et(terminal.next));
     }
 
     patch_information[terminal.next.UniqueHash()].jmp.emplace_back(code->getCurr());
@@ -3439,12 +3429,11 @@ void EmitX64::EmitTerminal(IR::Term::PopRSBHint, IR::LocationDescriptor) {
     using namespace Xbyak::util;
 
     // This calculation has to match up with IREmitter::PushRSB
-    code->mov(ebx, MJitStateCpsr_other());
+    // TODO: Optimization is available here based on known state of FPSCR_mode and CPSR_et.
     code->mov(ecx, MJitStateReg(Arm::Reg::PC));
-    code->and_(ebx, u32((1 << 5) | (1 << 9)));
-    code->shr(ebx, 2);
-    code->or_(ebx, dword[r15 + offsetof(JitState, FPSCR_mode)]);
-    code->shl(rbx, 32);
+    code->shl(rcx, 32);
+    code->mov(ebx, dword[r15 + offsetof(JitState, FPSCR_mode)]);
+    code->or_(ebx, dword[r15 + offsetof(JitState, CPSR_et)]);
     code->or_(rbx, rcx);
 
     code->mov(eax, dword[r15 + offsetof(JitState, rsb_ptr)]);

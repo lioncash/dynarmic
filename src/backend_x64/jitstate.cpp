@@ -52,6 +52,9 @@ u32 JitState::Cpsr() const {
     cpsr |= Common::Bit<23>(CPSR_ge) ? 1 << 18 : 0;
     cpsr |= Common::Bit<15>(CPSR_ge) ? 1 << 17 : 0;
     cpsr |= Common::Bit<7>(CPSR_ge) ? 1 << 16 : 0;
+    // E flag, T flag
+    cpsr |= Common::Bit<1>(CPSR_et) ? 1 << 9 : 0;
+    cpsr |= Common::Bit<0>(CPSR_et) ? 1 << 5 : 0;
     // Other flags
     cpsr |= CPSR_other;
 
@@ -65,8 +68,12 @@ void JitState::SetCpsr(u32 cpsr) {
     CPSR_ge |= Common::Bit<18>(cpsr) ? 0x00FF0000 : 0;
     CPSR_ge |= Common::Bit<17>(cpsr) ? 0x0000FF00 : 0;
     CPSR_ge |= Common::Bit<16>(cpsr) ? 0x000000FF : 0;
+    // E flag, T flag
+    CPSR_et = 0;
+    CPSR_et |= Common::Bit<9>(cpsr) ? 2 : 0;
+    CPSR_et |= Common::Bit<5>(cpsr) ? 1 : 0;
     // Other flags
-    CPSR_other = cpsr & 0xFFF0FFFF;
+    CPSR_other = cpsr & 0xFFF0FDDF;
 }
 
 void JitState::ResetRSB() {
