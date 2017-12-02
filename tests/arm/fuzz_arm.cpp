@@ -115,7 +115,7 @@ static void InterpreterFallback(u32 pc, Dynarmic::Jit* jit, void*) {
 
     jit->Regs() = interp_state.Reg;
     jit->ExtRegs() = interp_state.ExtReg;
-    jit->Cpsr() = interp_state.Cpsr;
+    jit->SetCpsr(interp_state.Cpsr);
     jit->SetFpscr(interp_state.VFP[VFP_FPSCR]);
 }
 
@@ -233,7 +233,7 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
         interp.ExtReg = initial_extregs;
         interp.VFP[VFP_FPSCR] = initial_fpscr;
         jit.Reset();
-        jit.Cpsr() = initial_cpsr;
+        jit.SetCpsr(initial_cpsr);
         jit.Regs() = initial_regs;
         jit.ExtRegs() = initial_extregs;
         jit.SetFpscr(initial_fpscr);
@@ -369,7 +369,7 @@ TEST_CASE( "arm: Optimization Failure (Randomized test case)", "[arm]" ) {
             0x6973b6bb, 0x267ea626, 0x69debf49, 0x8f976895, 0x4ecd2d0d, 0xcf89b8c7, 0xb6713f85, 0x15e2aa5,
             0xcd14336a, 0xafca0f3e, 0xace2efd9, 0x68fb82cd, 0x775447c0, 0xc9e1f8cd, 0xebe0e626, 0x0
     };
-    jit.Cpsr() = 0x000001d0; // User-mode
+    jit.SetCpsr(0x000001d0); // User-mode
 
     jit.Run(6);
 
@@ -407,7 +407,7 @@ TEST_CASE( "arm: shsax r11, sp, r9 (Edge-case)", "[arm]" ) {
             0x3a3b8b18, 0x96156555, 0xffef039f, 0xafb946f2, 0x2030a69a, 0xafe09b2a, 0x896823c8, 0xabde0ded,
             0x9825d6a6, 0x17498000, 0x999d2c95, 0x8b812a59, 0x209bdb58, 0x2f7fb1d4, 0x0f378107, 0x00000000
     };
-    jit.Cpsr() = 0x000001d0; // User-mode
+    jit.SetCpsr(0x000001d0); // User-mode
 
     jit.Run(2);
 
@@ -443,7 +443,7 @@ TEST_CASE( "arm: uasx (Edge-case)", "[arm]" ) {
     jit.Regs()[4] = 0x8ed38f4c;
     jit.Regs()[5] = 0x0000261d;
     jit.Regs()[15] = 0x00000000;
-    jit.Cpsr() = 0x000001d0; // User-mode
+    jit.SetCpsr(0x000001d0); // User-mode
 
     jit.Run(2);
 
@@ -472,7 +472,7 @@ static void RunVfpTests(u32 instr, std::vector<VfpTest> tests) {
 
     for (const auto& test : tests) {
         jit.Regs()[15] = 0;
-        jit.Cpsr() = 0x000001d0;
+        jit.SetCpsr(0x000001d0);
         jit.ExtRegs()[4] = test.a;
         jit.ExtRegs()[6] = test.b;
         jit.SetFpscr(test.initial_fpscr);
@@ -1106,7 +1106,7 @@ TEST_CASE( "SMUAD", "[JitX64]" ) {
             0, 0, 0, 0,
             0, 0, 0, 0,
     };
-    jit.Cpsr() = 0x000001d0; // User-mode
+    jit.SetCpsr(0x000001d0); // User-mode
 
     jit.Run(6);
 
@@ -1225,7 +1225,7 @@ TEST_CASE("arm: Test InvalidateCacheRange", "[arm]") {
     code_mem[3] = 0xeafffffe; // b +#0 (infinite loop)
 
     jit.Regs() = {};
-    jit.Cpsr() = 0x000001d0; // User-mode
+    jit.SetCpsr(0x000001d0); // User-mode
 
     jit.Run(4);
 

@@ -14,6 +14,44 @@
 namespace Dynarmic {
 namespace BackendX64 {
 
+/**
+ * CPSR Bits
+ * =========
+ *
+ * ARM CPSR flags
+ * --------------
+ * N    bit 31       Negative flag
+ * Z    bit 30       Zero flag
+ * C    bit 29       Carry flag
+ * V    bit 28       oVerflow flag
+ * Q    bit 27       Saturation flag
+ * J    bit 24       Jazelle instruction set flag
+ * GE   bits 16-19   Greater than or Equal flags
+ * E    bit 9        Data Endianness flag
+ * A    bit 8        Disable imprecise Aborts
+ * I    bit 7        Disable IRQ interrupts
+ * F    bit 6        Disable FIQ interrupts
+ * T    bit 5        Thumb instruction set flag
+ * M    bits 0-4     Processor Mode bits
+ *
+ * x64 LAHF+SETO flags
+ * -------------------
+ * SF   bit 15       Sign flag
+ * ZF   bit 14       Zero flag
+ * AF   bit 12       Auxiliary flag
+ * PF   bit 10       Parity flag
+ * CF   bit 8        Carry flag
+ * OF   bit 0        Overflow flag
+ */
+
+u32 JitState::Cpsr() const {
+    return CPSR;
+}
+
+void JitState::SetCpsr(u32 cpsr) {
+    CPSR = cpsr;
+}
+
 void JitState::ResetRSB() {
     rsb_location_descriptors.fill(0xFFFFFFFFFFFFFFFFull);
     rsb_codeptrs.fill(0);

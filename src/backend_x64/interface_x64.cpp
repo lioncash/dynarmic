@@ -127,7 +127,7 @@ private:
         JitState& jit_state = this_.jit_state;
 
         u32 pc = jit_state.Reg[15];
-        Arm::PSR cpsr{jit_state.Cpsr};
+        Arm::PSR cpsr{jit_state.Cpsr()};
         Arm::FPSCR fpscr{jit_state.FPSCR_mode};
         IR::LocationDescriptor descriptor{pc, cpsr, fpscr};
 
@@ -205,19 +205,19 @@ const std::array<u32, 64>& Jit::ExtRegs() const {
     return impl->jit_state.ExtReg;
 }
 
-u32& Jit::Cpsr() {
-    return impl->jit_state.Cpsr;
+u32 Jit::Cpsr() const {
+    return impl->jit_state.Cpsr();
 }
 
-u32 Jit::Cpsr() const {
-    return impl->jit_state.Cpsr;
+void Jit::SetCpsr(u32 value) {
+    return impl->jit_state.SetCpsr(value);
 }
 
 u32 Jit::Fpscr() const {
     return impl->jit_state.Fpscr();
 }
 
-void Jit::SetFpscr(u32 value) const {
+void Jit::SetFpscr(u32 value) {
     return impl->jit_state.SetFpscr(value);
 }
 

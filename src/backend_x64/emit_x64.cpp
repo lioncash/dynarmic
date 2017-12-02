@@ -62,7 +62,7 @@ static Xbyak::Address MJitStateExtReg(Arm::ExtReg reg) {
 
 static Xbyak::Address MJitStateCpsr() {
     using namespace Xbyak::util;
-    return dword[r15 + offsetof(JitState, Cpsr)];
+    return dword[r15 + offsetof(JitState, CPSR)];
 }
 
 static void EraseInstruction(IR::Block& block, IR::Inst* inst) {
@@ -196,16 +196,25 @@ void EmitX64::EmitSetExtendedRegister64(RegAlloc& reg_alloc, IR::Block&, IR::Ins
     code->movsd(MJitStateExtReg(reg), source);
 }
 
+static u32 GetCpsrImpl(JitState* jit_state) {
+    return jit_state->Cpsr();
+}
+
 void EmitX64::EmitGetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
-    code->mov(result, MJitStateCpsr());
-    reg_alloc.DefineValue(inst, result);
+    reg_alloc.HostCall(inst);
+    code->mov(code->ABI_PARAM1, code->r15);
+    code->CallFunction(&GetCpsrImpl);
+}
+
+static void SetCpsrImpl(u32 value, JitState* jit_state) {
+    jit_state->SetCpsr(value);
 }
 
 void EmitX64::EmitSetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 arg = reg_alloc.UseGpr(args[0]).cvt32();
-    code->mov(MJitStateCpsr(), arg);
+    reg_alloc.HostCall(nullptr, args[0]);
+    code->mov(code->ABI_PARAM2, code->r15);
+    code->CallFunction(&SetCpsrImpl);
 }
 
 void EmitX64::EmitGetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
@@ -404,9 +413,9 @@ void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     } else {
         using Xbyak::util::ptr;
 
-        Xbyak::Reg64 new_pc = reg_alloc.UseScratchGpr(arg);
-        Xbyak::Reg64 tmp1 = reg_alloc.ScratchGpr();
-        Xbyak::Reg64 tmp2 = reg_alloc.ScratchGpr();
+        Xbyak::Reg32 new_pc = reg_alloc.UseScratchGpr(arg).cvt32();
+        Xbyak::Reg32 tmp1 = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 tmp2 = reg_alloc.ScratchGpr().cvt32();
 
         code->mov(tmp1, MJitStateCpsr());
         code->mov(tmp2, tmp1);
@@ -415,7 +424,7 @@ void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
         code->test(new_pc, u32(1));
         code->cmove(tmp1, tmp2);               // CPSR.T = pc & 1
         code->mov(MJitStateCpsr(), tmp1);
-        code->lea(tmp2, ptr[new_pc + new_pc * 1]);
+        code->lea(tmp2, ptr[new_pc.cvt64() + new_pc.cvt64() * 1]);
         code->or_(tmp2, u32(0xFFFFFFFC));      // tmp2 = pc & 1 ? 0xFFFFFFFE : 0xFFFFFFFC
         code->and_(new_pc, tmp2);
         code->mov(MJitStateReg(Arm::Reg::PC), new_pc);

@@ -25,9 +25,12 @@ constexpr size_t SpillCount = 64;
 struct JitState {
     JitState() { ResetRSB(); }
 
-    u32 Cpsr = 0;
     std::array<u32, 16> Reg{}; // Current register file.
     // TODO: Mode-specific register sets unimplemented.
+
+    u32 CPSR = 0;
+    u32 Cpsr() const;
+    void SetCpsr(u32 cpsr);
 
     alignas(u64) std::array<u32, 64> ExtReg{}; // Extension registers.
 

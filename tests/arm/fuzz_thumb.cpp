@@ -107,7 +107,7 @@ static void InterpreterFallback(u32 pc, Dynarmic::Jit* jit, void*) {
     interp_state.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
 
     jit->Regs() = interp_state.Reg;
-    jit->Cpsr() = interp_state.Cpsr;
+    jit->SetCpsr(interp_state.Cpsr);
 }
 
 static void Fail() {
@@ -204,7 +204,7 @@ void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_e
 
         interp.Cpsr = 0x000001F0;
         interp.Reg = initial_regs;
-        jit.Cpsr() = 0x000001F0;
+        jit.SetCpsr(0x000001F0);
         jit.Regs() = initial_regs;
 
         std::generate_n(code_mem.begin(), instruction_count, instruction_generator);
