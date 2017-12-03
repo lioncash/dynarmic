@@ -141,6 +141,12 @@ private:
         if (block)
             return *block;
 
+        constexpr size_t MINIMUM_REMAINING_CODESIZE = 1 * 1024 * 1024;
+        if (block_of_code.SpaceRemaining() < MINIMUM_REMAINING_CODESIZE) {
+            invalidate_entire_cache = true;
+            PerformCacheInvalidation();
+        }
+
         IR::Block ir_block = Arm::Translate(descriptor, callbacks.memory.ReadCode);
         Optimization::GetSetElimination(ir_block);
         Optimization::DeadCodeElimination(ir_block);

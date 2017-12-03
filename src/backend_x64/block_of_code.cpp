@@ -57,6 +57,25 @@ void BlockOfCode::ClearCache() {
     SetCodePtr(near_code_begin);
 }
 
+size_t BlockOfCode::SpaceRemaining() const {
+    // This function provides an underestimate of near-code-size but that's okay.
+    // (Why? The maximum size of near code should be measured from near_code_begin, not top_.)
+    // These are offsets from Xbyak::CodeArray::top_.
+    std::size_t far_code_offset, near_code_offset;
+    if (in_far_code) {
+        near_code_offset = static_cast<const u8*>(near_code_ptr) - getCode();
+        far_code_offset = getCurr() - getCode();
+    } else {
+        near_code_offset = getCurr() - getCode();
+        far_code_offset = static_cast<const u8*>(far_code_ptr) - getCode();
+    }
+    if (far_code_offset > TOTAL_CODE_SIZE)
+        return 0;
+    if (near_code_offset > FAR_CODE_OFFSET)
+        return 0;
+    return std::min(TOTAL_CODE_SIZE - far_code_offset, FAR_CODE_OFFSET - near_code_offset);
+}
+
 size_t BlockOfCode::RunCode(JitState* jit_state, size_t cycles_to_run) const {
     constexpr size_t max_cycles_to_run = static_cast<size_t>(std::numeric_limits<decltype(jit_state->cycles_remaining)>::max());
     ASSERT(cycles_to_run <= max_cycles_to_run);

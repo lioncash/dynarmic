@@ -28,6 +28,8 @@ public:
 
     /// Clears this block of code and resets code pointer to beginning.
     void ClearCache();
+    /// Calculates how much space is remaining to use. This is the minimum of near code and far code.
+    size_t SpaceRemaining() const;
 
     /// Runs emulated code for approximately `cycles_to_run` cycles.
     size_t RunCode(JitState* jit_state, size_t cycles_to_run) const;
