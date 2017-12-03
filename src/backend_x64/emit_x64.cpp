@@ -421,11 +421,21 @@ void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
 }
 
 void EmitX64::EmitCallSupervisor(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.HostCall(nullptr, args[0]);
+    using namespace Xbyak::util;
+
+    reg_alloc.HostCall(nullptr);
 
     code->SwitchMxcsrOnExit();
+    code->mov(code->ABI_PARAM1, qword[r15 + offsetof(JitState, cycles_to_run)]);
+    code->sub(code->ABI_PARAM1, qword[r15 + offsetof(JitState, cycles_remaining)]);
+    code->CallFunction(cb.AddTicks);
+    reg_alloc.EndOfAllocScope();
+    auto args = reg_alloc.GetArgumentInfo(inst);
+    reg_alloc.HostCall(nullptr, args[0]);
     code->CallFunction(cb.CallSVC);
+    code->CallFunction(cb.GetTicksRemaining);
+    code->mov(qword[r15 + offsetof(JitState, cycles_to_run)], code->ABI_RETURN);
+    code->mov(qword[r15 + offsetof(JitState, cycles_remaining)], code->ABI_RETURN);
     code->SwitchMxcsrOnEntry();
 }
 

@@ -76,13 +76,13 @@ size_t BlockOfCode::SpaceRemaining() const {
     return std::min(TOTAL_CODE_SIZE - far_code_offset, FAR_CODE_OFFSET - near_code_offset);
 }
 
-size_t BlockOfCode::RunCode(JitState* jit_state, size_t cycles_to_run) const {
+void BlockOfCode::RunCode(JitState* jit_state, size_t cycles_to_run) const {
     constexpr size_t max_cycles_to_run = static_cast<size_t>(std::numeric_limits<decltype(jit_state->cycles_remaining)>::max());
     ASSERT(cycles_to_run <= max_cycles_to_run);
 
+    jit_state->cycles_to_run = cycles_to_run;
     jit_state->cycles_remaining = cycles_to_run;
     run_code(jit_state);
-    return cycles_to_run - jit_state->cycles_remaining; // Return number of cycles actually run.
 }
 
 void BlockOfCode::ReturnFromRunCode(bool MXCSR_switch) {
@@ -136,6 +136,10 @@ void BlockOfCode::GenRunCode() {
             cmp(qword[r15 + offsetof(JitState, cycles_remaining)], 0);
             jg(loop);
         }
+
+        mov(ABI_PARAM1, qword[r15 + offsetof(JitState, cycles_to_run)]);
+        sub(ABI_PARAM1, qword[r15 + offsetof(JitState, cycles_remaining)]);
+        CallFunction(cb.AddTicks);
 
         ABI_PopCalleeSaveRegistersAndAdjustStack(this);
         ret();

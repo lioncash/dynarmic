@@ -114,6 +114,8 @@ static void Fail() {
     FAIL();
 }
 
+static void AddTicks(u64) {}
+
 static Dynarmic::UserCallbacks GetUserCallbacks() {
     Dynarmic::UserCallbacks user_callbacks{};
     user_callbacks.InterpreterFallback = &InterpreterFallback;
@@ -128,6 +130,7 @@ static Dynarmic::UserCallbacks GetUserCallbacks() {
     user_callbacks.memory.Write16 = &MemoryWrite16;
     user_callbacks.memory.Write32 = &MemoryWrite32;
     user_callbacks.memory.Write64 = &MemoryWrite64;
+    user_callbacks.AddTicks = &AddTicks;
     return user_callbacks;
 }
 

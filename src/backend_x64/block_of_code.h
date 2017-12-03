@@ -32,7 +32,7 @@ public:
     size_t SpaceRemaining() const;
 
     /// Runs emulated code for approximately `cycles_to_run` cycles.
-    size_t RunCode(JitState* jit_state, size_t cycles_to_run) const;
+    void RunCode(JitState* jit_state, size_t cycles_to_run) const;
     /// Code emitter: Returns to dispatcher
     void ReturnFromRunCode(bool MXCSR_switch = true);
     /// Code emitter: Returns to dispatcher, forces return to host
