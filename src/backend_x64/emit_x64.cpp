@@ -2779,19 +2779,21 @@ void EmitX64::EmitSetExclusive(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) 
 template <typename FunctionPointer>
 static void ReadMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, UserCallbacks& cb, size_t bit_size, FunctionPointer fn) {
     auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.HostCall(inst, args[0]);
 
     if (!cb.page_table) {
+        reg_alloc.HostCall(inst, args[0]);
         code->CallFunction(fn);
         return;
     }
 
     using namespace Xbyak::util;
 
-    Xbyak::Reg64 result = code->ABI_RETURN;
+    reg_alloc.UseScratch(args[0], ABI_PARAM1);
+
+    Xbyak::Reg64 result = reg_alloc.ScratchGpr({ABI_RETURN});
     Xbyak::Reg32 vaddr = code->ABI_PARAM1.cvt32();
-    Xbyak::Reg64 page_index = code->ABI_PARAM3;
-    Xbyak::Reg64 page_offset = code->ABI_PARAM4;
+    Xbyak::Reg64 page_index = reg_alloc.ScratchGpr();
+    Xbyak::Reg64 page_offset = reg_alloc.ScratchGpr();
 
     Xbyak::Label abort, end;
 
@@ -2824,24 +2826,30 @@ static void ReadMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, U
     code->L(abort);
     code->call(code->GetMemoryReadCallback(bit_size));
     code->L(end);
+
+    reg_alloc.DefineValue(inst, result);
 }
 
 template<typename FunctionPointer>
 static void WriteMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, UserCallbacks& cb, size_t bit_size, FunctionPointer fn) {
     auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.HostCall(nullptr, args[0], args[1]);
 
     if (!cb.page_table) {
+        reg_alloc.HostCall(nullptr, args[0], args[1]);
         code->CallFunction(fn);
         return;
     }
 
     using namespace Xbyak::util;
 
+    reg_alloc.ScratchGpr({ABI_RETURN});
+    reg_alloc.UseScratch(args[0], ABI_PARAM1);
+    reg_alloc.UseScratch(args[1], ABI_PARAM2);
+
     Xbyak::Reg32 vaddr = code->ABI_PARAM1.cvt32();
     Xbyak::Reg64 value = code->ABI_PARAM2;
-    Xbyak::Reg64 page_index = code->ABI_PARAM3;
-    Xbyak::Reg64 page_offset = code->ABI_PARAM4;
+    Xbyak::Reg64 page_index = reg_alloc.ScratchGpr();
+    Xbyak::Reg64 page_offset = reg_alloc.ScratchGpr();
 
     Xbyak::Label abort, end;
 
