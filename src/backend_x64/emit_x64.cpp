@@ -3371,7 +3371,7 @@ void EmitX64::EmitTerminal(IR::Term::Interpret terminal, IR::LocationDescriptor 
     code->mov(MJitStateReg(Arm::Reg::PC), code->ABI_PARAM1.cvt32());
     code->SwitchMxcsrOnExit();
     code->CallFunction(cb.InterpreterFallback);
-    code->ReturnFromRunCode(false); // TODO: Check cycles
+    code->ReturnFromRunCode(true); // TODO: Check cycles
 }
 
 void EmitX64::EmitTerminal(IR::Term::ReturnToDispatch, IR::LocationDescriptor) {

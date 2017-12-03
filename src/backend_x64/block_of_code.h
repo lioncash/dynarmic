@@ -34,9 +34,9 @@ public:
     /// Runs emulated code for approximately `cycles_to_run` cycles.
     void RunCode(JitState* jit_state, size_t cycles_to_run) const;
     /// Code emitter: Returns to dispatcher
-    void ReturnFromRunCode(bool MXCSR_switch = true);
+    void ReturnFromRunCode(bool mxcsr_already_exited = false);
     /// Code emitter: Returns to dispatcher, forces return to host
-    void ForceReturnFromRunCode(bool MXCSR_switch = true);
+    void ForceReturnFromRunCode(bool mxcsr_already_exited = false);
     /// Code emitter: Makes guest MXCSR the current MXCSR
     void SwitchMxcsrOnEntry();
     /// Code emitter: Makes saved host MXCSR the current MXCSR
@@ -145,7 +145,7 @@ private:
 
     using RunCodeFuncType = void(*)(JitState*);
     RunCodeFuncType run_code = nullptr;
-    static constexpr size_t NO_SWITCH_MXCSR = 1 << 0;
+    static constexpr size_t MXCSR_ALREADY_EXITED = 1 << 0;
     static constexpr size_t FORCE_RETURN = 1 << 1;
     std::array<const void*, 4> return_from_run_code;
     void GenRunCode();

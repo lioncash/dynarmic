@@ -85,22 +85,22 @@ void BlockOfCode::RunCode(JitState* jit_state, size_t cycles_to_run) const {
     run_code(jit_state);
 }
 
-void BlockOfCode::ReturnFromRunCode(bool MXCSR_switch) {
+void BlockOfCode::ReturnFromRunCode(bool mxcsr_already_exited) {
     size_t index = 0;
-    if (!MXCSR_switch)
-        index |= NO_SWITCH_MXCSR;
+    if (mxcsr_already_exited)
+        index |= MXCSR_ALREADY_EXITED;
     jmp(return_from_run_code[index]);
 }
 
-void BlockOfCode::ForceReturnFromRunCode(bool MXCSR_switch) {
+void BlockOfCode::ForceReturnFromRunCode(bool mxcsr_already_exited) {
     size_t index = FORCE_RETURN;
-    if (!MXCSR_switch)
-        index |= NO_SWITCH_MXCSR;
+    if (mxcsr_already_exited)
+        index |= MXCSR_ALREADY_EXITED;
     jmp(return_from_run_code[index]);
 }
 
 void BlockOfCode::GenRunCode() {
-    Xbyak::Label loop;
+    Xbyak::Label loop, enter_mxcsr_then_loop;
 
     align();
     run_code = getCurr<RunCodeFuncType>();
@@ -119,22 +119,23 @@ void BlockOfCode::GenRunCode() {
 
     mov(r15, ABI_PARAM1);
 
+    L(enter_mxcsr_then_loop);
+    SwitchMxcsrOnEntry();
     L(loop);
     mov(ABI_PARAM1, u64(lookup_block_arg));
     CallFunction(lookup_block);
 
-    SwitchMxcsrOnEntry();
     jmp(ABI_RETURN);
 
     // Return from run code variants
-    const auto emit_return_from_run_code = [this, &loop](bool no_mxcsr_switch, bool force_return){
-        if (!no_mxcsr_switch) {
-            SwitchMxcsrOnExit();
-        }
-
+    const auto emit_return_from_run_code = [this, &loop, &enter_mxcsr_then_loop](bool mxcsr_already_exited, bool force_return){
         if (!force_return) {
             cmp(qword[r15 + offsetof(JitState, cycles_remaining)], 0);
-            jg(loop);
+            jg(mxcsr_already_exited ? enter_mxcsr_then_loop : loop);
+        }
+
+        if (!mxcsr_already_exited) {
+            SwitchMxcsrOnExit();
         }
 
         mov(ABI_PARAM1, qword[r15 + offsetof(JitState, cycles_to_run)]);
@@ -150,7 +151,7 @@ void BlockOfCode::GenRunCode() {
     emit_return_from_run_code(false, false);
 
     align();
-    return_from_run_code[NO_SWITCH_MXCSR] = getCurr<const void*>();
+    return_from_run_code[MXCSR_ALREADY_EXITED] = getCurr<const void*>();
     emit_return_from_run_code(true, false);
 
     align();
@@ -158,7 +159,7 @@ void BlockOfCode::GenRunCode() {
     emit_return_from_run_code(false, true);
 
     align();
-    return_from_run_code[NO_SWITCH_MXCSR | FORCE_RETURN] = getCurr<const void*>();
+    return_from_run_code[MXCSR_ALREADY_EXITED | FORCE_RETURN] = getCurr<const void*>();
     emit_return_from_run_code(true, true);
 }
 
