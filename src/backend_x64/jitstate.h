@@ -36,6 +36,7 @@ struct JitState {
     // For internal use (See: BlockOfCode::RunCode)
     u32 guest_MXCSR = 0x00001f80;
     u32 save_host_MXCSR = 0;
+    s64 cycles_to_run = 0;
     s64 cycles_remaining = 0;
     bool halt_requested = false;
 

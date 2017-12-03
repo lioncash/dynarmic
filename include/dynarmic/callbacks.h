@@ -51,6 +51,10 @@ struct UserCallbacks {
     // This callback is called whenever a SVC instruction is executed.
     void (*CallSVC)(std::uint32_t swi);
 
+    // Timing-related callbacks
+    void (*AddTicks)(std::uint64_t ticks);
+    std::uint64_t (*GetTicksRemaining)();
+
     // Page Table
     // The page table is used for faster memory access. If an entry in the table is nullptr,
     // the JIT will fallback to calling the MemoryRead*/MemoryWrite* callbacks.

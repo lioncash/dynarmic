@@ -28,9 +28,8 @@ public:
      * Runs the emulated CPU for about cycle_count cycles.
      * Cannot be recursively called.
      * @param cycle_count Estimated number of cycles to run the CPU for.
-     * @returns Actual cycle count.
      */
-    std::size_t Run(std::size_t cycle_count);
+    void Run(std::size_t cycle_count);
 
     /**
      * Clears the code cache of all compiled code.

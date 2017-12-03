@@ -48,8 +48,8 @@ struct Jit::Impl {
     std::deque<Common::AddressRange> invalid_cache_ranges;
     bool invalidate_entire_cache = false;
 
-    size_t Execute(size_t cycle_count) {
-        return block_of_code.RunCode(&jit_state, cycle_count);
+    void Execute(size_t cycle_count) {
+        block_of_code.RunCode(&jit_state, cycle_count);
     }
 
     std::string Disassemble(const IR::LocationDescriptor& descriptor) {
@@ -155,18 +155,16 @@ Jit::Jit(UserCallbacks callbacks) : impl(std::make_unique<Impl>(this, callbacks)
 
 Jit::~Jit() {}
 
-size_t Jit::Run(size_t cycle_count) {
+void Jit::Run(size_t cycle_count) {
     ASSERT(!is_executing);
     is_executing = true;
     SCOPE_EXIT({ this->is_executing = false; });
 
     impl->jit_state.halt_requested = false;
 
-    size_t cycles_executed = impl->Execute(cycle_count);
+    impl->Execute(cycle_count);
 
     impl->PerformCacheInvalidation();
-
-    return cycles_executed;
 }
 
 void Jit::ClearCache() {

@@ -46,11 +46,14 @@ static void InterpreterFallback(u32 pc, Dynarmic::Jit* jit, void*) {
     jit->Cpsr() = interp_state.Cpsr;
 }
 
+static void AddTicks(u64) {}
+
 static Dynarmic::UserCallbacks GetUserCallbacks() {
     Dynarmic::UserCallbacks user_callbacks{};
     user_callbacks.memory.Read32 = &MemoryRead32;
     user_callbacks.memory.ReadCode = &MemoryReadCode;
     user_callbacks.InterpreterFallback = &InterpreterFallback;
+    user_callbacks.AddTicks = &AddTicks;
     return user_callbacks;
 }
 
