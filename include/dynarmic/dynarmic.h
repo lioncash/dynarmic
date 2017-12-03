@@ -15,6 +15,8 @@
 
 namespace Dynarmic {
 
+struct Context;
+
 namespace IR {
 class LocationDescriptor;
 }
@@ -69,6 +71,10 @@ public:
     /// View and modify FPSCR.
     std::uint32_t Fpscr() const;
     void SetFpscr(std::uint32_t value);
+
+    Context SaveContext() const;
+    void SaveContext(Context&) const;
+    void LoadContext(const Context&);
 
     /**
      * Returns true if Jit::Run was called but hasn't returned yet.
