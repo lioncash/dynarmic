@@ -578,7 +578,7 @@ void EmitX64::EmitLeastSignificantByte(RegAlloc& reg_alloc, IR::Block&, IR::Inst
 
 void EmitX64::EmitMostSignificantBit(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
     // TODO: Flag optimization
     code->shr(result, 31);
     reg_alloc.DefineValue(inst, result);
@@ -586,7 +586,7 @@ void EmitX64::EmitMostSignificantBit(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
 
 void EmitX64::EmitIsZero(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
     // TODO: Flag optimization
     code->test(result, result);
     code->sete(result.cvt8());
