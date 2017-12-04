@@ -51,12 +51,6 @@ public:
         const u64 address  = reinterpret_cast<u64>(fn);
         const u64 distance = address - (getCurr<u64>() + 5);
 
-        // As we do not know if user-code is AVX or SSE, an AVX-SSE transition may occur.
-        // We avoid the transition penalty by calling vzeroupper.
-        if (DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-            vzeroupper();
-        }
-
         if (distance >= 0x0000000080000000ULL && distance < 0xFFFFFFFF80000000ULL) {
             // Far call
             mov(rax, address);

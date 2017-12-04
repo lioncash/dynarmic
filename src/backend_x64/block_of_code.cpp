@@ -105,12 +105,6 @@ void BlockOfCode::GenRunCode() {
     align();
     run_code = getCurr<RunCodeFuncType>();
 
-    // As we currently do not emit AVX instructions, AVX-SSE transition may occur.
-    // We avoid the transition penalty by calling vzeroupper.
-    if (DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-        vzeroupper();
-    }
-
     // This serves two purposes:
     // 1. It saves all the registers we as a callee need to save.
     // 2. It aligns the stack so that the code the JIT emits can assume
