@@ -449,9 +449,8 @@ void EmitX64::EmitGetFpscr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.HostCall(inst);
     code->mov(code->ABI_PARAM1, code->r15);
 
-    code->SwitchMxcsrOnExit();
+    code->stmxcsr(code->dword[code->r15 + offsetof(JitState, guest_MXCSR)]);
     code->CallFunction(&GetFpscrImpl);
-    code->SwitchMxcsrOnEntry();
 }
 
 static void SetFpscrImpl(u32 value, JitState* jit_state) {
@@ -463,9 +462,8 @@ void EmitX64::EmitSetFpscr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.HostCall(nullptr, args[0]);
     code->mov(code->ABI_PARAM2, code->r15);
 
-    code->SwitchMxcsrOnExit();
     code->CallFunction(&SetFpscrImpl);
-    code->SwitchMxcsrOnEntry();
+    code->ldmxcsr(code->dword[code->r15 + offsetof(JitState, guest_MXCSR)]);
 }
 
 void EmitX64::EmitGetFpscrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
