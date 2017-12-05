@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <boost/icl/interval_map.hpp>
+#include <boost/icl/interval_set.hpp>
 #include <boost/optional.hpp>
 
 #include <xbyak_util.h>
@@ -57,10 +59,10 @@ public:
     void ClearCache();
 
     /**
-     * Invalidate the cache at a range of addresses.
-     * @param range The range of addresses to invalidate the cache at.
+     * Invalidate the cache at a set of ranges of addresses.
+     * @param ranges The set of ranges of addresses to invalidate the cache at.
      */
-    void InvalidateCacheRange(const Common::AddressRange& range);
+    void InvalidateCacheRanges(const boost::icl::interval_set<u32>& ranges);
 
 private:
     // Microinstruction emitters
@@ -97,6 +99,7 @@ private:
     // State
     BlockOfCode* code;
     UserCallbacks cb;
+    boost::icl::interval_map<u32, std::set<IR::LocationDescriptor>> block_ranges;
     Jit* jit_interface;
     std::unordered_map<u64, BlockDescriptor> block_descriptors;
     std::unordered_map<u64, PatchInformation> patch_information;

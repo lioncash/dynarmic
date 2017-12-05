@@ -117,6 +117,8 @@ EmitX64::BlockDescriptor EmitX64::Emit(IR::Block& block) {
     EmitX64::BlockDescriptor block_desc{entrypoint, size, block.Location(), block.EndLocation().PC()};
     block_descriptors.emplace(descriptor.UniqueHash(), block_desc);
 
+    block_ranges.add(std::make_pair(boost::icl::discrete_interval<u32>::closed(block.Location().PC(), block.EndLocation().PC() - 1), std::set<IR::LocationDescriptor>{descriptor}));
+
     return block_desc;
 }
 
@@ -3541,21 +3543,19 @@ void EmitX64::ClearCache() {
     patch_information.clear();
 }
 
-void EmitX64::InvalidateCacheRange(const Common::AddressRange& range) {
+void EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u32>& ranges) {
     // Remove cached block descriptors and patch information overlapping with the given range.
-    for (auto it = block_descriptors.begin(); it != block_descriptors.end();) {
-        IR::LocationDescriptor descriptor = it->second.start_location;
-        u32 start = descriptor.PC();
-        u32 end = it->second.end_location_pc;
-        if (range.Overlaps(start, end)) {
-            it = block_descriptors.erase(it);
-
-            if (patch_information.count(descriptor.UniqueHash())) {
-                Unpatch(descriptor);
+    for (auto invalidate_interval : ranges) {
+        auto pair = block_ranges.equal_range(invalidate_interval);
+        for (auto it = pair.first; it != pair.second; ++it) {
+            for (const auto& descriptor : it->second) {
+                if (patch_information.count(descriptor.UniqueHash())) {
+                    Unpatch(descriptor);
+                }
+                block_descriptors.erase(descriptor.UniqueHash());
             }
-        } else {
-            ++it;
         }
+        block_ranges.erase(pair.first, pair.second);
     }
 }
 

@@ -101,6 +101,12 @@ std::ostream& operator<<(std::ostream& o, const LocationDescriptor& descriptor);
 
 namespace std {
 template <>
+struct less<Dynarmic::IR::LocationDescriptor> {
+    bool operator()(const Dynarmic::IR::LocationDescriptor& x, const Dynarmic::IR::LocationDescriptor& y) const {
+        return x.UniqueHash() < y.UniqueHash();
+    }
+};
+template <>
 struct hash<Dynarmic::IR::LocationDescriptor> {
     size_t operator()(const Dynarmic::IR::LocationDescriptor& x) const {
         return std::hash<u64>()(x.UniqueHash());

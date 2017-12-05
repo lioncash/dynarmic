@@ -4,9 +4,9 @@
  * General Public License version 2 or any later version.
  */
 
-#include <deque>
 #include <memory>
 
+#include <boost/icl/interval_set.hpp>
 #include <fmt/format.h>
 
 #ifdef DYNARMIC_USE_LLVM
@@ -45,7 +45,7 @@ struct Jit::Impl {
     const UserCallbacks callbacks;
 
     // Requests made during execution to invalidate the cache are queued up here.
-    std::deque<Common::AddressRange> invalid_cache_ranges;
+    boost::icl::interval_set<u32> invalid_cache_ranges;
     bool invalidate_entire_cache = false;
 
     void Execute(size_t cycle_count) {
@@ -106,10 +106,8 @@ struct Jit::Impl {
         }
 
         jit_state.ResetRSB();
-        while (!invalid_cache_ranges.empty()) {
-            emitter.InvalidateCacheRange(invalid_cache_ranges.front());
-            invalid_cache_ranges.pop_front();
-        }
+        emitter.InvalidateCacheRanges(invalid_cache_ranges);
+        invalid_cache_ranges.clear();
     }
 
     void RequestCacheInvalidation() {
@@ -179,7 +177,7 @@ void Jit::ClearCache() {
 }
 
 void Jit::InvalidateCacheRange(std::uint32_t start_address, std::size_t length) {
-    impl->invalid_cache_ranges.emplace_back(Common::AddressRange{start_address, length});
+    impl->invalid_cache_ranges.add(boost::icl::discrete_interval<u32>::closed(start_address, start_address + length - 1));
     impl->RequestCacheInvalidation();
 }
 
