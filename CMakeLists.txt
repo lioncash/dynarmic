@@ -104,15 +104,14 @@ endif()
 message(STATUS "Target architecture: ${ARCHITECTURE}")
 
 # Include Boost
-if(DYNARMIC_USE_SYSTEM_BOOST)
-    find_package(Boost 1.57.0 REQUIRED)
-else()
-    if(NOT Boost_INCLUDE_DIRS)
-        message(FATAL_ERROR "Please provide a path to a boost installation using Boost_INCLUDE_DIRS")
+if (NOT TARGET boost)
+    if (NOT Boost_INCLUDE_DIRS)
+        find_package(Boost 1.57.0 REQUIRED)
     endif()
+    add_library(boost INTERFACE IMPORTED)
+    set_property(TARGET boost PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${Boost_INCLUDE_DIRS})
+    set_property(TARGET boost PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES ${Boost_INCLUDE_DIRS})
 endif()
-add_library(boost INTERFACE IMPORTED)
-set_property(TARGET boost PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${Boost_INCLUDE_DIRS})
 
 # Enable unit-testing.
 enable_testing(true)

@@ -112,8 +112,9 @@ target_include_directories(dynarmic
                            PRIVATE .)
 target_compile_options(dynarmic PRIVATE ${DYNARMIC_CXX_FLAGS})
 target_link_libraries(dynarmic
-    PRIVATE
+    PUBLIC
         boost
+    PRIVATE
         fmt::fmt
         xbyak
         $<$<BOOL:DYNARMIC_USE_LLVM>:${llvm_libs}>
