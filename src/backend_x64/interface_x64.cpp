@@ -177,7 +177,7 @@ void Jit::ClearCache() {
 }
 
 void Jit::InvalidateCacheRange(std::uint32_t start_address, std::size_t length) {
-    impl->invalid_cache_ranges.add(boost::icl::discrete_interval<u32>::closed(start_address, start_address + length - 1));
+    impl->invalid_cache_ranges.add(boost::icl::discrete_interval<u32>::closed(start_address, static_cast<u32>(start_address + length - 1)));
     impl->RequestCacheInvalidation();
 }
 
