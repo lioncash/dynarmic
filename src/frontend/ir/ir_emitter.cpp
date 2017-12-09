@@ -117,6 +117,14 @@ void IREmitter::SetCpsr(const Value& value) {
     Inst(Opcode::SetCpsr, {value});
 }
 
+void IREmitter::SetCpsrNZCV(const Value& value) {
+    Inst(Opcode::SetCpsrNZCV, {value});
+}
+
+void IREmitter::SetCpsrNZCVQ(const Value& value) {
+    Inst(Opcode::SetCpsrNZCVQ, {value});
+}
+
 Value IREmitter::GetCFlag() {
     return Inst(Opcode::GetCFlag, {});
 }
@@ -147,6 +155,10 @@ Value IREmitter::GetGEFlags() {
 
 void IREmitter::SetGEFlags(const Value& value) {
     Inst(Opcode::SetGEFlags, {value});
+}
+
+void IREmitter::SetGEFlagsCompressed(const Value& value) {
+    Inst(Opcode::SetGEFlagsCompressed, {value});
 }
 
 Value IREmitter::GetFpscr() {

@@ -112,12 +112,15 @@ bool Inst::ReadsFromCPSR() const {
 bool Inst::WritesToCPSR() const {
     switch (op) {
     case Opcode::SetCpsr:
+    case Opcode::SetCpsrNZCV:
+    case Opcode::SetCpsrNZCVQ:
     case Opcode::SetNFlag:
     case Opcode::SetZFlag:
     case Opcode::SetCFlag:
     case Opcode::SetVFlag:
     case Opcode::OrQFlag:
     case Opcode::SetGEFlags:
+    case Opcode::SetGEFlagsCompressed:
         return true;
 
     default:

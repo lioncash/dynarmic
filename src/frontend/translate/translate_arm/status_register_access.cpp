@@ -6,6 +6,8 @@
 
 #include "translate_arm.h"
 
+#include "common/bit_util.h"
+
 namespace Dynarmic {
 namespace Arm {
 
@@ -30,14 +32,12 @@ bool ArmTranslatorVisitor::arm_MSR_imm(Cond cond, int mask, int rotate, Imm8 imm
     ASSERT_MSG(write_nzcvq || write_g, "Decode error");
     // MSR <spec_reg>, #<imm32>
     if (ConditionPassed(cond)) {
-        u32 cpsr_mask = 0;
-        if (write_nzcvq)
-            cpsr_mask |= 0xF8000000;
-        if (write_g)
-            cpsr_mask |= 0x000F0000;
-        auto old_cpsr = ir.And(ir.GetCpsr(), ir.Imm32(~cpsr_mask));
-        auto new_cpsr = ir.Imm32(imm32 & cpsr_mask);
-        ir.SetCpsr(ir.Or(old_cpsr, new_cpsr));
+        if (write_nzcvq) {
+            ir.SetCpsrNZCVQ(ir.Imm32(imm32 & 0xF8000000));
+        }
+        if (write_g) {
+            ir.SetGEFlagsCompressed(ir.Imm32(imm32 & 0x000F0000));
+        }
     }
     return true;
 }
@@ -51,14 +51,13 @@ bool ArmTranslatorVisitor::arm_MSR_reg(Cond cond, int mask, Reg n) {
         return UnpredictableInstruction();
     // MSR <spec_reg>, #<imm32>
     if (ConditionPassed(cond)) {
-        u32 cpsr_mask = 0;
-        if (write_nzcvq)
-            cpsr_mask |= 0xF8000000;
-        if (write_g)
-            cpsr_mask |= 0x000F0000;
-        auto old_cpsr = ir.And(ir.GetCpsr(), ir.Imm32(~cpsr_mask));
-        auto new_cpsr = ir.And(ir.GetRegister(n), ir.Imm32(cpsr_mask));
-        ir.SetCpsr(ir.Or(old_cpsr, new_cpsr));
+        auto value = ir.GetRegister(n);
+        if (write_nzcvq){
+            ir.SetCpsrNZCVQ(ir.And(value, ir.Imm32(0xF8000000)));
+        }
+        if (write_g){
+            ir.SetGEFlagsCompressed(ir.And(value, ir.Imm32(0x000F0000)));
+        }
     }
     return true;
 }
