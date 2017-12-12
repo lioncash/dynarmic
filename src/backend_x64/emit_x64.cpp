@@ -196,9 +196,35 @@ static u32 GetCpsrImpl(JitState* jit_state) {
 }
 
 void EmitX64::EmitGetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    reg_alloc.HostCall(inst);
-    code->mov(code->ABI_PARAM1, code->r15);
-    code->CallFunction(&GetCpsrImpl);
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
+        Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 b = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 c = reg_alloc.ScratchGpr().cvt32();
+
+        code->mov(c, dword[r15 + offsetof(JitState, CPSR_ge)]);
+        // Here we observe that CPSR_q and CPSR_nzcv are right next to each other in memory,
+        // so we load them both at the same time with one 64-bit read. This allows us to
+        // extract all of their bits together at once with one pext.
+        code->mov(result.cvt64(), qword[r15 + offsetof(JitState, CPSR_q)]);
+        code->mov(b.cvt64(), 0xF000000000000001ull);
+        code->pext(result.cvt64(), result.cvt64(), b.cvt64());
+        code->mov(b, 0x80808080);
+        code->pext(c.cvt64(), c.cvt64(), b.cvt64());
+        code->shl(result, 27);
+        code->shl(c, 16);
+        code->or_(result, c);
+        code->mov(b, 0x00000220);
+        code->mov(c, dword[r15 + offsetof(JitState, CPSR_et)]);
+        code->pdep(c.cvt64(), c.cvt64(), b.cvt64());
+        code->or_(result, dword[r15 + offsetof(JitState, CPSR_jaifm)]);
+        code->or_(result, c);
+
+        reg_alloc.DefineValue(inst, result);
+    } else {
+        reg_alloc.HostCall(inst);
+        code->mov(code->ABI_PARAM1, code->r15);
+        code->CallFunction(&GetCpsrImpl);
+    }
 }
 
 static void SetCpsrImpl(u32 value, JitState* jit_state) {
