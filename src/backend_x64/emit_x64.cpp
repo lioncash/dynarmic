@@ -174,6 +174,9 @@ void EmitX64::EmitSetRegister(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Arm::Reg reg = inst->GetArg(0).GetRegRef();
     if (args[1].IsImmediate()) {
         code->mov(MJitStateReg(reg), args[1].GetImmediateU32());
+    } else if (args[1].IsInXmm()) {
+        Xbyak::Xmm to_store = reg_alloc.UseXmm(args[1]);
+        code->movd(MJitStateReg(reg), to_store);
     } else {
         Xbyak::Reg32 to_store = reg_alloc.UseGpr(args[1]).cvt32();
         code->mov(MJitStateReg(reg), to_store);
@@ -184,16 +187,26 @@ void EmitX64::EmitSetExtendedRegister32(RegAlloc& reg_alloc, IR::Block&, IR::Ins
     auto args = reg_alloc.GetArgumentInfo(inst);
     Arm::ExtReg reg = inst->GetArg(0).GetExtRegRef();
     ASSERT(Arm::IsSingleExtReg(reg));
-    Xbyak::Xmm source = reg_alloc.UseXmm(args[1]);
-    code->movss(MJitStateExtReg(reg), source);
+    if (args[1].IsInXmm()) {
+        Xbyak::Xmm to_store = reg_alloc.UseXmm(args[1]);
+        code->movss(MJitStateExtReg(reg), to_store);
+    } else {
+        Xbyak::Reg32 to_store = reg_alloc.UseGpr(args[1]).cvt32();
+        code->mov(MJitStateExtReg(reg), to_store);
+    }
 }
 
 void EmitX64::EmitSetExtendedRegister64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Arm::ExtReg reg = inst->GetArg(0).GetExtRegRef();
     ASSERT(Arm::IsDoubleExtReg(reg));
-    Xbyak::Xmm source = reg_alloc.UseXmm(args[1]);
-    code->movsd(MJitStateExtReg(reg), source);
+    if (args[1].IsInXmm()) {
+        Xbyak::Xmm to_store = reg_alloc.UseXmm(args[1]);
+        code->movsd(MJitStateExtReg(reg), to_store);
+    } else {
+        Xbyak::Reg64 to_store = reg_alloc.UseGpr(args[1]);
+        code->mov(MJitStateExtReg(reg), to_store);
+    }
 }
 
 void EmitX64::EmitGetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
