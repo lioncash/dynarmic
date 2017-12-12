@@ -82,7 +82,14 @@ void BlockOfCode::RunCode(JitState* jit_state, size_t cycles_to_run) const {
 
     jit_state->cycles_to_run = cycles_to_run;
     jit_state->cycles_remaining = cycles_to_run;
-    run_code(jit_state);
+
+    u32 new_rsb_ptr = (jit_state->rsb_ptr - 1) & JitState::RSBPtrMask;
+    if (jit_state->GetUniqueHash() == jit_state->rsb_location_descriptors[new_rsb_ptr]) {
+        jit_state->rsb_ptr = new_rsb_ptr;
+        run_code_from(jit_state, jit_state->rsb_codeptrs[new_rsb_ptr]);
+    } else {
+        run_code(jit_state);
+    }
 }
 
 void BlockOfCode::ReturnFromRunCode(bool mxcsr_already_exited) {
@@ -101,6 +108,14 @@ void BlockOfCode::ForceReturnFromRunCode(bool mxcsr_already_exited) {
 
 void BlockOfCode::GenRunCode() {
     Xbyak::Label loop, enter_mxcsr_then_loop;
+
+    align();
+    run_code_from = getCurr<RunCodeFromFuncType>();
+
+    ABI_PushCalleeSaveRegistersAndAdjustStack(this);
+    mov(r15, ABI_PARAM1);
+    SwitchMxcsrOnEntry();
+    jmp(ABI_PARAM2);
 
     align();
     run_code = getCurr<RunCodeFuncType>();

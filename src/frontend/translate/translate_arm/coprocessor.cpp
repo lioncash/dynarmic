@@ -92,9 +92,8 @@ bool ArmTranslatorVisitor::arm_MRC(Cond cond, size_t opc1, CoprocReg CRn, Reg t,
         if (t != Reg::PC) {
             ir.SetRegister(t, word);
         } else {
-            auto old_cpsr = ir.And(ir.GetCpsr(), ir.Imm32(0x0FFFFFFF));
             auto new_cpsr_nzcv = ir.And(word, ir.Imm32(0xF0000000));
-            ir.SetCpsr(ir.Or(old_cpsr, new_cpsr_nzcv));
+            ir.SetCpsrNZCV(new_cpsr_nzcv);
         }
     }
     return true;

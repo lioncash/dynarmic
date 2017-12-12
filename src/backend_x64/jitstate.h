@@ -25,9 +25,17 @@ constexpr size_t SpillCount = 64;
 struct JitState {
     JitState() { ResetRSB(); }
 
-    u32 Cpsr = 0;
     std::array<u32, 16> Reg{}; // Current register file.
     // TODO: Mode-specific register sets unimplemented.
+
+    u32 CPSR_ge = 0;
+    u32 CPSR_et = 0;
+    u32 CPSR_q = 0;
+    u32 CPSR_nzcv = 0;
+    u32 CPSR_jaifm = 0;
+
+    u32 Cpsr() const;
+    void SetCpsr(u32 cpsr);
 
     alignas(u64) std::array<u32, 64> ExtReg{}; // Extension registers.
 
@@ -46,6 +54,7 @@ struct JitState {
     u32 exclusive_address = 0;
 
     static constexpr size_t RSBSize = 8; // MUST be a power of 2.
+    static constexpr size_t RSBPtrMask = RSBSize - 1;
     u32 rsb_ptr = 0;
     std::array<u64, RSBSize> rsb_location_descriptors;
     std::array<u64, RSBSize> rsb_codeptrs;
@@ -58,6 +67,8 @@ struct JitState {
     u32 old_FPSCR = 0;
     u32 Fpscr() const;
     void SetFpscr(u32 FPSCR);
+
+    u64 GetUniqueHash() const;
 };
 
 #ifdef _MSC_VER

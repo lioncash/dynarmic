@@ -84,6 +84,8 @@ public:
 
     Value GetCpsr();
     void SetCpsr(const Value& value);
+    void SetCpsrNZCV(const Value& value);
+    void SetCpsrNZCVQ(const Value& value);
     Value GetCFlag();
     void SetNFlag(const Value& value);
     void SetZFlag(const Value& value);
@@ -92,6 +94,7 @@ public:
     void OrQFlag(const Value& value);
     Value GetGEFlags();
     void SetGEFlags(const Value& value);
+    void SetGEFlagsCompressed(const Value& value);
 
     Value GetFpscr();
     void SetFpscr(const Value& new_fpscr);

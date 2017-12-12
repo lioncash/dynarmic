@@ -682,7 +682,7 @@ struct ThumbTranslatorVisitor final {
             ir.LoadWritePC(data);
             address = ir.Add(address, ir.Imm32(4));
             ir.SetRegister(Reg::SP, address);
-            ir.SetTerm(IR::Term::ReturnToDispatch{});
+            ir.SetTerm(IR::Term::PopRSBHint{});
             return false;
         } else {
             ir.SetRegister(Reg::SP, address);

@@ -15,6 +15,8 @@
 
 namespace Dynarmic {
 
+struct Context;
+
 namespace IR {
 class LocationDescriptor;
 }
@@ -63,12 +65,16 @@ public:
     const std::array<std::uint32_t, 64>& ExtRegs() const;
 
     /// View and modify CPSR.
-    std::uint32_t& Cpsr();
     std::uint32_t Cpsr() const;
+    void SetCpsr(std::uint32_t value);
 
     /// View and modify FPSCR.
     std::uint32_t Fpscr() const;
-    void SetFpscr(std::uint32_t value) const;
+    void SetFpscr(std::uint32_t value);
+
+    Context SaveContext() const;
+    void SaveContext(Context&) const;
+    void LoadContext(const Context&);
 
     /**
      * Returns true if Jit::Run was called but hasn't returned yet.

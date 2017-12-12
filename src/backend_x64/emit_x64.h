@@ -73,6 +73,7 @@ private:
     // Helpers
     void EmitAddCycles(size_t cycles);
     void EmitCondPrelude(const IR::Block& block);
+    void PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, u64 target_hash);
 
     // Terminal instruction emitters
     void EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor initial_location);

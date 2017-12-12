@@ -138,7 +138,9 @@ private:
     CodePtr far_code_ptr;
 
     using RunCodeFuncType = void(*)(JitState*);
+    using RunCodeFromFuncType = void(*)(JitState*, u64);
     RunCodeFuncType run_code = nullptr;
+    RunCodeFromFuncType run_code_from = nullptr;
     static constexpr size_t MXCSR_ALREADY_EXITED = 1 << 0;
     static constexpr size_t FORCE_RETURN = 1 << 1;
     std::array<const void*, 4> return_from_run_code;

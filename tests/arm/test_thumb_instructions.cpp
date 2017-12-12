@@ -43,7 +43,7 @@ static void InterpreterFallback(u32 pc, Dynarmic::Jit* jit, void*) {
     InterpreterMainLoop(&interp_state);
 
     jit->Regs() = interp_state.Reg;
-    jit->Cpsr() = interp_state.Cpsr;
+    jit->SetCpsr(interp_state.Cpsr);
 }
 
 static void AddTicks(u64) {}
@@ -66,7 +66,7 @@ TEST_CASE( "thumb: lsls r0, r1, #2", "[thumb]" ) {
     jit.Regs()[0] = 1;
     jit.Regs()[1] = 2;
     jit.Regs()[15] = 0; // PC = 0
-    jit.Cpsr() = 0x00000030; // Thumb, User-mode
+    jit.SetCpsr(0x00000030); // Thumb, User-mode
 
     jit.Run(1);
 
@@ -85,7 +85,7 @@ TEST_CASE( "thumb: lsls r0, r1, #31", "[thumb]" ) {
     jit.Regs()[0] = 1;
     jit.Regs()[1] = 0xFFFFFFFF;
     jit.Regs()[15] = 0; // PC = 0
-    jit.Cpsr() = 0x00000030; // Thumb, User-mode
+    jit.SetCpsr(0x00000030); // Thumb, User-mode
 
     jit.Run(1);
 
@@ -103,7 +103,7 @@ TEST_CASE( "thumb: revsh r4, r3", "[thumb]" ) {
 
     jit.Regs()[3] = 0x12345678;
     jit.Regs()[15] = 0; // PC = 0
-    jit.Cpsr() = 0x00000030; // Thumb, User-mode
+    jit.SetCpsr(0x00000030); // Thumb, User-mode
 
     jit.Run(1);
 
@@ -121,7 +121,7 @@ TEST_CASE( "thumb: ldr r3, [r3, #28]", "[thumb]" ) {
 
     jit.Regs()[3] = 0x12345678;
     jit.Regs()[15] = 0; // PC = 0
-    jit.Cpsr() = 0x00000030; // Thumb, User-mode
+    jit.SetCpsr(0x00000030); // Thumb, User-mode
 
     jit.Run(1);
 
@@ -137,7 +137,7 @@ TEST_CASE( "thumb: blx +#67712", "[thumb]" ) {
     code_mem[2] = 0xE7FE; // b +#0
 
     jit.Regs()[15] = 0; // PC = 0
-    jit.Cpsr() = 0x00000030; // Thumb, User-mode
+    jit.SetCpsr(0x00000030); // Thumb, User-mode
 
     jit.Run(1);
 
@@ -153,7 +153,7 @@ TEST_CASE( "thumb: bl +#234584", "[thumb]" ) {
     code_mem[2] = 0xE7FE; // b +#0
 
     jit.Regs()[15] = 0; // PC = 0
-    jit.Cpsr() = 0x00000030; // Thumb, User-mode
+    jit.SetCpsr(0x00000030); // Thumb, User-mode
 
     jit.Run(1);
 
@@ -169,7 +169,7 @@ TEST_CASE( "thumb: bl -#42", "[thumb]" ) {
     code_mem[2] = 0xE7FE; // b +#0
 
     jit.Regs()[15] = 0; // PC = 0
-    jit.Cpsr() = 0x00000030; // Thumb, User-mode
+    jit.SetCpsr(0x00000030); // Thumb, User-mode
 
     jit.Run(1);
 

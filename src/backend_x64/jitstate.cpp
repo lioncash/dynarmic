@@ -14,6 +14,81 @@
 namespace Dynarmic {
 namespace BackendX64 {
 
+/**
+ * CPSR Bits
+ * =========
+ *
+ * ARM CPSR flags
+ * --------------
+ * N    bit 31       Negative flag
+ * Z    bit 30       Zero flag
+ * C    bit 29       Carry flag
+ * V    bit 28       oVerflow flag
+ * Q    bit 27       Saturation flag
+ * J    bit 24       Jazelle instruction set flag
+ * GE   bits 16-19   Greater than or Equal flags
+ * E    bit 9        Data Endianness flag
+ * A    bit 8        Disable imprecise Aborts
+ * I    bit 7        Disable IRQ interrupts
+ * F    bit 6        Disable FIQ interrupts
+ * T    bit 5        Thumb instruction set flag
+ * M    bits 0-4     Processor Mode bits
+ *
+ * x64 LAHF+SETO flags
+ * -------------------
+ * SF   bit 15       Sign flag
+ * ZF   bit 14       Zero flag
+ * AF   bit 12       Auxiliary flag
+ * PF   bit 10       Parity flag
+ * CF   bit 8        Carry flag
+ * OF   bit 0        Overflow flag
+ */
+
+u32 JitState::Cpsr() const {
+    ASSERT((CPSR_nzcv & ~0xF0000000) == 0);
+    ASSERT((CPSR_q & ~1) == 0);
+    ASSERT((CPSR_et & ~3) == 0);
+    ASSERT((CPSR_jaifm & ~0x010001DF) == 0);
+
+    u32 cpsr = 0;
+
+    // NZCV flags
+    cpsr |= CPSR_nzcv;
+    // Q flag
+    cpsr |= CPSR_q ? 1 << 27 : 0;
+    // GE flags
+    cpsr |= Common::Bit<31>(CPSR_ge) ? 1 << 19 : 0;
+    cpsr |= Common::Bit<23>(CPSR_ge) ? 1 << 18 : 0;
+    cpsr |= Common::Bit<15>(CPSR_ge) ? 1 << 17 : 0;
+    cpsr |= Common::Bit<7>(CPSR_ge) ? 1 << 16 : 0;
+    // E flag, T flag
+    cpsr |= Common::Bit<1>(CPSR_et) ? 1 << 9 : 0;
+    cpsr |= Common::Bit<0>(CPSR_et) ? 1 << 5 : 0;
+    // Other flags
+    cpsr |= CPSR_jaifm;
+
+    return cpsr;
+}
+
+void JitState::SetCpsr(u32 cpsr) {
+    // NZCV flags
+    CPSR_nzcv = cpsr & 0xF0000000;
+    // Q flag
+    CPSR_q = Common::Bit<27>(cpsr) ? 1 : 0;
+    // GE flags
+    CPSR_ge = 0;
+    CPSR_ge |= Common::Bit<19>(cpsr) ? 0xFF000000 : 0;
+    CPSR_ge |= Common::Bit<18>(cpsr) ? 0x00FF0000 : 0;
+    CPSR_ge |= Common::Bit<17>(cpsr) ? 0x0000FF00 : 0;
+    CPSR_ge |= Common::Bit<16>(cpsr) ? 0x000000FF : 0;
+    // E flag, T flag
+    CPSR_et = 0;
+    CPSR_et |= Common::Bit<9>(cpsr) ? 2 : 0;
+    CPSR_et |= Common::Bit<5>(cpsr) ? 1 : 0;
+    // Other flags
+    CPSR_jaifm = cpsr & 0x07F0FDDF;
+}
+
 void JitState::ResetRSB() {
     rsb_location_descriptors.fill(0xFFFFFFFFFFFFFFFFull);
     rsb_codeptrs.fill(0);
@@ -122,6 +197,10 @@ void JitState::SetFpscr(u32 FPSCR) {
         //guest_MXCSR |= (1 << 15); // SSE Flush to Zero
         //guest_MXCSR |= (1 << 6);  // SSE Denormals are Zero
     }
+}
+
+u64 JitState::GetUniqueHash() const {
+    return CPSR_et | FPSCR_mode | (static_cast<u64>(Reg[15]) << 32);
 }
 
 } // namespace BackendX64

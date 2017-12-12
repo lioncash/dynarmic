@@ -543,8 +543,7 @@ bool ArmTranslatorVisitor::vfp2_VMRS(Cond cond, Reg t) {
         if (t == Reg::R15) {
             // This encodes ASPR_nzcv access
             auto nzcv = ir.GetFpscrNZCV();
-            auto old_cpsr = ir.And(ir.GetCpsr(), ir.Imm32(0x0FFFFFFF));
-            ir.SetCpsr(ir.Or(nzcv, old_cpsr));
+            ir.SetCpsrNZCV(nzcv);
         } else {
             ir.SetRegister(t, ir.GetFpscr());
         }

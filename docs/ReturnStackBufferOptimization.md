@@ -26,10 +26,10 @@ computing a 64-bit `UniqueHash` that is guaranteed to uniquely identify a block.
     u64 LocationDescriptor::UniqueHash() const {
         // This value MUST BE UNIQUE.
         // This calculation has to match up with EmitX64::EmitTerminalPopRSBHint
-        u64 pc_u64 = u64(arm_pc);
-        u64 fpscr_u64 = u64(fpscr.Value()) << 32;
-        u64 t_u64 = cpsr.T() ? (1ull << 35) : 0;
-        u64 e_u64 = cpsr.E() ? (1ull << 39) : 0;
+        u64 pc_u64 = u64(arm_pc) << 32;
+        u64 fpscr_u64 = u64(fpscr.Value());
+        u64 t_u64 = cpsr.T() ? 1 : 0;
+        u64 e_u64 = cpsr.E() ? 2 : 0;
         return pc_u64 | fpscr_u64 | t_u64 | e_u64;
     }
 
@@ -120,12 +120,10 @@ To check if a predicition is in the RSB, we linearly scan the RSB.
         using namespace Xbyak::util;
 
         // This calculation has to match up with IREmitter::PushRSB
-        code->mov(ebx, MJitStateCpsr());
         code->mov(ecx, MJitStateReg(Arm::Reg::PC));
-        code->and_(ebx, u32((1 << 5) | (1 << 9)));
-        code->shr(ebx, 2);
-        code->or_(ebx, dword[r15 + offsetof(JitState, FPSCR_mode)]);
-        code->shl(rbx, 32);
+        code->shl(rcx, 32);
+        code->mov(ebx, dword[r15 + offsetof(JitState, FPSCR_mode)]);
+        code->or_(ebx, dword[r15 + offsetof(JitState, CPSR_et)]);
         code->or_(rbx, rcx);
 
         code->mov(rax, u64(code->GetReturnFromRunCodeAddress()));

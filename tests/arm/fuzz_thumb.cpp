@@ -107,7 +107,7 @@ static void InterpreterFallback(u32 pc, Dynarmic::Jit* jit, void*) {
     interp_state.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
 
     jit->Regs() = interp_state.Reg;
-    jit->Cpsr() = interp_state.Cpsr;
+    jit->SetCpsr(interp_state.Cpsr);
 }
 
 static void Fail() {
@@ -204,7 +204,7 @@ void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_e
 
         interp.Cpsr = 0x000001F0;
         interp.Reg = initial_regs;
-        jit.Cpsr() = 0x000001F0;
+        jit.SetCpsr(0x000001F0);
         jit.Regs() = initial_regs;
 
         std::generate_n(code_mem.begin(), instruction_count, instruction_generator);
@@ -258,11 +258,17 @@ void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_e
             Dynarmic::Arm::PSR cpsr;
             cpsr.T(true);
 
-            Dynarmic::IR::Block ir_block = Dynarmic::Arm::Translate({0, cpsr, Dynarmic::Arm::FPSCR{}}, MemoryReadCode);
-            Dynarmic::Optimization::GetSetElimination(ir_block);
-            Dynarmic::Optimization::DeadCodeElimination(ir_block);
-            Dynarmic::Optimization::VerificationPass(ir_block);
-            printf("\n\nIR:\n%s", Dynarmic::IR::DumpBlock(ir_block).c_str());
+            size_t num_insts = 0;
+            while (num_insts < instructions_to_execute_count) {
+                Dynarmic::IR::LocationDescriptor descriptor = {u32(num_insts * 4), cpsr, Dynarmic::Arm::FPSCR{}};
+                Dynarmic::IR::Block ir_block = Dynarmic::Arm::Translate(descriptor, &MemoryReadCode);
+                Dynarmic::Optimization::GetSetElimination(ir_block);
+                Dynarmic::Optimization::DeadCodeElimination(ir_block);
+                Dynarmic::Optimization::VerificationPass(ir_block);
+                printf("\n\nIR:\n%s", Dynarmic::IR::DumpBlock(ir_block).c_str());
+                printf("\n\nx86_64:\n%s", jit.Disassemble(descriptor).c_str());
+                num_insts += ir_block.CycleCount();
+            }
 
 #ifdef _MSC_VER
             __debugbreak();
