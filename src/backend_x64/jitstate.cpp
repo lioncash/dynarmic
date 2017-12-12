@@ -199,5 +199,9 @@ void JitState::SetFpscr(u32 FPSCR) {
     }
 }
 
+u64 JitState::GetUniqueHash() const {
+    return CPSR_et | FPSCR_mode | (static_cast<u64>(Reg[15]) << 32);
+}
+
 } // namespace BackendX64
 } // namespace Dynarmic

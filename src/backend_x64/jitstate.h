@@ -67,6 +67,8 @@ struct JitState {
     u32 old_FPSCR = 0;
     u32 Fpscr() const;
     void SetFpscr(u32 FPSCR);
+
+    u64 GetUniqueHash() const;
 };
 
 #ifdef _MSC_VER
