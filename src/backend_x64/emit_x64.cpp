@@ -1993,28 +1993,22 @@ void EmitX64::EmitPackedHalvingSubS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
 void EmitX64::EmitPackedHalvingSubU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 minuend = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg32 subtrahend = reg_alloc.UseScratchGpr(args[1]).cvt32();
+    Xbyak::Xmm minuend = reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm subtrahend = reg_alloc.UseScratchXmm(args[1]);
 
     // This relies on the equality x-y == (x^y) - (((x^y)&y) << 1).
     // Note that x^y always contains the LSB of the result.
-    // Since we want to calculate (x+y)/2, we can instead calculate ((x^y)>>1) - ((x^y)&y).
+    // Since we want to calculate (x-y)/2, we can instead calculate ((x^y)>>1) - ((x^y)&y).
 
-    code->xor_(minuend, subtrahend);
-    code->and_(subtrahend, minuend);
-    code->shr(minuend, 1);
+    code->pxor(minuend, subtrahend);
+    code->pand(subtrahend, minuend);
+    code->psrlw(minuend, 1);
 
     // At this point,
     // minuend := (a^b) >> 1
     // subtrahend := (a^b) & b
 
-    // We must now perform a partitioned subtraction.
-    // We can do this because minuend contains 15 bit fields.
-    // We use the extra bit in minuend as a bit to borrow from; we set this bit.
-    // We invert this bit at the end as this tells us if that bit was borrowed from.
-    code->or_(minuend, 0x80008000);
-    code->sub(minuend, subtrahend);
-    code->xor_(minuend, 0x80008000);
+    code->psubw(minuend, subtrahend);
 
     reg_alloc.DefineValue(inst, minuend);
 }
@@ -2022,35 +2016,22 @@ void EmitX64::EmitPackedHalvingSubU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst*
 void EmitX64::EmitPackedHalvingSubS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 minuend = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg32 subtrahend = reg_alloc.UseScratchGpr(args[1]).cvt32();
-
-    Xbyak::Reg32 carry = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Xmm minuend = reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm subtrahend = reg_alloc.UseScratchXmm(args[1]);
 
     // This relies on the equality x-y == (x^y) - (((x^y)&y) << 1).
     // Note that x^y always contains the LSB of the result.
-    // Since we want to calculate (x-y)/2, we can instead calculate ((x^y)>>1) - ((x^y)&y).
+    // Since we want to calculate (x-y)/2, we can instead calculate ((x^y)>>>1) - ((x^y)&y).
 
-    code->xor_(minuend, subtrahend);
-    code->and_(subtrahend, minuend);
-    code->mov(carry, minuend);
-    code->and_(carry, 0x80008000);
-    code->shr(minuend, 1);
+    code->pxor(minuend, subtrahend);
+    code->pand(subtrahend, minuend);
+    code->psraw(minuend, 1);
 
     // At this point,
-    // minuend := (a^b) >> 1
+    // minuend := (a^b) >>> 1
     // subtrahend := (a^b) & b
-    // carry := (a^b) & 0x80008000
 
-    // We must now perform a partitioned subtraction.
-    // We can do this because minuend contains 7 bit fields.
-    // We use the extra bit in minuend as a bit to borrow from; we set this bit.
-    // We invert this bit at the end as this tells us if that bit was borrowed from.
-    // We then sign extend the result into this bit.
-    code->or_(minuend, 0x80008000);
-    code->sub(minuend, subtrahend);
-    code->xor_(minuend, 0x80008000);
-    code->xor_(minuend, carry);
+    code->psubw(minuend, subtrahend);
 
     reg_alloc.DefineValue(inst, minuend);
 }
