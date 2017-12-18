@@ -5,6 +5,7 @@
  */
 
 #include <unordered_map>
+#include <unordered_set>
 
 #include <dynarmic/coprocessor.h>
 
@@ -3584,23 +3585,36 @@ void EmitX64::EmitPatchMovRcx(CodePtr target_code_ptr) {
 }
 
 void EmitX64::ClearCache() {
+    block_ranges.clear();
     block_descriptors.clear();
     patch_information.clear();
 }
 
 void EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u32>& ranges) {
     // Remove cached block descriptors and patch information overlapping with the given range.
+    std::unordered_set<IR::LocationDescriptor> erase_locations;
     for (auto invalidate_interval : ranges) {
         auto pair = block_ranges.equal_range(invalidate_interval);
         for (auto it = pair.first; it != pair.second; ++it) {
-            for (const auto& descriptor : it->second) {
-                if (patch_information.count(descriptor.UniqueHash())) {
-                    Unpatch(descriptor);
-                }
-                block_descriptors.erase(descriptor.UniqueHash());
+            for (const auto &descriptor : it->second) {
+                erase_locations.insert(descriptor);
             }
         }
-        block_ranges.erase(pair.first, pair.second);
+    }
+    for (const auto &descriptor : erase_locations) {
+        auto it = block_descriptors.find(descriptor.UniqueHash());
+        if (it == block_descriptors.end()) {
+            continue;
+        }
+
+        if (patch_information.count(descriptor.UniqueHash())) {
+            Unpatch(descriptor);
+        }
+        block_ranges.subtract(std::make_pair(
+            boost::icl::discrete_interval<u32>::closed(
+                it->second.start_location.PC(), it->second.end_location_pc - 1),
+            std::set<IR::LocationDescriptor>{descriptor}));
+        block_descriptors.erase(it);
     }
 }
 
