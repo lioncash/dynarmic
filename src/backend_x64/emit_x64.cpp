@@ -42,7 +42,10 @@ constexpr u64 f64_min_s32 = 0xc1e0000000000000u; // -2147483648 as a double
 constexpr u64 f64_max_s32 = 0x41dfffffffc00000u; // 2147483647 as a double
 constexpr u64 f64_min_u32 = 0x0000000000000000u; // 0 as a double
 
-static void EraseInstruction(IR::Block& block, IR::Inst* inst) {
+EmitContext::EmitContext(RegAlloc& reg_alloc, IR::Block& block)
+    : reg_alloc(reg_alloc), block(block) {}
+
+void EmitContext::EraseInstruction(IR::Inst* inst) {
     block.Instructions().erase(inst);
     inst->Invalidate();
 }
@@ -64,19 +67,19 @@ boost::optional<typename EmitX64<PCT>::BlockDescriptor> EmitX64<PCT>::GetBasicBl
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitVoid(RegAlloc&, IR::Block&, IR::Inst*) {
+void EmitX64<PCT>::EmitVoid(EmitContext&, IR::Inst*) {
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitBreakpoint(RegAlloc&, IR::Block&, IR::Inst*) {
+void EmitX64<PCT>::EmitBreakpoint(EmitContext&, IR::Inst*) {
     code->int3();
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitIdentity(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitIdentity(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (!args[0].IsImmediate()) {
-        reg_alloc.DefineValue(inst, args[0]);
+        ctx.reg_alloc.DefineValue(inst, args[0]);
     }
 }
 
@@ -105,118 +108,118 @@ void EmitX64<PCT>::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_r
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPushRSB(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPushRSB(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[0].IsImmediate());
     u64 unique_hash_of_target = args[0].GetImmediateU64();
 
-    reg_alloc.ScratchGpr({HostLoc::RCX});
-    Xbyak::Reg64 loc_desc_reg = reg_alloc.ScratchGpr();
-    Xbyak::Reg64 index_reg = reg_alloc.ScratchGpr();
+    ctx.reg_alloc.ScratchGpr({HostLoc::RCX});
+    Xbyak::Reg64 loc_desc_reg = ctx.reg_alloc.ScratchGpr();
+    Xbyak::Reg64 index_reg = ctx.reg_alloc.ScratchGpr();
 
     PushRSBHelper(loc_desc_reg, index_reg, IR::LocationDescriptor{unique_hash_of_target});
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitGetCarryFromOp(RegAlloc&, IR::Block&, IR::Inst*) {
+void EmitX64<PCT>::EmitGetCarryFromOp(EmitContext&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitGetOverflowFromOp(RegAlloc&, IR::Block&, IR::Inst*) {
+void EmitX64<PCT>::EmitGetOverflowFromOp(EmitContext&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitGetGEFromOp(RegAlloc&, IR::Block&, IR::Inst*) {
+void EmitX64<PCT>::EmitGetGEFromOp(EmitContext&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPack2x32To1x64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 lo = reg_alloc.UseScratchGpr(args[0]);
-    Xbyak::Reg64 hi = reg_alloc.UseScratchGpr(args[1]);
+void EmitX64<PCT>::EmitPack2x32To1x64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 lo = ctx.reg_alloc.UseScratchGpr(args[0]);
+    Xbyak::Reg64 hi = ctx.reg_alloc.UseScratchGpr(args[1]);
 
     code->shl(hi, 32);
     code->mov(lo.cvt32(), lo.cvt32()); // Zero extend to 64-bits
     code->or_(lo, hi);
 
-    reg_alloc.DefineValue(inst, lo);
+    ctx.reg_alloc.DefineValue(inst, lo);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitLeastSignificantWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.DefineValue(inst, args[0]);
+void EmitX64<PCT>::EmitLeastSignificantWord(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.DefineValue(inst, args[0]);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitMostSignificantWord(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitMostSignificantWord(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->shr(result, 32);
 
     if (carry_inst) {
-        EraseInstruction(block, carry_inst);
-        Xbyak::Reg64 carry = reg_alloc.ScratchGpr();
+        ctx.EraseInstruction(carry_inst);
+        Xbyak::Reg64 carry = ctx.reg_alloc.ScratchGpr();
         code->setc(carry.cvt8());
-        reg_alloc.DefineValue(carry_inst, carry);
+        ctx.reg_alloc.DefineValue(carry_inst, carry);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitLeastSignificantHalf(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.DefineValue(inst, args[0]);
+void EmitX64<PCT>::EmitLeastSignificantHalf(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.DefineValue(inst, args[0]);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitLeastSignificantByte(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.DefineValue(inst, args[0]);
+void EmitX64<PCT>::EmitLeastSignificantByte(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.DefineValue(inst, args[0]);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitMostSignificantBit(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
+void EmitX64<PCT>::EmitMostSignificantBit(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
     // TODO: Flag optimization
     code->shr(result, 31);
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitIsZero(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
+void EmitX64<PCT>::EmitIsZero(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
     // TODO: Flag optimization
     code->test(result, result);
     code->sete(result.cvt8());
     code->movzx(result, result.cvt8());
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitIsZero64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+void EmitX64<PCT>::EmitIsZero64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     // TODO: Flag optimization
     code->test(result, result);
     code->sete(result.cvt8());
     code->movzx(result, result.cvt8());
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitLogicalShiftLeft(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitLogicalShiftLeft(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& operand_arg = args[0];
     auto& shift_arg = args[1];
     auto& carry_arg = args[2];
@@ -225,7 +228,7 @@ void EmitX64<PCT>::EmitLogicalShiftLeft(RegAlloc& reg_alloc, IR::Block& block, I
 
     if (!carry_inst) {
         if (shift_arg.IsImmediate()) {
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
             u8 shift = shift_arg.GetImmediateU8();
 
             if (shift <= 31) {
@@ -234,11 +237,11 @@ void EmitX64<PCT>::EmitLogicalShiftLeft(RegAlloc& reg_alloc, IR::Block& block, I
                 code->xor_(result, result);
             }
 
-            reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(inst, result);
         } else {
-            reg_alloc.Use(shift_arg, HostLoc::RCX);
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg32 zero = reg_alloc.ScratchGpr().cvt32();
+            ctx.reg_alloc.Use(shift_arg, HostLoc::RCX);
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 zero = ctx.reg_alloc.ScratchGpr().cvt32();
 
             // The 32-bit x64 SHL instruction masks the shift count by 0x1F before performing the shift.
             // ARM differs from the behaviour: It does not mask the count, so shifts above 31 result in zeros.
@@ -248,15 +251,15 @@ void EmitX64<PCT>::EmitLogicalShiftLeft(RegAlloc& reg_alloc, IR::Block& block, I
             code->cmp(code->cl, 32);
             code->cmovnb(result, zero);
 
-            reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(inst, result);
         }
     } else {
-        EraseInstruction(block, carry_inst);
+        ctx.EraseInstruction(carry_inst);
 
         if (shift_arg.IsImmediate()) {
             u8 shift = shift_arg.GetImmediateU8();
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg32 carry = reg_alloc.UseScratchGpr(carry_arg).cvt32();
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 carry = ctx.reg_alloc.UseScratchGpr(carry_arg).cvt32();
 
             if (shift == 0) {
                 // There is nothing more to do.
@@ -273,12 +276,12 @@ void EmitX64<PCT>::EmitLogicalShiftLeft(RegAlloc& reg_alloc, IR::Block& block, I
                 code->and_(carry, 1);
             }
 
-            reg_alloc.DefineValue(inst, result);
-            reg_alloc.DefineValue(carry_inst, carry);
+            ctx.reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(carry_inst, carry);
         } else {
-            reg_alloc.Use(shift_arg, HostLoc::RCX);
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg32 carry = reg_alloc.UseScratchGpr(carry_arg).cvt32();
+            ctx.reg_alloc.Use(shift_arg, HostLoc::RCX);
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 carry = ctx.reg_alloc.UseScratchGpr(carry_arg).cvt32();
 
             // TODO: Optimize this.
 
@@ -307,24 +310,24 @@ void EmitX64<PCT>::EmitLogicalShiftLeft(RegAlloc& reg_alloc, IR::Block& block, I
 
             code->outLocalLabel();
 
-            reg_alloc.DefineValue(inst, result);
-            reg_alloc.DefineValue(carry_inst, carry);
+            ctx.reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(carry_inst, carry);
         }
     }
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitLogicalShiftRight(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitLogicalShiftRight(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& operand_arg = args[0];
     auto& shift_arg = args[1];
     auto& carry_arg = args[2];
 
     if (!carry_inst) {
         if (shift_arg.IsImmediate()) {
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
             u8 shift = shift_arg.GetImmediateU8();
 
             if (shift <= 31) {
@@ -333,11 +336,11 @@ void EmitX64<PCT>::EmitLogicalShiftRight(RegAlloc& reg_alloc, IR::Block& block, 
                 code->xor_(result, result);
             }
 
-            reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(inst, result);
         } else {
-            reg_alloc.Use(shift_arg, HostLoc::RCX);
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg32 zero = reg_alloc.ScratchGpr().cvt32();
+            ctx.reg_alloc.Use(shift_arg, HostLoc::RCX);
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 zero = ctx.reg_alloc.ScratchGpr().cvt32();
 
             // The 32-bit x64 SHR instruction masks the shift count by 0x1F before performing the shift.
             // ARM differs from the behaviour: It does not mask the count, so shifts above 31 result in zeros.
@@ -347,15 +350,15 @@ void EmitX64<PCT>::EmitLogicalShiftRight(RegAlloc& reg_alloc, IR::Block& block, 
             code->cmp(code->cl, 32);
             code->cmovnb(result, zero);
 
-            reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(inst, result);
         }
     } else {
-        EraseInstruction(block, carry_inst);
+        ctx.EraseInstruction(carry_inst);
 
         if (shift_arg.IsImmediate()) {
             u8 shift = shift_arg.GetImmediateU8();
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg32 carry = reg_alloc.UseScratchGpr(carry_arg).cvt32();
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 carry = ctx.reg_alloc.UseScratchGpr(carry_arg).cvt32();
 
             if (shift == 0) {
                 // There is nothing more to do.
@@ -371,12 +374,12 @@ void EmitX64<PCT>::EmitLogicalShiftRight(RegAlloc& reg_alloc, IR::Block& block, 
                 code->xor_(carry, carry);
             }
 
-            reg_alloc.DefineValue(inst, result);
-            reg_alloc.DefineValue(carry_inst, carry);
+            ctx.reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(carry_inst, carry);
         } else {
-            reg_alloc.Use(shift_arg, HostLoc::RCX);
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg32 carry = reg_alloc.UseScratchGpr(carry_arg).cvt32();
+            ctx.reg_alloc.Use(shift_arg, HostLoc::RCX);
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 carry = ctx.reg_alloc.UseScratchGpr(carry_arg).cvt32();
 
             // TODO: Optimize this.
 
@@ -407,34 +410,34 @@ void EmitX64<PCT>::EmitLogicalShiftRight(RegAlloc& reg_alloc, IR::Block& block, 
 
             code->outLocalLabel();
 
-            reg_alloc.DefineValue(inst, result);
-            reg_alloc.DefineValue(carry_inst, carry);
+            ctx.reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(carry_inst, carry);
         }
     }
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitLogicalShiftRight64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& operand_arg = args[0];
     auto& shift_arg = args[1];
 
     ASSERT_MSG(shift_arg.IsImmediate(), "variable 64 bit shifts are not implemented");
     ASSERT_MSG(shift_arg.GetImmediateU8() < 64, "shift width clamping is not implemented");
 
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(operand_arg);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(operand_arg);
     u8 shift = shift_arg.GetImmediateU8();
 
     code->shr(result.cvt64(), shift);
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitArithmeticShiftRight(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitArithmeticShiftRight(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& operand_arg = args[0];
     auto& shift_arg = args[1];
     auto& carry_arg = args[2];
@@ -442,15 +445,15 @@ void EmitX64<PCT>::EmitArithmeticShiftRight(RegAlloc& reg_alloc, IR::Block& bloc
     if (!carry_inst) {
         if (shift_arg.IsImmediate()) {
             u8 shift = shift_arg.GetImmediateU8();
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
 
             code->sar(result, u8(shift < 31 ? shift : 31));
 
-            reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(inst, result);
         } else {
-            reg_alloc.UseScratch(shift_arg, HostLoc::RCX);
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg32 const31 = reg_alloc.ScratchGpr().cvt32();
+            ctx.reg_alloc.UseScratch(shift_arg, HostLoc::RCX);
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 const31 = ctx.reg_alloc.ScratchGpr().cvt32();
 
             // The 32-bit x64 SAR instruction masks the shift count by 0x1F before performing the shift.
             // ARM differs from the behaviour: It does not mask the count.
@@ -462,15 +465,15 @@ void EmitX64<PCT>::EmitArithmeticShiftRight(RegAlloc& reg_alloc, IR::Block& bloc
             code->cmovg(code->ecx, const31);
             code->sar(result, code->cl);
 
-            reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(inst, result);
         }
     } else {
-        EraseInstruction(block, carry_inst);
+        ctx.EraseInstruction(carry_inst);
 
         if (shift_arg.IsImmediate()) {
             u8 shift = shift_arg.GetImmediateU8();
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg8 carry = reg_alloc.UseScratchGpr(carry_arg).cvt8();
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg8 carry = ctx.reg_alloc.UseScratchGpr(carry_arg).cvt8();
 
             if (shift == 0) {
                 // There is nothing more to do.
@@ -483,12 +486,12 @@ void EmitX64<PCT>::EmitArithmeticShiftRight(RegAlloc& reg_alloc, IR::Block& bloc
                 code->setc(carry);
             }
 
-            reg_alloc.DefineValue(inst, result);
-            reg_alloc.DefineValue(carry_inst, carry);
+            ctx.reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(carry_inst, carry);
         } else {
-            reg_alloc.Use(shift_arg, HostLoc::RCX);
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg8 carry = reg_alloc.UseScratchGpr(carry_arg).cvt8();
+            ctx.reg_alloc.Use(shift_arg, HostLoc::RCX);
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg8 carry = ctx.reg_alloc.UseScratchGpr(carry_arg).cvt8();
 
             // TODO: Optimize this.
 
@@ -513,17 +516,17 @@ void EmitX64<PCT>::EmitArithmeticShiftRight(RegAlloc& reg_alloc, IR::Block& bloc
 
             code->outLocalLabel();
 
-            reg_alloc.DefineValue(inst, result);
-            reg_alloc.DefineValue(carry_inst, carry);
+            ctx.reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(carry_inst, carry);
         }
     }
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitRotateRight(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitRotateRight(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& operand_arg = args[0];
     auto& shift_arg = args[1];
     auto& carry_arg = args[2];
@@ -531,27 +534,27 @@ void EmitX64<PCT>::EmitRotateRight(RegAlloc& reg_alloc, IR::Block& block, IR::In
     if (!carry_inst) {
         if (shift_arg.IsImmediate()) {
             u8 shift = shift_arg.GetImmediateU8();
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
 
             code->ror(result, u8(shift & 0x1F));
 
-            reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(inst, result);
         } else {
-            reg_alloc.Use(shift_arg, HostLoc::RCX);
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            ctx.reg_alloc.Use(shift_arg, HostLoc::RCX);
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
 
             // x64 ROR instruction does (shift & 0x1F) for us.
             code->ror(result, code->cl);
 
-            reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(inst, result);
         }
     } else {
-        EraseInstruction(block, carry_inst);
+        ctx.EraseInstruction(carry_inst);
 
         if (shift_arg.IsImmediate()) {
             u8 shift = shift_arg.GetImmediateU8();
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg8 carry = reg_alloc.UseScratchGpr(carry_arg).cvt8();
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg8 carry = ctx.reg_alloc.UseScratchGpr(carry_arg).cvt8();
 
             if (shift == 0) {
                 // There is nothing more to do.
@@ -563,12 +566,12 @@ void EmitX64<PCT>::EmitRotateRight(RegAlloc& reg_alloc, IR::Block& block, IR::In
                 code->setc(carry);
             }
 
-            reg_alloc.DefineValue(inst, result);
-            reg_alloc.DefineValue(carry_inst, carry);
+            ctx.reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(carry_inst, carry);
         } else {
-            reg_alloc.UseScratch(shift_arg, HostLoc::RCX);
-            Xbyak::Reg32 result = reg_alloc.UseScratchGpr(operand_arg).cvt32();
-            Xbyak::Reg8 carry = reg_alloc.UseScratchGpr(carry_arg).cvt8();
+            ctx.reg_alloc.UseScratch(shift_arg, HostLoc::RCX);
+            Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(operand_arg).cvt32();
+            Xbyak::Reg8 carry = ctx.reg_alloc.UseScratchGpr(carry_arg).cvt8();
 
             // TODO: Optimize
 
@@ -593,33 +596,33 @@ void EmitX64<PCT>::EmitRotateRight(RegAlloc& reg_alloc, IR::Block& block, IR::In
 
             code->outLocalLabel();
 
-            reg_alloc.DefineValue(inst, result);
-            reg_alloc.DefineValue(carry_inst, carry);
+            ctx.reg_alloc.DefineValue(inst, result);
+            ctx.reg_alloc.DefineValue(carry_inst, carry);
         }
     }
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitRotateRightExtended(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitRotateRightExtended(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg8 carry = reg_alloc.UseScratchGpr(args[1]).cvt8();
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg8 carry = ctx.reg_alloc.UseScratchGpr(args[1]).cvt8();
 
     code->bt(carry.cvt32(), 0);
     code->rcr(result, 1);
 
     if (carry_inst) {
-        EraseInstruction(block, carry_inst);
+        ctx.EraseInstruction(carry_inst);
 
         code->setc(carry);
 
-        reg_alloc.DefineValue(carry_inst, carry);
+        ctx.reg_alloc.DefineValue(carry_inst, carry);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 const Xbyak::Reg64 INVALID_REG = Xbyak::Reg64(-1);
@@ -633,16 +636,16 @@ static Xbyak::Reg8 DoCarry(RegAlloc& reg_alloc, Argument& carry_in, IR::Inst* ca
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitAddWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitAddWithCarry(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& carry_in = args[2];
 
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg8 carry = DoCarry(reg_alloc, carry_in, carry_inst);
-    Xbyak::Reg8 overflow = overflow_inst ? reg_alloc.ScratchGpr().cvt8() : INVALID_REG.cvt8();
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg8 carry = DoCarry(ctx.reg_alloc, carry_in, carry_inst);
+    Xbyak::Reg8 overflow = overflow_inst ? ctx.reg_alloc.ScratchGpr().cvt8() : INVALID_REG.cvt8();
 
     // TODO: Consider using LEA.
 
@@ -660,7 +663,7 @@ void EmitX64<PCT>::EmitAddWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::I
             code->adc(result, op_arg);
         }
     } else {
-        OpArg op_arg = reg_alloc.UseOpArg(args[1]);
+        OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
         op_arg.setBit(32);
         if (carry_in.IsImmediate()) {
             if (carry_in.GetImmediateU1()) {
@@ -676,42 +679,42 @@ void EmitX64<PCT>::EmitAddWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::I
     }
 
     if (carry_inst) {
-        EraseInstruction(block, carry_inst);
+        ctx.EraseInstruction(carry_inst);
         code->setc(carry);
-        reg_alloc.DefineValue(carry_inst, carry);
+        ctx.reg_alloc.DefineValue(carry_inst, carry);
     }
     if (overflow_inst) {
-        EraseInstruction(block, overflow_inst);
+        ctx.EraseInstruction(overflow_inst);
         code->seto(overflow);
-        reg_alloc.DefineValue(overflow_inst, overflow);
+        ctx.reg_alloc.DefineValue(overflow_inst, overflow);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitAdd64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitAdd64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
-    Xbyak::Reg64 op_arg = reg_alloc.UseGpr(args[1]);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
+    Xbyak::Reg64 op_arg = ctx.reg_alloc.UseGpr(args[1]);
 
     code->add(result, op_arg);
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitSubWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitSubWithCarry(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& carry_in = args[2];
 
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg8 carry = DoCarry(reg_alloc, carry_in, carry_inst);
-    Xbyak::Reg8 overflow = overflow_inst ? reg_alloc.ScratchGpr().cvt8() : INVALID_REG.cvt8();
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg8 carry = DoCarry(ctx.reg_alloc, carry_in, carry_inst);
+    Xbyak::Reg8 overflow = overflow_inst ? ctx.reg_alloc.ScratchGpr().cvt8() : INVALID_REG.cvt8();
 
     // TODO: Consider using LEA.
     // TODO: Optimize CMP case.
@@ -732,7 +735,7 @@ void EmitX64<PCT>::EmitSubWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::I
             code->sbb(result, op_arg);
         }
     } else {
-        OpArg op_arg = reg_alloc.UseOpArg(args[1]);
+        OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
         op_arg.setBit(32);
         if (carry_in.IsImmediate()) {
             if (carry_in.GetImmediateU1()) {
@@ -749,219 +752,219 @@ void EmitX64<PCT>::EmitSubWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::I
     }
 
     if (carry_inst) {
-        EraseInstruction(block, carry_inst);
+        ctx.EraseInstruction(carry_inst);
         code->setnc(carry);
-        reg_alloc.DefineValue(carry_inst, carry);
+        ctx.reg_alloc.DefineValue(carry_inst, carry);
     }
     if (overflow_inst) {
-        EraseInstruction(block, overflow_inst);
+        ctx.EraseInstruction(overflow_inst);
         code->seto(overflow);
-        reg_alloc.DefineValue(overflow_inst, overflow);
+        ctx.reg_alloc.DefineValue(overflow_inst, overflow);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitSub64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitSub64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
-    Xbyak::Reg64 op_arg = reg_alloc.UseGpr(args[1]);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
+    Xbyak::Reg64 op_arg = ctx.reg_alloc.UseGpr(args[1]);
 
     code->sub(result, op_arg);
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitMul(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitMul(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
     if (args[1].IsImmediate()) {
         code->imul(result, result, args[1].GetImmediateU32());
     } else {
-        OpArg op_arg = reg_alloc.UseOpArg(args[1]);
+        OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
         op_arg.setBit(32);
 
         code->imul(result, *op_arg);
     }
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitMul64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitMul64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
-    OpArg op_arg = reg_alloc.UseOpArg(args[1]);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
+    OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
 
     code->imul(result, *op_arg);
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitAnd(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitAnd(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
 
     if (args[1].IsImmediate()) {
         u32 op_arg = args[1].GetImmediateU32();
 
         code->and_(result, op_arg);
     } else {
-        OpArg op_arg = reg_alloc.UseOpArg(args[1]);
+        OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
         op_arg.setBit(32);
 
         code->and_(result, *op_arg);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitEor(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitEor(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
 
     if (args[1].IsImmediate()) {
         u32 op_arg = args[1].GetImmediateU32();
 
         code->xor_(result, op_arg);
     } else {
-        OpArg op_arg = reg_alloc.UseOpArg(args[1]);
+        OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
         op_arg.setBit(32);
 
         code->xor_(result, *op_arg);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitOr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitOr(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
 
     if (args[1].IsImmediate()) {
         u32 op_arg = args[1].GetImmediateU32();
 
         code->or_(result, op_arg);
     } else {
-        OpArg op_arg = reg_alloc.UseOpArg(args[1]);
+        OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
         op_arg.setBit(32);
 
         code->or_(result, *op_arg);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitNot(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitNot(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result;
     if (args[0].IsImmediate()) {
-        result = reg_alloc.ScratchGpr().cvt32();
+        result = ctx.reg_alloc.ScratchGpr().cvt32();
         code->mov(result, u32(~args[0].GetImmediateU32()));
     } else {
-        result = reg_alloc.UseScratchGpr(args[0]).cvt32();
+        result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
         code->not_(result);
     }
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitSignExtendWordToLong(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+void EmitX64<PCT>::EmitSignExtendWordToLong(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->movsxd(result.cvt64(), result.cvt32());
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitSignExtendHalfToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+void EmitX64<PCT>::EmitSignExtendHalfToWord(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->movsx(result.cvt32(), result.cvt16());
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitSignExtendByteToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+void EmitX64<PCT>::EmitSignExtendByteToWord(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->movsx(result.cvt32(), result.cvt8());
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitZeroExtendWordToLong(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+void EmitX64<PCT>::EmitZeroExtendWordToLong(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->mov(result.cvt32(), result.cvt32()); // x64 zeros upper 32 bits on a 32-bit move
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitZeroExtendHalfToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+void EmitX64<PCT>::EmitZeroExtendHalfToWord(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->movzx(result.cvt32(), result.cvt16());
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitZeroExtendByteToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+void EmitX64<PCT>::EmitZeroExtendByteToWord(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->movzx(result.cvt32(), result.cvt8());
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitByteReverseWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
+void EmitX64<PCT>::EmitByteReverseWord(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
     code->bswap(result);
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitByteReverseHalf(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg16 result = reg_alloc.UseScratchGpr(args[0]).cvt16();
+void EmitX64<PCT>::EmitByteReverseHalf(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg16 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt16();
     code->rol(result, 8);
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitByteReverseDual(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
+void EmitX64<PCT>::EmitByteReverseDual(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->bswap(result);
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitCountLeadingZeros(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitCountLeadingZeros(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (code->DoesCpuSupport(Xbyak::util::Cpu::tLZCNT)) {
-        Xbyak::Reg32 source = reg_alloc.UseGpr(args[0]).cvt32();
-        Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 source = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+        Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
 
         code->lzcnt(result, source);
 
-        reg_alloc.DefineValue(inst, result);
+        ctx.reg_alloc.DefineValue(inst, result);
     } else {
-        Xbyak::Reg32 source = reg_alloc.UseScratchGpr(args[0]).cvt32();
-        Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 source = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
 
         // The result of a bsr of zero is undefined, but zf is set after it.
         code->bsr(result, source);
@@ -970,19 +973,19 @@ void EmitX64<PCT>::EmitCountLeadingZeros(RegAlloc& reg_alloc, IR::Block&, IR::In
         code->neg(result);
         code->add(result, 31);
 
-        reg_alloc.DefineValue(inst, result);
+        ctx.reg_alloc.DefineValue(inst, result);
     }
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitSignedSaturatedAdd(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitSignedSaturatedAdd(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg32 addend = reg_alloc.UseGpr(args[1]).cvt32();
-    Xbyak::Reg32 overflow = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 addend = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+    Xbyak::Reg32 overflow = ctx.reg_alloc.ScratchGpr().cvt32();
 
     code->mov(overflow, result);
     code->shr(overflow, 31);
@@ -992,25 +995,25 @@ void EmitX64<PCT>::EmitSignedSaturatedAdd(RegAlloc& reg_alloc, IR::Block& block,
     code->cmovo(result, overflow);
 
     if (overflow_inst) {
-        EraseInstruction(block, overflow_inst);
+        ctx.EraseInstruction(overflow_inst);
 
         code->seto(overflow.cvt8());
 
-        reg_alloc.DefineValue(overflow_inst, overflow);
+        ctx.reg_alloc.DefineValue(overflow_inst, overflow);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitSignedSaturatedSub(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitSignedSaturatedSub(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg32 subend = reg_alloc.UseGpr(args[1]).cvt32();
-    Xbyak::Reg32 overflow = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 subend = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+    Xbyak::Reg32 overflow = ctx.reg_alloc.ScratchGpr().cvt32();
 
     code->mov(overflow, result);
     code->shr(overflow, 31);
@@ -1020,29 +1023,29 @@ void EmitX64<PCT>::EmitSignedSaturatedSub(RegAlloc& reg_alloc, IR::Block& block,
     code->cmovo(result, overflow);
 
     if (overflow_inst) {
-        EraseInstruction(block, overflow_inst);
+        ctx.EraseInstruction(overflow_inst);
 
         code->seto(overflow.cvt8());
 
-        reg_alloc.DefineValue(overflow_inst, overflow);
+        ctx.reg_alloc.DefineValue(overflow_inst, overflow);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitUnsignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     size_t N = args[1].GetImmediateU8();
     ASSERT(N <= 31);
 
     u32 saturated_value = (1u << N) - 1;
 
-    Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Reg32 reg_a = reg_alloc.UseGpr(args[0]).cvt32();
-    Xbyak::Reg32 overflow = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 reg_a = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Reg32 overflow = ctx.reg_alloc.ScratchGpr().cvt32();
 
     // Pseudocode: result = clamp(reg_a, 0, saturated_value);
     code->xor_(overflow, overflow);
@@ -1052,21 +1055,21 @@ void EmitX64<PCT>::EmitUnsignedSaturation(RegAlloc& reg_alloc, IR::Block& block,
     code->cmovbe(result, reg_a);
 
     if (overflow_inst) {
-        EraseInstruction(block, overflow_inst);
+        ctx.EraseInstruction(overflow_inst);
 
         code->seta(overflow.cvt8());
 
-        reg_alloc.DefineValue(overflow_inst, overflow);
+        ctx.reg_alloc.DefineValue(overflow_inst, overflow);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void EmitX64<PCT>::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     size_t N = args[1].GetImmediateU8();
     ASSERT(N >= 1 && N <= 32);
 
@@ -1075,7 +1078,7 @@ void EmitX64<PCT>::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, I
             auto no_overflow = IR::Value(false);
             overflow_inst->ReplaceUsesWith(no_overflow);
         }
-        reg_alloc.DefineValue(inst, args[0]);
+        ctx.reg_alloc.DefineValue(inst, args[0]);
         return;
     }
 
@@ -1084,10 +1087,10 @@ void EmitX64<PCT>::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, I
     u32 negative_saturated_value = 1u << (N - 1);
     u32 sext_negative_satured_value = Common::SignExtend(N, negative_saturated_value);
 
-    Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Reg32 reg_a = reg_alloc.UseGpr(args[0]).cvt32();
-    Xbyak::Reg32 overflow = reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Reg32 tmp = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 reg_a = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Reg32 overflow = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
 
     // overflow now contains a value between 0 and mask if it was originally between {negative,positive}_saturated_value.
     code->lea(overflow, code->ptr[reg_a.cvt64() + negative_saturated_value]);
@@ -1103,31 +1106,31 @@ void EmitX64<PCT>::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, I
     code->cmovbe(result, reg_a);
 
     if (overflow_inst) {
-        EraseInstruction(block, overflow_inst);
+        ctx.EraseInstruction(overflow_inst);
 
         code->seta(overflow.cvt8());
 
-        reg_alloc.DefineValue(overflow_inst, overflow);
+        ctx.reg_alloc.DefineValue(overflow_inst, overflow);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedAddU8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
-    Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
     code->paddb(xmm_a, xmm_b);
 
     if (ge_inst) {
-        EraseInstruction(block, ge_inst);
+        ctx.EraseInstruction(ge_inst);
 
-        Xbyak::Xmm xmm_ge = reg_alloc.ScratchXmm();
-        Xbyak::Xmm ones = reg_alloc.ScratchXmm();
+        Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Xmm ones = ctx.reg_alloc.ScratchXmm();
 
         code->pcmpeqb(ones, ones);
 
@@ -1136,25 +1139,25 @@ void EmitX64<PCT>::EmitPackedAddU8(RegAlloc& reg_alloc, IR::Block& block, IR::In
         code->pcmpeqb(xmm_ge, xmm_b);
         code->pxor(xmm_ge, ones);
 
-        reg_alloc.DefineValue(ge_inst, xmm_ge);
+        ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
     }
 
-    reg_alloc.DefineValue(inst, xmm_a);
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedAddS8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
-    Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
     if (ge_inst) {
-        EraseInstruction(block, ge_inst);
+        ctx.EraseInstruction(ge_inst);
 
-        Xbyak::Xmm saturated_sum = reg_alloc.ScratchXmm();
-        Xbyak::Xmm xmm_ge = reg_alloc.ScratchXmm();
+        Xbyak::Xmm saturated_sum = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
 
         code->pxor(xmm_ge, xmm_ge);
         code->movdqa(saturated_sum, xmm_a);
@@ -1163,30 +1166,30 @@ void EmitX64<PCT>::EmitPackedAddS8(RegAlloc& reg_alloc, IR::Block& block, IR::In
         code->pcmpeqb(saturated_sum, saturated_sum);
         code->pxor(xmm_ge, saturated_sum);
 
-        reg_alloc.DefineValue(ge_inst, xmm_ge);
+        ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
     }
 
     code->paddb(xmm_a, xmm_b);
 
-    reg_alloc.DefineValue(inst, xmm_a);
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedAddU16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
-    Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
     code->paddw(xmm_a, xmm_b);
 
     if (ge_inst) {
-        EraseInstruction(block, ge_inst);
+        ctx.EraseInstruction(ge_inst);
 
         if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-            Xbyak::Xmm xmm_ge = reg_alloc.ScratchXmm();
-            Xbyak::Xmm ones = reg_alloc.ScratchXmm();
+            Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
+            Xbyak::Xmm ones = ctx.reg_alloc.ScratchXmm();
 
             code->pcmpeqb(ones, ones);
 
@@ -1195,10 +1198,10 @@ void EmitX64<PCT>::EmitPackedAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::I
             code->pcmpeqw(xmm_ge, xmm_b);
             code->pxor(xmm_ge, ones);
 
-            reg_alloc.DefineValue(ge_inst, xmm_ge);
+            ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
         } else {
-            Xbyak::Xmm tmp_a = reg_alloc.ScratchXmm();
-            Xbyak::Xmm tmp_b = reg_alloc.ScratchXmm();
+            Xbyak::Xmm tmp_a = ctx.reg_alloc.ScratchXmm();
+            Xbyak::Xmm tmp_b = ctx.reg_alloc.ScratchXmm();
 
             // !(b <= a+b) == b > a+b
             code->movdqa(tmp_a, xmm_a);
@@ -1207,26 +1210,26 @@ void EmitX64<PCT>::EmitPackedAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::I
             code->paddw(tmp_b, code->MConst(0x80008000));
             code->pcmpgtw(tmp_b, tmp_a); // *Signed* comparison!
 
-            reg_alloc.DefineValue(ge_inst, tmp_b);
+            ctx.reg_alloc.DefineValue(ge_inst, tmp_b);
         }
     }
 
-    reg_alloc.DefineValue(inst, xmm_a);
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedAddS16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
-    Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
     if (ge_inst) {
-        EraseInstruction(block, ge_inst);
+        ctx.EraseInstruction(ge_inst);
 
-        Xbyak::Xmm saturated_sum = reg_alloc.ScratchXmm();
-        Xbyak::Xmm xmm_ge = reg_alloc.ScratchXmm();
+        Xbyak::Xmm saturated_sum = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
 
         code->pxor(xmm_ge, xmm_ge);
         code->movdqa(saturated_sum, xmm_a);
@@ -1235,52 +1238,52 @@ void EmitX64<PCT>::EmitPackedAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::I
         code->pcmpeqw(saturated_sum, saturated_sum);
         code->pxor(xmm_ge, saturated_sum);
 
-        reg_alloc.DefineValue(ge_inst, xmm_ge);
+        ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
     }
 
     code->paddw(xmm_a, xmm_b);
 
-    reg_alloc.DefineValue(inst, xmm_a);
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedSubU8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
-    Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
     if (ge_inst) {
-        EraseInstruction(block, ge_inst);
+        ctx.EraseInstruction(ge_inst);
 
-        Xbyak::Xmm xmm_ge = reg_alloc.ScratchXmm();
+        Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
 
         code->movdqa(xmm_ge, xmm_a);
         code->pmaxub(xmm_ge, xmm_b);
         code->pcmpeqb(xmm_ge, xmm_a);
 
-        reg_alloc.DefineValue(ge_inst, xmm_ge);
+        ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
     }
 
     code->psubb(xmm_a, xmm_b);
 
-    reg_alloc.DefineValue(inst, xmm_a);
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedSubS8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
-    Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
     if (ge_inst) {
-        EraseInstruction(block, ge_inst);
+        ctx.EraseInstruction(ge_inst);
 
-        Xbyak::Xmm saturated_sum = reg_alloc.ScratchXmm();
-        Xbyak::Xmm xmm_ge = reg_alloc.ScratchXmm();
+        Xbyak::Xmm saturated_sum = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
 
         code->pxor(xmm_ge, xmm_ge);
         code->movdqa(saturated_sum, xmm_a);
@@ -1289,36 +1292,36 @@ void EmitX64<PCT>::EmitPackedSubS8(RegAlloc& reg_alloc, IR::Block& block, IR::In
         code->pcmpeqb(saturated_sum, saturated_sum);
         code->pxor(xmm_ge, saturated_sum);
 
-        reg_alloc.DefineValue(ge_inst, xmm_ge);
+        ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
     }
 
     code->psubb(xmm_a, xmm_b);
 
-    reg_alloc.DefineValue(inst, xmm_a);
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedSubU16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
-    Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
     if (ge_inst) {
-        EraseInstruction(block, ge_inst);
+        ctx.EraseInstruction(ge_inst);
 
         if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-            Xbyak::Xmm xmm_ge = reg_alloc.ScratchXmm();
+            Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
 
             code->movdqa(xmm_ge, xmm_a);
             code->pmaxuw(xmm_ge, xmm_b); // Requires SSE 4.1
             code->pcmpeqw(xmm_ge, xmm_a);
 
-            reg_alloc.DefineValue(ge_inst, xmm_ge);
+            ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
         } else {
-            Xbyak::Xmm xmm_ge = reg_alloc.ScratchXmm();
-            Xbyak::Xmm ones = reg_alloc.ScratchXmm();
+            Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
+            Xbyak::Xmm ones = ctx.reg_alloc.ScratchXmm();
 
             // (a >= b) == !(b > a)
             code->pcmpeqb(ones, ones);
@@ -1328,28 +1331,28 @@ void EmitX64<PCT>::EmitPackedSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::I
             code->pcmpgtw(xmm_ge, xmm_a); // *Signed* comparison!
             code->pxor(xmm_ge, ones);
 
-            reg_alloc.DefineValue(ge_inst, xmm_ge);
+            ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
         }
     }
 
     code->psubw(xmm_a, xmm_b);
 
-    reg_alloc.DefineValue(inst, xmm_a);
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedSubS16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
-    Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
     if (ge_inst) {
-        EraseInstruction(block, ge_inst);
+        ctx.EraseInstruction(ge_inst);
 
-        Xbyak::Xmm saturated_diff = reg_alloc.ScratchXmm();
-        Xbyak::Xmm xmm_ge = reg_alloc.ScratchXmm();
+        Xbyak::Xmm saturated_diff = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
 
         code->pxor(xmm_ge, xmm_ge);
         code->movdqa(saturated_diff, xmm_a);
@@ -1358,22 +1361,22 @@ void EmitX64<PCT>::EmitPackedSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::I
         code->pcmpeqw(saturated_diff, saturated_diff);
         code->pxor(xmm_ge, saturated_diff);
 
-        reg_alloc.DefineValue(ge_inst, xmm_ge);
+        ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
     }
 
     code->psubw(xmm_a, xmm_b);
 
-    reg_alloc.DefineValue(inst, xmm_a);
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedHalvingAddU8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     if (args[0].IsInXmm() || args[1].IsInXmm()) {
-        Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Xmm xmm_b = reg_alloc.UseScratchXmm(args[1]);
-        Xbyak::Xmm ones = reg_alloc.ScratchXmm();
+        Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm xmm_b = ctx.reg_alloc.UseScratchXmm(args[1]);
+        Xbyak::Xmm ones = ctx.reg_alloc.ScratchXmm();
 
         // Since,
         //   pavg(a, b) == (a + b + 1) >> 1
@@ -1386,11 +1389,11 @@ void EmitX64<PCT>::EmitPackedHalvingAddU8(RegAlloc& reg_alloc, IR::Block&, IR::I
         code->pavgb(xmm_a, xmm_b);
         code->pxor(xmm_a, ones);
 
-        reg_alloc.DefineValue(inst, xmm_a);
+        ctx.reg_alloc.DefineValue(inst, xmm_a);
     } else {
-        Xbyak::Reg32 reg_a = reg_alloc.UseScratchGpr(args[0]).cvt32();
-        Xbyak::Reg32 reg_b = reg_alloc.UseGpr(args[1]).cvt32();
-        Xbyak::Reg32 xor_a_b = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 reg_a = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 reg_b = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+        Xbyak::Reg32 xor_a_b = ctx.reg_alloc.ScratchGpr().cvt32();
         Xbyak::Reg32 and_a_b = reg_a;
         Xbyak::Reg32 result = reg_a;
 
@@ -1406,18 +1409,18 @@ void EmitX64<PCT>::EmitPackedHalvingAddU8(RegAlloc& reg_alloc, IR::Block&, IR::I
         code->and_(xor_a_b, 0x7F7F7F7F);
         code->add(result, xor_a_b);
 
-        reg_alloc.DefineValue(inst, result);
+        ctx.reg_alloc.DefineValue(inst, result);
     }
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedHalvingAddU16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     if (args[0].IsInXmm() || args[1].IsInXmm()) {
-        Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
-        Xbyak::Xmm tmp = reg_alloc.ScratchXmm();
+        Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+        Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
         code->movdqa(tmp, xmm_a);
         code->pand(xmm_a, xmm_b);
@@ -1425,11 +1428,11 @@ void EmitX64<PCT>::EmitPackedHalvingAddU16(RegAlloc& reg_alloc, IR::Block&, IR::
         code->psrlw(tmp, 1);
         code->paddw(xmm_a, tmp);
 
-        reg_alloc.DefineValue(inst, xmm_a);
+        ctx.reg_alloc.DefineValue(inst, xmm_a);
     } else {
-        Xbyak::Reg32 reg_a = reg_alloc.UseScratchGpr(args[0]).cvt32();
-        Xbyak::Reg32 reg_b = reg_alloc.UseGpr(args[1]).cvt32();
-        Xbyak::Reg32 xor_a_b = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 reg_a = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 reg_b = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+        Xbyak::Reg32 xor_a_b = ctx.reg_alloc.ScratchGpr().cvt32();
         Xbyak::Reg32 and_a_b = reg_a;
         Xbyak::Reg32 result = reg_a;
 
@@ -1445,20 +1448,20 @@ void EmitX64<PCT>::EmitPackedHalvingAddU16(RegAlloc& reg_alloc, IR::Block&, IR::
         code->and_(xor_a_b, 0x7FFF7FFF);
         code->add(result, xor_a_b);
 
-        reg_alloc.DefineValue(inst, result);
+        ctx.reg_alloc.DefineValue(inst, result);
     }
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedHalvingAddS8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 reg_a = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg32 reg_b = reg_alloc.UseGpr(args[1]).cvt32();
-    Xbyak::Reg32 xor_a_b = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 reg_a = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 reg_b = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+    Xbyak::Reg32 xor_a_b = ctx.reg_alloc.ScratchGpr().cvt32();
     Xbyak::Reg32 and_a_b = reg_a;
     Xbyak::Reg32 result = reg_a;
-    Xbyak::Reg32 carry = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 carry = ctx.reg_alloc.ScratchGpr().cvt32();
 
     // This relies on the equality x+y == ((x&y) << 1) + (x^y).
     // Note that x^y always contains the LSB of the result.
@@ -1476,16 +1479,16 @@ void EmitX64<PCT>::EmitPackedHalvingAddS8(RegAlloc& reg_alloc, IR::Block&, IR::I
     code->add(result, xor_a_b);
     code->xor_(result, carry);
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedHalvingAddS16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
-    Xbyak::Xmm tmp = reg_alloc.ScratchXmm();
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
     // This relies on the equality x+y == ((x&y) << 1) + (x^y).
     // Note that x^y always contains the LSB of the result.
@@ -1498,15 +1501,15 @@ void EmitX64<PCT>::EmitPackedHalvingAddS16(RegAlloc& reg_alloc, IR::Block&, IR::
     code->psraw(tmp, 1);
     code->paddw(xmm_a, tmp);
 
-    reg_alloc.DefineValue(inst, xmm_a);
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedHalvingSubU8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 minuend = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg32 subtrahend = reg_alloc.UseScratchGpr(args[1]).cvt32();
+    Xbyak::Reg32 minuend = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 subtrahend = ctx.reg_alloc.UseScratchGpr(args[1]).cvt32();
 
     // This relies on the equality x-y == (x^y) - (((x^y)&y) << 1).
     // Note that x^y always contains the LSB of the result.
@@ -1529,17 +1532,17 @@ void EmitX64<PCT>::EmitPackedHalvingSubU8(RegAlloc& reg_alloc, IR::Block&, IR::I
     code->xor_(minuend, 0x80808080);
 
     // minuend now contains the desired result.
-    reg_alloc.DefineValue(inst, minuend);
+    ctx.reg_alloc.DefineValue(inst, minuend);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedHalvingSubS8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Reg32 minuend = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg32 subtrahend = reg_alloc.UseScratchGpr(args[1]).cvt32();
+    Xbyak::Reg32 minuend = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 subtrahend = ctx.reg_alloc.UseScratchGpr(args[1]).cvt32();
 
-    Xbyak::Reg32 carry = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 carry = ctx.reg_alloc.ScratchGpr().cvt32();
 
     // This relies on the equality x-y == (x^y) - (((x^y)&y) << 1).
     // Note that x^y always contains the LSB of the result.
@@ -1566,15 +1569,15 @@ void EmitX64<PCT>::EmitPackedHalvingSubS8(RegAlloc& reg_alloc, IR::Block&, IR::I
     code->xor_(minuend, 0x80808080);
     code->xor_(minuend, carry);
 
-    reg_alloc.DefineValue(inst, minuend);
+    ctx.reg_alloc.DefineValue(inst, minuend);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedHalvingSubU16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm minuend = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm subtrahend = reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Xmm minuend = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm subtrahend = ctx.reg_alloc.UseScratchXmm(args[1]);
 
     // This relies on the equality x-y == (x^y) - (((x^y)&y) << 1).
     // Note that x^y always contains the LSB of the result.
@@ -1590,15 +1593,15 @@ void EmitX64<PCT>::EmitPackedHalvingSubU16(RegAlloc& reg_alloc, IR::Block&, IR::
 
     code->psubw(minuend, subtrahend);
 
-    reg_alloc.DefineValue(inst, minuend);
+    ctx.reg_alloc.DefineValue(inst, minuend);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedHalvingSubS16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm minuend = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm subtrahend = reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Xmm minuend = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm subtrahend = ctx.reg_alloc.UseScratchXmm(args[1]);
 
     // This relies on the equality x-y == (x^y) - (((x^y)&y) << 1).
     // Note that x^y always contains the LSB of the result.
@@ -1614,17 +1617,17 @@ void EmitX64<PCT>::EmitPackedHalvingSubS16(RegAlloc& reg_alloc, IR::Block&, IR::
 
     code->psubw(minuend, subtrahend);
 
-    reg_alloc.DefineValue(inst, minuend);
+    ctx.reg_alloc.DefineValue(inst, minuend);
 }
 
-void EmitPackedSubAdd(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst, bool hi_is_sum, bool is_signed, bool is_halving) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitPackedSubAdd(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, bool hi_is_sum, bool is_signed, bool is_halving) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
-    Xbyak::Reg32 reg_a_hi = reg_alloc.UseScratchGpr(args[0]).cvt32();
-    Xbyak::Reg32 reg_b_hi = reg_alloc.UseScratchGpr(args[1]).cvt32();
-    Xbyak::Reg32 reg_a_lo = reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Reg32 reg_b_lo = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 reg_a_hi = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+    Xbyak::Reg32 reg_b_hi = ctx.reg_alloc.UseScratchGpr(args[1]).cvt32();
+    Xbyak::Reg32 reg_a_lo = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 reg_b_lo = ctx.reg_alloc.ScratchGpr().cvt32();
     Xbyak::Reg32 reg_sum, reg_diff;
 
     if (is_signed) {
@@ -1652,7 +1655,7 @@ void EmitPackedSubAdd(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, 
     }
 
     if (ge_inst) {
-        EraseInstruction(block, ge_inst);
+        ctx.EraseInstruction(ge_inst);
 
         // The reg_b registers are no longer required.
         Xbyak::Reg32 ge_sum = reg_b_hi;
@@ -1674,7 +1677,7 @@ void EmitPackedSubAdd(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, 
         code->and_(ge_diff, hi_is_sum ? 0x0000FFFF : 0xFFFF0000);
         code->or_(ge_sum, ge_diff);
 
-        reg_alloc.DefineValue(ge_inst, ge_sum);
+        ctx.reg_alloc.DefineValue(ge_inst, ge_sum);
     }
 
     if (is_halving) {
@@ -1688,142 +1691,142 @@ void EmitPackedSubAdd(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, 
     // Merge them.
     code->shld(reg_a_hi, reg_a_lo, 16);
 
-    reg_alloc.DefineValue(inst, reg_a_hi);
+    ctx.reg_alloc.DefineValue(inst, reg_a_hi);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    EmitPackedSubAdd(code, reg_alloc, block, inst, true, false, false);
+void EmitX64<PCT>::EmitPackedAddSubU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedSubAdd(code, ctx, inst, true, false, false);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    EmitPackedSubAdd(code, reg_alloc, block, inst, true, true, false);
+void EmitX64<PCT>::EmitPackedAddSubS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedSubAdd(code, ctx, inst, true, true, false);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    EmitPackedSubAdd(code, reg_alloc, block, inst, false, false, false);
+void EmitX64<PCT>::EmitPackedSubAddU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedSubAdd(code, ctx, inst, false, false, false);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    EmitPackedSubAdd(code, reg_alloc, block, inst, false, true, false);
+void EmitX64<PCT>::EmitPackedSubAddS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedSubAdd(code, ctx, inst, false, true, false);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    EmitPackedSubAdd(code, reg_alloc, block, inst, true, false, true);
+void EmitX64<PCT>::EmitPackedHalvingAddSubU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedSubAdd(code, ctx, inst, true, false, true);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    EmitPackedSubAdd(code, reg_alloc, block, inst, true, true, true);
+void EmitX64<PCT>::EmitPackedHalvingAddSubS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedSubAdd(code, ctx, inst, true, true, true);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    EmitPackedSubAdd(code, reg_alloc, block, inst, false, false, true);
+void EmitX64<PCT>::EmitPackedHalvingSubAddU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedSubAdd(code, ctx, inst, false, false, true);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    EmitPackedSubAdd(code, reg_alloc, block, inst, false, true, true);
+void EmitX64<PCT>::EmitPackedHalvingSubAddS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedSubAdd(code, ctx, inst, false, true, true);
 }
 
-static void EmitPackedOperation(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Mmx& mmx, const Xbyak::Operand&)) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+static void EmitPackedOperation(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Mmx& mmx, const Xbyak::Operand&)) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
     (code->*fn)(xmm_a, xmm_b);
 
-    reg_alloc.DefineValue(inst, xmm_a);
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedAddU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::paddusb);
+void EmitX64<PCT>::EmitPackedSaturatedAddU8(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddusb);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedAddS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::paddsb);
+void EmitX64<PCT>::EmitPackedSaturatedAddS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddsb);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedSubU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psubusb);
+void EmitX64<PCT>::EmitPackedSaturatedSubU8(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubusb);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedSubS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psubsb);
+void EmitX64<PCT>::EmitPackedSaturatedSubS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubsb);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedAddU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::paddusw);
+void EmitX64<PCT>::EmitPackedSaturatedAddU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddusw);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedAddS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::paddsw);
+void EmitX64<PCT>::EmitPackedSaturatedAddS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddsw);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedSubU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psubusw);
+void EmitX64<PCT>::EmitPackedSaturatedSubU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubusw);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedSubS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psubsw);
+void EmitX64<PCT>::EmitPackedSaturatedSubS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubsw);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedAbsDiffSumS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psadbw);
+void EmitX64<PCT>::EmitPackedAbsDiffSumS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psadbw);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitPackedSelect(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitPackedSelect(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     size_t num_args_in_xmm = args[0].IsInXmm() + args[1].IsInXmm() + args[2].IsInXmm();
 
     if (num_args_in_xmm >= 2) {
-        Xbyak::Xmm ge = reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Xmm to = reg_alloc.UseXmm(args[1]);
-        Xbyak::Xmm from = reg_alloc.UseScratchXmm(args[2]);
+        Xbyak::Xmm ge = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm to = ctx.reg_alloc.UseXmm(args[1]);
+        Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[2]);
 
         code->pand(from, ge);
         code->pandn(ge, to);
         code->por(from, ge);
 
-        reg_alloc.DefineValue(inst, from);
+        ctx.reg_alloc.DefineValue(inst, from);
     } else if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI1)) {
-        Xbyak::Reg32 ge = reg_alloc.UseGpr(args[0]).cvt32();
-        Xbyak::Reg32 to = reg_alloc.UseScratchGpr(args[1]).cvt32();
-        Xbyak::Reg32 from = reg_alloc.UseScratchGpr(args[2]).cvt32();
+        Xbyak::Reg32 ge = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+        Xbyak::Reg32 to = ctx.reg_alloc.UseScratchGpr(args[1]).cvt32();
+        Xbyak::Reg32 from = ctx.reg_alloc.UseScratchGpr(args[2]).cvt32();
 
         code->and_(from, ge);
         code->andn(to, ge, to);
         code->or_(from, to);
 
-        reg_alloc.DefineValue(inst, from);
+        ctx.reg_alloc.DefineValue(inst, from);
     } else {
-        Xbyak::Reg32 ge = reg_alloc.UseScratchGpr(args[0]).cvt32();
-        Xbyak::Reg32 to = reg_alloc.UseGpr(args[1]).cvt32();
-        Xbyak::Reg32 from = reg_alloc.UseScratchGpr(args[2]).cvt32();
+        Xbyak::Reg32 ge = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 to = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+        Xbyak::Reg32 from = ctx.reg_alloc.UseScratchGpr(args[2]).cvt32();
 
         code->and_(from, ge);
         code->not_(ge);
         code->and_(ge, to);
         code->or_(from, ge);
 
-        reg_alloc.DefineValue(inst, from);
+        ctx.reg_alloc.DefineValue(inst, from);
     }
 }
 
@@ -1916,222 +1919,221 @@ static void ZeroIfNaN64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_
     code->pand(xmm_value, xmm_scratch);
 }
 
-static void FPThreeOp32(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+static void FPThreeOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm operand = reg_alloc.UseScratchXmm(args[1]);
-    Xbyak::Reg32 gpr_scratch = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
 
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero32(code, result, gpr_scratch);
         DenormalsAreZero32(code, operand, gpr_scratch);
     }
     (code->*fn)(result, operand);
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         FlushToZero32(code, result, gpr_scratch);
     }
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
+    if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static void FPThreeOp64(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+static void FPThreeOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm operand = reg_alloc.UseScratchXmm(args[1]);
-    Xbyak::Reg64 gpr_scratch = reg_alloc.ScratchGpr();
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero64(code, result, gpr_scratch);
         DenormalsAreZero64(code, operand, gpr_scratch);
     }
     (code->*fn)(result, operand);
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
+    if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static void FPTwoOp32(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+static void FPTwoOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg32 gpr_scratch = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
 
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero32(code, result, gpr_scratch);
     }
 
     (code->*fn)(result, result);
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         FlushToZero32(code, result, gpr_scratch);
     }
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
+    if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static void FPTwoOp64(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+static void FPTwoOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg64 gpr_scratch = reg_alloc.ScratchGpr();
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero64(code, result, gpr_scratch);
     }
 
     (code->*fn)(result, result);
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
+    if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitTransferFromFP32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.DefineValue(inst, args[0]);
+void EmitX64<PCT>::EmitTransferFromFP32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.DefineValue(inst, args[0]);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitTransferFromFP64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.DefineValue(inst, args[0]);
+void EmitX64<PCT>::EmitTransferFromFP64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.DefineValue(inst, args[0]);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitTransferToFP32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitTransferToFP32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate() && args[0].GetImmediateU32() == 0) {
-        Xbyak::Xmm result = reg_alloc.ScratchXmm();
+        Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
         code->xorps(result, result);
-        reg_alloc.DefineValue(inst, result);
+        ctx.reg_alloc.DefineValue(inst, result);
     } else {
-        reg_alloc.DefineValue(inst, args[0]);
+        ctx.reg_alloc.DefineValue(inst, args[0]);
     }
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitTransferToFP64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void EmitX64<PCT>::EmitTransferToFP64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate() && args[0].GetImmediateU64() == 0) {
-        Xbyak::Xmm result = reg_alloc.ScratchXmm();
+        Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
         code->xorps(result, result);
-        reg_alloc.DefineValue(inst, result);
+        ctx.reg_alloc.DefineValue(inst, result);
     } else {
-        reg_alloc.DefineValue(inst, args[0]);
+        ctx.reg_alloc.DefineValue(inst, args[0]);
     }
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPAbs32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
+void EmitX64<PCT>::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
     code->pand(result, code->MConst(f32_non_sign_mask));
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPAbs64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
+void EmitX64<PCT>::EmitFPAbs64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
     code->pand(result, code->MConst(f64_non_sign_mask));
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPNeg32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
+void EmitX64<PCT>::EmitFPNeg32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
     code->pxor(result, code->MConst(f32_negative_zero));
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPNeg64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
+void EmitX64<PCT>::EmitFPNeg64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
     code->pxor(result, code->MConst(f64_negative_zero));
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPAdd32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    FPThreeOp32(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::addss);
+void EmitX64<PCT>::EmitFPAdd32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::addss);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPAdd64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    FPThreeOp64(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::addsd);
+void EmitX64<PCT>::EmitFPAdd64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::addsd);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPDiv32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    FPThreeOp32(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::divss);
+void EmitX64<PCT>::EmitFPDiv32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::divss);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPDiv64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    FPThreeOp64(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::divsd);
+void EmitX64<PCT>::EmitFPDiv64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::divsd);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPMul32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    FPThreeOp32(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::mulss);
+void EmitX64<PCT>::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::mulss);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPMul64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    FPThreeOp64(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::mulsd);
+void EmitX64<PCT>::EmitFPMul64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::mulsd);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPSqrt32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    FPTwoOp32(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::sqrtss);
+void EmitX64<PCT>::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
+    FPTwoOp32(code, ctx, inst, &Xbyak::CodeGenerator::sqrtss);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPSqrt64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    FPTwoOp64(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::sqrtsd);
+void EmitX64<PCT>::EmitFPSqrt64(EmitContext& ctx, IR::Inst* inst) {
+    FPTwoOp64(code, ctx, inst, &Xbyak::CodeGenerator::sqrtsd);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPSub32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    FPThreeOp32(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::subss);
+void EmitX64<PCT>::EmitFPSub32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::subss);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPSub64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    FPThreeOp64(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::subsd);
+void EmitX64<PCT>::EmitFPSub64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::subsd);
 }
 
-static void SetFpscrNzcvFromFlags(BlockOfCode* code, RegAlloc& reg_alloc) {
-    reg_alloc.ScratchGpr({HostLoc::RCX}); // shifting requires use of cl
-    Xbyak::Reg32 nzcv = reg_alloc.ScratchGpr().cvt32();
-
+static void SetFpscrNzcvFromFlags(BlockOfCode* code, EmitContext& ctx) {
+    ctx.reg_alloc.ScratchGpr({HostLoc::RCX}); // shifting requires use of cl
+    Xbyak::Reg32 nzcv = ctx.reg_alloc.ScratchGpr().cvt32();
 
     code->mov(nzcv, 0x28630000);
     code->sete(cl);
@@ -2142,10 +2144,10 @@ static void SetFpscrNzcvFromFlags(BlockOfCode* code, RegAlloc& reg_alloc) {
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPCompare32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm reg_a = reg_alloc.UseXmm(args[0]);
-    Xbyak::Xmm reg_b = reg_alloc.UseXmm(args[1]);
+void EmitX64<PCT>::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm reg_a = ctx.reg_alloc.UseXmm(args[0]);
+    Xbyak::Xmm reg_b = ctx.reg_alloc.UseXmm(args[1]);
     bool exc_on_qnan = args[2].GetImmediateU1();
 
     if (exc_on_qnan) {
@@ -2154,14 +2156,14 @@ void EmitX64<PCT>::EmitFPCompare32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* in
         code->ucomiss(reg_a, reg_b);
     }
 
-    SetFpscrNzcvFromFlags(code, reg_alloc);
+    SetFpscrNzcvFromFlags(code, ctx);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPCompare64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm reg_a = reg_alloc.UseXmm(args[0]);
-    Xbyak::Xmm reg_b = reg_alloc.UseXmm(args[1]);
+void EmitX64<PCT>::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm reg_a = ctx.reg_alloc.UseXmm(args[0]);
+    Xbyak::Xmm reg_b = ctx.reg_alloc.UseXmm(args[1]);
     bool exc_on_qnan = args[2].GetImmediateU1();
 
     if (exc_on_qnan) {
@@ -2170,61 +2172,61 @@ void EmitX64<PCT>::EmitFPCompare64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* in
         code->ucomisd(reg_a, reg_b);
     }
 
-    SetFpscrNzcvFromFlags(code, reg_alloc);
+    SetFpscrNzcvFromFlags(code, ctx);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPSingleToDouble(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg64 gpr_scratch = reg_alloc.ScratchGpr();
+void EmitX64<PCT>::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero32(code, result, gpr_scratch.cvt32());
     }
     code->cvtss2sd(result, result);
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
+    if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPDoubleToSingle(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg64 gpr_scratch = reg_alloc.ScratchGpr();
+void EmitX64<PCT>::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero64(code, result, gpr_scratch);
     }
     code->cvtsd2ss(result, result);
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         FlushToZero32(code, result, gpr_scratch.cvt32());
     }
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
+    if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
     }
 
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPSingleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm from = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg32 to = reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Xmm xmm_scratch = reg_alloc.ScratchXmm();
+void EmitX64<PCT>::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Xmm xmm_scratch = ctx.reg_alloc.ScratchXmm();
     bool round_towards_zero = args[1].GetImmediateU1();
 
     // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
     // Conversion to double is lossless, and allows for clamping.
 
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero32(code, from, to);
     }
     code->cvtss2sd(from, from);
@@ -2245,15 +2247,15 @@ void EmitX64<PCT>::EmitFPSingleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::
         code->cvtsd2si(to, from); // 32 bit gpr
     }
 
-    reg_alloc.DefineValue(inst, to);
+    ctx.reg_alloc.DefineValue(inst, to);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPSingleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm from = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg32 to = reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Xmm xmm_scratch = reg_alloc.ScratchXmm();
+void EmitX64<PCT>::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Xmm xmm_scratch = ctx.reg_alloc.ScratchXmm();
     bool round_towards_zero = args[1].GetImmediateU1();
 
     // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
@@ -2263,8 +2265,8 @@ void EmitX64<PCT>::EmitFPSingleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::
     //
     // FIXME: Inexact exception not correctly signalled with the below code
 
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().RMode() != A32::FPSCR::RoundingMode::TowardsZero && !round_towards_zero) {
-        if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (!ctx.FPSCR_RoundTowardsZero() && !round_towards_zero) {
+        if (ctx.FPSCR_FTZ()) {
             DenormalsAreZero32(code, from, to);
         }
         code->cvtss2sd(from, from);
@@ -2281,10 +2283,10 @@ void EmitX64<PCT>::EmitFPSingleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::
         // Bring back into original range
         code->add(to, u32(2147483648u));
     } else {
-        Xbyak::Xmm xmm_mask = reg_alloc.ScratchXmm();
-        Xbyak::Reg32 gpr_mask = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Xmm xmm_mask = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Reg32 gpr_mask = ctx.reg_alloc.ScratchGpr().cvt32();
 
-        if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+        if (ctx.FPSCR_FTZ()) {
             DenormalsAreZero32(code, from, to);
         }
         code->cvtss2sd(from, from);
@@ -2308,21 +2310,21 @@ void EmitX64<PCT>::EmitFPSingleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::
         code->add(to, gpr_mask);
     }
 
-    reg_alloc.DefineValue(inst, to);
+    ctx.reg_alloc.DefineValue(inst, to);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPDoubleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm from = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg32 to = reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Xmm xmm_scratch = reg_alloc.ScratchXmm();
-    Xbyak::Reg32 gpr_scratch = reg_alloc.ScratchGpr().cvt32();
+void EmitX64<PCT>::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Xmm xmm_scratch = ctx.reg_alloc.ScratchXmm();
+    Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
     bool round_towards_zero = args[1].GetImmediateU1();
 
     // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
 
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero64(code, from, gpr_scratch.cvt64());
     }
     // First time is to set flags
@@ -2342,24 +2344,24 @@ void EmitX64<PCT>::EmitFPDoubleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::
         code->cvtsd2si(to, from); // 32 bit gpr
     }
 
-    reg_alloc.DefineValue(inst, to);
+    ctx.reg_alloc.DefineValue(inst, to);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPDoubleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm from = reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg32 to = reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Xmm xmm_scratch = reg_alloc.ScratchXmm();
-    Xbyak::Reg32 gpr_scratch = reg_alloc.ScratchGpr().cvt32();
+void EmitX64<PCT>::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Xmm xmm_scratch = ctx.reg_alloc.ScratchXmm();
+    Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
     bool round_towards_zero = args[1].GetImmediateU1();
 
     // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
     // TODO: Use VCVTPD2UDQ when AVX512VL is available.
     // FIXME: Inexact exception not correctly signalled with the below code
 
-    if (A32::LocationDescriptor{block.Location()}.FPSCR().RMode() != A32::FPSCR::RoundingMode::TowardsZero && !round_towards_zero) {
-        if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+    if (!ctx.FPSCR_RoundTowardsZero() && !round_towards_zero) {
+        if (ctx.FPSCR_FTZ()) {
             DenormalsAreZero64(code, from, gpr_scratch.cvt64());
         }
         ZeroIfNaN64(code, from, xmm_scratch);
@@ -2375,10 +2377,10 @@ void EmitX64<PCT>::EmitFPDoubleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::
         // Bring back into original range
         code->add(to, u32(2147483648u));
     } else {
-        Xbyak::Xmm xmm_mask = reg_alloc.ScratchXmm();
-        Xbyak::Reg32 gpr_mask = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Xmm xmm_mask = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Reg32 gpr_mask = ctx.reg_alloc.ScratchGpr().cvt32();
 
-        if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
+        if (ctx.FPSCR_FTZ()) {
             DenormalsAreZero64(code, from, gpr_scratch.cvt64());
         }
         ZeroIfNaN64(code, from, xmm_scratch);
@@ -2401,27 +2403,27 @@ void EmitX64<PCT>::EmitFPDoubleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::
         code->add(to, gpr_mask);
     }
 
-    reg_alloc.DefineValue(inst, to);
+    ctx.reg_alloc.DefineValue(inst, to);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPS32ToSingle(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 from = reg_alloc.UseGpr(args[0]).cvt32();
-    Xbyak::Xmm to = reg_alloc.ScratchXmm();
+void EmitX64<PCT>::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg32 from = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
     bool round_to_nearest = args[1].GetImmediateU1();
     ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
     code->cvtsi2ss(to, from);
 
-    reg_alloc.DefineValue(inst, to);
+    ctx.reg_alloc.DefineValue(inst, to);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPU32ToSingle(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 from = reg_alloc.UseGpr(args[0]);
-    Xbyak::Xmm to = reg_alloc.ScratchXmm();
+void EmitX64<PCT>::EmitFPU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
     bool round_to_nearest = args[1].GetImmediateU1();
     ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
@@ -2429,27 +2431,27 @@ void EmitX64<PCT>::EmitFPU32ToSingle(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
     code->mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
     code->cvtsi2ss(to, from);
 
-    reg_alloc.DefineValue(inst, to);
+    ctx.reg_alloc.DefineValue(inst, to);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPS32ToDouble(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 from = reg_alloc.UseGpr(args[0]).cvt32();
-    Xbyak::Xmm to = reg_alloc.ScratchXmm();
+void EmitX64<PCT>::EmitFPS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg32 from = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
     bool round_to_nearest = args[1].GetImmediateU1();
     ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
     code->cvtsi2sd(to, from);
 
-    reg_alloc.DefineValue(inst, to);
+    ctx.reg_alloc.DefineValue(inst, to);
 }
 
 template <typename PCT>
-void EmitX64<PCT>::EmitFPU32ToDouble(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 from = reg_alloc.UseGpr(args[0]);
-    Xbyak::Xmm to = reg_alloc.ScratchXmm();
+void EmitX64<PCT>::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
     bool round_to_nearest = args[1].GetImmediateU1();
     ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
@@ -2457,7 +2459,7 @@ void EmitX64<PCT>::EmitFPU32ToDouble(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
     code->mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
     code->cvtsi2sd(to, from);
 
-    reg_alloc.DefineValue(inst, to);
+    ctx.reg_alloc.DefineValue(inst, to);
 }
 
 template <typename PCT>

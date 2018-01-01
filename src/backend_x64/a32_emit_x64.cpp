@@ -49,6 +49,25 @@ static Xbyak::Address MJitStateExtReg(A32::ExtReg reg) {
     ASSERT_MSG(false, "Should never happen.");
 }
 
+A32EmitContext::A32EmitContext(RegAlloc& reg_alloc, IR::Block& block)
+    : EmitContext(reg_alloc, block) {}
+
+A32::LocationDescriptor A32EmitContext::Location() const {
+    return A32::LocationDescriptor{block.Location()};
+}
+
+bool A32EmitContext::FPSCR_RoundTowardsZero() const {
+    return Location().FPSCR().RMode() != A32::FPSCR::RoundingMode::TowardsZero;
+}
+
+bool A32EmitContext::FPSCR_FTZ() const {
+    return Location().FPSCR().FTZ();
+}
+
+bool A32EmitContext::FPSCR_DN() const {
+    return Location().FPSCR().DN();
+}
+
 A32EmitX64::A32EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface)
     : EmitX64(code, cb, jit_interface) {}
 
@@ -62,6 +81,7 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
     EmitCondPrelude(block);
 
     RegAlloc reg_alloc{code};
+    A32EmitContext ctx{reg_alloc, block};
 
     for (auto iter = block.begin(); iter != block.end(); ++iter) {
         IR::Inst* inst = &*iter;
@@ -69,13 +89,13 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
         // Call the relevant Emit* member function.
         switch (inst->GetOpcode()) {
 
-#define OPCODE(name, type, ...)                              \
-        case IR::Opcode::name:                               \
-            A32EmitX64::Emit##name(reg_alloc, block, inst);  \
+#define OPCODE(name, type, ...)                 \
+        case IR::Opcode::name:                  \
+            A32EmitX64::Emit##name(ctx, inst);  \
             break;
-#define A32OPC(name, type, ...)                                 \
-        case IR::Opcode::A32##name:                             \
-            A32EmitX64::EmitA32##name(reg_alloc, block, inst);  \
+#define A32OPC(name, type, ...)                    \
+        case IR::Opcode::A32##name:                \
+            A32EmitX64::EmitA32##name(ctx, inst);  \
             break;
 #include "frontend/ir/opcodes.inc"
 #undef OPCODE
@@ -108,68 +128,68 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
     return block_desc;
 }
 
-void A32EmitX64::EmitA32GetRegister(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32GetRegister(A32EmitContext& ctx, IR::Inst* inst) {
     A32::Reg reg = inst->GetArg(0).GetA32RegRef();
 
-    Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
     code->mov(result, MJitStateReg(reg));
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void A32EmitX64::EmitA32GetExtendedRegister32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32GetExtendedRegister32(A32EmitContext& ctx, IR::Inst* inst) {
     A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
     ASSERT(A32::IsSingleExtReg(reg));
 
-    Xbyak::Xmm result = reg_alloc.ScratchXmm();
+    Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     code->movss(result, MJitStateExtReg(reg));
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void A32EmitX64::EmitA32GetExtendedRegister64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32GetExtendedRegister64(A32EmitContext& ctx, IR::Inst* inst) {
     A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
     ASSERT(A32::IsDoubleExtReg(reg));
 
-    Xbyak::Xmm result = reg_alloc.ScratchXmm();
+    Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     code->movsd(result, MJitStateExtReg(reg));
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void A32EmitX64::EmitA32SetRegister(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32SetRegister(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     A32::Reg reg = inst->GetArg(0).GetA32RegRef();
     if (args[1].IsImmediate()) {
         code->mov(MJitStateReg(reg), args[1].GetImmediateU32());
     } else if (args[1].IsInXmm()) {
-        Xbyak::Xmm to_store = reg_alloc.UseXmm(args[1]);
+        Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
         code->movd(MJitStateReg(reg), to_store);
     } else {
-        Xbyak::Reg32 to_store = reg_alloc.UseGpr(args[1]).cvt32();
+        Xbyak::Reg32 to_store = ctx.reg_alloc.UseGpr(args[1]).cvt32();
         code->mov(MJitStateReg(reg), to_store);
     }
 }
 
-void A32EmitX64::EmitA32SetExtendedRegister32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32SetExtendedRegister32(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
     ASSERT(A32::IsSingleExtReg(reg));
     if (args[1].IsInXmm()) {
-        Xbyak::Xmm to_store = reg_alloc.UseXmm(args[1]);
+        Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
         code->movss(MJitStateExtReg(reg), to_store);
     } else {
-        Xbyak::Reg32 to_store = reg_alloc.UseGpr(args[1]).cvt32();
+        Xbyak::Reg32 to_store = ctx.reg_alloc.UseGpr(args[1]).cvt32();
         code->mov(MJitStateExtReg(reg), to_store);
     }
 }
 
-void A32EmitX64::EmitA32SetExtendedRegister64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32SetExtendedRegister64(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
     ASSERT(A32::IsDoubleExtReg(reg));
     if (args[1].IsInXmm()) {
-        Xbyak::Xmm to_store = reg_alloc.UseXmm(args[1]);
+        Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
         code->movsd(MJitStateExtReg(reg), to_store);
     } else {
-        Xbyak::Reg64 to_store = reg_alloc.UseGpr(args[1]);
+        Xbyak::Reg64 to_store = ctx.reg_alloc.UseGpr(args[1]);
         code->mov(MJitStateExtReg(reg), to_store);
     }
 }
@@ -178,11 +198,11 @@ static u32 GetCpsrImpl(A32JitState* jit_state) {
     return jit_state->Cpsr();
 }
 
-void A32EmitX64::EmitA32GetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32GetCpsr(A32EmitContext& ctx, IR::Inst* inst) {
     if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
-        Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
-        Xbyak::Reg32 b = reg_alloc.ScratchGpr().cvt32();
-        Xbyak::Reg32 c = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 b = ctx.reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 c = ctx.reg_alloc.ScratchGpr().cvt32();
 
         code->mov(c, dword[r15 + offsetof(A32JitState, CPSR_ge)]);
         // Here we observe that CPSR_q and CPSR_nzcv are right next to each other in memory,
@@ -202,9 +222,9 @@ void A32EmitX64::EmitA32GetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst)
         code->or_(result, dword[r15 + offsetof(A32JitState, CPSR_jaifm)]);
         code->or_(result, c);
 
-        reg_alloc.DefineValue(inst, result);
+        ctx.reg_alloc.DefineValue(inst, result);
     } else {
-        reg_alloc.HostCall(inst);
+        ctx.reg_alloc.HostCall(inst);
         code->mov(code->ABI_PARAM1, code->r15);
         code->CallFunction(&GetCpsrImpl);
     }
@@ -214,36 +234,36 @@ static void SetCpsrImpl(u32 value, A32JitState* jit_state) {
     jit_state->SetCpsr(value);
 }
 
-void A32EmitX64::EmitA32SetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.HostCall(nullptr, args[0]);
+void A32EmitX64::EmitA32SetCpsr(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.HostCall(nullptr, args[0]);
     code->mov(code->ABI_PARAM2, code->r15);
     code->CallFunction(&SetCpsrImpl);
 }
 
-void A32EmitX64::EmitA32SetCpsrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32SetCpsrNZCV(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         u32 imm = args[0].GetImmediateU32();
 
         code->mov(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], u32(imm & 0xF0000000));
     } else {
-        Xbyak::Reg32 a = reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 a = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->and_(a, 0xF0000000);
         code->mov(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], a);
     }
 }
 
-void A32EmitX64::EmitA32SetCpsrNZCVQ(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32SetCpsrNZCVQ(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         u32 imm = args[0].GetImmediateU32();
 
         code->mov(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], u32(imm & 0xF0000000));
         code->mov(code->byte[r15 + offsetof(A32JitState, CPSR_q)], u8((imm & 0x08000000) != 0 ? 1 : 0));
     } else {
-        Xbyak::Reg32 a = reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 a = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->bt(a, 27);
         code->setc(code->byte[r15 + offsetof(A32JitState, CPSR_q)]);
@@ -252,17 +272,17 @@ void A32EmitX64::EmitA32SetCpsrNZCVQ(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
     }
 }
 
-void A32EmitX64::EmitA32GetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
+void A32EmitX64::EmitA32GetNFlag(A32EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(A32JitState, CPSR_nzcv)]);
     code->shr(result, 31);
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void A32EmitX64::EmitA32SetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32SetNFlag(A32EmitContext& ctx, IR::Inst* inst) {
     constexpr size_t flag_bit = 31;
     constexpr u32 flag_mask = 1u << flag_bit;
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1()) {
             code->or_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], flag_mask);
@@ -270,7 +290,7 @@ void A32EmitX64::EmitA32SetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
             code->and_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], ~flag_mask);
         }
     } else {
-        Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 to_store = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->shl(to_store, flag_bit);
         code->and_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], ~flag_mask);
@@ -278,18 +298,18 @@ void A32EmitX64::EmitA32SetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
     }
 }
 
-void A32EmitX64::EmitA32GetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
+void A32EmitX64::EmitA32GetZFlag(A32EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(A32JitState, CPSR_nzcv)]);
     code->shr(result, 30);
     code->and_(result, 1);
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void A32EmitX64::EmitA32SetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32SetZFlag(A32EmitContext& ctx, IR::Inst* inst) {
     constexpr size_t flag_bit = 30;
     constexpr u32 flag_mask = 1u << flag_bit;
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1()) {
             code->or_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], flag_mask);
@@ -297,7 +317,7 @@ void A32EmitX64::EmitA32SetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
             code->and_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], ~flag_mask);
         }
     } else {
-        Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 to_store = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->shl(to_store, flag_bit);
         code->and_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], ~flag_mask);
@@ -305,18 +325,18 @@ void A32EmitX64::EmitA32SetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
     }
 }
 
-void A32EmitX64::EmitA32GetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
+void A32EmitX64::EmitA32GetCFlag(A32EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(A32JitState, CPSR_nzcv)]);
     code->shr(result, 29);
     code->and_(result, 1);
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void A32EmitX64::EmitA32SetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32SetCFlag(A32EmitContext& ctx, IR::Inst* inst) {
     constexpr size_t flag_bit = 29;
     constexpr u32 flag_mask = 1u << flag_bit;
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1()) {
             code->or_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], flag_mask);
@@ -324,7 +344,7 @@ void A32EmitX64::EmitA32SetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
             code->and_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], ~flag_mask);
         }
     } else {
-        Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 to_store = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->shl(to_store, flag_bit);
         code->and_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], ~flag_mask);
@@ -332,18 +352,18 @@ void A32EmitX64::EmitA32SetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
     }
 }
 
-void A32EmitX64::EmitA32GetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
+void A32EmitX64::EmitA32GetVFlag(A32EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(A32JitState, CPSR_nzcv)]);
     code->shr(result, 28);
     code->and_(result, 1);
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void A32EmitX64::EmitA32SetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32SetVFlag(A32EmitContext& ctx, IR::Inst* inst) {
     constexpr size_t flag_bit = 28;
     constexpr u32 flag_mask = 1u << flag_bit;
-    auto args = reg_alloc.GetArgumentInfo(inst);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1()) {
             code->or_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], flag_mask);
@@ -351,7 +371,7 @@ void A32EmitX64::EmitA32SetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
             code->and_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], ~flag_mask);
         }
     } else {
-        Xbyak::Reg32 to_store = reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 to_store = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->shl(to_store, flag_bit);
         code->and_(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], ~flag_mask);
@@ -359,39 +379,39 @@ void A32EmitX64::EmitA32SetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
     }
 }
 
-void A32EmitX64::EmitA32OrQFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32OrQFlag(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1())
             code->mov(dword[r15 + offsetof(A32JitState, CPSR_q)], 1);
     } else {
-        Xbyak::Reg8 to_store = reg_alloc.UseGpr(args[0]).cvt8();
+        Xbyak::Reg8 to_store = ctx.reg_alloc.UseGpr(args[0]).cvt8();
 
         code->or_(code->byte[r15 + offsetof(A32JitState, CPSR_q)], to_store);
     }
 }
 
-void A32EmitX64::EmitA32GetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Xbyak::Xmm result = reg_alloc.ScratchXmm();
+void A32EmitX64::EmitA32GetGEFlags(A32EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     code->movd(result, dword[r15 + offsetof(A32JitState, CPSR_ge)]);
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void A32EmitX64::EmitA32SetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32SetGEFlags(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(!args[0].IsImmediate());
 
     if (args[0].IsInXmm()) {
-        Xbyak::Xmm to_store = reg_alloc.UseXmm(args[0]);
+        Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[0]);
         code->movd(dword[r15 + offsetof(A32JitState, CPSR_ge)], to_store);
     } else {
-        Xbyak::Reg32 to_store = reg_alloc.UseGpr(args[0]).cvt32();
+        Xbyak::Reg32 to_store = ctx.reg_alloc.UseGpr(args[0]).cvt32();
         code->mov(dword[r15 + offsetof(A32JitState, CPSR_ge)], to_store);
     }
 }
 
-void A32EmitX64::EmitA32SetGEFlagsCompressed(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32SetGEFlagsCompressed(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         u32 imm = args[0].GetImmediateU32();
         u32 ge = 0;
@@ -402,8 +422,8 @@ void A32EmitX64::EmitA32SetGEFlagsCompressed(RegAlloc& reg_alloc, IR::Block&, IR
 
         code->mov(dword[r15 + offsetof(A32JitState, CPSR_ge)], ge);
     } else if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
-        Xbyak::Reg32 a = reg_alloc.UseScratchGpr(args[0]).cvt32();
-        Xbyak::Reg32 b = reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 a = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 b = ctx.reg_alloc.ScratchGpr().cvt32();
 
         code->mov(b, 0x01010101);
         code->shr(a, 16);
@@ -411,7 +431,7 @@ void A32EmitX64::EmitA32SetGEFlagsCompressed(RegAlloc& reg_alloc, IR::Block&, IR
         code->imul(a, a, 0xFF);
         code->mov(dword[r15 + offsetof(A32JitState, CPSR_ge)], a);
     } else {
-        Xbyak::Reg32 a = reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 a = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
 
         code->shr(a, 16);
         code->and_(a, 0xF);
@@ -422,8 +442,8 @@ void A32EmitX64::EmitA32SetGEFlagsCompressed(RegAlloc& reg_alloc, IR::Block&, IR
     }
 }
 
-void A32EmitX64::EmitA32BXWritePC(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32BXWritePC(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& arg = args[0];
 
     // Pseudocode:
@@ -440,16 +460,16 @@ void A32EmitX64::EmitA32BXWritePC(RegAlloc& reg_alloc, IR::Block& block, IR::Ins
         u32 new_pc = arg.GetImmediateU32();
         u32 mask = Common::Bit<0>(new_pc) ? 0xFFFFFFFE : 0xFFFFFFFC;
         u32 et = 0;
-        et |= A32::LocationDescriptor{block.Location()}.EFlag() ? 2 : 0;
+        et |= ctx.Location().EFlag() ? 2 : 0;
         et |= Common::Bit<0>(new_pc) ? 1 : 0;
 
         code->mov(MJitStateReg(A32::Reg::PC), new_pc & mask);
         code->mov(dword[r15 + offsetof(A32JitState, CPSR_et)], et);
     } else {
-        if (A32::LocationDescriptor{block.Location()}.EFlag()) {
-            Xbyak::Reg32 new_pc = reg_alloc.UseScratchGpr(arg).cvt32();
-            Xbyak::Reg32 mask = reg_alloc.ScratchGpr().cvt32();
-            Xbyak::Reg32 et = reg_alloc.ScratchGpr().cvt32();
+        if (ctx.Location().EFlag()) {
+            Xbyak::Reg32 new_pc = ctx.reg_alloc.UseScratchGpr(arg).cvt32();
+            Xbyak::Reg32 mask = ctx.reg_alloc.ScratchGpr().cvt32();
+            Xbyak::Reg32 et = ctx.reg_alloc.ScratchGpr().cvt32();
 
             code->mov(mask, new_pc);
             code->and_(mask, 1);
@@ -459,8 +479,8 @@ void A32EmitX64::EmitA32BXWritePC(RegAlloc& reg_alloc, IR::Block& block, IR::Ins
             code->and_(new_pc, mask);
             code->mov(MJitStateReg(A32::Reg::PC), new_pc);
         } else {
-            Xbyak::Reg32 new_pc = reg_alloc.UseScratchGpr(arg).cvt32();
-            Xbyak::Reg32 mask = reg_alloc.ScratchGpr().cvt32();
+            Xbyak::Reg32 new_pc = ctx.reg_alloc.UseScratchGpr(arg).cvt32();
+            Xbyak::Reg32 mask = ctx.reg_alloc.ScratchGpr().cvt32();
 
             code->mov(mask, new_pc);
             code->and_(mask, 1);
@@ -472,16 +492,16 @@ void A32EmitX64::EmitA32BXWritePC(RegAlloc& reg_alloc, IR::Block& block, IR::Ins
     }
 }
 
-void A32EmitX64::EmitA32CallSupervisor(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    reg_alloc.HostCall(nullptr);
+void A32EmitX64::EmitA32CallSupervisor(A32EmitContext& ctx, IR::Inst* inst) {
+    ctx.reg_alloc.HostCall(nullptr);
 
     code->SwitchMxcsrOnExit();
     code->mov(code->ABI_PARAM1, qword[r15 + offsetof(A32JitState, cycles_to_run)]);
     code->sub(code->ABI_PARAM1, qword[r15 + offsetof(A32JitState, cycles_remaining)]);
     code->CallFunction(cb.AddTicks);
-    reg_alloc.EndOfAllocScope();
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.HostCall(nullptr, args[0]);
+    ctx.reg_alloc.EndOfAllocScope();
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.HostCall(nullptr, args[0]);
     code->CallFunction(cb.CallSVC);
     code->CallFunction(cb.GetTicksRemaining);
     code->mov(qword[r15 + offsetof(A32JitState, cycles_to_run)], code->ABI_RETURN);
@@ -493,8 +513,8 @@ static u32 GetFpscrImpl(A32JitState* jit_state) {
     return jit_state->Fpscr();
 }
 
-void A32EmitX64::EmitA32GetFpscr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    reg_alloc.HostCall(inst);
+void A32EmitX64::EmitA32GetFpscr(A32EmitContext& ctx, IR::Inst* inst) {
+    ctx.reg_alloc.HostCall(inst);
     code->mov(code->ABI_PARAM1, code->r15);
 
     code->stmxcsr(code->dword[code->r15 + offsetof(A32JitState, guest_MXCSR)]);
@@ -505,36 +525,36 @@ static void SetFpscrImpl(u32 value, A32JitState* jit_state) {
     jit_state->SetFpscr(value);
 }
 
-void A32EmitX64::EmitA32SetFpscr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    reg_alloc.HostCall(nullptr, args[0]);
+void A32EmitX64::EmitA32SetFpscr(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.HostCall(nullptr, args[0]);
     code->mov(code->ABI_PARAM2, code->r15);
 
     code->CallFunction(&SetFpscrImpl);
     code->ldmxcsr(code->dword[code->r15 + offsetof(A32JitState, guest_MXCSR)]);
 }
 
-void A32EmitX64::EmitA32GetFpscrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
+void A32EmitX64::EmitA32GetFpscrNZCV(A32EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(A32JitState, FPSCR_nzcv)]);
-    reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void A32EmitX64::EmitA32SetFpscrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 value = reg_alloc.UseGpr(args[0]).cvt32();
+void A32EmitX64::EmitA32SetFpscrNZCV(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg32 value = ctx.reg_alloc.UseGpr(args[0]).cvt32();
 
     code->mov(dword[r15 + offsetof(A32JitState, FPSCR_nzcv)], value);
 }
 
-void A32EmitX64::EmitA32ClearExclusive(RegAlloc&, IR::Block&, IR::Inst*) {
+void A32EmitX64::EmitA32ClearExclusive(A32EmitContext&, IR::Inst*) {
     code->mov(code->byte[r15 + offsetof(A32JitState, exclusive_state)], u8(0));
 }
 
-void A32EmitX64::EmitA32SetExclusive(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32SetExclusive(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[1].IsImmediate());
-    Xbyak::Reg32 address = reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Reg32 address = ctx.reg_alloc.UseGpr(args[0]).cvt32();
 
     code->mov(code->byte[r15 + offsetof(A32JitState, exclusive_state)], u8(1));
     code->mov(dword[r15 + offsetof(A32JitState, exclusive_address)], address);
@@ -644,36 +664,36 @@ static void WriteMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, 
     code->L(end);
 }
 
-void A32EmitX64::EmitA32ReadMemory8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    ReadMemory(code, reg_alloc, inst, cb, 8, cb.memory.Read8);
+void A32EmitX64::EmitA32ReadMemory8(A32EmitContext& ctx, IR::Inst* inst) {
+    ReadMemory(code, ctx.reg_alloc, inst, cb, 8, cb.memory.Read8);
 }
 
-void A32EmitX64::EmitA32ReadMemory16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    ReadMemory(code, reg_alloc, inst, cb, 16, cb.memory.Read16);
+void A32EmitX64::EmitA32ReadMemory16(A32EmitContext& ctx, IR::Inst* inst) {
+    ReadMemory(code, ctx.reg_alloc, inst, cb, 16, cb.memory.Read16);
 }
 
-void A32EmitX64::EmitA32ReadMemory32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    ReadMemory(code, reg_alloc, inst, cb, 32, cb.memory.Read32);
+void A32EmitX64::EmitA32ReadMemory32(A32EmitContext& ctx, IR::Inst* inst) {
+    ReadMemory(code, ctx.reg_alloc, inst, cb, 32, cb.memory.Read32);
 }
 
-void A32EmitX64::EmitA32ReadMemory64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    ReadMemory(code, reg_alloc, inst, cb, 64, cb.memory.Read64);
+void A32EmitX64::EmitA32ReadMemory64(A32EmitContext& ctx, IR::Inst* inst) {
+    ReadMemory(code, ctx.reg_alloc, inst, cb, 64, cb.memory.Read64);
 }
 
-void A32EmitX64::EmitA32WriteMemory8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    WriteMemory(code, reg_alloc, inst, cb, 8, cb.memory.Write8);
+void A32EmitX64::EmitA32WriteMemory8(A32EmitContext& ctx, IR::Inst* inst) {
+    WriteMemory(code, ctx.reg_alloc, inst, cb, 8, cb.memory.Write8);
 }
 
-void A32EmitX64::EmitA32WriteMemory16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    WriteMemory(code, reg_alloc, inst, cb, 16, cb.memory.Write16);
+void A32EmitX64::EmitA32WriteMemory16(A32EmitContext& ctx, IR::Inst* inst) {
+    WriteMemory(code, ctx.reg_alloc, inst, cb, 16, cb.memory.Write16);
 }
 
-void A32EmitX64::EmitA32WriteMemory32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    WriteMemory(code, reg_alloc, inst, cb, 32, cb.memory.Write32);
+void A32EmitX64::EmitA32WriteMemory32(A32EmitContext& ctx, IR::Inst* inst) {
+    WriteMemory(code, ctx.reg_alloc, inst, cb, 32, cb.memory.Write32);
 }
 
-void A32EmitX64::EmitA32WriteMemory64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    WriteMemory(code, reg_alloc, inst, cb, 64, cb.memory.Write64);
+void A32EmitX64::EmitA32WriteMemory64(A32EmitContext& ctx, IR::Inst* inst) {
+    WriteMemory(code, ctx.reg_alloc, inst, cb, 64, cb.memory.Write64);
 }
 
 template <typename FunctionPointer>
@@ -709,20 +729,20 @@ static void ExclusiveWrite(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* ins
     reg_alloc.DefineValue(inst, passed);
 }
 
-void A32EmitX64::EmitA32ExclusiveWriteMemory8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    ExclusiveWrite(code, reg_alloc, inst, cb.memory.Write8, false);
+void A32EmitX64::EmitA32ExclusiveWriteMemory8(A32EmitContext& ctx, IR::Inst* inst) {
+    ExclusiveWrite(code, ctx.reg_alloc, inst, cb.memory.Write8, false);
 }
 
-void A32EmitX64::EmitA32ExclusiveWriteMemory16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    ExclusiveWrite(code, reg_alloc, inst, cb.memory.Write16, false);
+void A32EmitX64::EmitA32ExclusiveWriteMemory16(A32EmitContext& ctx, IR::Inst* inst) {
+    ExclusiveWrite(code, ctx.reg_alloc, inst, cb.memory.Write16, false);
 }
 
-void A32EmitX64::EmitA32ExclusiveWriteMemory32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    ExclusiveWrite(code, reg_alloc, inst, cb.memory.Write32, false);
+void A32EmitX64::EmitA32ExclusiveWriteMemory32(A32EmitContext& ctx, IR::Inst* inst) {
+    ExclusiveWrite(code, ctx.reg_alloc, inst, cb.memory.Write32, false);
 }
 
-void A32EmitX64::EmitA32ExclusiveWriteMemory64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    ExclusiveWrite(code, reg_alloc, inst, cb.memory.Write64, true);
+void A32EmitX64::EmitA32ExclusiveWriteMemory64(A32EmitContext& ctx, IR::Inst* inst) {
+    ExclusiveWrite(code, ctx.reg_alloc, inst, cb.memory.Write64, true);
 }
 
 static void EmitCoprocessorException() {
@@ -740,7 +760,7 @@ static void CallCoprocCallback(BlockOfCode* code, RegAlloc& reg_alloc, Jit* jit_
     code->CallFunction(callback.function);
 }
 
-void A32EmitX64::EmitA32CoprocInternalOperation(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32CoprocInternalOperation(A32EmitContext& ctx, IR::Inst* inst) {
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
@@ -763,11 +783,11 @@ void A32EmitX64::EmitA32CoprocInternalOperation(RegAlloc& reg_alloc, IR::Block&,
         return;
     }
 
-    CallCoprocCallback(code, reg_alloc, jit_interface, *action);
+    CallCoprocCallback(code, ctx.reg_alloc, jit_interface, *action);
 }
 
-void A32EmitX64::EmitA32CoprocSendOneWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32CoprocSendOneWord(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
@@ -789,13 +809,13 @@ void A32EmitX64::EmitA32CoprocSendOneWord(RegAlloc& reg_alloc, IR::Block&, IR::I
         EmitCoprocessorException();
         return;
     case 1:
-        CallCoprocCallback(code, reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), nullptr, args[1]);
+        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), nullptr, args[1]);
         return;
     case 2: {
         u32* destination_ptr = boost::get<u32*>(action);
 
-        Xbyak::Reg32 reg_word = reg_alloc.UseGpr(args[1]).cvt32();
-        Xbyak::Reg64 reg_destination_addr = reg_alloc.ScratchGpr();
+        Xbyak::Reg32 reg_word = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+        Xbyak::Reg64 reg_destination_addr = ctx.reg_alloc.ScratchGpr();
 
         code->mov(reg_destination_addr, reinterpret_cast<u64>(destination_ptr));
         code->mov(code->dword[reg_destination_addr], reg_word);
@@ -807,8 +827,8 @@ void A32EmitX64::EmitA32CoprocSendOneWord(RegAlloc& reg_alloc, IR::Block&, IR::I
     }
 }
 
-void A32EmitX64::EmitA32CoprocSendTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32CoprocSendTwoWords(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
@@ -828,14 +848,14 @@ void A32EmitX64::EmitA32CoprocSendTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::
         EmitCoprocessorException();
         return;
     case 1:
-        CallCoprocCallback(code, reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), nullptr, args[1], args[2]);
+        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), nullptr, args[1], args[2]);
         return;
     case 2: {
         auto destination_ptrs = boost::get<std::array<u32*, 2>>(action);
 
-        Xbyak::Reg32 reg_word1 = reg_alloc.UseGpr(args[1]).cvt32();
-        Xbyak::Reg32 reg_word2 = reg_alloc.UseGpr(args[2]).cvt32();
-        Xbyak::Reg64 reg_destination_addr = reg_alloc.ScratchGpr();
+        Xbyak::Reg32 reg_word1 = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+        Xbyak::Reg32 reg_word2 = ctx.reg_alloc.UseGpr(args[2]).cvt32();
+        Xbyak::Reg64 reg_destination_addr = ctx.reg_alloc.ScratchGpr();
 
         code->mov(reg_destination_addr, reinterpret_cast<u64>(destination_ptrs[0]));
         code->mov(code->dword[reg_destination_addr], reg_word1);
@@ -849,7 +869,7 @@ void A32EmitX64::EmitA32CoprocSendTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::
     }
 }
 
-void A32EmitX64::EmitA32CoprocGetOneWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32CoprocGetOneWord(A32EmitContext& ctx, IR::Inst* inst) {
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
@@ -871,18 +891,18 @@ void A32EmitX64::EmitA32CoprocGetOneWord(RegAlloc& reg_alloc, IR::Block&, IR::In
         EmitCoprocessorException();
         return;
     case 1:
-        CallCoprocCallback(code, reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), inst);
+        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), inst);
         return;
     case 2: {
         u32* source_ptr = boost::get<u32*>(action);
 
-        Xbyak::Reg32 reg_word = reg_alloc.ScratchGpr().cvt32();
-        Xbyak::Reg64 reg_source_addr = reg_alloc.ScratchGpr();
+        Xbyak::Reg32 reg_word = ctx.reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg64 reg_source_addr = ctx.reg_alloc.ScratchGpr();
 
         code->mov(reg_source_addr, reinterpret_cast<u64>(source_ptr));
         code->mov(reg_word, code->dword[reg_source_addr]);
 
-        reg_alloc.DefineValue(inst, reg_word);
+        ctx.reg_alloc.DefineValue(inst, reg_word);
 
         return;
     }
@@ -891,7 +911,7 @@ void A32EmitX64::EmitA32CoprocGetOneWord(RegAlloc& reg_alloc, IR::Block&, IR::In
     }
 }
 
-void A32EmitX64::EmitA32CoprocGetTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitA32CoprocGetTwoWords(A32EmitContext& ctx, IR::Inst* inst) {
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
@@ -911,14 +931,14 @@ void A32EmitX64::EmitA32CoprocGetTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::I
         EmitCoprocessorException();
         return;
     case 1:
-        CallCoprocCallback(code, reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), inst);
+        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), inst);
         return;
     case 2: {
         auto source_ptrs = boost::get<std::array<u32*, 2>>(action);
 
-        Xbyak::Reg64 reg_result = reg_alloc.ScratchGpr();
-        Xbyak::Reg64 reg_destination_addr = reg_alloc.ScratchGpr();
-        Xbyak::Reg64 reg_tmp = reg_alloc.ScratchGpr();
+        Xbyak::Reg64 reg_result = ctx.reg_alloc.ScratchGpr();
+        Xbyak::Reg64 reg_destination_addr = ctx.reg_alloc.ScratchGpr();
+        Xbyak::Reg64 reg_tmp = ctx.reg_alloc.ScratchGpr();
 
         code->mov(reg_destination_addr, reinterpret_cast<u64>(source_ptrs[1]));
         code->mov(reg_result.cvt32(), code->dword[reg_destination_addr]);
@@ -927,7 +947,7 @@ void A32EmitX64::EmitA32CoprocGetTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::I
         code->mov(reg_tmp.cvt32(), code->dword[reg_destination_addr]);
         code->or_(reg_result, reg_tmp);
 
-        reg_alloc.DefineValue(inst, reg_result);
+        ctx.reg_alloc.DefineValue(inst, reg_result);
 
         return;
     }
@@ -936,8 +956,8 @@ void A32EmitX64::EmitA32CoprocGetTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::I
     }
 }
 
-void A32EmitX64::EmitA32CoprocLoadWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32CoprocLoadWords(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
@@ -959,11 +979,11 @@ void A32EmitX64::EmitA32CoprocLoadWords(RegAlloc& reg_alloc, IR::Block&, IR::Ins
         return;
     }
 
-    CallCoprocCallback(code, reg_alloc, jit_interface, *action, nullptr, args[1]);
+    CallCoprocCallback(code, ctx.reg_alloc, jit_interface, *action, nullptr, args[1]);
 }
 
-void A32EmitX64::EmitA32CoprocStoreWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    auto args = reg_alloc.GetArgumentInfo(inst);
+void A32EmitX64::EmitA32CoprocStoreWords(A32EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
@@ -985,7 +1005,7 @@ void A32EmitX64::EmitA32CoprocStoreWords(RegAlloc& reg_alloc, IR::Block&, IR::In
         return;
     }
 
-    CallCoprocCallback(code, reg_alloc, jit_interface, *action, nullptr, args[1]);
+    CallCoprocCallback(code, ctx.reg_alloc, jit_interface, *action, nullptr, args[1]);
 }
 
 void A32EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor initial_location) {

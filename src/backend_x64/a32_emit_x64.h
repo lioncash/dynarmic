@@ -15,7 +15,6 @@
 
 #include <xbyak_util.h>
 
-#include "backend_x64/reg_alloc.h"
 #include "backend_x64/emit_x64.h"
 #include "common/address_range.h"
 #include "dynarmic/callbacks.h"
@@ -24,6 +23,16 @@
 
 namespace Dynarmic {
 namespace BackendX64 {
+
+class RegAlloc;
+
+struct A32EmitContext final : public EmitContext {
+    A32EmitContext(RegAlloc& reg_alloc, IR::Block& block);
+    A32::LocationDescriptor Location() const;
+    bool FPSCR_RoundTowardsZero() const override;
+    bool FPSCR_FTZ() const override;
+    bool FPSCR_DN() const override;
+};
 
 class A32EmitX64 final : public EmitX64<u32> {
 public:
@@ -39,7 +48,7 @@ public:
 protected:
     // Microinstruction emitters
 #define OPCODE(...)
-#define A32OPC(name, type, ...) void EmitA32##name(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst);
+#define A32OPC(name, type, ...) void EmitA32##name(A32EmitContext& ctx, IR::Inst* inst);
 #include "frontend/ir/opcodes.inc"
 #undef OPCODE
 #undef A32OPC

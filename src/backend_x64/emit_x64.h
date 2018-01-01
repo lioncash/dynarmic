@@ -34,6 +34,19 @@ namespace BackendX64 {
 
 class BlockOfCode;
 
+struct EmitContext {
+    EmitContext(RegAlloc& reg_alloc, IR::Block& block);
+
+    void EraseInstruction(IR::Inst* inst);
+
+    virtual bool FPSCR_RoundTowardsZero() const = 0;
+    virtual bool FPSCR_FTZ() const = 0;
+    virtual bool FPSCR_DN() const = 0;
+
+    RegAlloc& reg_alloc;
+    IR::Block& block;
+};
+
 template <typename ProgramCounterType>
 class EmitX64 {
 public:
@@ -58,7 +71,7 @@ public:
 
 protected:
     // Microinstruction emitters
-#define OPCODE(name, type, ...) void Emit##name(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst);
+#define OPCODE(name, type, ...) void Emit##name(EmitContext& ctx, IR::Inst* inst);
 #define A32OPC(...)
 #include "frontend/ir/opcodes.inc"
 #undef OPCODE
