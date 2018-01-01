@@ -3,8 +3,8 @@
 set -e
 set -x
 
-export CC=gcc-6
-export CXX=g++-6
+export CC=gcc-7
+export CXX=g++-7
 export PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH
 
 mkdir build && cd build

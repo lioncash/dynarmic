@@ -5,5 +5,5 @@ set -x
 
 # TODO: This isn't ideal.
 cd externals
-git clone https://github.com/citra-emu/ext-boost
+git clone https://github.com/MerryMage/ext-boost
 cd ..
