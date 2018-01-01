@@ -16,9 +16,9 @@ namespace Optimization {
 void ConstantPropagation(IR::Block& block, const UserCallbacks::Memory& memory_callbacks) {
     for (auto& inst : block) {
         switch (inst.GetOpcode()) {
-        case IR::Opcode::SetCFlag: {
+        case IR::Opcode::A32SetCFlag: {
             IR::Value arg = inst.GetArg(0);
-            if (!arg.IsImmediate() && arg.GetInst()->GetOpcode() == IR::Opcode::GetCFlag) {
+            if (!arg.IsImmediate() && arg.GetInst()->GetOpcode() == IR::Opcode::A32GetCFlag) {
                 inst.Invalidate();
             }
             break;
@@ -41,7 +41,7 @@ void ConstantPropagation(IR::Block& block, const UserCallbacks::Memory& memory_c
             }
             break;
         }
-        case IR::Opcode::ReadMemory8: {
+        case IR::Opcode::A32ReadMemory8: {
             if (!inst.AreAllArgsImmediates())
                 break;
 
@@ -52,7 +52,7 @@ void ConstantPropagation(IR::Block& block, const UserCallbacks::Memory& memory_c
             }
             break;
         }
-        case IR::Opcode::ReadMemory16: {
+        case IR::Opcode::A32ReadMemory16: {
             if (!inst.AreAllArgsImmediates())
                 break;
 
@@ -63,7 +63,7 @@ void ConstantPropagation(IR::Block& block, const UserCallbacks::Memory& memory_c
             }
             break;
         }
-        case IR::Opcode::ReadMemory32: {
+        case IR::Opcode::A32ReadMemory32: {
             if (!inst.AreAllArgsImmediates())
                 break;
 
@@ -74,7 +74,7 @@ void ConstantPropagation(IR::Block& block, const UserCallbacks::Memory& memory_c
             }
             break;
         }
-        case IR::Opcode::ReadMemory64: {
+        case IR::Opcode::A32ReadMemory64: {
             if (!inst.AreAllArgsImmediates())
                 break;
 

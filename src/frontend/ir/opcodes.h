@@ -17,8 +17,10 @@ namespace IR {
  */
 enum class Opcode {
 #define OPCODE(name, type, ...) name,
+#define A32OPC(name, type, ...) A32##name,
 #include "opcodes.inc"
 #undef OPCODE
+#undef A32OPC
     NUM_OPCODE
 };
 

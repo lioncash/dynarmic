@@ -54,7 +54,7 @@ void GetSetElimination(IR::Block& block) {
 
     for (auto inst = block.begin(); inst != block.end(); ++inst) {
         switch (inst->GetOpcode()) {
-        case IR::Opcode::SetRegister: {
+        case IR::Opcode::A32SetRegister: {
             A32::Reg reg = inst->GetArg(0).GetA32RegRef();
             if (reg == A32::Reg::PC)
                 break;
@@ -62,14 +62,14 @@ void GetSetElimination(IR::Block& block) {
             do_set(reg_info[reg_index], inst->GetArg(1), inst);
             break;
         }
-        case IR::Opcode::GetRegister: {
+        case IR::Opcode::A32GetRegister: {
             A32::Reg reg = inst->GetArg(0).GetA32RegRef();
             ASSERT(reg != A32::Reg::PC);
             size_t reg_index = static_cast<size_t>(reg);
             do_get(reg_info[reg_index], inst);
             break;
         }
-        case IR::Opcode::SetExtendedRegister32: {
+        case IR::Opcode::A32SetExtendedRegister32: {
             A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
             size_t reg_index = A32::RegNumber(reg);
             do_set(ext_reg_singles_info[reg_index], inst->GetArg(1), inst);
@@ -80,7 +80,7 @@ void GetSetElimination(IR::Block& block) {
             }
             break;
         }
-        case IR::Opcode::GetExtendedRegister32: {
+        case IR::Opcode::A32GetExtendedRegister32: {
             A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
             size_t reg_index = A32::RegNumber(reg);
             do_get(ext_reg_singles_info[reg_index], inst);
@@ -91,7 +91,7 @@ void GetSetElimination(IR::Block& block) {
             }
             break;
         }
-        case IR::Opcode::SetExtendedRegister64: {
+        case IR::Opcode::A32SetExtendedRegister64: {
             A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
             size_t reg_index = A32::RegNumber(reg);
             do_set(ext_reg_doubles_info[reg_index], inst->GetArg(1), inst);
@@ -103,7 +103,7 @@ void GetSetElimination(IR::Block& block) {
             }
             break;
         }
-        case IR::Opcode::GetExtendedRegister64: {
+        case IR::Opcode::A32GetExtendedRegister64: {
             A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
             size_t reg_index = A32::RegNumber(reg);
             do_get(ext_reg_doubles_info[reg_index], inst);
@@ -115,43 +115,43 @@ void GetSetElimination(IR::Block& block) {
             }
             break;
         }
-        case IR::Opcode::SetNFlag: {
+        case IR::Opcode::A32SetNFlag: {
             do_set(cpsr_info.n, inst->GetArg(0), inst);
             break;
         }
-        case IR::Opcode::GetNFlag: {
+        case IR::Opcode::A32GetNFlag: {
             do_get(cpsr_info.n, inst);
             break;
         }
-        case IR::Opcode::SetZFlag: {
+        case IR::Opcode::A32SetZFlag: {
             do_set(cpsr_info.z, inst->GetArg(0), inst);
             break;
         }
-        case IR::Opcode::GetZFlag: {
+        case IR::Opcode::A32GetZFlag: {
             do_get(cpsr_info.z, inst);
             break;
         }
-        case IR::Opcode::SetCFlag: {
+        case IR::Opcode::A32SetCFlag: {
             do_set(cpsr_info.c, inst->GetArg(0), inst);
             break;
         }
-        case IR::Opcode::GetCFlag: {
+        case IR::Opcode::A32GetCFlag: {
             do_get(cpsr_info.c, inst);
             break;
         }
-        case IR::Opcode::SetVFlag: {
+        case IR::Opcode::A32SetVFlag: {
             do_set(cpsr_info.v, inst->GetArg(0), inst);
             break;
         }
-        case IR::Opcode::GetVFlag: {
+        case IR::Opcode::A32GetVFlag: {
             do_get(cpsr_info.v, inst);
             break;
         }
-        case IR::Opcode::SetGEFlags: {
+        case IR::Opcode::A32SetGEFlags: {
             do_set(cpsr_info.ge, inst->GetArg(0), inst);
             break;
         }
-        case IR::Opcode::GetGEFlags: {
+        case IR::Opcode::A32GetGEFlags: {
             do_get(cpsr_info.ge, inst);
             break;
         }

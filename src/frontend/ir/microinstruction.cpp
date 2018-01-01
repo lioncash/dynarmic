@@ -41,10 +41,10 @@ bool Inst::IsShift() const {
 
 bool Inst::IsSharedMemoryRead() const {
     switch (op) {
-    case Opcode::ReadMemory8:
-    case Opcode::ReadMemory16:
-    case Opcode::ReadMemory32:
-    case Opcode::ReadMemory64:
+    case Opcode::A32ReadMemory8:
+    case Opcode::A32ReadMemory16:
+    case Opcode::A32ReadMemory32:
+    case Opcode::A32ReadMemory64:
         return true;
 
     default:
@@ -54,10 +54,10 @@ bool Inst::IsSharedMemoryRead() const {
 
 bool Inst::IsSharedMemoryWrite() const {
     switch (op) {
-    case Opcode::WriteMemory8:
-    case Opcode::WriteMemory16:
-    case Opcode::WriteMemory32:
-    case Opcode::WriteMemory64:
+    case Opcode::A32WriteMemory8:
+    case Opcode::A32WriteMemory16:
+    case Opcode::A32WriteMemory32:
+    case Opcode::A32WriteMemory64:
         return true;
 
     default:
@@ -71,10 +71,10 @@ bool Inst::IsSharedMemoryReadOrWrite() const {
 
 bool Inst::IsExclusiveMemoryWrite() const {
     switch (op) {
-    case Opcode::ExclusiveWriteMemory8:
-    case Opcode::ExclusiveWriteMemory16:
-    case Opcode::ExclusiveWriteMemory32:
-    case Opcode::ExclusiveWriteMemory64:
+    case Opcode::A32ExclusiveWriteMemory8:
+    case Opcode::A32ExclusiveWriteMemory16:
+    case Opcode::A32ExclusiveWriteMemory32:
+    case Opcode::A32ExclusiveWriteMemory64:
         return true;
 
     default:
@@ -96,12 +96,12 @@ bool Inst::IsMemoryReadOrWrite() const {
 
 bool Inst::ReadsFromCPSR() const {
     switch (op) {
-    case Opcode::GetCpsr:
-    case Opcode::GetNFlag:
-    case Opcode::GetZFlag:
-    case Opcode::GetCFlag:
-    case Opcode::GetVFlag:
-    case Opcode::GetGEFlags:
+    case Opcode::A32GetCpsr:
+    case Opcode::A32GetNFlag:
+    case Opcode::A32GetZFlag:
+    case Opcode::A32GetCFlag:
+    case Opcode::A32GetVFlag:
+    case Opcode::A32GetGEFlags:
         return true;
 
     default:
@@ -111,16 +111,16 @@ bool Inst::ReadsFromCPSR() const {
 
 bool Inst::WritesToCPSR() const {
     switch (op) {
-    case Opcode::SetCpsr:
-    case Opcode::SetCpsrNZCV:
-    case Opcode::SetCpsrNZCVQ:
-    case Opcode::SetNFlag:
-    case Opcode::SetZFlag:
-    case Opcode::SetCFlag:
-    case Opcode::SetVFlag:
-    case Opcode::OrQFlag:
-    case Opcode::SetGEFlags:
-    case Opcode::SetGEFlagsCompressed:
+    case Opcode::A32SetCpsr:
+    case Opcode::A32SetCpsrNZCV:
+    case Opcode::A32SetCpsrNZCVQ:
+    case Opcode::A32SetNFlag:
+    case Opcode::A32SetZFlag:
+    case Opcode::A32SetCFlag:
+    case Opcode::A32SetVFlag:
+    case Opcode::A32OrQFlag:
+    case Opcode::A32SetGEFlags:
+    case Opcode::A32SetGEFlagsCompressed:
         return true;
 
     default:
@@ -130,9 +130,9 @@ bool Inst::WritesToCPSR() const {
 
 bool Inst::ReadsFromCoreRegister() const {
     switch (op) {
-    case Opcode::GetRegister:
-    case Opcode::GetExtendedRegister32:
-    case Opcode::GetExtendedRegister64:
+    case Opcode::A32GetRegister:
+    case Opcode::A32GetExtendedRegister32:
+    case Opcode::A32GetExtendedRegister64:
         return true;
 
     default:
@@ -142,10 +142,10 @@ bool Inst::ReadsFromCoreRegister() const {
 
 bool Inst::WritesToCoreRegister() const {
     switch (op) {
-    case Opcode::SetRegister:
-    case Opcode::SetExtendedRegister32:
-    case Opcode::SetExtendedRegister64:
-    case Opcode::BXWritePC:
+    case Opcode::A32SetRegister:
+    case Opcode::A32SetExtendedRegister32:
+    case Opcode::A32SetExtendedRegister64:
+    case Opcode::A32BXWritePC:
         return true;
 
     default:
@@ -155,8 +155,8 @@ bool Inst::WritesToCoreRegister() const {
 
 bool Inst::ReadsFromFPSCR() const {
     switch (op) {
-    case Opcode::GetFpscr:
-    case Opcode::GetFpscrNZCV:
+    case Opcode::A32GetFpscr:
+    case Opcode::A32GetFpscrNZCV:
     case Opcode::FPAbs32:
     case Opcode::FPAbs64:
     case Opcode::FPAdd32:
@@ -182,8 +182,8 @@ bool Inst::ReadsFromFPSCR() const {
 
 bool Inst::WritesToFPSCR() const {
     switch (op) {
-    case Opcode::SetFpscr:
-    case Opcode::SetFpscrNZCV:
+    case Opcode::A32SetFpscr:
+    case Opcode::A32SetFpscrNZCV:
     case Opcode::FPAbs32:
     case Opcode::FPAbs64:
     case Opcode::FPAdd32:
@@ -209,24 +209,24 @@ bool Inst::WritesToFPSCR() const {
 
 bool Inst::CausesCPUException() const {
     return op == Opcode::Breakpoint ||
-           op == Opcode::CallSupervisor;
+           op == Opcode::A32CallSupervisor;
 }
 
 bool Inst::AltersExclusiveState() const {
-    return op == Opcode::ClearExclusive ||
-           op == Opcode::SetExclusive   ||
+    return op == Opcode::A32ClearExclusive ||
+           op == Opcode::A32SetExclusive   ||
            IsExclusiveMemoryWrite();
 }
 
 bool Inst::IsCoprocessorInstruction() const {
     switch (op) {
-    case Opcode::CoprocInternalOperation:
-    case Opcode::CoprocSendOneWord:
-    case Opcode::CoprocSendTwoWords:
-    case Opcode::CoprocGetOneWord:
-    case Opcode::CoprocGetTwoWords:
-    case Opcode::CoprocLoadWords:
-    case Opcode::CoprocStoreWords:
+    case Opcode::A32CoprocInternalOperation:
+    case Opcode::A32CoprocSendOneWord:
+    case Opcode::A32CoprocSendTwoWords:
+    case Opcode::A32CoprocGetOneWord:
+    case Opcode::A32CoprocGetTwoWords:
+    case Opcode::A32CoprocLoadWords:
+    case Opcode::A32CoprocStoreWords:
         return true;
 
     default:

@@ -43,7 +43,6 @@ public:
     void BXWritePC(const IR::Value& value);
     void LoadWritePC(const IR::Value& value);
     void CallSupervisor(const IR::Value& value);
-    void PushRSB(const A32::LocationDescriptor& return_location);
 
     IR::Value GetCpsr();
     void SetCpsr(const IR::Value& value);

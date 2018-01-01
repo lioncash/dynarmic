@@ -31,6 +31,10 @@ Value IREmitter::Imm64(u64 imm64) {
     return Value(imm64);
 }
 
+void IREmitter::PushRSB(const LocationDescriptor& return_location) {
+    Inst(Opcode::PushRSB, {IR::Value(return_location.Value())});
+}
+
 Value IREmitter::Pack2x32To1x64(const Value& lo, const Value& hi) {
     return Inst(Opcode::Pack2x32To1x64, {lo, hi});
 }

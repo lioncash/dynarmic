@@ -67,6 +67,8 @@ public:
     Value Imm32(u32 value);
     Value Imm64(u64 value);
 
+    void PushRSB(const LocationDescriptor& return_location);
+
     Value Pack2x32To1x64(const Value& lo, const Value& hi);
     Value LeastSignificantWord(const Value& value);
     ResultAndCarry MostSignificantWord(const Value& value);

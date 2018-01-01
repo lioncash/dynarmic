@@ -67,8 +67,10 @@ public:
 private:
     // Microinstruction emitters
 #define OPCODE(name, type, ...) void Emit##name(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst);
+#define A32OPC(name, type, ...) void EmitA32##name(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst);
 #include "frontend/ir/opcodes.inc"
 #undef OPCODE
+#undef A32OPC
 
     // Helpers
     void EmitAddCycles(size_t cycles);
