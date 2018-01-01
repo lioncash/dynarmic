@@ -6,9 +6,9 @@
 
 #include <catch.hpp>
 
-#include "frontend/disassembler/disassembler.h"
+#include "frontend/A32/disassembler/disassembler.h"
 
-using Dynarmic::Arm::DisassembleArm;
+using Dynarmic::A32::DisassembleArm;
 
 TEST_CASE("Disassemble branch instructions", "[arm][disassembler]") {
     REQUIRE(DisassembleArm(0xEAFFFFFE) == "b +#0");

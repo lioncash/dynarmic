@@ -7,7 +7,7 @@
 #pragma once
 
 #include "common/common_types.h"
-#include "frontend/arm/types.h"
+#include "frontend/A32/types.h"
 
 namespace Dynarmic {
 namespace IR {
@@ -22,8 +22,8 @@ class Value final {
 public:
     Value() : type(Type::Void) {}
     explicit Value(Inst* value);
-    explicit Value(Arm::Reg value);
-    explicit Value(Arm::ExtReg value);
+    explicit Value(A32::Reg value);
+    explicit Value(A32::ExtReg value);
     explicit Value(bool value);
     explicit Value(u8 value);
     explicit Value(u16 value);
@@ -36,8 +36,8 @@ public:
     Type GetType() const;
 
     Inst* GetInst() const;
-    Arm::Reg GetRegRef() const;
-    Arm::ExtReg GetExtRegRef() const;
+    A32::Reg GetA32RegRef() const;
+    A32::ExtReg GetA32ExtRegRef() const;
     bool GetU1() const;
     u8 GetU8() const;
     u16 GetU16() const;
@@ -50,8 +50,8 @@ private:
 
     union {
         Inst* inst; // type == Type::Opaque
-        Arm::Reg imm_regref;
-        Arm::ExtReg imm_extregref;
+        A32::Reg imm_a32regref;
+        A32::ExtReg imm_a32extregref;
         bool imm_u1;
         u8 imm_u8;
         u16 imm_u16;

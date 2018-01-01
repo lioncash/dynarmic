@@ -9,7 +9,7 @@
 #include "common/assert.h"
 #include "common/bit_util.h"
 #include "common/common_types.h"
-#include "frontend/ir/location_descriptor.h"
+#include "frontend/A32/location_descriptor.h"
 
 namespace Dynarmic {
 namespace BackendX64 {
@@ -150,7 +150,7 @@ void JitState::ResetRSB() {
  */
 
 // NZCV; QC (ASMID only), AHP; DN, FZ, RMode, Stride; SBZP; Len; trap enables; cumulative bits
-constexpr u32 FPSCR_MODE_MASK = IR::LocationDescriptor::FPSCR_MODE_MASK;
+constexpr u32 FPSCR_MODE_MASK = A32::LocationDescriptor::FPSCR_MODE_MASK;
 constexpr u32 FPSCR_NZCV_MASK = 0xF0000000;
 
 u32 JitState::Fpscr() const {

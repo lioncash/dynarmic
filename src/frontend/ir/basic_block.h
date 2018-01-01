@@ -15,6 +15,7 @@
 #include "common/common_types.h"
 #include "common/intrusive_list.h"
 #include "common/memory_pool.h"
+#include "frontend/ir/cond.h"
 #include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/terminal.h"
@@ -85,9 +86,9 @@ public:
     void SetEndLocation(const LocationDescriptor& descriptor);
 
     /// Gets the condition required to pass in order to execute this block.
-    Arm::Cond GetCondition() const;
+    Cond GetCondition() const;
     /// Sets the condition required to pass in order to execute this block.
-    void SetCondition(Arm::Cond condition);
+    void SetCondition(Cond condition);
 
     /// Gets the location of the block to execute if the predicated condition fails.
     LocationDescriptor ConditionFailedLocation() const;
@@ -124,7 +125,7 @@ private:
     /// Description of the end location of this block
     LocationDescriptor end_location;
     /// Conditional to pass in order to execute this block
-    Arm::Cond cond = Arm::Cond::AL;
+    Cond cond = Cond::AL;
     /// Block to execute next if `cond` did not pass.
     boost::optional<LocationDescriptor> cond_failed = {};
     /// Number of cycles this block takes to execute if the conditional fails.

@@ -22,9 +22,9 @@
 #include "common/scope_exit.h"
 #include "dynarmic/context.h"
 #include "dynarmic/dynarmic.h"
+#include "frontend/A32/translate/translate.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/location_descriptor.h"
-#include "frontend/translate/translate.h"
 #include "ir_opt/passes.h"
 
 namespace Dynarmic {
@@ -42,7 +42,7 @@ struct Jit::Impl {
 
     BlockOfCode block_of_code;
     JitState jit_state;
-    EmitX64 emitter;
+    A32EmitX64 emitter;
     const UserCallbacks callbacks;
 
     // Requests made during execution to invalidate the cache are queued up here.
@@ -131,14 +131,14 @@ private:
         JitState& jit_state = this_.jit_state;
 
         u32 pc = jit_state.Reg[15];
-        Arm::PSR cpsr{jit_state.Cpsr()};
-        Arm::FPSCR fpscr{jit_state.FPSCR_mode};
-        IR::LocationDescriptor descriptor{pc, cpsr, fpscr};
+        A32::PSR cpsr{jit_state.Cpsr()};
+        A32::FPSCR fpscr{jit_state.FPSCR_mode};
+        A32::LocationDescriptor descriptor{pc, cpsr, fpscr};
 
         return this_.GetBasicBlock(descriptor).entrypoint;
     }
 
-    EmitX64::BlockDescriptor GetBasicBlock(IR::LocationDescriptor descriptor) {
+    A32EmitX64::BlockDescriptor GetBasicBlock(IR::LocationDescriptor descriptor) {
         auto block = emitter.GetBasicBlock(descriptor);
         if (block)
             return *block;
@@ -149,7 +149,7 @@ private:
             PerformCacheInvalidation();
         }
 
-        IR::Block ir_block = Arm::Translate(descriptor, callbacks.memory.ReadCode);
+        IR::Block ir_block = A32::Translate(descriptor, callbacks.memory.ReadCode);
         Optimization::GetSetElimination(ir_block);
         Optimization::DeadCodeElimination(ir_block);
         Optimization::ConstantPropagation(ir_block, callbacks.memory);

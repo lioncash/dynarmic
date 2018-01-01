@@ -11,7 +11,7 @@
 #include "common/assert.h"
 
 namespace Dynarmic {
-namespace Arm {
+namespace Decoder {
 
 /**
  * Generic instruction handling construct.
@@ -75,5 +75,5 @@ private:
     handler_function fn;
 };
 
-} // namespace Arm
+} // namespace Decoder
 } // namespace Dynarmic

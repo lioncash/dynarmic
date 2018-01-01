@@ -6,12 +6,15 @@
 
 #pragma once
 
+#include <string>
+
+#include "common/common_types.h"
+
 namespace Dynarmic {
 namespace A32 {
 
-enum class CoprocReg {
-    C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15
-};
+std::string DisassembleArm(u32 instruction);
+std::string DisassembleThumb16(u16 instruction);
 
 } // namespace A32
 } // namespace Dynarmic

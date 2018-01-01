@@ -9,6 +9,7 @@
 #include <boost/variant.hpp>
 
 #include "common/common_types.h"
+#include "frontend/ir/cond.h"
 #include "frontend/ir/location_descriptor.h"
 
 namespace Dynarmic {
@@ -83,8 +84,8 @@ using Terminal = boost::variant<
  * on the run-time state of the ARM flags.
  */
 struct If {
-    If(Arm::Cond if_, Terminal then_, Terminal else_) : if_(if_), then_(then_), else_(else_) {}
-    Arm::Cond if_;
+    If(Cond if_, Terminal then_, Terminal else_) : if_(if_), then_(then_), else_(else_) {}
+    Cond if_;
     Terminal then_;
     Terminal else_;
 };

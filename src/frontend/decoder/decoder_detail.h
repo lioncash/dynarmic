@@ -15,7 +15,7 @@
 #include "common/mp.h"
 
 namespace Dynarmic {
-namespace Arm {
+namespace Decoder {
 namespace detail {
 
 /**
@@ -163,5 +163,5 @@ public:
 };
 
 } // namespace detail
-} // namespace Arm
+} // namespace Decoder
 } // namespace Dynarmic

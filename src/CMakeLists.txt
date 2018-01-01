@@ -1,39 +1,4 @@
 add_library(dynarmic
-    # Source files
-    common/memory_pool.cpp
-    frontend/arm/types.cpp
-    frontend/disassembler/disassembler_arm.cpp
-    frontend/disassembler/disassembler_thumb.cpp
-    frontend/ir/basic_block.cpp
-    frontend/ir/ir_emitter.cpp
-    frontend/ir/location_descriptor.cpp
-    frontend/ir/microinstruction.cpp
-    frontend/ir/opcodes.cpp
-    frontend/ir/value.cpp
-    frontend/translate/translate.cpp
-    frontend/translate/translate_arm.cpp
-    frontend/translate/translate_arm/branch.cpp
-    frontend/translate/translate_arm/coprocessor.cpp
-    frontend/translate/translate_arm/data_processing.cpp
-    frontend/translate/translate_arm/exception_generating.cpp
-    frontend/translate/translate_arm/extension.cpp
-    frontend/translate/translate_arm/load_store.cpp
-    frontend/translate/translate_arm/misc.cpp
-    frontend/translate/translate_arm/multiply.cpp
-    frontend/translate/translate_arm/packing.cpp
-    frontend/translate/translate_arm/parallel.cpp
-    frontend/translate/translate_arm/reversal.cpp
-    frontend/translate/translate_arm/saturated.cpp
-    frontend/translate/translate_arm/status_register_access.cpp
-    frontend/translate/translate_arm/synchronization.cpp
-    frontend/translate/translate_arm/vfp2.cpp
-    frontend/translate/translate_thumb.cpp
-    ir_opt/constant_propagation_pass.cpp
-    ir_opt/dead_code_elimination_pass.cpp
-    ir_opt/get_set_elimination_pass.cpp
-    ir_opt/verification_pass.cpp
-
-    # Header files
     ../include/dynarmic/callbacks.h
     ../include/dynarmic/coprocessor.h
     ../include/dynarmic/coprocessor_util.h
@@ -45,53 +10,84 @@ add_library(dynarmic
     common/common_types.h
     common/intrusive_list.h
     common/iterator_util.h
+    common/memory_pool.cpp
     common/memory_pool.h
     common/mp.h
     common/scope_exit.h
     common/string_util.h
     common/variant_util.h
-    frontend/arm/FPSCR.h
-    frontend/arm/PSR.h
-    frontend/arm/types.h
-    frontend/decoder/arm.h
+    frontend/A32/decoder/arm.h
+    frontend/A32/decoder/thumb16.h
+    frontend/A32/decoder/thumb32.h
+    frontend/A32/decoder/vfp2.h
+    frontend/A32/disassembler/disassembler.h
+    frontend/A32/disassembler/disassembler_arm.cpp
+    frontend/A32/disassembler/disassembler_thumb.cpp
+    frontend/A32/FPSCR.h
+    frontend/A32/location_descriptor.cpp
+    frontend/A32/location_descriptor.h
+    frontend/A32/PSR.h
+    frontend/A32/translate/translate.cpp
+    frontend/A32/translate/translate.h
+    frontend/A32/translate/translate_arm.cpp
+    frontend/A32/translate/translate_arm/branch.cpp
+    frontend/A32/translate/translate_arm/coprocessor.cpp
+    frontend/A32/translate/translate_arm/data_processing.cpp
+    frontend/A32/translate/translate_arm/exception_generating.cpp
+    frontend/A32/translate/translate_arm/extension.cpp
+    frontend/A32/translate/translate_arm/load_store.cpp
+    frontend/A32/translate/translate_arm/misc.cpp
+    frontend/A32/translate/translate_arm/multiply.cpp
+    frontend/A32/translate/translate_arm/packing.cpp
+    frontend/A32/translate/translate_arm/parallel.cpp
+    frontend/A32/translate/translate_arm/reversal.cpp
+    frontend/A32/translate/translate_arm/saturated.cpp
+    frontend/A32/translate/translate_arm/status_register_access.cpp
+    frontend/A32/translate/translate_arm/synchronization.cpp
+    frontend/A32/translate/translate_arm/translate_arm.h
+    frontend/A32/translate/translate_arm/vfp2.cpp
+    frontend/A32/translate/translate_thumb.cpp
+    frontend/A32/types.cpp
+    frontend/A32/types.h
     frontend/decoder/decoder_detail.h
     frontend/decoder/matcher.h
-    frontend/decoder/thumb16.h
-    frontend/decoder/thumb32.h
-    frontend/decoder/vfp2.h
-    frontend/disassembler/disassembler.h
+    frontend/ir/basic_block.cpp
     frontend/ir/basic_block.h
+    frontend/ir/ir_emitter.cpp
     frontend/ir/ir_emitter.h
+    frontend/ir/location_descriptor.cpp
     frontend/ir/location_descriptor.h
+    frontend/ir/microinstruction.cpp
     frontend/ir/microinstruction.h
+    frontend/ir/opcodes.cpp
     frontend/ir/opcodes.h
     frontend/ir/terminal.h
+    frontend/ir/value.cpp
     frontend/ir/value.h
-    frontend/translate/translate.h
-    frontend/translate/translate_arm/translate_arm.h
+    ir_opt/constant_propagation_pass.cpp
+    ir_opt/dead_code_elimination_pass.cpp
+    ir_opt/get_set_elimination_pass.cpp
     ir_opt/passes.h
+    ir_opt/verification_pass.cpp
 )
 
 if (ARCHITECTURE_x86_64)
     target_sources(dynarmic PRIVATE
-         # Source files
          backend_x64/abi.cpp
+         backend_x64/abi.h
          backend_x64/block_of_code.cpp
+         backend_x64/block_of_code.h
          backend_x64/constant_pool.cpp
+         backend_x64/constant_pool.h
          backend_x64/emit_x64.cpp
+         backend_x64/emit_x64.h
          backend_x64/hostloc.cpp
+         backend_x64/hostloc.h
          backend_x64/interface_x64.cpp
          backend_x64/jitstate.cpp
-         backend_x64/reg_alloc.cpp
-
-         # Headers
-         backend_x64/abi.h
-         backend_x64/block_of_code.h
-         backend_x64/constant_pool.h
-         backend_x64/emit_x64.h
-         backend_x64/hostloc.h
          backend_x64/jitstate.h
          backend_x64/oparg.h
+         backend_x64/reg_alloc.cpp
          backend_x64/reg_alloc.h
     )
 

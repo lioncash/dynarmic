@@ -11,6 +11,8 @@
 #include <dynarmic/coprocessor_util.h>
 
 #include "common/common_types.h"
+#include "frontend/A32/location_descriptor.h"
+#include "frontend/A32/types.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/terminal.h"
@@ -33,12 +35,12 @@ enum class Opcode;
  * `block` is the resulting block.
  * The user of this class updates `current_location` as appropriate.
  */
-class IREmitter {
+class A32IREmitter {
 public:
-    explicit IREmitter(LocationDescriptor descriptor) : block(descriptor), current_location(descriptor) {}
+    explicit A32IREmitter(A32::LocationDescriptor descriptor) : block(descriptor), current_location(descriptor) {}
 
     Block block;
-    LocationDescriptor current_location;
+    A32::LocationDescriptor current_location;
 
     struct ResultAndCarry {
         Value result;
@@ -70,17 +72,17 @@ public:
     Value Imm32(u32 value);
     Value Imm64(u64 value);
 
-    Value GetRegister(Arm::Reg source_reg);
-    Value GetExtendedRegister(Arm::ExtReg source_reg);
-    void SetRegister(const Arm::Reg dest_reg, const Value& value);
-    void SetExtendedRegister(const Arm::ExtReg dest_reg, const Value& value);
+    Value GetRegister(A32::Reg source_reg);
+    Value GetExtendedRegister(A32::ExtReg source_reg);
+    void SetRegister(const A32::Reg dest_reg, const Value& value);
+    void SetExtendedRegister(const A32::ExtReg dest_reg, const Value& value);
 
     void ALUWritePC(const Value& value);
     void BranchWritePC(const Value& value);
     void BXWritePC(const Value& value);
     void LoadWritePC(const Value& value);
     void CallSupervisor(const Value& value);
-    void PushRSB(const LocationDescriptor& return_location);
+    void PushRSB(const A32::LocationDescriptor& return_location);
 
     Value GetCpsr();
     void SetCpsr(const Value& value);
@@ -225,13 +227,13 @@ public:
     Value ExclusiveWriteMemory32(const Value& vaddr, const Value& value);
     Value ExclusiveWriteMemory64(const Value& vaddr, const Value& value_lo, const Value& value_hi);
 
-    void CoprocInternalOperation(size_t coproc_no, bool two, size_t opc1, Arm::CoprocReg CRd, Arm::CoprocReg CRn, Arm::CoprocReg CRm, size_t opc2);
-    void CoprocSendOneWord(size_t coproc_no, bool two, size_t opc1, Arm::CoprocReg CRn, Arm::CoprocReg CRm, size_t opc2, const Value& word);
-    void CoprocSendTwoWords(size_t coproc_no, bool two, size_t opc, Arm::CoprocReg CRm, const Value& word1, const Value& word2);
-    Value CoprocGetOneWord(size_t coproc_no, bool two, size_t opc1, Arm::CoprocReg CRn, Arm::CoprocReg CRm, size_t opc2);
-    Value CoprocGetTwoWords(size_t coproc_no, bool two, size_t opc, Arm::CoprocReg CRm);
-    void CoprocLoadWords(size_t coproc_no, bool two, bool long_transfer, Arm::CoprocReg CRd, const Value& address, bool has_option, u8 option);
-    void CoprocStoreWords(size_t coproc_no, bool two, bool long_transfer, Arm::CoprocReg CRd, const Value& address, bool has_option, u8 option);
+    void CoprocInternalOperation(size_t coproc_no, bool two, size_t opc1, A32::CoprocReg CRd, A32::CoprocReg CRn, A32::CoprocReg CRm, size_t opc2);
+    void CoprocSendOneWord(size_t coproc_no, bool two, size_t opc1, A32::CoprocReg CRn, A32::CoprocReg CRm, size_t opc2, const Value& word);
+    void CoprocSendTwoWords(size_t coproc_no, bool two, size_t opc, A32::CoprocReg CRm, const Value& word1, const Value& word2);
+    Value CoprocGetOneWord(size_t coproc_no, bool two, size_t opc1, A32::CoprocReg CRn, A32::CoprocReg CRm, size_t opc2);
+    Value CoprocGetTwoWords(size_t coproc_no, bool two, size_t opc, A32::CoprocReg CRm);
+    void CoprocLoadWords(size_t coproc_no, bool two, bool long_transfer, A32::CoprocReg CRd, const Value& address, bool has_option, u8 option);
+    void CoprocStoreWords(size_t coproc_no, bool two, bool long_transfer, A32::CoprocReg CRd, const Value& address, bool has_option, u8 option);
 
     void Breakpoint();
 

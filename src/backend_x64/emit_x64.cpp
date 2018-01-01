@@ -18,9 +18,9 @@
 #include "common/bit_util.h"
 #include "common/common_types.h"
 #include "common/variant_util.h"
-#include "frontend/arm/types.h"
+#include "frontend/A32/location_descriptor.h"
+#include "frontend/A32/types.h"
 #include "frontend/ir/basic_block.h"
-#include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/opcodes.h"
 
@@ -45,17 +45,17 @@ constexpr u64 f64_min_s32 = 0xc1e0000000000000u; // -2147483648 as a double
 constexpr u64 f64_max_s32 = 0x41dfffffffc00000u; // 2147483647 as a double
 constexpr u64 f64_min_u32 = 0x0000000000000000u; // 0 as a double
 
-static Xbyak::Address MJitStateReg(Arm::Reg reg) {
+static Xbyak::Address MJitStateReg(A32::Reg reg) {
     return dword[r15 + offsetof(JitState, Reg) + sizeof(u32) * static_cast<size_t>(reg)];
 }
 
-static Xbyak::Address MJitStateExtReg(Arm::ExtReg reg) {
-    if (Arm::IsSingleExtReg(reg)) {
-        size_t index = static_cast<size_t>(reg) - static_cast<size_t>(Arm::ExtReg::S0);
+static Xbyak::Address MJitStateExtReg(A32::ExtReg reg) {
+    if (A32::IsSingleExtReg(reg)) {
+        size_t index = static_cast<size_t>(reg) - static_cast<size_t>(A32::ExtReg::S0);
         return dword[r15 + offsetof(JitState, ExtReg) + sizeof(u32) * index];
     }
-    if (Arm::IsDoubleExtReg(reg)) {
-        size_t index = static_cast<size_t>(reg) - static_cast<size_t>(Arm::ExtReg::D0);
+    if (A32::IsDoubleExtReg(reg)) {
+        size_t index = static_cast<size_t>(reg) - static_cast<size_t>(A32::ExtReg::D0);
         return qword[r15 + offsetof(JitState, ExtReg) + sizeof(u64) * index];
     }
     ASSERT_MSG(false, "Should never happen.");
@@ -66,11 +66,11 @@ static void EraseInstruction(IR::Block& block, IR::Inst* inst) {
     inst->Invalidate();
 }
 
-EmitX64::EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface)
+A32EmitX64::A32EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface)
     : code(code), cb(cb), jit_interface(jit_interface) {
 }
 
-EmitX64::BlockDescriptor EmitX64::Emit(IR::Block& block) {
+A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
     code->align();
     const u8* const entrypoint = code->getCurr();
 
@@ -87,7 +87,7 @@ EmitX64::BlockDescriptor EmitX64::Emit(IR::Block& block) {
 
 #define OPCODE(name, type, ...)                           \
         case IR::Opcode::name:                            \
-            EmitX64::Emit##name(reg_alloc, block, inst);  \
+            A32EmitX64::Emit##name(reg_alloc, block, inst);  \
             break;
 #include "frontend/ir/opcodes.inc"
 #undef OPCODE
@@ -106,68 +106,69 @@ EmitX64::BlockDescriptor EmitX64::Emit(IR::Block& block) {
     EmitTerminal(block.GetTerminal(), block.Location());
     code->int3();
 
-    const IR::LocationDescriptor descriptor = block.Location();
+    const A32::LocationDescriptor descriptor = block.Location();
     Patch(descriptor, entrypoint);
 
     const size_t size = static_cast<size_t>(code->getCurr() - entrypoint);
-    EmitX64::BlockDescriptor block_desc{entrypoint, size, block.Location(), block.EndLocation().PC()};
+    const A32::LocationDescriptor end_location = block.EndLocation();
+    const auto range = boost::icl::discrete_interval<u32>::closed(descriptor.PC(), end_location.PC() - 1);
+    A32EmitX64::BlockDescriptor block_desc{entrypoint, size, block.Location(), range};
     block_descriptors.emplace(descriptor.UniqueHash(), block_desc);
-
-    block_ranges.add(std::make_pair(boost::icl::discrete_interval<u32>::closed(block.Location().PC(), block.EndLocation().PC() - 1), std::set<IR::LocationDescriptor>{descriptor}));
+    block_ranges.add(std::make_pair(range, std::set<A32::LocationDescriptor>{descriptor}));
 
     return block_desc;
 }
 
-boost::optional<EmitX64::BlockDescriptor> EmitX64::GetBasicBlock(IR::LocationDescriptor descriptor) const {
+boost::optional<A32EmitX64::BlockDescriptor> A32EmitX64::GetBasicBlock(A32::LocationDescriptor descriptor) const {
     auto iter = block_descriptors.find(descriptor.UniqueHash());
     if (iter == block_descriptors.end())
         return boost::none;
     return iter->second;
 }
 
-void EmitX64::EmitVoid(RegAlloc&, IR::Block&, IR::Inst*) {
+void A32EmitX64::EmitVoid(RegAlloc&, IR::Block&, IR::Inst*) {
 }
 
-void EmitX64::EmitBreakpoint(RegAlloc&, IR::Block&, IR::Inst*) {
+void A32EmitX64::EmitBreakpoint(RegAlloc&, IR::Block&, IR::Inst*) {
     code->int3();
 }
 
-void EmitX64::EmitIdentity(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitIdentity(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (!args[0].IsImmediate()) {
         reg_alloc.DefineValue(inst, args[0]);
     }
 }
 
-void EmitX64::EmitGetRegister(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Arm::Reg reg = inst->GetArg(0).GetRegRef();
+void A32EmitX64::EmitGetRegister(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+    A32::Reg reg = inst->GetArg(0).GetA32RegRef();
 
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
     code->mov(result, MJitStateReg(reg));
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitGetExtendedRegister32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Arm::ExtReg reg = inst->GetArg(0).GetExtRegRef();
-    ASSERT(Arm::IsSingleExtReg(reg));
+void A32EmitX64::EmitGetExtendedRegister32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+    A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
+    ASSERT(A32::IsSingleExtReg(reg));
 
     Xbyak::Xmm result = reg_alloc.ScratchXmm();
     code->movss(result, MJitStateExtReg(reg));
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitGetExtendedRegister64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
-    Arm::ExtReg reg = inst->GetArg(0).GetExtRegRef();
-    ASSERT(Arm::IsDoubleExtReg(reg));
+void A32EmitX64::EmitGetExtendedRegister64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+    A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
+    ASSERT(A32::IsDoubleExtReg(reg));
 
     Xbyak::Xmm result = reg_alloc.ScratchXmm();
     code->movsd(result, MJitStateExtReg(reg));
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSetRegister(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetRegister(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
-    Arm::Reg reg = inst->GetArg(0).GetRegRef();
+    A32::Reg reg = inst->GetArg(0).GetA32RegRef();
     if (args[1].IsImmediate()) {
         code->mov(MJitStateReg(reg), args[1].GetImmediateU32());
     } else if (args[1].IsInXmm()) {
@@ -179,10 +180,10 @@ void EmitX64::EmitSetRegister(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     }
 }
 
-void EmitX64::EmitSetExtendedRegister32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetExtendedRegister32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
-    Arm::ExtReg reg = inst->GetArg(0).GetExtRegRef();
-    ASSERT(Arm::IsSingleExtReg(reg));
+    A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
+    ASSERT(A32::IsSingleExtReg(reg));
     if (args[1].IsInXmm()) {
         Xbyak::Xmm to_store = reg_alloc.UseXmm(args[1]);
         code->movss(MJitStateExtReg(reg), to_store);
@@ -192,10 +193,10 @@ void EmitX64::EmitSetExtendedRegister32(RegAlloc& reg_alloc, IR::Block&, IR::Ins
     }
 }
 
-void EmitX64::EmitSetExtendedRegister64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetExtendedRegister64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
-    Arm::ExtReg reg = inst->GetArg(0).GetExtRegRef();
-    ASSERT(Arm::IsDoubleExtReg(reg));
+    A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
+    ASSERT(A32::IsDoubleExtReg(reg));
     if (args[1].IsInXmm()) {
         Xbyak::Xmm to_store = reg_alloc.UseXmm(args[1]);
         code->movsd(MJitStateExtReg(reg), to_store);
@@ -209,7 +210,7 @@ static u32 GetCpsrImpl(JitState* jit_state) {
     return jit_state->Cpsr();
 }
 
-void EmitX64::EmitGetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitGetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     if (code->DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
         Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
         Xbyak::Reg32 b = reg_alloc.ScratchGpr().cvt32();
@@ -245,14 +246,14 @@ static void SetCpsrImpl(u32 value, JitState* jit_state) {
     jit_state->SetCpsr(value);
 }
 
-void EmitX64::EmitSetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetCpsr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     reg_alloc.HostCall(nullptr, args[0]);
     code->mov(code->ABI_PARAM2, code->r15);
     code->CallFunction(&SetCpsrImpl);
 }
 
-void EmitX64::EmitSetCpsrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetCpsrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         u32 imm = args[0].GetImmediateU32();
@@ -266,7 +267,7 @@ void EmitX64::EmitSetCpsrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     }
 }
 
-void EmitX64::EmitSetCpsrNZCVQ(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetCpsrNZCVQ(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         u32 imm = args[0].GetImmediateU32();
@@ -283,14 +284,14 @@ void EmitX64::EmitSetCpsrNZCVQ(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) 
     }
 }
 
-void EmitX64::EmitGetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitGetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(JitState, CPSR_nzcv)]);
     code->shr(result, 31);
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     constexpr size_t flag_bit = 31;
     constexpr u32 flag_mask = 1u << flag_bit;
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -309,7 +310,7 @@ void EmitX64::EmitSetNFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     }
 }
 
-void EmitX64::EmitGetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitGetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(JitState, CPSR_nzcv)]);
     code->shr(result, 30);
@@ -317,7 +318,7 @@ void EmitX64::EmitGetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     constexpr size_t flag_bit = 30;
     constexpr u32 flag_mask = 1u << flag_bit;
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -336,7 +337,7 @@ void EmitX64::EmitSetZFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     }
 }
 
-void EmitX64::EmitGetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitGetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(JitState, CPSR_nzcv)]);
     code->shr(result, 29);
@@ -344,7 +345,7 @@ void EmitX64::EmitGetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     constexpr size_t flag_bit = 29;
     constexpr u32 flag_mask = 1u << flag_bit;
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -363,7 +364,7 @@ void EmitX64::EmitSetCFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     }
 }
 
-void EmitX64::EmitGetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitGetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(JitState, CPSR_nzcv)]);
     code->shr(result, 28);
@@ -371,7 +372,7 @@ void EmitX64::EmitGetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     constexpr size_t flag_bit = 28;
     constexpr u32 flag_mask = 1u << flag_bit;
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -390,7 +391,7 @@ void EmitX64::EmitSetVFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     }
 }
 
-void EmitX64::EmitOrQFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitOrQFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         if (args[0].GetImmediateU1())
@@ -402,13 +403,13 @@ void EmitX64::EmitOrQFlag(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     }
 }
 
-void EmitX64::EmitGetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitGetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Xmm result = reg_alloc.ScratchXmm();
     code->movd(result, dword[r15 + offsetof(JitState, CPSR_ge)]);
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     ASSERT(!args[0].IsImmediate());
 
@@ -421,7 +422,7 @@ void EmitX64::EmitSetGEFlags(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     }
 }
 
-void EmitX64::EmitSetGEFlagsCompressed(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetGEFlagsCompressed(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate()) {
         u32 imm = args[0].GetImmediateU32();
@@ -453,7 +454,7 @@ void EmitX64::EmitSetGEFlagsCompressed(RegAlloc& reg_alloc, IR::Block&, IR::Inst
     }
 }
 
-void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto& arg = args[0];
 
@@ -471,13 +472,13 @@ void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* ins
         u32 new_pc = arg.GetImmediateU32();
         u32 mask = Common::Bit<0>(new_pc) ? 0xFFFFFFFE : 0xFFFFFFFC;
         u32 et = 0;
-        et |= block.Location().EFlag() ? 2 : 0;
+        et |= A32::LocationDescriptor{block.Location()}.EFlag() ? 2 : 0;
         et |= Common::Bit<0>(new_pc) ? 1 : 0;
 
-        code->mov(MJitStateReg(Arm::Reg::PC), new_pc & mask);
+        code->mov(MJitStateReg(A32::Reg::PC), new_pc & mask);
         code->mov(dword[r15 + offsetof(JitState, CPSR_et)], et);
     } else {
-        if (block.Location().EFlag()) {
+        if (A32::LocationDescriptor{block.Location()}.EFlag()) {
             Xbyak::Reg32 new_pc = reg_alloc.UseScratchGpr(arg).cvt32();
             Xbyak::Reg32 mask = reg_alloc.ScratchGpr().cvt32();
             Xbyak::Reg32 et = reg_alloc.ScratchGpr().cvt32();
@@ -488,7 +489,7 @@ void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* ins
             code->mov(dword[r15 + offsetof(JitState, CPSR_et)], et);
             code->lea(mask, ptr[mask.cvt64() + mask.cvt64() * 1 - 4]); // mask = pc & 1 ? 0xFFFFFFFE : 0xFFFFFFFC
             code->and_(new_pc, mask);
-            code->mov(MJitStateReg(Arm::Reg::PC), new_pc);
+            code->mov(MJitStateReg(A32::Reg::PC), new_pc);
         } else {
             Xbyak::Reg32 new_pc = reg_alloc.UseScratchGpr(arg).cvt32();
             Xbyak::Reg32 mask = reg_alloc.ScratchGpr().cvt32();
@@ -498,12 +499,12 @@ void EmitX64::EmitBXWritePC(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* ins
             code->mov(dword[r15 + offsetof(JitState, CPSR_et)], mask);
             code->lea(mask, ptr[mask.cvt64() + mask.cvt64() * 1 - 4]); // mask = pc & 1 ? 0xFFFFFFFE : 0xFFFFFFFC
             code->and_(new_pc, mask);
-            code->mov(MJitStateReg(Arm::Reg::PC), new_pc);
+            code->mov(MJitStateReg(A32::Reg::PC), new_pc);
         }
     }
 }
 
-void EmitX64::EmitCallSupervisor(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitCallSupervisor(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.HostCall(nullptr);
 
     code->SwitchMxcsrOnExit();
@@ -524,7 +525,7 @@ static u32 GetFpscrImpl(JitState* jit_state) {
     return jit_state->Fpscr();
 }
 
-void EmitX64::EmitGetFpscr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitGetFpscr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.HostCall(inst);
     code->mov(code->ABI_PARAM1, code->r15);
 
@@ -536,7 +537,7 @@ static void SetFpscrImpl(u32 value, JitState* jit_state) {
     jit_state->SetFpscr(value);
 }
 
-void EmitX64::EmitSetFpscr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetFpscr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     reg_alloc.HostCall(nullptr, args[0]);
     code->mov(code->ABI_PARAM2, code->r15);
@@ -545,20 +546,20 @@ void EmitX64::EmitSetFpscr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     code->ldmxcsr(code->dword[code->r15 + offsetof(JitState, guest_MXCSR)]);
 }
 
-void EmitX64::EmitGetFpscrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitGetFpscrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     Xbyak::Reg32 result = reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(JitState, FPSCR_nzcv)]);
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSetFpscrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetFpscrNZCV(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 value = reg_alloc.UseGpr(args[0]).cvt32();
 
     code->mov(dword[r15 + offsetof(JitState, FPSCR_nzcv)], value);
 }
 
-void EmitX64::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, u64 target_hash) {
+void A32EmitX64::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, u64 target_hash) {
     using namespace Xbyak::util;
 
     auto iter = block_descriptors.find(target_hash);
@@ -581,7 +582,7 @@ void EmitX64::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, u
     code->mov(dword[r15 + offsetof(JitState, rsb_ptr)], index_reg.cvt32());
 }
 
-void EmitX64::EmitPushRSB(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPushRSB(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[0].IsImmediate());
     u64 unique_hash_of_target = args[0].GetImmediateU64();
@@ -593,19 +594,19 @@ void EmitX64::EmitPushRSB(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     PushRSBHelper(loc_desc_reg, index_reg, unique_hash_of_target);
 }
 
-void EmitX64::EmitGetCarryFromOp(RegAlloc&, IR::Block&, IR::Inst*) {
+void A32EmitX64::EmitGetCarryFromOp(RegAlloc&, IR::Block&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
-void EmitX64::EmitGetOverflowFromOp(RegAlloc&, IR::Block&, IR::Inst*) {
+void A32EmitX64::EmitGetOverflowFromOp(RegAlloc&, IR::Block&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
-void EmitX64::EmitGetGEFromOp(RegAlloc&, IR::Block&, IR::Inst*) {
+void A32EmitX64::EmitGetGEFromOp(RegAlloc&, IR::Block&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
-void EmitX64::EmitPack2x32To1x64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPack2x32To1x64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 lo = reg_alloc.UseScratchGpr(args[0]);
     Xbyak::Reg64 hi = reg_alloc.UseScratchGpr(args[1]);
@@ -617,12 +618,12 @@ void EmitX64::EmitPack2x32To1x64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
     reg_alloc.DefineValue(inst, lo);
 }
 
-void EmitX64::EmitLeastSignificantWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitLeastSignificantWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     reg_alloc.DefineValue(inst, args[0]);
 }
 
-void EmitX64::EmitMostSignificantWord(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitMostSignificantWord(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -639,17 +640,17 @@ void EmitX64::EmitMostSignificantWord(RegAlloc& reg_alloc, IR::Block& block, IR:
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitLeastSignificantHalf(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitLeastSignificantHalf(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     reg_alloc.DefineValue(inst, args[0]);
 }
 
-void EmitX64::EmitLeastSignificantByte(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitLeastSignificantByte(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     reg_alloc.DefineValue(inst, args[0]);
 }
 
-void EmitX64::EmitMostSignificantBit(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitMostSignificantBit(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
     // TODO: Flag optimization
@@ -657,7 +658,7 @@ void EmitX64::EmitMostSignificantBit(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitIsZero(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitIsZero(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
     // TODO: Flag optimization
@@ -667,7 +668,7 @@ void EmitX64::EmitIsZero(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitIsZero64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitIsZero64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
     // TODO: Flag optimization
@@ -677,7 +678,7 @@ void EmitX64::EmitIsZero64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitLogicalShiftLeft(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitLogicalShiftLeft(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -777,7 +778,7 @@ void EmitX64::EmitLogicalShiftLeft(RegAlloc& reg_alloc, IR::Block& block, IR::In
     }
 }
 
-void EmitX64::EmitLogicalShiftRight(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitLogicalShiftRight(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -876,7 +877,7 @@ void EmitX64::EmitLogicalShiftRight(RegAlloc& reg_alloc, IR::Block& block, IR::I
     }
 }
 
-void EmitX64::EmitLogicalShiftRight64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitLogicalShiftRight64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto& operand_arg = args[0];
     auto& shift_arg = args[1];
@@ -892,7 +893,7 @@ void EmitX64::EmitLogicalShiftRight64(RegAlloc& reg_alloc, IR::Block&, IR::Inst*
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitArithmeticShiftRight(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitArithmeticShiftRight(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -980,7 +981,7 @@ void EmitX64::EmitArithmeticShiftRight(RegAlloc& reg_alloc, IR::Block& block, IR
     }
 }
 
-void EmitX64::EmitRotateRight(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitRotateRight(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -1059,7 +1060,7 @@ void EmitX64::EmitRotateRight(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
     }
 }
 
-void EmitX64::EmitRotateRightExtended(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitRotateRightExtended(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -1091,7 +1092,7 @@ static Xbyak::Reg8 DoCarry(RegAlloc& reg_alloc, Argument& carry_in, IR::Inst* ca
     }
 }
 
-void EmitX64::EmitAddWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitAddWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
@@ -1147,7 +1148,7 @@ void EmitX64::EmitAddWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitAdd64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitAdd64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
@@ -1158,7 +1159,7 @@ void EmitX64::EmitAdd64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSubWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitSubWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
@@ -1218,7 +1219,7 @@ void EmitX64::EmitSubWithCarry(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSub64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSub64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
@@ -1229,7 +1230,7 @@ void EmitX64::EmitSub64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitMul(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitMul(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -1244,7 +1245,7 @@ void EmitX64::EmitMul(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitMul64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitMul64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
@@ -1255,7 +1256,7 @@ void EmitX64::EmitMul64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitAnd(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitAnd(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -1274,7 +1275,7 @@ void EmitX64::EmitAnd(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitEor(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitEor(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -1293,7 +1294,7 @@ void EmitX64::EmitEor(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitOr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitOr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -1312,7 +1313,7 @@ void EmitX64::EmitOr(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitNot(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitNot(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result;
@@ -1326,70 +1327,70 @@ void EmitX64::EmitNot(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSignExtendWordToLong(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSignExtendWordToLong(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
     code->movsxd(result.cvt64(), result.cvt32());
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSignExtendHalfToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSignExtendHalfToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
     code->movsx(result.cvt32(), result.cvt16());
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSignExtendByteToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSignExtendByteToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
     code->movsx(result.cvt32(), result.cvt8());
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitZeroExtendWordToLong(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitZeroExtendWordToLong(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
     code->mov(result.cvt32(), result.cvt32()); // x64 zeros upper 32 bits on a 32-bit move
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitZeroExtendHalfToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitZeroExtendHalfToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
     code->movzx(result.cvt32(), result.cvt16());
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitZeroExtendByteToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitZeroExtendByteToWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
     code->movzx(result.cvt32(), result.cvt8());
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitByteReverseWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitByteReverseWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 result = reg_alloc.UseScratchGpr(args[0]).cvt32();
     code->bswap(result);
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitByteReverseHalf(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitByteReverseHalf(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg16 result = reg_alloc.UseScratchGpr(args[0]).cvt16();
     code->rol(result, 8);
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitByteReverseDual(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitByteReverseDual(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = reg_alloc.UseScratchGpr(args[0]);
     code->bswap(result);
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitCountLeadingZeros(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitCountLeadingZeros(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (code->DoesCpuSupport(Xbyak::util::Cpu::tLZCNT)) {
         Xbyak::Reg32 source = reg_alloc.UseGpr(args[0]).cvt32();
@@ -1413,7 +1414,7 @@ void EmitX64::EmitCountLeadingZeros(RegAlloc& reg_alloc, IR::Block&, IR::Inst* i
     }
 }
 
-void EmitX64::EmitSignedSaturatedAdd(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitSignedSaturatedAdd(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -1440,7 +1441,7 @@ void EmitX64::EmitSignedSaturatedAdd(RegAlloc& reg_alloc, IR::Block& block, IR::
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSignedSaturatedSub(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitSignedSaturatedSub(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -1467,7 +1468,7 @@ void EmitX64::EmitSignedSaturatedSub(RegAlloc& reg_alloc, IR::Block& block, IR::
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitUnsignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitUnsignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -1498,7 +1499,7 @@ void EmitX64::EmitUnsignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = reg_alloc.GetArgumentInfo(inst);
@@ -1548,7 +1549,7 @@ void EmitX64::EmitSignedSaturation(RegAlloc& reg_alloc, IR::Block& block, IR::In
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitPackedAddU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedAddU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1576,7 +1577,7 @@ void EmitX64::EmitPackedAddU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
     reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitPackedAddS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedAddS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1604,7 +1605,7 @@ void EmitX64::EmitPackedAddS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
     reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitPackedAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1646,7 +1647,7 @@ void EmitX64::EmitPackedAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
     reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitPackedAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1674,7 +1675,7 @@ void EmitX64::EmitPackedAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
     reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitPackedSubU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSubU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1699,7 +1700,7 @@ void EmitX64::EmitPackedSubU8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
 }
 
 
-void EmitX64::EmitPackedSubS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSubS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1727,7 +1728,7 @@ void EmitX64::EmitPackedSubS8(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* i
     reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitPackedSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1766,7 +1767,7 @@ void EmitX64::EmitPackedSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
     reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitPackedSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1794,7 +1795,7 @@ void EmitX64::EmitPackedSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* 
     reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitPackedHalvingAddU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingAddU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     if (args[0].IsInXmm() || args[1].IsInXmm()) {
@@ -1837,7 +1838,7 @@ void EmitX64::EmitPackedHalvingAddU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
     }
 }
 
-void EmitX64::EmitPackedHalvingAddU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingAddU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     if (args[0].IsInXmm() || args[1].IsInXmm()) {
@@ -1875,7 +1876,7 @@ void EmitX64::EmitPackedHalvingAddU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst*
     }
 }
 
-void EmitX64::EmitPackedHalvingAddS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingAddS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 reg_a = reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -1904,7 +1905,7 @@ void EmitX64::EmitPackedHalvingAddS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitPackedHalvingAddS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingAddS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm xmm_a = reg_alloc.UseScratchXmm(args[0]);
@@ -1925,7 +1926,7 @@ void EmitX64::EmitPackedHalvingAddS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst*
     reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitPackedHalvingSubU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingSubU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 minuend = reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -1955,7 +1956,7 @@ void EmitX64::EmitPackedHalvingSubU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
     reg_alloc.DefineValue(inst, minuend);
 }
 
-void EmitX64::EmitPackedHalvingSubS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingSubS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 minuend = reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -1991,7 +1992,7 @@ void EmitX64::EmitPackedHalvingSubS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
     reg_alloc.DefineValue(inst, minuend);
 }
 
-void EmitX64::EmitPackedHalvingSubU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingSubU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm minuend = reg_alloc.UseScratchXmm(args[0]);
@@ -2014,7 +2015,7 @@ void EmitX64::EmitPackedHalvingSubU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst*
     reg_alloc.DefineValue(inst, minuend);
 }
 
-void EmitX64::EmitPackedHalvingSubS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingSubS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm minuend = reg_alloc.UseScratchXmm(args[0]);
@@ -2111,35 +2112,35 @@ void EmitPackedSubAdd(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, 
     reg_alloc.DefineValue(inst, reg_a_hi);
 }
 
-void EmitX64::EmitPackedAddSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedAddSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     EmitPackedSubAdd(code, reg_alloc, block, inst, true, false, false);
 }
 
-void EmitX64::EmitPackedAddSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedAddSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     EmitPackedSubAdd(code, reg_alloc, block, inst, true, true, false);
 }
 
-void EmitX64::EmitPackedSubAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSubAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     EmitPackedSubAdd(code, reg_alloc, block, inst, false, false, false);
 }
 
-void EmitX64::EmitPackedSubAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSubAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     EmitPackedSubAdd(code, reg_alloc, block, inst, false, true, false);
 }
 
-void EmitX64::EmitPackedHalvingAddSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingAddSubU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     EmitPackedSubAdd(code, reg_alloc, block, inst, true, false, true);
 }
 
-void EmitX64::EmitPackedHalvingAddSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingAddSubS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     EmitPackedSubAdd(code, reg_alloc, block, inst, true, true, true);
 }
 
-void EmitX64::EmitPackedHalvingSubAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingSubAddU16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     EmitPackedSubAdd(code, reg_alloc, block, inst, false, false, true);
 }
 
-void EmitX64::EmitPackedHalvingSubAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitPackedHalvingSubAddS16(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     EmitPackedSubAdd(code, reg_alloc, block, inst, false, true, true);
 }
 
@@ -2154,43 +2155,43 @@ static void EmitPackedOperation(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst
     reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitPackedSaturatedAddU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSaturatedAddU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::paddusb);
 }
 
-void EmitX64::EmitPackedSaturatedAddS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSaturatedAddS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::paddsb);
 }
 
-void EmitX64::EmitPackedSaturatedSubU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSaturatedSubU8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psubusb);
 }
 
-void EmitX64::EmitPackedSaturatedSubS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSaturatedSubS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psubsb);
 }
 
-void EmitX64::EmitPackedSaturatedAddU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSaturatedAddU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::paddusw);
 }
 
-void EmitX64::EmitPackedSaturatedAddS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSaturatedAddS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::paddsw);
 }
 
-void EmitX64::EmitPackedSaturatedSubU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSaturatedSubU16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psubusw);
 }
 
-void EmitX64::EmitPackedSaturatedSubS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSaturatedSubS16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psubsw);
 }
 
-void EmitX64::EmitPackedAbsDiffSumS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedAbsDiffSumS8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     EmitPackedOperation(code, reg_alloc, inst, &Xbyak::CodeGenerator::psadbw);
 }
 
-void EmitX64::EmitPackedSelect(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitPackedSelect(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     size_t num_args_in_xmm = args[0].IsInXmm() + args[1].IsInXmm() + args[2].IsInXmm();
@@ -2325,15 +2326,15 @@ static void FPThreeOp32(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block
     Xbyak::Xmm operand = reg_alloc.UseScratchXmm(args[1]);
     Xbyak::Reg32 gpr_scratch = reg_alloc.ScratchGpr().cvt32();
 
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         DenormalsAreZero32(code, result, gpr_scratch);
         DenormalsAreZero32(code, operand, gpr_scratch);
     }
     (code->*fn)(result, operand);
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         FlushToZero32(code, result, gpr_scratch);
     }
-    if (block.Location().FPSCR().DN()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
         DefaultNaN32(code, result);
     }
 
@@ -2347,15 +2348,15 @@ static void FPThreeOp64(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block
     Xbyak::Xmm operand = reg_alloc.UseScratchXmm(args[1]);
     Xbyak::Reg64 gpr_scratch = reg_alloc.ScratchGpr();
 
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         DenormalsAreZero64(code, result, gpr_scratch);
         DenormalsAreZero64(code, operand, gpr_scratch);
     }
     (code->*fn)(result, operand);
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
-    if (block.Location().FPSCR().DN()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
         DefaultNaN64(code, result);
     }
 
@@ -2368,15 +2369,15 @@ static void FPTwoOp32(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, 
     Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 gpr_scratch = reg_alloc.ScratchGpr().cvt32();
 
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         DenormalsAreZero32(code, result, gpr_scratch);
     }
 
     (code->*fn)(result, result);
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         FlushToZero32(code, result, gpr_scratch);
     }
-    if (block.Location().FPSCR().DN()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
         DefaultNaN32(code, result);
     }
 
@@ -2389,32 +2390,32 @@ static void FPTwoOp64(BlockOfCode* code, RegAlloc& reg_alloc, IR::Block& block, 
     Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg64 gpr_scratch = reg_alloc.ScratchGpr();
 
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         DenormalsAreZero64(code, result, gpr_scratch);
     }
 
     (code->*fn)(result, result);
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
-    if (block.Location().FPSCR().DN()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
         DefaultNaN64(code, result);
     }
 
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitTransferFromFP32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitTransferFromFP32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     reg_alloc.DefineValue(inst, args[0]);
 }
 
-void EmitX64::EmitTransferFromFP64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitTransferFromFP64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     reg_alloc.DefineValue(inst, args[0]);
 }
 
-void EmitX64::EmitTransferToFP32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitTransferToFP32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate() && args[0].GetImmediateU32() == 0) {
         Xbyak::Xmm result = reg_alloc.ScratchXmm();
@@ -2425,7 +2426,7 @@ void EmitX64::EmitTransferToFP32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
     }
 }
 
-void EmitX64::EmitTransferToFP64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitTransferToFP64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate() && args[0].GetImmediateU64() == 0) {
         Xbyak::Xmm result = reg_alloc.ScratchXmm();
@@ -2436,7 +2437,7 @@ void EmitX64::EmitTransferToFP64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst
     }
 }
 
-void EmitX64::EmitFPAbs32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitFPAbs32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
 
@@ -2445,7 +2446,7 @@ void EmitX64::EmitFPAbs32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPAbs64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitFPAbs64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
 
@@ -2454,7 +2455,7 @@ void EmitX64::EmitFPAbs64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPNeg32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitFPNeg32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
 
@@ -2463,7 +2464,7 @@ void EmitX64::EmitFPNeg32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPNeg64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitFPNeg64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
 
@@ -2472,43 +2473,43 @@ void EmitX64::EmitFPNeg64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPAdd32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPAdd32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     FPThreeOp32(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::addss);
 }
 
-void EmitX64::EmitFPAdd64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPAdd64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     FPThreeOp64(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::addsd);
 }
 
-void EmitX64::EmitFPDiv32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPDiv32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     FPThreeOp32(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::divss);
 }
 
-void EmitX64::EmitFPDiv64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPDiv64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     FPThreeOp64(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::divsd);
 }
 
-void EmitX64::EmitFPMul32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPMul32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     FPThreeOp32(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::mulss);
 }
 
-void EmitX64::EmitFPMul64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPMul64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     FPThreeOp64(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::mulsd);
 }
 
-void EmitX64::EmitFPSqrt32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPSqrt32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     FPTwoOp32(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::sqrtss);
 }
 
-void EmitX64::EmitFPSqrt64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPSqrt64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     FPTwoOp64(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::sqrtsd);
 }
 
-void EmitX64::EmitFPSub32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPSub32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     FPThreeOp32(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::subss);
 }
 
-void EmitX64::EmitFPSub64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPSub64(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     FPThreeOp64(code, reg_alloc, block, inst, &Xbyak::CodeGenerator::subsd);
 }
 
@@ -2525,7 +2526,7 @@ static void SetFpscrNzcvFromFlags(BlockOfCode* code, RegAlloc& reg_alloc) {
     code->mov(dword[r15 + offsetof(JitState, FPSCR_nzcv)], nzcv);
 }
 
-void EmitX64::EmitFPCompare32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitFPCompare32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm reg_a = reg_alloc.UseXmm(args[0]);
     Xbyak::Xmm reg_b = reg_alloc.UseXmm(args[1]);
@@ -2540,7 +2541,7 @@ void EmitX64::EmitFPCompare32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     SetFpscrNzcvFromFlags(code, reg_alloc);
 }
 
-void EmitX64::EmitFPCompare64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitFPCompare64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm reg_a = reg_alloc.UseXmm(args[0]);
     Xbyak::Xmm reg_b = reg_alloc.UseXmm(args[1]);
@@ -2555,45 +2556,45 @@ void EmitX64::EmitFPCompare64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     SetFpscrNzcvFromFlags(code, reg_alloc);
 }
 
-void EmitX64::EmitFPSingleToDouble(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPSingleToDouble(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg64 gpr_scratch = reg_alloc.ScratchGpr();
 
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         DenormalsAreZero32(code, result, gpr_scratch.cvt32());
     }
     code->cvtss2sd(result, result);
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
-    if (block.Location().FPSCR().DN()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
         DefaultNaN64(code, result);
     }
 
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPDoubleToSingle(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPDoubleToSingle(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg64 gpr_scratch = reg_alloc.ScratchGpr();
 
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         DenormalsAreZero64(code, result, gpr_scratch);
     }
     code->cvtsd2ss(result, result);
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         FlushToZero32(code, result, gpr_scratch.cvt32());
     }
-    if (block.Location().FPSCR().DN()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().DN()) {
         DefaultNaN32(code, result);
     }
 
     reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPSingleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPSingleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = reg_alloc.ScratchGpr().cvt32();
@@ -2603,7 +2604,7 @@ void EmitX64::EmitFPSingleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst*
     // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
     // Conversion to double is lossless, and allows for clamping.
 
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         DenormalsAreZero32(code, from, to);
     }
     code->cvtss2sd(from, from);
@@ -2627,7 +2628,7 @@ void EmitX64::EmitFPSingleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst*
     reg_alloc.DefineValue(inst, to);
 }
 
-void EmitX64::EmitFPSingleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPSingleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = reg_alloc.ScratchGpr().cvt32();
@@ -2641,8 +2642,8 @@ void EmitX64::EmitFPSingleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst*
     //
     // FIXME: Inexact exception not correctly signalled with the below code
 
-    if (block.Location().FPSCR().RMode() != Arm::FPSCR::RoundingMode::TowardsZero && !round_towards_zero) {
-        if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().RMode() != A32::FPSCR::RoundingMode::TowardsZero && !round_towards_zero) {
+        if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
             DenormalsAreZero32(code, from, to);
         }
         code->cvtss2sd(from, from);
@@ -2662,7 +2663,7 @@ void EmitX64::EmitFPSingleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst*
         Xbyak::Xmm xmm_mask = reg_alloc.ScratchXmm();
         Xbyak::Reg32 gpr_mask = reg_alloc.ScratchGpr().cvt32();
 
-        if (block.Location().FPSCR().FTZ()) {
+        if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
             DenormalsAreZero32(code, from, to);
         }
         code->cvtss2sd(from, from);
@@ -2689,7 +2690,7 @@ void EmitX64::EmitFPSingleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst*
     reg_alloc.DefineValue(inst, to);
 }
 
-void EmitX64::EmitFPDoubleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPDoubleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = reg_alloc.ScratchGpr().cvt32();
@@ -2699,7 +2700,7 @@ void EmitX64::EmitFPDoubleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst*
 
     // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
 
-    if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
         DenormalsAreZero64(code, from, gpr_scratch.cvt64());
     }
     // First time is to set flags
@@ -2722,7 +2723,7 @@ void EmitX64::EmitFPDoubleToS32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst*
     reg_alloc.DefineValue(inst, to);
 }
 
-void EmitX64::EmitFPDoubleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
+void A32EmitX64::EmitFPDoubleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = reg_alloc.ScratchGpr().cvt32();
@@ -2734,8 +2735,8 @@ void EmitX64::EmitFPDoubleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst*
     // TODO: Use VCVTPD2UDQ when AVX512VL is available.
     // FIXME: Inexact exception not correctly signalled with the below code
 
-    if (block.Location().FPSCR().RMode() != Arm::FPSCR::RoundingMode::TowardsZero && !round_towards_zero) {
-        if (block.Location().FPSCR().FTZ()) {
+    if (A32::LocationDescriptor{block.Location()}.FPSCR().RMode() != A32::FPSCR::RoundingMode::TowardsZero && !round_towards_zero) {
+        if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
             DenormalsAreZero64(code, from, gpr_scratch.cvt64());
         }
         ZeroIfNaN64(code, from, xmm_scratch);
@@ -2754,7 +2755,7 @@ void EmitX64::EmitFPDoubleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst*
         Xbyak::Xmm xmm_mask = reg_alloc.ScratchXmm();
         Xbyak::Reg32 gpr_mask = reg_alloc.ScratchGpr().cvt32();
 
-        if (block.Location().FPSCR().FTZ()) {
+        if (A32::LocationDescriptor{block.Location()}.FPSCR().FTZ()) {
             DenormalsAreZero64(code, from, gpr_scratch.cvt64());
         }
         ZeroIfNaN64(code, from, xmm_scratch);
@@ -2780,7 +2781,7 @@ void EmitX64::EmitFPDoubleToU32(RegAlloc& reg_alloc, IR::Block& block, IR::Inst*
     reg_alloc.DefineValue(inst, to);
 }
 
-void EmitX64::EmitFPS32ToSingle(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitFPS32ToSingle(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 from = reg_alloc.UseGpr(args[0]).cvt32();
     Xbyak::Xmm to = reg_alloc.ScratchXmm();
@@ -2792,7 +2793,7 @@ void EmitX64::EmitFPS32ToSingle(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst)
     reg_alloc.DefineValue(inst, to);
 }
 
-void EmitX64::EmitFPU32ToSingle(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitFPU32ToSingle(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 from = reg_alloc.UseGpr(args[0]);
     Xbyak::Xmm to = reg_alloc.ScratchXmm();
@@ -2806,7 +2807,7 @@ void EmitX64::EmitFPU32ToSingle(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst)
     reg_alloc.DefineValue(inst, to);
 }
 
-void EmitX64::EmitFPS32ToDouble(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitFPS32ToDouble(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 from = reg_alloc.UseGpr(args[0]).cvt32();
     Xbyak::Xmm to = reg_alloc.ScratchXmm();
@@ -2818,7 +2819,7 @@ void EmitX64::EmitFPS32ToDouble(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst)
     reg_alloc.DefineValue(inst, to);
 }
 
-void EmitX64::EmitFPU32ToDouble(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitFPU32ToDouble(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 from = reg_alloc.UseGpr(args[0]);
     Xbyak::Xmm to = reg_alloc.ScratchXmm();
@@ -2833,11 +2834,11 @@ void EmitX64::EmitFPU32ToDouble(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst)
 }
 
 
-void EmitX64::EmitClearExclusive(RegAlloc&, IR::Block&, IR::Inst*) {
+void A32EmitX64::EmitClearExclusive(RegAlloc&, IR::Block&, IR::Inst*) {
     code->mov(code->byte[r15 + offsetof(JitState, exclusive_state)], u8(0));
 }
 
-void EmitX64::EmitSetExclusive(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitSetExclusive(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[1].IsImmediate());
     Xbyak::Reg32 address = reg_alloc.UseGpr(args[0]).cvt32();
@@ -2952,35 +2953,35 @@ static void WriteMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, 
     code->L(end);
 }
 
-void EmitX64::EmitReadMemory8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitReadMemory8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     ReadMemory(code, reg_alloc, inst, cb, 8, cb.memory.Read8);
 }
 
-void EmitX64::EmitReadMemory16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitReadMemory16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     ReadMemory(code, reg_alloc, inst, cb, 16, cb.memory.Read16);
 }
 
-void EmitX64::EmitReadMemory32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitReadMemory32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     ReadMemory(code, reg_alloc, inst, cb, 32, cb.memory.Read32);
 }
 
-void EmitX64::EmitReadMemory64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitReadMemory64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     ReadMemory(code, reg_alloc, inst, cb, 64, cb.memory.Read64);
 }
 
-void EmitX64::EmitWriteMemory8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitWriteMemory8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     WriteMemory(code, reg_alloc, inst, cb, 8, cb.memory.Write8);
 }
 
-void EmitX64::EmitWriteMemory16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitWriteMemory16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     WriteMemory(code, reg_alloc, inst, cb, 16, cb.memory.Write16);
 }
 
-void EmitX64::EmitWriteMemory32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitWriteMemory32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     WriteMemory(code, reg_alloc, inst, cb, 32, cb.memory.Write32);
 }
 
-void EmitX64::EmitWriteMemory64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitWriteMemory64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     WriteMemory(code, reg_alloc, inst, cb, 64, cb.memory.Write64);
 }
 
@@ -3017,19 +3018,19 @@ static void ExclusiveWrite(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* ins
     reg_alloc.DefineValue(inst, passed);
 }
 
-void EmitX64::EmitExclusiveWriteMemory8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitExclusiveWriteMemory8(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     ExclusiveWrite(code, reg_alloc, inst, cb.memory.Write8, false);
 }
 
-void EmitX64::EmitExclusiveWriteMemory16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitExclusiveWriteMemory16(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     ExclusiveWrite(code, reg_alloc, inst, cb.memory.Write16, false);
 }
 
-void EmitX64::EmitExclusiveWriteMemory32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitExclusiveWriteMemory32(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     ExclusiveWrite(code, reg_alloc, inst, cb.memory.Write32, false);
 }
 
-void EmitX64::EmitExclusiveWriteMemory64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitExclusiveWriteMemory64(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     ExclusiveWrite(code, reg_alloc, inst, cb.memory.Write64, true);
 }
 
@@ -3048,15 +3049,15 @@ static void CallCoprocCallback(BlockOfCode* code, RegAlloc& reg_alloc, Jit* jit_
     code->CallFunction(callback.function);
 }
 
-void EmitX64::EmitCoprocInternalOperation(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitCoprocInternalOperation(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
     bool two = coproc_info[1] != 0;
     unsigned opc1 = static_cast<unsigned>(coproc_info[2]);
-    Arm::CoprocReg CRd = static_cast<Arm::CoprocReg>(coproc_info[3]);
-    Arm::CoprocReg CRn = static_cast<Arm::CoprocReg>(coproc_info[4]);
-    Arm::CoprocReg CRm = static_cast<Arm::CoprocReg>(coproc_info[5]);
+    A32::CoprocReg CRd = static_cast<A32::CoprocReg>(coproc_info[3]);
+    A32::CoprocReg CRn = static_cast<A32::CoprocReg>(coproc_info[4]);
+    A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[5]);
     unsigned opc2 = static_cast<unsigned>(coproc_info[6]);
 
     std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
@@ -3074,15 +3075,15 @@ void EmitX64::EmitCoprocInternalOperation(RegAlloc& reg_alloc, IR::Block&, IR::I
     CallCoprocCallback(code, reg_alloc, jit_interface, *action);
 }
 
-void EmitX64::EmitCoprocSendOneWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitCoprocSendOneWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
     bool two = coproc_info[1] != 0;
     unsigned opc1 = static_cast<unsigned>(coproc_info[2]);
-    Arm::CoprocReg CRn = static_cast<Arm::CoprocReg>(coproc_info[3]);
-    Arm::CoprocReg CRm = static_cast<Arm::CoprocReg>(coproc_info[4]);
+    A32::CoprocReg CRn = static_cast<A32::CoprocReg>(coproc_info[3]);
+    A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[4]);
     unsigned opc2 = static_cast<unsigned>(coproc_info[5]);
 
     std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
@@ -3115,14 +3116,14 @@ void EmitX64::EmitCoprocSendOneWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* i
     }
 }
 
-void EmitX64::EmitCoprocSendTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitCoprocSendTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
     bool two = coproc_info[1] != 0;
     unsigned opc = static_cast<unsigned>(coproc_info[2]);
-    Arm::CoprocReg CRm = static_cast<Arm::CoprocReg>(coproc_info[3]);
+    A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[3]);
 
     std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
     if (!coproc) {
@@ -3157,14 +3158,14 @@ void EmitX64::EmitCoprocSendTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
     }
 }
 
-void EmitX64::EmitCoprocGetOneWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitCoprocGetOneWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
     bool two = coproc_info[1] != 0;
     unsigned opc1 = static_cast<unsigned>(coproc_info[2]);
-    Arm::CoprocReg CRn = static_cast<Arm::CoprocReg>(coproc_info[3]);
-    Arm::CoprocReg CRm = static_cast<Arm::CoprocReg>(coproc_info[4]);
+    A32::CoprocReg CRn = static_cast<A32::CoprocReg>(coproc_info[3]);
+    A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[4]);
     unsigned opc2 = static_cast<unsigned>(coproc_info[5]);
 
     std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
@@ -3199,13 +3200,13 @@ void EmitX64::EmitCoprocGetOneWord(RegAlloc& reg_alloc, IR::Block&, IR::Inst* in
     }
 }
 
-void EmitX64::EmitCoprocGetTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitCoprocGetTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
     bool two = coproc_info[1] != 0;
     unsigned opc = coproc_info[2];
-    Arm::CoprocReg CRm = static_cast<Arm::CoprocReg>(coproc_info[3]);
+    A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[3]);
 
     std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
     if (!coproc) {
@@ -3244,14 +3245,14 @@ void EmitX64::EmitCoprocGetTwoWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* i
     }
 }
 
-void EmitX64::EmitCoprocLoadWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitCoprocLoadWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
     bool two = coproc_info[1] != 0;
     bool long_transfer = coproc_info[2] != 0;
-    Arm::CoprocReg CRd = static_cast<Arm::CoprocReg>(coproc_info[3]);
+    A32::CoprocReg CRd = static_cast<A32::CoprocReg>(coproc_info[3]);
     bool has_option = coproc_info[4] != 0;
     boost::optional<u8> option{has_option, coproc_info[5]};
 
@@ -3270,14 +3271,14 @@ void EmitX64::EmitCoprocLoadWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* ins
     CallCoprocCallback(code, reg_alloc, jit_interface, *action, nullptr, args[1]);
 }
 
-void EmitX64::EmitCoprocStoreWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
+void A32EmitX64::EmitCoprocStoreWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* inst) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     auto coproc_info = inst->GetArg(0).GetCoprocInfo();
 
     size_t coproc_num = coproc_info[0];
     bool two = coproc_info[1] != 0;
     bool long_transfer = coproc_info[2] != 0;
-    Arm::CoprocReg CRd = static_cast<Arm::CoprocReg>(coproc_info[3]);
+    A32::CoprocReg CRd = static_cast<A32::CoprocReg>(coproc_info[3]);
     bool has_option = coproc_info[4] != 0;
     boost::optional<u8> option{has_option, coproc_info[5]};
 
@@ -3296,12 +3297,12 @@ void EmitX64::EmitCoprocStoreWords(RegAlloc& reg_alloc, IR::Block&, IR::Inst* in
     CallCoprocCallback(code, reg_alloc, jit_interface, *action, nullptr, args[1]);
 }
 
-void EmitX64::EmitAddCycles(size_t cycles) {
+void A32EmitX64::EmitAddCycles(size_t cycles) {
     ASSERT(cycles < std::numeric_limits<u32>::max());
     code->sub(qword[r15 + offsetof(JitState, cycles_remaining)], static_cast<u32>(cycles));
 }
 
-static Xbyak::Label EmitCond(BlockOfCode* code, Arm::Cond cond) {
+static Xbyak::Label EmitCond(BlockOfCode* code, IR::Cond cond) {
     Xbyak::Label label;
 
     const Xbyak::Reg32 cpsr = eax;
@@ -3317,58 +3318,58 @@ static Xbyak::Label EmitCond(BlockOfCode* code, Arm::Cond cond) {
     constexpr u32 v_mask = 1u << v_shift;
 
     switch (cond) {
-    case Arm::Cond::EQ: //z
+    case IR::Cond::EQ: //z
         code->test(cpsr, z_mask);
         code->jnz(label);
         break;
-    case Arm::Cond::NE: //!z
+    case IR::Cond::NE: //!z
         code->test(cpsr, z_mask);
         code->jz(label);
         break;
-    case Arm::Cond::CS: //c
+    case IR::Cond::CS: //c
         code->test(cpsr, c_mask);
         code->jnz(label);
         break;
-    case Arm::Cond::CC: //!c
+    case IR::Cond::CC: //!c
         code->test(cpsr, c_mask);
         code->jz(label);
         break;
-    case Arm::Cond::MI: //n
+    case IR::Cond::MI: //n
         code->test(cpsr, n_mask);
         code->jnz(label);
         break;
-    case Arm::Cond::PL: //!n
+    case IR::Cond::PL: //!n
         code->test(cpsr, n_mask);
         code->jz(label);
         break;
-    case Arm::Cond::VS: //v
+    case IR::Cond::VS: //v
         code->test(cpsr, v_mask);
         code->jnz(label);
         break;
-    case Arm::Cond::VC: //!v
+    case IR::Cond::VC: //!v
         code->test(cpsr, v_mask);
         code->jz(label);
         break;
-    case Arm::Cond::HI: { //c & !z
+    case IR::Cond::HI: { //c & !z
         code->and_(cpsr, z_mask | c_mask);
         code->cmp(cpsr, c_mask);
         code->je(label);
         break;
     }
-    case Arm::Cond::LS: { //!c | z
+    case IR::Cond::LS: { //!c | z
         code->and_(cpsr, z_mask | c_mask);
         code->cmp(cpsr, c_mask);
         code->jne(label);
         break;
     }
-    case Arm::Cond::GE: { // n == v
+    case IR::Cond::GE: { // n == v
         code->and_(cpsr, n_mask | v_mask);
         code->jz(label);
         code->cmp(cpsr, n_mask | v_mask);
         code->je(label);
         break;
     }
-    case Arm::Cond::LT: { // n != v
+    case IR::Cond::LT: { // n != v
         Xbyak::Label fail;
         code->and_(cpsr, n_mask | v_mask);
         code->jz(fail);
@@ -3377,7 +3378,7 @@ static Xbyak::Label EmitCond(BlockOfCode* code, Arm::Cond cond) {
         code->L(fail);
         break;
     }
-    case Arm::Cond::GT: { // !z & (n == v)
+    case IR::Cond::GT: { // !z & (n == v)
         const Xbyak::Reg32 tmp1 = ebx;
         const Xbyak::Reg32 tmp2 = esi;
         code->mov(tmp1, cpsr);
@@ -3391,7 +3392,7 @@ static Xbyak::Label EmitCond(BlockOfCode* code, Arm::Cond cond) {
         code->jz(label);
         break;
     }
-    case Arm::Cond::LE: { // z | (n != v)
+    case IR::Cond::LE: { // z | (n != v)
         const Xbyak::Reg32 tmp1 = ebx;
         const Xbyak::Reg32 tmp2 = esi;
         code->mov(tmp1, cpsr);
@@ -3413,8 +3414,8 @@ static Xbyak::Label EmitCond(BlockOfCode* code, Arm::Cond cond) {
     return label;
 }
 
-void EmitX64::EmitCondPrelude(const IR::Block& block) {
-    if (block.GetCondition() == Arm::Cond::AL) {
+void A32EmitX64::EmitCondPrelude(const IR::Block& block) {
+    if (block.GetCondition() == IR::Cond::AL) {
         ASSERT(!block.HasConditionFailedLocation());
         return;
     }
@@ -3427,44 +3428,44 @@ void EmitX64::EmitCondPrelude(const IR::Block& block) {
     code->L(pass);
 }
 
-void EmitX64::EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor initial_location) {
+void A32EmitX64::EmitTerminal(IR::Terminal terminal, A32::LocationDescriptor initial_location) {
     Common::VisitVariant<void>(terminal, [this, &initial_location](auto x) {
         this->EmitTerminal(x, initial_location);
     });
 }
 
-void EmitX64::EmitTerminal(IR::Term::Interpret terminal, IR::LocationDescriptor initial_location) {
-    ASSERT_MSG(terminal.next.TFlag() == initial_location.TFlag(), "Unimplemented");
-    ASSERT_MSG(terminal.next.EFlag() == initial_location.EFlag(), "Unimplemented");
+void A32EmitX64::EmitTerminal(IR::Term::Interpret terminal, A32::LocationDescriptor initial_location) {
+    ASSERT_MSG(A32::LocationDescriptor{terminal.next}.TFlag() == initial_location.TFlag(), "Unimplemented");
+    ASSERT_MSG(A32::LocationDescriptor{terminal.next}.EFlag() == initial_location.EFlag(), "Unimplemented");
 
-    code->mov(code->ABI_PARAM1.cvt32(), terminal.next.PC());
+    code->mov(code->ABI_PARAM1.cvt32(), A32::LocationDescriptor{terminal.next}.PC());
     code->mov(code->ABI_PARAM2, reinterpret_cast<u64>(jit_interface));
     code->mov(code->ABI_PARAM3, reinterpret_cast<u64>(cb.user_arg));
-    code->mov(MJitStateReg(Arm::Reg::PC), code->ABI_PARAM1.cvt32());
+    code->mov(MJitStateReg(A32::Reg::PC), code->ABI_PARAM1.cvt32());
     code->SwitchMxcsrOnExit();
     code->CallFunction(cb.InterpreterFallback);
     code->ReturnFromRunCode(true); // TODO: Check cycles
 }
 
-void EmitX64::EmitTerminal(IR::Term::ReturnToDispatch, IR::LocationDescriptor) {
+void A32EmitX64::EmitTerminal(IR::Term::ReturnToDispatch, A32::LocationDescriptor) {
     code->ReturnFromRunCode();
 }
 
-static u32 CalculateCpsr_et(const IR::LocationDescriptor& desc) {
+static u32 CalculateCpsr_et(const A32::LocationDescriptor& desc) {
     u32 et = 0;
     et |= desc.EFlag() ? 2 : 0;
     et |= desc.TFlag() ? 1 : 0;
     return et;
 }
 
-void EmitX64::EmitTerminal(IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location) {
+void A32EmitX64::EmitTerminal(IR::Term::LinkBlock terminal, A32::LocationDescriptor initial_location) {
     if (CalculateCpsr_et(terminal.next) != CalculateCpsr_et(initial_location)) {
         code->mov(dword[r15 + offsetof(JitState, CPSR_et)], CalculateCpsr_et(terminal.next));
     }
 
     code->cmp(qword[r15 + offsetof(JitState, cycles_remaining)], 0);
 
-    patch_information[terminal.next.UniqueHash()].jg.emplace_back(code->getCurr());
+    patch_information[terminal.next.value].jg.emplace_back(code->getCurr());
     if (auto next_bb = GetBasicBlock(terminal.next)) {
         EmitPatchJg(terminal.next, next_bb->entrypoint);
     } else {
@@ -3476,18 +3477,18 @@ void EmitX64::EmitTerminal(IR::Term::LinkBlock terminal, IR::LocationDescriptor 
     code->SwitchToFarCode();
     code->align(16);
     code->L(dest);
-    code->mov(MJitStateReg(Arm::Reg::PC), terminal.next.PC());
-    PushRSBHelper(rax, rbx, terminal.next.UniqueHash());
+    code->mov(MJitStateReg(A32::Reg::PC), A32::LocationDescriptor{terminal.next}.PC());
+    PushRSBHelper(rax, rbx, terminal.next.value);
     code->ForceReturnFromRunCode();
     code->SwitchToNearCode();
 }
 
-void EmitX64::EmitTerminal(IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location) {
+void A32EmitX64::EmitTerminal(IR::Term::LinkBlockFast terminal, A32::LocationDescriptor initial_location) {
     if (CalculateCpsr_et(terminal.next) != CalculateCpsr_et(initial_location)) {
         code->mov(dword[r15 + offsetof(JitState, CPSR_et)], CalculateCpsr_et(terminal.next));
     }
 
-    patch_information[terminal.next.UniqueHash()].jmp.emplace_back(code->getCurr());
+    patch_information[terminal.next.value].jmp.emplace_back(code->getCurr());
     if (auto next_bb = GetBasicBlock(terminal.next)) {
         EmitPatchJmp(terminal.next, next_bb->entrypoint);
     } else {
@@ -3495,10 +3496,10 @@ void EmitX64::EmitTerminal(IR::Term::LinkBlockFast terminal, IR::LocationDescrip
     }
 }
 
-void EmitX64::EmitTerminal(IR::Term::PopRSBHint, IR::LocationDescriptor) {
+void A32EmitX64::EmitTerminal(IR::Term::PopRSBHint, A32::LocationDescriptor) {
     // This calculation has to match up with IREmitter::PushRSB
     // TODO: Optimization is available here based on known state of FPSCR_mode and CPSR_et.
-    code->mov(ecx, MJitStateReg(Arm::Reg::PC));
+    code->mov(ecx, MJitStateReg(A32::Reg::PC));
     code->shl(rcx, 32);
     code->mov(ebx, dword[r15 + offsetof(JitState, FPSCR_mode)]);
     code->or_(ebx, dword[r15 + offsetof(JitState, CPSR_et)]);
@@ -3514,20 +3515,20 @@ void EmitX64::EmitTerminal(IR::Term::PopRSBHint, IR::LocationDescriptor) {
     code->jmp(rax);
 }
 
-void EmitX64::EmitTerminal(IR::Term::If terminal, IR::LocationDescriptor initial_location) {
+void A32EmitX64::EmitTerminal(IR::Term::If terminal, A32::LocationDescriptor initial_location) {
     Xbyak::Label pass = EmitCond(code, terminal.if_);
     EmitTerminal(terminal.else_, initial_location);
     code->L(pass);
     EmitTerminal(terminal.then_, initial_location);
 }
 
-void EmitX64::EmitTerminal(IR::Term::CheckHalt terminal, IR::LocationDescriptor initial_location) {
+void A32EmitX64::EmitTerminal(IR::Term::CheckHalt terminal, A32::LocationDescriptor initial_location) {
     code->cmp(code->byte[r15 + offsetof(JitState, halt_requested)], u8(0));
     code->jne(code->GetForceReturnFromRunCodeAddress());
     EmitTerminal(terminal.else_, initial_location);
 }
 
-void EmitX64::Patch(const IR::LocationDescriptor& desc, CodePtr bb) {
+void A32EmitX64::Patch(const A32::LocationDescriptor& desc, CodePtr bb) {
     const CodePtr save_code_ptr = code->getCurr();
     const PatchInformation& patch_info = patch_information[desc.UniqueHash()];
 
@@ -3549,33 +3550,33 @@ void EmitX64::Patch(const IR::LocationDescriptor& desc, CodePtr bb) {
     code->SetCodePtr(save_code_ptr);
 }
 
-void EmitX64::Unpatch(const IR::LocationDescriptor& desc) {
+void A32EmitX64::Unpatch(const A32::LocationDescriptor& desc) {
     Patch(desc, nullptr);
 }
 
-void EmitX64::EmitPatchJg(const IR::LocationDescriptor& target_desc, CodePtr target_code_ptr) {
+void A32EmitX64::EmitPatchJg(const A32::LocationDescriptor& target_desc, CodePtr target_code_ptr) {
     const CodePtr patch_location = code->getCurr();
     if (target_code_ptr) {
         code->jg(target_code_ptr);
     } else {
-        code->mov(MJitStateReg(Arm::Reg::PC), target_desc.PC());
+        code->mov(MJitStateReg(A32::Reg::PC), target_desc.PC());
         code->jg(code->GetReturnFromRunCodeAddress());
     }
     code->EnsurePatchLocationSize(patch_location, 14);
 }
 
-void EmitX64::EmitPatchJmp(const IR::LocationDescriptor& target_desc, CodePtr target_code_ptr) {
+void A32EmitX64::EmitPatchJmp(const A32::LocationDescriptor& target_desc, CodePtr target_code_ptr) {
     const CodePtr patch_location = code->getCurr();
     if (target_code_ptr) {
         code->jmp(target_code_ptr);
     } else {
-        code->mov(MJitStateReg(Arm::Reg::PC), target_desc.PC());
+        code->mov(MJitStateReg(A32::Reg::PC), target_desc.PC());
         code->jmp(code->GetReturnFromRunCodeAddress());
     }
     code->EnsurePatchLocationSize(patch_location, 13);
 }
 
-void EmitX64::EmitPatchMovRcx(CodePtr target_code_ptr) {
+void A32EmitX64::EmitPatchMovRcx(CodePtr target_code_ptr) {
     if (!target_code_ptr) {
         target_code_ptr = code->GetReturnFromRunCodeAddress();
     }
@@ -3584,15 +3585,15 @@ void EmitX64::EmitPatchMovRcx(CodePtr target_code_ptr) {
     code->EnsurePatchLocationSize(patch_location, 10);
 }
 
-void EmitX64::ClearCache() {
+void A32EmitX64::ClearCache() {
     block_ranges.clear();
     block_descriptors.clear();
     patch_information.clear();
 }
 
-void EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u32>& ranges) {
+void A32EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u32>& ranges) {
     // Remove cached block descriptors and patch information overlapping with the given range.
-    std::unordered_set<IR::LocationDescriptor> erase_locations;
+    std::unordered_set<A32::LocationDescriptor> erase_locations;
     for (auto invalidate_interval : ranges) {
         auto pair = block_ranges.equal_range(invalidate_interval);
         for (auto it = pair.first; it != pair.second; ++it) {
@@ -3610,10 +3611,7 @@ void EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u32>& ranges)
         if (patch_information.count(descriptor.UniqueHash())) {
             Unpatch(descriptor);
         }
-        block_ranges.subtract(std::make_pair(
-            boost::icl::discrete_interval<u32>::closed(
-                it->second.start_location.PC(), it->second.end_location_pc - 1),
-            std::set<IR::LocationDescriptor>{descriptor}));
+        block_ranges.subtract(std::make_pair(it->second.range, std::set<A32::LocationDescriptor>{descriptor}));
         block_descriptors.erase(it);
     }
 }

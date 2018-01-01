@@ -13,6 +13,7 @@
 #include <fmt/ostream.h>
 
 #include "common/assert.h"
+#include "frontend/A32/types.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/opcodes.h"
 
@@ -43,11 +44,11 @@ void Block::SetEndLocation(const LocationDescriptor& descriptor) {
     end_location = descriptor;
 }
 
-Arm::Cond Block::GetCondition() const {
+Cond Block::GetCondition() const {
     return cond;
 }
 
-void Block::SetCondition(Arm::Cond condition) {
+void Block::SetCondition(Cond condition) {
     cond = condition;
 }
 
@@ -122,7 +123,7 @@ static std::string TerminalToString(const Terminal& terminal_variant) {
     }
     case 6: {
         auto terminal = boost::get<IR::Term::If>(terminal_variant);
-        return fmt::format("If{{{}, {}, {}}}", CondToString(terminal.if_), TerminalToString(terminal.then_), TerminalToString(terminal.else_));
+        return fmt::format("If{{{}, {}, {}}}", A32::CondToString(terminal.if_), TerminalToString(terminal.then_), TerminalToString(terminal.else_));
     }
     case 7: {
         auto terminal = boost::get<IR::Term::CheckHalt>(terminal_variant);
@@ -138,8 +139,8 @@ std::string DumpBlock(const IR::Block& block) {
 
     ret += fmt::format("Block: location={}\n", block.Location());
     ret += fmt::format("cycles={}", block.CycleCount());
-    ret += fmt::format(", entry_cond={}", Arm::CondToString(block.GetCondition(), true));
-    if (block.GetCondition() != Arm::Cond::AL) {
+    ret += fmt::format(", entry_cond={}", A32::CondToString(block.GetCondition(), true));
+    if (block.GetCondition() != Cond::AL) {
         ret += fmt::format(", cond_fail={}", block.ConditionFailedLocation());
     }
     ret += '\n';
@@ -161,9 +162,9 @@ std::string DumpBlock(const IR::Block& block) {
         case Type::U32:
             return fmt::format("#{:#x}", arg.GetU32());
         case Type::RegRef:
-            return Arm::RegToString(arg.GetRegRef());
+            return A32::RegToString(arg.GetA32RegRef());
         case Type::ExtRegRef:
-            return Arm::ExtRegToString(arg.GetExtRegRef());
+            return A32::ExtRegToString(arg.GetA32ExtRegRef());
         default:
             return "<unknown immediate type>";
         }

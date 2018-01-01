@@ -15,12 +15,12 @@ Value::Value(Inst* value) : type(Type::Opaque) {
     inner.inst = value;
 }
 
-Value::Value(Arm::Reg value) : type(Type::RegRef) {
-    inner.imm_regref = value;
+Value::Value(A32::Reg value) : type(Type::RegRef) {
+    inner.imm_a32regref = value;
 }
 
-Value::Value(Arm::ExtReg value) : type(Type::ExtRegRef) {
-    inner.imm_extregref = value;
+Value::Value(A32::ExtReg value) : type(Type::ExtRegRef) {
+    inner.imm_a32extregref = value;
 }
 
 Value::Value(bool value) : type(Type::U1) {
@@ -68,14 +68,14 @@ Type Value::GetType() const {
     return type;
 }
 
-Arm::Reg Value::GetRegRef() const {
+A32::Reg Value::GetA32RegRef() const {
     ASSERT(type == Type::RegRef);
-    return inner.imm_regref;
+    return inner.imm_a32regref;
 }
 
-Arm::ExtReg Value::GetExtRegRef() const {
+A32::ExtReg Value::GetA32ExtRegRef() const {
     ASSERT(type == Type::ExtRegRef);
-    return inner.imm_extregref;
+    return inner.imm_a32extregref;
 }
 
 Inst* Value::GetInst() const {

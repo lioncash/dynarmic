@@ -18,9 +18,12 @@
 
 #include "common/bit_util.h"
 #include "common/common_types.h"
-#include "frontend/disassembler/disassembler.h"
+#include "frontend/A32/disassembler/disassembler.h"
+#include "frontend/A32/FPSCR.h"
+#include "frontend/A32/location_descriptor.h"
+#include "frontend/A32/PSR.h"
+#include "frontend/A32/translate/translate.h"
 #include "frontend/ir/basic_block.h"
-#include "frontend/translate/translate.h"
 #include "ir_opt/passes.h"
 #include "rand_int.h"
 #include "skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
@@ -230,7 +233,7 @@ void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_e
 
             printf("\nInstruction Listing: \n");
             for (size_t i = 0; i < instruction_count; i++) {
-                printf("%s\n", Dynarmic::Arm::DisassembleThumb16(code_mem[i]).c_str());
+                printf("%s\n", Dynarmic::A32::DisassembleThumb16(code_mem[i]).c_str());
             }
 
             printf("\nInitial Register Listing: \n");
@@ -255,13 +258,13 @@ void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_e
                 printf("%zu [%x] = %" PRIu64 "\n", record.size, record.address, record.data);
             }
 
-            Dynarmic::Arm::PSR cpsr;
+            Dynarmic::A32::PSR cpsr;
             cpsr.T(true);
 
             size_t num_insts = 0;
             while (num_insts < instructions_to_execute_count) {
-                Dynarmic::IR::LocationDescriptor descriptor = {u32(num_insts * 4), cpsr, Dynarmic::Arm::FPSCR{}};
-                Dynarmic::IR::Block ir_block = Dynarmic::Arm::Translate(descriptor, &MemoryReadCode);
+                Dynarmic::A32::LocationDescriptor descriptor = {u32(num_insts * 4), cpsr, Dynarmic::A32::FPSCR{}};
+                Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, &MemoryReadCode);
                 Dynarmic::Optimization::GetSetElimination(ir_block);
                 Dynarmic::Optimization::DeadCodeElimination(ir_block);
                 Dynarmic::Optimization::VerificationPass(ir_block);

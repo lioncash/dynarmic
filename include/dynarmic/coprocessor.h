@@ -21,7 +21,7 @@ class Coprocessor {
 public:
     virtual ~Coprocessor() = default;
 
-    using CoprocReg = Arm::CoprocReg;
+    using CoprocReg = A32::CoprocReg;
 
     struct Callback {
         /**

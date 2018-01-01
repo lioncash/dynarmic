@@ -19,10 +19,13 @@
 
 #include "common/bit_util.h"
 #include "common/common_types.h"
-#include "frontend/disassembler/disassembler.h"
+#include "frontend/A32/disassembler/disassembler.h"
+#include "frontend/A32/FPSCR.h"
+#include "frontend/A32/location_descriptor.h"
+#include "frontend/A32/PSR.h"
+#include "frontend/A32/translate/translate.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/location_descriptor.h"
-#include "frontend/translate/translate.h"
 #include "ir_opt/passes.h"
 #include "rand_int.h"
 #include "skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
@@ -270,12 +273,12 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
 
             printf("\nInstruction Listing: \n");
             for (size_t i = 0; i < instruction_count; i++) {
-                 printf("%x: %s\n", code_mem[i], Dynarmic::Arm::DisassembleArm(code_mem[i]).c_str());
+                 printf("%x: %s\n", code_mem[i], Dynarmic::A32::DisassembleArm(code_mem[i]).c_str());
             }
 
             printf("\nInitial Register Listing: \n");
             for (int i = 0; i <= 15; i++) {
-                auto reg = Dynarmic::Arm::RegToString(static_cast<Dynarmic::Arm::Reg>(i));
+                auto reg = Dynarmic::A32::RegToString(static_cast<Dynarmic::A32::Reg>(i));
                 printf("%4s: %08x\n", reg, initial_regs[i]);
             }
             printf("CPSR: %08x\n", initial_cpsr);
@@ -287,7 +290,7 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
             printf("\nFinal Register Listing: \n");
             printf("      interp   jit\n");
             for (int i = 0; i <= 15; i++) {
-                auto reg = Dynarmic::Arm::RegToString(static_cast<Dynarmic::Arm::Reg>(i));
+                auto reg = Dynarmic::A32::RegToString(static_cast<Dynarmic::A32::Reg>(i));
                 printf("%4s: %08x %08x %s\n", reg, interp.Reg[i], jit.Regs()[i], interp.Reg[i] != jit.Regs()[i] ? "*" : "");
             }
             printf("CPSR: %08x %08x %s\n", interp.Cpsr, jit.Cpsr(), interp.Cpsr != jit.Cpsr() ? "*" : "");
@@ -308,8 +311,8 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
 
             size_t num_insts = 0;
             while (num_insts < instructions_to_execute_count) {
-                Dynarmic::IR::LocationDescriptor descriptor = {u32(num_insts * 4), Dynarmic::Arm::PSR{}, Dynarmic::Arm::FPSCR{}};
-                Dynarmic::IR::Block ir_block = Dynarmic::Arm::Translate(descriptor, &MemoryReadCode);
+                Dynarmic::A32::LocationDescriptor descriptor = {u32(num_insts * 4), Dynarmic::A32::PSR{}, Dynarmic::A32::FPSCR{}};
+                Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, &MemoryReadCode);
                 Dynarmic::Optimization::GetSetElimination(ir_block);
                 Dynarmic::Optimization::DeadCodeElimination(ir_block);
                 Dynarmic::Optimization::VerificationPass(ir_block);
