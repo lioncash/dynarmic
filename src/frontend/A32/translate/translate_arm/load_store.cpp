@@ -41,7 +41,7 @@ bool ArmTranslatorVisitor::arm_STRT() {
     ASSERT_MSG(false, "System instructions unimplemented");
 }
 
-static IR::Value GetAddress(IR::A32IREmitter& ir, bool P, bool U, bool W, Reg n, IR::Value offset) {
+static IR::Value GetAddress(A32::IREmitter& ir, bool P, bool U, bool W, Reg n, IR::Value offset) {
     const bool index = P;
     const bool add = U;
     const bool wback = !P || W;
@@ -608,7 +608,7 @@ bool ArmTranslatorVisitor::arm_STRH_reg(Cond cond, bool P, bool U, bool W, Reg n
     return true;
 }
 
-static bool LDMHelper(IR::A32IREmitter& ir, bool W, Reg n, RegList list, IR::Value start_address, IR::Value writeback_address) {
+static bool LDMHelper(A32::IREmitter& ir, bool W, Reg n, RegList list, IR::Value start_address, IR::Value writeback_address) {
     auto address = start_address;
     for (size_t i = 0; i <= 14; i++) {
         if (Common::Bit(i, list)) {
@@ -686,7 +686,7 @@ bool ArmTranslatorVisitor::arm_LDM_eret() {
     return InterpretThisInstruction();
 }
 
-static bool STMHelper(IR::A32IREmitter& ir, bool W, Reg n, RegList list, IR::Value start_address, IR::Value writeback_address) {
+static bool STMHelper(A32::IREmitter& ir, bool W, Reg n, RegList list, IR::Value start_address, IR::Value writeback_address) {
     auto address = start_address;
     for (size_t i = 0; i <= 14; i++) {
         if (Common::Bit(i, list)) {

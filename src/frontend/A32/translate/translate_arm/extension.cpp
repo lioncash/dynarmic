@@ -9,7 +9,7 @@
 namespace Dynarmic {
 namespace A32 {
 
-static IR::Value Rotate(IR::A32IREmitter& ir, Reg m, SignExtendRotation rotate) {
+static IR::Value Rotate(A32::IREmitter& ir, Reg m, SignExtendRotation rotate) {
     const u8 rotate_by = static_cast<u8>(static_cast<size_t>(rotate) * 8);
     return ir.RotateRight(ir.GetRegister(m), ir.Imm8(rotate_by), ir.Imm1(0)).result;
 }

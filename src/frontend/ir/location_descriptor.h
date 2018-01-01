@@ -15,14 +15,19 @@ namespace IR {
 
 class LocationDescriptor {
 public:
+    explicit LocationDescriptor(u64 value) : value(value) {}
+
     bool operator == (const LocationDescriptor& o) const {
-        return value == o.value;
+        return value == o.Value();
     }
 
     bool operator != (const LocationDescriptor& o) const {
         return !operator==(o);
     }
 
+    u64 Value() const { return value; }
+
+private:
     u64 value;
 };
 
@@ -35,13 +40,13 @@ namespace std {
 template <>
 struct less<Dynarmic::IR::LocationDescriptor> {
     bool operator()(const Dynarmic::IR::LocationDescriptor& x, const Dynarmic::IR::LocationDescriptor& y) const {
-        return x.value < y.value;
+        return x.Value() < y.Value();
     }
 };
 template <>
 struct hash<Dynarmic::IR::LocationDescriptor> {
     size_t operator()(const Dynarmic::IR::LocationDescriptor& x) const {
-        return std::hash<u64>()(x.value);
+        return std::hash<u64>()(x.Value());
     }
 };
 } // namespace std

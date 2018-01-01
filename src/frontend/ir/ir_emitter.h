@@ -11,8 +11,6 @@
 #include <dynarmic/coprocessor_util.h>
 
 #include "common/common_types.h"
-#include "frontend/A32/location_descriptor.h"
-#include "frontend/A32/types.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/terminal.h"
@@ -35,12 +33,11 @@ enum class Opcode;
  * `block` is the resulting block.
  * The user of this class updates `current_location` as appropriate.
  */
-class A32IREmitter {
+class IREmitter {
 public:
-    explicit A32IREmitter(A32::LocationDescriptor descriptor) : block(descriptor), current_location(descriptor) {}
+    explicit IREmitter(IR::LocationDescriptor descriptor) : block(descriptor) {}
 
     Block block;
-    A32::LocationDescriptor current_location;
 
     struct ResultAndCarry {
         Value result;
@@ -64,44 +61,11 @@ public:
     };
 
     void Unimplemented();
-    u32 PC();
-    u32 AlignPC(size_t alignment);
 
     Value Imm1(bool value);
     Value Imm8(u8 value);
     Value Imm32(u32 value);
     Value Imm64(u64 value);
-
-    Value GetRegister(A32::Reg source_reg);
-    Value GetExtendedRegister(A32::ExtReg source_reg);
-    void SetRegister(const A32::Reg dest_reg, const Value& value);
-    void SetExtendedRegister(const A32::ExtReg dest_reg, const Value& value);
-
-    void ALUWritePC(const Value& value);
-    void BranchWritePC(const Value& value);
-    void BXWritePC(const Value& value);
-    void LoadWritePC(const Value& value);
-    void CallSupervisor(const Value& value);
-    void PushRSB(const A32::LocationDescriptor& return_location);
-
-    Value GetCpsr();
-    void SetCpsr(const Value& value);
-    void SetCpsrNZCV(const Value& value);
-    void SetCpsrNZCVQ(const Value& value);
-    Value GetCFlag();
-    void SetNFlag(const Value& value);
-    void SetZFlag(const Value& value);
-    void SetCFlag(const Value& value);
-    void SetVFlag(const Value& value);
-    void OrQFlag(const Value& value);
-    Value GetGEFlags();
-    void SetGEFlags(const Value& value);
-    void SetGEFlagsCompressed(const Value& value);
-
-    Value GetFpscr();
-    void SetFpscr(const Value& new_fpscr);
-    Value GetFpscrNZCV();
-    void SetFpscrNZCV(const Value& new_fpscr_nzcv);
 
     Value Pack2x32To1x64(const Value& lo, const Value& hi);
     Value LeastSignificantWord(const Value& value);
@@ -212,34 +176,11 @@ public:
     Value FPS32ToDouble(const Value& a, bool round_to_nearest, bool fpscr_controlled);
     Value FPU32ToDouble(const Value& a, bool round_to_nearest, bool fpscr_controlled);
 
-    void ClearExclusive();
-    void SetExclusive(const Value& vaddr, size_t byte_size);
-    Value ReadMemory8(const Value& vaddr);
-    Value ReadMemory16(const Value& vaddr);
-    Value ReadMemory32(const Value& vaddr);
-    Value ReadMemory64(const Value& vaddr);
-    void WriteMemory8(const Value& vaddr, const Value& value);
-    void WriteMemory16(const Value& vaddr, const Value& value);
-    void WriteMemory32(const Value& vaddr, const Value& value);
-    void WriteMemory64(const Value& vaddr, const Value& value);
-    Value ExclusiveWriteMemory8(const Value& vaddr, const Value& value);
-    Value ExclusiveWriteMemory16(const Value& vaddr, const Value& value);
-    Value ExclusiveWriteMemory32(const Value& vaddr, const Value& value);
-    Value ExclusiveWriteMemory64(const Value& vaddr, const Value& value_lo, const Value& value_hi);
-
-    void CoprocInternalOperation(size_t coproc_no, bool two, size_t opc1, A32::CoprocReg CRd, A32::CoprocReg CRn, A32::CoprocReg CRm, size_t opc2);
-    void CoprocSendOneWord(size_t coproc_no, bool two, size_t opc1, A32::CoprocReg CRn, A32::CoprocReg CRm, size_t opc2, const Value& word);
-    void CoprocSendTwoWords(size_t coproc_no, bool two, size_t opc, A32::CoprocReg CRm, const Value& word1, const Value& word2);
-    Value CoprocGetOneWord(size_t coproc_no, bool two, size_t opc1, A32::CoprocReg CRn, A32::CoprocReg CRm, size_t opc2);
-    Value CoprocGetTwoWords(size_t coproc_no, bool two, size_t opc, A32::CoprocReg CRm);
-    void CoprocLoadWords(size_t coproc_no, bool two, bool long_transfer, A32::CoprocReg CRd, const Value& address, bool has_option, u8 option);
-    void CoprocStoreWords(size_t coproc_no, bool two, bool long_transfer, A32::CoprocReg CRd, const Value& address, bool has_option, u8 option);
-
     void Breakpoint();
 
     void SetTerm(const Terminal& terminal);
 
-private:
+protected:
     Value Inst(Opcode op, std::initializer_list<Value> args);
 };
 

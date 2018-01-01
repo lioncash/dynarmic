@@ -10,10 +10,10 @@
 #include "common/bit_util.h"
 #include "frontend/A32/decoder/thumb16.h"
 #include "frontend/A32/decoder/thumb32.h"
+#include "frontend/A32/ir_emitter.h"
+#include "frontend/A32/location_descriptor.h"
 #include "frontend/A32/translate/translate.h"
 #include "frontend/A32/types.h"
-#include "frontend/ir/ir_emitter.h"
-#include "frontend/ir/location_descriptor.h"
 
 namespace Dynarmic {
 namespace A32 {
@@ -27,7 +27,7 @@ struct ThumbTranslatorVisitor final {
         ASSERT_MSG(descriptor.TFlag(), "The processor must be in Thumb mode");
     }
 
-    IR::A32IREmitter ir;
+    A32::IREmitter ir;
 
     bool InterpretThisInstruction() {
         ir.SetTerm(IR::Term::Interpret(ir.current_location));

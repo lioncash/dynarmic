@@ -9,16 +9,16 @@
 #include "common/assert.h"
 #include "frontend/A32/decoder/arm.h"
 #include "frontend/A32/decoder/vfp2.h"
+#include "frontend/A32/location_descriptor.h"
 #include "frontend/A32/translate/translate.h"
 #include "frontend/A32/translate/translate_arm/translate_arm.h"
 #include "frontend/A32/types.h"
 #include "frontend/ir/basic_block.h"
-#include "frontend/ir/location_descriptor.h"
 
 namespace Dynarmic {
 namespace A32 {
 
-static bool CondCanContinue(ConditionalState cond_state, const IR::A32IREmitter& ir) {
+static bool CondCanContinue(ConditionalState cond_state, const A32::IREmitter& ir) {
     ASSERT_MSG(cond_state != ConditionalState::Break, "Should never happen.");
 
     if (cond_state == ConditionalState::None)
@@ -121,7 +121,7 @@ bool ArmTranslatorVisitor::UnpredictableInstruction() {
     return false;
 }
 
-IR::A32IREmitter::ResultAndCarry ArmTranslatorVisitor::EmitImmShift(IR::Value value, ShiftType type, Imm5 imm5, IR::Value carry_in) {
+A32::IREmitter::ResultAndCarry ArmTranslatorVisitor::EmitImmShift(IR::Value value, ShiftType type, Imm5 imm5, IR::Value carry_in) {
     switch (type) {
     case ShiftType::LSL:
         return ir.LogicalShiftLeft(value, ir.Imm8(imm5), carry_in);
@@ -141,7 +141,7 @@ IR::A32IREmitter::ResultAndCarry ArmTranslatorVisitor::EmitImmShift(IR::Value va
     return {};
 }
 
-IR::A32IREmitter::ResultAndCarry ArmTranslatorVisitor::EmitRegShift(IR::Value value, ShiftType type, IR::Value amount, IR::Value carry_in) {
+A32::IREmitter::ResultAndCarry ArmTranslatorVisitor::EmitRegShift(IR::Value value, ShiftType type, IR::Value amount, IR::Value carry_in) {
     switch (type) {
     case ShiftType::LSL:
         return ir.LogicalShiftLeft(value, amount, carry_in);

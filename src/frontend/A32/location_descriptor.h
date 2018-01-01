@@ -33,10 +33,10 @@ public:
             : arm_pc(arm_pc), cpsr(cpsr.Value() & CPSR_MODE_MASK), fpscr(fpscr.Value() & FPSCR_MODE_MASK) {}
 
     /*implict*/ LocationDescriptor(const IR::LocationDescriptor& o) {
-        arm_pc = o.value >> 32;
-        cpsr.T(o.value & 1);
-        cpsr.E(o.value & 2);
-        fpscr = o.value & FPSCR_MODE_MASK;
+        arm_pc = o.Value() >> 32;
+        cpsr.T(o.Value() & 1);
+        cpsr.E(o.Value() & 2);
+        fpscr = o.Value() & FPSCR_MODE_MASK;
     }
 
     u32 PC() const { return arm_pc; }

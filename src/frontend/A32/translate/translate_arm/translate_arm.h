@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "frontend/ir/ir_emitter.h"
-#include "frontend/ir/location_descriptor.h"
+#include "frontend/A32/ir_emitter.h"
+#include "frontend/A32/location_descriptor.h"
 
 namespace Dynarmic {
 namespace A32 {
@@ -30,7 +30,7 @@ struct ArmTranslatorVisitor final {
         ASSERT_MSG(!descriptor.TFlag(), "The processor must be in Arm mode");
     }
 
-    IR::A32IREmitter ir;
+    A32::IREmitter ir;
     ConditionalState cond_state = ConditionalState::None;
 
     bool ConditionPassed(Cond cond);
@@ -62,8 +62,8 @@ struct ArmTranslatorVisitor final {
         return {imm32, carry_out};
     }
 
-    IR::A32IREmitter::ResultAndCarry EmitImmShift(IR::Value value, ShiftType type, Imm5 imm5, IR::Value carry_in);
-    IR::A32IREmitter::ResultAndCarry EmitRegShift(IR::Value value, ShiftType type, IR::Value amount, IR::Value carry_in);
+    A32::IREmitter::ResultAndCarry EmitImmShift(IR::Value value, ShiftType type, Imm5 imm5, IR::Value carry_in);
+    A32::IREmitter::ResultAndCarry EmitRegShift(IR::Value value, ShiftType type, IR::Value amount, IR::Value carry_in);
     template <typename FnT> bool EmitVfpVectorOperation(bool sz, ExtReg d, ExtReg n, ExtReg m, const FnT& fn);
     template <typename FnT> bool EmitVfpVectorOperation(bool sz, ExtReg d, ExtReg m, const FnT& fn);
 

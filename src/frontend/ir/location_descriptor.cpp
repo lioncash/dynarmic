@@ -13,7 +13,7 @@ namespace Dynarmic {
 namespace IR {
 
 std::ostream& operator<<(std::ostream& o, const LocationDescriptor& descriptor) {
-    o << fmt::format("{{{{}}}}", descriptor.value);
+    o << fmt::format("{{{{}}}}", descriptor.Value());
     return o;
 }
 

@@ -24,6 +24,8 @@ add_library(dynarmic
     frontend/A32/disassembler/disassembler_arm.cpp
     frontend/A32/disassembler/disassembler_thumb.cpp
     frontend/A32/FPSCR.h
+    frontend/A32/ir_emitter.cpp
+    frontend/A32/ir_emitter.h
     frontend/A32/location_descriptor.cpp
     frontend/A32/location_descriptor.h
     frontend/A32/PSR.h
