@@ -75,6 +75,8 @@ add_library(dynarmic
 
 if (ARCHITECTURE_x86_64)
     target_sources(dynarmic PRIVATE
+         backend_x64/a32_emit_x64.cpp
+         backend_x64/a32_emit_x64.h
          backend_x64/abi.cpp
          backend_x64/abi.h
          backend_x64/block_of_code.cpp

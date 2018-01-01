@@ -34,58 +34,51 @@ namespace BackendX64 {
 
 class BlockOfCode;
 
-class A32EmitX64 final {
+template <typename ProgramCounterType>
+class EmitX64 {
 public:
     struct BlockDescriptor {
         CodePtr entrypoint;  // Entrypoint of emitted code
         size_t size;         // Length in bytes of emitted code
 
         A32::LocationDescriptor start_location;
-        boost::icl::discrete_interval<u32> range;
+        boost::icl::discrete_interval<ProgramCounterType> range;
     };
 
-    A32EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface);
-
-    /**
-     * Emit host machine code for a basic block with intermediate representation `ir`.
-     * @note ir is modified.
-     */
-    BlockDescriptor Emit(IR::Block& ir);
+    EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface);
+    virtual ~EmitX64();
 
     /// Looks up an emitted host block in the cache.
-    boost::optional<BlockDescriptor> GetBasicBlock(A32::LocationDescriptor descriptor) const;
+    boost::optional<BlockDescriptor> GetBasicBlock(IR::LocationDescriptor descriptor) const;
 
     /// Empties the entire cache.
     void ClearCache();
 
-    /**
-     * Invalidate the cache at a set of ranges of addresses.
-     * @param ranges The set of ranges of addresses to invalidate the cache at.
-     */
-    void InvalidateCacheRanges(const boost::icl::interval_set<u32>& ranges);
+    void InvalidateCacheRanges(const boost::icl::interval_set<ProgramCounterType>& ranges);
 
-private:
+protected:
     // Microinstruction emitters
 #define OPCODE(name, type, ...) void Emit##name(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst);
-#define A32OPC(name, type, ...) void EmitA32##name(RegAlloc& reg_alloc, IR::Block& block, IR::Inst* inst);
+#define A32OPC(...)
 #include "frontend/ir/opcodes.inc"
 #undef OPCODE
 #undef A32OPC
 
     // Helpers
     void EmitAddCycles(size_t cycles);
+    Xbyak::Label EmitCond(IR::Cond cond);
     void EmitCondPrelude(const IR::Block& block);
-    void PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, u64 target_hash);
+    void PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, IR::LocationDescriptor target);
 
     // Terminal instruction emitters
-    void EmitTerminal(IR::Terminal terminal, A32::LocationDescriptor initial_location);
-    void EmitTerminal(IR::Term::Interpret terminal, A32::LocationDescriptor initial_location);
-    void EmitTerminal(IR::Term::ReturnToDispatch terminal, A32::LocationDescriptor initial_location);
-    void EmitTerminal(IR::Term::LinkBlock terminal, A32::LocationDescriptor initial_location);
-    void EmitTerminal(IR::Term::LinkBlockFast terminal, A32::LocationDescriptor initial_location);
-    void EmitTerminal(IR::Term::PopRSBHint terminal, A32::LocationDescriptor initial_location);
-    void EmitTerminal(IR::Term::If terminal, A32::LocationDescriptor initial_location);
-    void EmitTerminal(IR::Term::CheckHalt terminal, A32::LocationDescriptor initial_location);
+    void EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor initial_location);
+    virtual void EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor initial_location) = 0;
+    virtual void EmitTerminalImpl(IR::Term::ReturnToDispatch terminal, IR::LocationDescriptor initial_location) = 0;
+    virtual void EmitTerminalImpl(IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location) = 0;
+    virtual void EmitTerminalImpl(IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location) = 0;
+    virtual void EmitTerminalImpl(IR::Term::PopRSBHint terminal, IR::LocationDescriptor initial_location) = 0;
+    virtual void EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor initial_location) = 0;
+    virtual void EmitTerminalImpl(IR::Term::CheckHalt terminal, IR::LocationDescriptor initial_location) = 0;
 
     // Patching
     struct PatchInformation {
@@ -93,19 +86,19 @@ private:
         std::vector<CodePtr> jmp;
         std::vector<CodePtr> mov_rcx;
     };
-    void Patch(const A32::LocationDescriptor& target_desc, CodePtr target_code_ptr);
-    void Unpatch(const A32::LocationDescriptor& target_desc);
-    void EmitPatchJg(const A32::LocationDescriptor& target_desc, CodePtr target_code_ptr = nullptr);
-    void EmitPatchJmp(const A32::LocationDescriptor& target_desc, CodePtr target_code_ptr = nullptr);
-    void EmitPatchMovRcx(CodePtr target_code_ptr = nullptr);
+    void Patch(const IR::LocationDescriptor& target_desc, CodePtr target_code_ptr);
+    void Unpatch(const IR::LocationDescriptor& target_desc);
+    virtual void EmitPatchJg(const IR::LocationDescriptor& target_desc, CodePtr target_code_ptr = nullptr) = 0;
+    virtual void EmitPatchJmp(const IR::LocationDescriptor& target_desc, CodePtr target_code_ptr = nullptr) = 0;
+    virtual void EmitPatchMovRcx(CodePtr target_code_ptr = nullptr) = 0;
 
     // State
     BlockOfCode* code;
     UserCallbacks cb;
-    boost::icl::interval_map<u32, std::set<A32::LocationDescriptor>> block_ranges;
     Jit* jit_interface;
-    std::unordered_map<u64, BlockDescriptor> block_descriptors;
-    std::unordered_map<u64, PatchInformation> patch_information;
+    std::unordered_map<IR::LocationDescriptor, BlockDescriptor> block_descriptors;
+    std::unordered_map<IR::LocationDescriptor, PatchInformation> patch_information;
+    boost::icl::interval_map<ProgramCounterType, std::set<IR::LocationDescriptor>> block_ranges;
 };
 
 } // namespace BackendX64

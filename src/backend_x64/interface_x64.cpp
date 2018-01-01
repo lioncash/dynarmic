@@ -14,8 +14,8 @@
 #include <llvm-c/Target.h>
 #endif
 
+#include "backend_x64/a32_emit_x64.h"
 #include "backend_x64/block_of_code.h"
-#include "backend_x64/emit_x64.h"
 #include "backend_x64/jitstate.h"
 #include "common/assert.h"
 #include "common/common_types.h"
