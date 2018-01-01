@@ -7,7 +7,7 @@
 
 #include <xbyak.h>
 
-#include "backend_x64/jitstate.h"
+#include "backend_x64/a32_jitstate.h"
 #include "common/assert.h"
 #include "common/common_types.h"
 
@@ -92,7 +92,7 @@ const HostLocList any_xmm = {
 
 Xbyak::Reg64 HostLocToReg64(HostLoc loc);
 Xbyak::Xmm HostLocToXmm(HostLoc loc);
-Xbyak::Address SpillToOpArg(HostLoc loc);
+Xbyak::Address SpillToOpArg(HostLoc loc); ///< TODO: Remove from this file
 
 } // namespace BackendX64
 } // namespace Dynarmic

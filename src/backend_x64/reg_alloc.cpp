@@ -10,7 +10,6 @@
 #include <xbyak.h>
 
 #include "backend_x64/abi.h"
-#include "backend_x64/jitstate.h"
 #include "backend_x64/reg_alloc.h"
 #include "common/assert.h"
 

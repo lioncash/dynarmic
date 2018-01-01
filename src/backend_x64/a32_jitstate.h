@@ -22,8 +22,8 @@ constexpr size_t SpillCount = 64;
 #pragma warning(disable:4324) // Structure was padded due to alignment specifier
 #endif
 
-struct JitState {
-    JitState() { ResetRSB(); }
+struct A32JitState {
+    A32JitState() { ResetRSB(); }
 
     std::array<u32, 16> Reg{}; // Current register file.
     // TODO: Mode-specific register sets unimplemented.

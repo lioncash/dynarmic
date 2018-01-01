@@ -4,8 +4,8 @@
  * General Public License version 2 or any later version.
  */
 
+#include "backend_x64/a32_jitstate.h"
 #include "backend_x64/block_of_code.h"
-#include "backend_x64/jitstate.h"
 #include "common/assert.h"
 #include "common/bit_util.h"
 #include "common/common_types.h"
@@ -44,7 +44,7 @@ namespace BackendX64 {
  * OF   bit 0        Overflow flag
  */
 
-u32 JitState::Cpsr() const {
+u32 A32JitState::Cpsr() const {
     ASSERT((CPSR_nzcv & ~0xF0000000) == 0);
     ASSERT((CPSR_q & ~1) == 0);
     ASSERT((CPSR_et & ~3) == 0);
@@ -70,7 +70,7 @@ u32 JitState::Cpsr() const {
     return cpsr;
 }
 
-void JitState::SetCpsr(u32 cpsr) {
+void A32JitState::SetCpsr(u32 cpsr) {
     // NZCV flags
     CPSR_nzcv = cpsr & 0xF0000000;
     // Q flag
@@ -89,7 +89,7 @@ void JitState::SetCpsr(u32 cpsr) {
     CPSR_jaifm = cpsr & 0x07F0FDDF;
 }
 
-void JitState::ResetRSB() {
+void A32JitState::ResetRSB() {
     rsb_location_descriptors.fill(0xFFFFFFFFFFFFFFFFull);
     rsb_codeptrs.fill(0);
 }
@@ -153,7 +153,7 @@ void JitState::ResetRSB() {
 constexpr u32 FPSCR_MODE_MASK = A32::LocationDescriptor::FPSCR_MODE_MASK;
 constexpr u32 FPSCR_NZCV_MASK = 0xF0000000;
 
-u32 JitState::Fpscr() const {
+u32 A32JitState::Fpscr() const {
     ASSERT((FPSCR_mode & ~FPSCR_MODE_MASK) == 0);
     ASSERT((FPSCR_nzcv & ~FPSCR_NZCV_MASK) == 0);
     ASSERT((FPSCR_IDC & ~(1 << 7)) == 0);
@@ -168,7 +168,7 @@ u32 JitState::Fpscr() const {
     return FPSCR;
 }
 
-void JitState::SetFpscr(u32 FPSCR) {
+void A32JitState::SetFpscr(u32 FPSCR) {
     old_FPSCR = FPSCR;
     FPSCR_mode = FPSCR & FPSCR_MODE_MASK;
     FPSCR_nzcv = FPSCR & FPSCR_NZCV_MASK;
@@ -199,7 +199,7 @@ void JitState::SetFpscr(u32 FPSCR) {
     }
 }
 
-u64 JitState::GetUniqueHash() const {
+u64 A32JitState::GetUniqueHash() const {
     return CPSR_et | FPSCR_mode | (static_cast<u64>(Reg[15]) << 32);
 }
 

@@ -9,9 +9,9 @@
 
 #include <xbyak.h>
 
+#include "backend_x64/a32_jitstate.h"
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
-#include "backend_x64/jitstate.h"
 #include "common/assert.h"
 #include "dynarmic/callbacks.h"
 
@@ -76,14 +76,14 @@ size_t BlockOfCode::SpaceRemaining() const {
     return std::min(TOTAL_CODE_SIZE - far_code_offset, FAR_CODE_OFFSET - near_code_offset);
 }
 
-void BlockOfCode::RunCode(JitState* jit_state, size_t cycles_to_run) const {
+void BlockOfCode::RunCode(A32JitState* jit_state, size_t cycles_to_run) const {
     constexpr size_t max_cycles_to_run = static_cast<size_t>(std::numeric_limits<decltype(jit_state->cycles_remaining)>::max());
     ASSERT(cycles_to_run <= max_cycles_to_run);
 
     jit_state->cycles_to_run = cycles_to_run;
     jit_state->cycles_remaining = cycles_to_run;
 
-    u32 new_rsb_ptr = (jit_state->rsb_ptr - 1) & JitState::RSBPtrMask;
+    u32 new_rsb_ptr = (jit_state->rsb_ptr - 1) & A32JitState::RSBPtrMask;
     if (jit_state->GetUniqueHash() == jit_state->rsb_location_descriptors[new_rsb_ptr]) {
         jit_state->rsb_ptr = new_rsb_ptr;
         run_code_from(jit_state, jit_state->rsb_codeptrs[new_rsb_ptr]);
@@ -139,7 +139,7 @@ void BlockOfCode::GenRunCode() {
     // Return from run code variants
     const auto emit_return_from_run_code = [this, &loop, &enter_mxcsr_then_loop](bool mxcsr_already_exited, bool force_return){
         if (!force_return) {
-            cmp(qword[r15 + offsetof(JitState, cycles_remaining)], 0);
+            cmp(qword[r15 + offsetof(A32JitState, cycles_remaining)], 0);
             jg(mxcsr_already_exited ? enter_mxcsr_then_loop : loop);
         }
 
@@ -147,8 +147,8 @@ void BlockOfCode::GenRunCode() {
             SwitchMxcsrOnExit();
         }
 
-        mov(ABI_PARAM1, qword[r15 + offsetof(JitState, cycles_to_run)]);
-        sub(ABI_PARAM1, qword[r15 + offsetof(JitState, cycles_remaining)]);
+        mov(ABI_PARAM1, qword[r15 + offsetof(A32JitState, cycles_to_run)]);
+        sub(ABI_PARAM1, qword[r15 + offsetof(A32JitState, cycles_remaining)]);
         CallFunction(cb.AddTicks);
 
         ABI_PopCalleeSaveRegistersAndAdjustStack(this);
@@ -231,13 +231,13 @@ void BlockOfCode::GenMemoryAccessors() {
 }
 
 void BlockOfCode::SwitchMxcsrOnEntry() {
-    stmxcsr(dword[r15 + offsetof(JitState, save_host_MXCSR)]);
-    ldmxcsr(dword[r15 + offsetof(JitState, guest_MXCSR)]);
+    stmxcsr(dword[r15 + offsetof(A32JitState, save_host_MXCSR)]);
+    ldmxcsr(dword[r15 + offsetof(A32JitState, guest_MXCSR)]);
 }
 
 void BlockOfCode::SwitchMxcsrOnExit() {
-    stmxcsr(dword[r15 + offsetof(JitState, guest_MXCSR)]);
-    ldmxcsr(dword[r15 + offsetof(JitState, save_host_MXCSR)]);
+    stmxcsr(dword[r15 + offsetof(A32JitState, guest_MXCSR)]);
+    ldmxcsr(dword[r15 + offsetof(A32JitState, save_host_MXCSR)]);
 }
 
 Xbyak::Address BlockOfCode::MConst(u64 constant) {

@@ -12,8 +12,8 @@
 #include <xbyak.h>
 #include <xbyak_util.h>
 
+#include "backend_x64/a32_jitstate.h"
 #include "backend_x64/constant_pool.h"
-#include "backend_x64/jitstate.h"
 #include "common/common_types.h"
 #include "dynarmic/callbacks.h"
 
@@ -32,7 +32,7 @@ public:
     size_t SpaceRemaining() const;
 
     /// Runs emulated code for approximately `cycles_to_run` cycles.
-    void RunCode(JitState* jit_state, size_t cycles_to_run) const;
+    void RunCode(A32JitState* jit_state, size_t cycles_to_run) const;
     /// Code emitter: Returns to dispatcher
     void ReturnFromRunCode(bool mxcsr_already_exited = false);
     /// Code emitter: Returns to dispatcher, forces return to host
@@ -137,8 +137,8 @@ private:
     CodePtr near_code_ptr;
     CodePtr far_code_ptr;
 
-    using RunCodeFuncType = void(*)(JitState*);
-    using RunCodeFromFuncType = void(*)(JitState*, u64);
+    using RunCodeFuncType = void(*)(A32JitState*);
+    using RunCodeFromFuncType = void(*)(A32JitState*, u64);
     RunCodeFuncType run_code = nullptr;
     RunCodeFromFuncType run_code_from = nullptr;
     static constexpr size_t MXCSR_ALREADY_EXITED = 1 << 0;

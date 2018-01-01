@@ -15,8 +15,8 @@
 #endif
 
 #include "backend_x64/a32_emit_x64.h"
+#include "backend_x64/a32_jitstate.h"
 #include "backend_x64/block_of_code.h"
-#include "backend_x64/jitstate.h"
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "common/scope_exit.h"
@@ -41,7 +41,7 @@ struct Jit::Impl {
     {}
 
     BlockOfCode block_of_code;
-    JitState jit_state;
+    A32JitState jit_state;
     A32EmitX64 emitter;
     const UserCallbacks callbacks;
 
@@ -128,7 +128,7 @@ private:
 
     static CodePtr GetCurrentBlock(void *this_voidptr) {
         Jit::Impl& this_ = *reinterpret_cast<Jit::Impl*>(this_voidptr);
-        JitState& jit_state = this_.jit_state;
+        A32JitState& jit_state = this_.jit_state;
 
         u32 pc = jit_state.Reg[15];
         A32::PSR cpsr{jit_state.Cpsr()};
@@ -232,7 +232,7 @@ Context Jit::SaveContext() const {
 }
 
 struct Context::Impl {
-    JitState jit_state;
+    A32JitState jit_state;
     size_t invalid_cache_generation;
 };
 
@@ -278,7 +278,7 @@ void Context::SetFpscr(std::uint32_t value) {
     return impl->jit_state.SetFpscr(value);
 }
 
-void TransferJitState(JitState& dest, const JitState& src, bool reset_rsb) {
+void TransferJitState(A32JitState& dest, const A32JitState& src, bool reset_rsb) {
     dest.CPSR_ge = src.CPSR_ge;
     dest.CPSR_et = src.CPSR_et;
     dest.CPSR_q = src.CPSR_q;

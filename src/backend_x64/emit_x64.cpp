@@ -12,7 +12,6 @@
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
-#include "backend_x64/jitstate.h"
 #include "common/address_range.h"
 #include "common/assert.h"
 #include "common/bit_util.h"
@@ -90,19 +89,19 @@ void EmitX64<PCT>::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_r
                             ? iter->second.entrypoint
                             : code->GetReturnFromRunCodeAddress();
 
-    code->mov(index_reg.cvt32(), dword[r15 + offsetof(JitState, rsb_ptr)]);
+    code->mov(index_reg.cvt32(), dword[r15 + offsetof(A32JitState, rsb_ptr)]);
 
     code->mov(loc_desc_reg, target.Value());
 
     patch_information[target].mov_rcx.emplace_back(code->getCurr());
     EmitPatchMovRcx(target_code_ptr);
 
-    code->mov(qword[r15 + index_reg * 8 + offsetof(JitState, rsb_location_descriptors)], loc_desc_reg);
-    code->mov(qword[r15 + index_reg * 8 + offsetof(JitState, rsb_codeptrs)], rcx);
+    code->mov(qword[r15 + index_reg * 8 + offsetof(A32JitState, rsb_location_descriptors)], loc_desc_reg);
+    code->mov(qword[r15 + index_reg * 8 + offsetof(A32JitState, rsb_codeptrs)], rcx);
 
     code->add(index_reg.cvt32(), 1);
-    code->and_(index_reg.cvt32(), u32(JitState::RSBPtrMask));
-    code->mov(dword[r15 + offsetof(JitState, rsb_ptr)], index_reg.cvt32());
+    code->and_(index_reg.cvt32(), u32(A32JitState::RSBPtrMask));
+    code->mov(dword[r15 + offsetof(A32JitState, rsb_ptr)], index_reg.cvt32());
 }
 
 template <typename PCT>
@@ -1840,7 +1839,7 @@ static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::R
     code->cmp(gpr_scratch, u32(0x007FFFFE));
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(JitState, FPSCR_IDC)], u32(1 << 7));
+    code->mov(dword[r15 + offsetof(A32JitState, FPSCR_IDC)], u32(1 << 7));
     code->L(end);
 }
 
@@ -1858,7 +1857,7 @@ static void DenormalsAreZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::R
     code->cmp(gpr_scratch, penult_denormal);
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(JitState, FPSCR_IDC)], u32(1 << 7));
+    code->mov(dword[r15 + offsetof(A32JitState, FPSCR_IDC)], u32(1 << 7));
     code->L(end);
 }
 
@@ -1871,7 +1870,7 @@ static void FlushToZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 
     code->cmp(gpr_scratch, u32(0x007FFFFE));
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(JitState, FPSCR_UFC)], u32(1 << 3));
+    code->mov(dword[r15 + offsetof(A32JitState, FPSCR_UFC)], u32(1 << 3));
     code->L(end);
 }
 
@@ -1889,7 +1888,7 @@ static void FlushToZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg64 
     code->cmp(gpr_scratch, penult_denormal);
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(JitState, FPSCR_UFC)], u32(1 << 3));
+    code->mov(dword[r15 + offsetof(A32JitState, FPSCR_UFC)], u32(1 << 3));
     code->L(end);
 }
 
@@ -2139,7 +2138,7 @@ static void SetFpscrNzcvFromFlags(BlockOfCode* code, RegAlloc& reg_alloc) {
     code->rcl(cl, 3);
     code->shl(nzcv, cl);
     code->and_(nzcv, 0xF0000000);
-    code->mov(dword[r15 + offsetof(JitState, FPSCR_nzcv)], nzcv);
+    code->mov(dword[r15 + offsetof(A32JitState, FPSCR_nzcv)], nzcv);
 }
 
 template <typename PCT>
@@ -2464,7 +2463,7 @@ void EmitX64<PCT>::EmitFPU32ToDouble(RegAlloc& reg_alloc, IR::Block&, IR::Inst* 
 template <typename PCT>
 void EmitX64<PCT>::EmitAddCycles(size_t cycles) {
     ASSERT(cycles < std::numeric_limits<u32>::max());
-    code->sub(qword[r15 + offsetof(JitState, cycles_remaining)], static_cast<u32>(cycles));
+    code->sub(qword[r15 + offsetof(A32JitState, cycles_remaining)], static_cast<u32>(cycles));
 }
 
 template <typename PCT>
@@ -2472,7 +2471,7 @@ Xbyak::Label EmitX64<PCT>::EmitCond(IR::Cond cond) {
     Xbyak::Label label;
 
     const Xbyak::Reg32 cpsr = eax;
-    code->mov(cpsr, dword[r15 + offsetof(JitState, CPSR_nzcv)]);
+    code->mov(cpsr, dword[r15 + offsetof(A32JitState, CPSR_nzcv)]);
 
     constexpr size_t n_shift = 31;
     constexpr size_t z_shift = 30;
