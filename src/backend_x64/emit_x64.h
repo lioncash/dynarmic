@@ -18,7 +18,7 @@
 #include "backend_x64/reg_alloc.h"
 #include "common/address_range.h"
 #include "dynarmic/callbacks.h"
-#include "frontend/A32/location_descriptor.h"
+#include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/terminal.h"
 
 namespace Dynarmic {
@@ -47,14 +47,16 @@ struct EmitContext {
     IR::Block& block;
 };
 
-template <typename ProgramCounterType>
+template <typename JitStateType>
 class EmitX64 {
 public:
+    using ProgramCounterType = typename JitStateType::ProgramCounterType;
+
     struct BlockDescriptor {
         CodePtr entrypoint;  // Entrypoint of emitted code
         size_t size;         // Length in bytes of emitted code
 
-        A32::LocationDescriptor start_location;
+        IR::LocationDescriptor start_location;
         boost::icl::discrete_interval<ProgramCounterType> range;
     };
 

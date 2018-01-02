@@ -50,41 +50,41 @@ void EmitContext::EraseInstruction(IR::Inst* inst) {
     inst->Invalidate();
 }
 
-template <typename PCT>
-EmitX64<PCT>::EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface)
+template <typename JST>
+EmitX64<JST>::EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface)
     : code(code), cb(cb), jit_interface(jit_interface) {
 }
 
-template <typename PCT>
-EmitX64<PCT>::~EmitX64() {}
+template <typename JST>
+EmitX64<JST>::~EmitX64() {}
 
-template <typename PCT>
-boost::optional<typename EmitX64<PCT>::BlockDescriptor> EmitX64<PCT>::GetBasicBlock(IR::LocationDescriptor descriptor) const {
+template <typename JST>
+boost::optional<typename EmitX64<JST>::BlockDescriptor> EmitX64<JST>::GetBasicBlock(IR::LocationDescriptor descriptor) const {
     auto iter = block_descriptors.find(descriptor);
     if (iter == block_descriptors.end())
         return boost::none;
     return iter->second;
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitVoid(EmitContext&, IR::Inst*) {
+template <typename JST>
+void EmitX64<JST>::EmitVoid(EmitContext&, IR::Inst*) {
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitBreakpoint(EmitContext&, IR::Inst*) {
+template <typename JST>
+void EmitX64<JST>::EmitBreakpoint(EmitContext&, IR::Inst*) {
     code->int3();
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitIdentity(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitIdentity(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (!args[0].IsImmediate()) {
         ctx.reg_alloc.DefineValue(inst, args[0]);
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, IR::LocationDescriptor target) {
+template <typename JST>
+void EmitX64<JST>::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, IR::LocationDescriptor target) {
     using namespace Xbyak::util;
 
     auto iter = block_descriptors.find(target);
@@ -92,23 +92,23 @@ void EmitX64<PCT>::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_r
                             ? iter->second.entrypoint
                             : code->GetReturnFromRunCodeAddress();
 
-    code->mov(index_reg.cvt32(), dword[r15 + offsetof(A32JitState, rsb_ptr)]);
+    code->mov(index_reg.cvt32(), dword[r15 + offsetof(JST, rsb_ptr)]);
 
     code->mov(loc_desc_reg, target.Value());
 
     patch_information[target].mov_rcx.emplace_back(code->getCurr());
     EmitPatchMovRcx(target_code_ptr);
 
-    code->mov(qword[r15 + index_reg * 8 + offsetof(A32JitState, rsb_location_descriptors)], loc_desc_reg);
-    code->mov(qword[r15 + index_reg * 8 + offsetof(A32JitState, rsb_codeptrs)], rcx);
+    code->mov(qword[r15 + index_reg * 8 + offsetof(JST, rsb_location_descriptors)], loc_desc_reg);
+    code->mov(qword[r15 + index_reg * 8 + offsetof(JST, rsb_codeptrs)], rcx);
 
     code->add(index_reg.cvt32(), 1);
-    code->and_(index_reg.cvt32(), u32(A32JitState::RSBPtrMask));
-    code->mov(dword[r15 + offsetof(A32JitState, rsb_ptr)], index_reg.cvt32());
+    code->and_(index_reg.cvt32(), u32(JST::RSBPtrMask));
+    code->mov(dword[r15 + offsetof(JST, rsb_ptr)], index_reg.cvt32());
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPushRSB(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPushRSB(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[0].IsImmediate());
     u64 unique_hash_of_target = args[0].GetImmediateU64();
@@ -120,23 +120,23 @@ void EmitX64<PCT>::EmitPushRSB(EmitContext& ctx, IR::Inst* inst) {
     PushRSBHelper(loc_desc_reg, index_reg, IR::LocationDescriptor{unique_hash_of_target});
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitGetCarryFromOp(EmitContext&, IR::Inst*) {
+template <typename JST>
+void EmitX64<JST>::EmitGetCarryFromOp(EmitContext&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitGetOverflowFromOp(EmitContext&, IR::Inst*) {
+template <typename JST>
+void EmitX64<JST>::EmitGetOverflowFromOp(EmitContext&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitGetGEFromOp(EmitContext&, IR::Inst*) {
+template <typename JST>
+void EmitX64<JST>::EmitGetGEFromOp(EmitContext&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPack2x32To1x64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPack2x32To1x64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 lo = ctx.reg_alloc.UseScratchGpr(args[0]);
     Xbyak::Reg64 hi = ctx.reg_alloc.UseScratchGpr(args[1]);
@@ -148,14 +148,14 @@ void EmitX64<PCT>::EmitPack2x32To1x64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, lo);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitLeastSignificantWord(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitLeastSignificantWord(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.DefineValue(inst, args[0]);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitMostSignificantWord(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitMostSignificantWord(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -172,20 +172,20 @@ void EmitX64<PCT>::EmitMostSignificantWord(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitLeastSignificantHalf(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitLeastSignificantHalf(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.DefineValue(inst, args[0]);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitLeastSignificantByte(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitLeastSignificantByte(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.DefineValue(inst, args[0]);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitMostSignificantBit(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitMostSignificantBit(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
     // TODO: Flag optimization
@@ -193,8 +193,8 @@ void EmitX64<PCT>::EmitMostSignificantBit(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitIsZero(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitIsZero(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
     // TODO: Flag optimization
@@ -204,8 +204,8 @@ void EmitX64<PCT>::EmitIsZero(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitIsZero64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitIsZero64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     // TODO: Flag optimization
@@ -215,8 +215,8 @@ void EmitX64<PCT>::EmitIsZero64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitLogicalShiftLeft(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitLogicalShiftLeft(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -316,8 +316,8 @@ void EmitX64<PCT>::EmitLogicalShiftLeft(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitLogicalShiftRight(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitLogicalShiftRight(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -416,8 +416,8 @@ void EmitX64<PCT>::EmitLogicalShiftRight(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& operand_arg = args[0];
     auto& shift_arg = args[1];
@@ -433,8 +433,8 @@ void EmitX64<PCT>::EmitLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitArithmeticShiftRight(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitArithmeticShiftRight(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -522,8 +522,8 @@ void EmitX64<PCT>::EmitArithmeticShiftRight(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitRotateRight(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitRotateRight(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -602,8 +602,8 @@ void EmitX64<PCT>::EmitRotateRight(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitRotateRightExtended(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitRotateRightExtended(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -635,8 +635,8 @@ static Xbyak::Reg8 DoCarry(RegAlloc& reg_alloc, Argument& carry_in, IR::Inst* ca
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitAddWithCarry(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitAddWithCarry(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
@@ -692,8 +692,8 @@ void EmitX64<PCT>::EmitAddWithCarry(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitAdd64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitAdd64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
@@ -704,8 +704,8 @@ void EmitX64<PCT>::EmitAdd64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitSubWithCarry(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitSubWithCarry(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
@@ -765,8 +765,8 @@ void EmitX64<PCT>::EmitSubWithCarry(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitSub64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitSub64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
@@ -777,8 +777,8 @@ void EmitX64<PCT>::EmitSub64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitMul(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitMul(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -793,8 +793,8 @@ void EmitX64<PCT>::EmitMul(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitMul64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitMul64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
@@ -805,8 +805,8 @@ void EmitX64<PCT>::EmitMul64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitAnd(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitAnd(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -825,8 +825,8 @@ void EmitX64<PCT>::EmitAnd(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitEor(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitEor(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -845,8 +845,8 @@ void EmitX64<PCT>::EmitEor(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitOr(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitOr(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -865,8 +865,8 @@ void EmitX64<PCT>::EmitOr(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitNot(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitNot(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result;
@@ -880,80 +880,80 @@ void EmitX64<PCT>::EmitNot(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitSignExtendWordToLong(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitSignExtendWordToLong(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->movsxd(result.cvt64(), result.cvt32());
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitSignExtendHalfToWord(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitSignExtendHalfToWord(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->movsx(result.cvt32(), result.cvt16());
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitSignExtendByteToWord(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitSignExtendByteToWord(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->movsx(result.cvt32(), result.cvt8());
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitZeroExtendWordToLong(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitZeroExtendWordToLong(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->mov(result.cvt32(), result.cvt32()); // x64 zeros upper 32 bits on a 32-bit move
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitZeroExtendHalfToWord(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitZeroExtendHalfToWord(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->movzx(result.cvt32(), result.cvt16());
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitZeroExtendByteToWord(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitZeroExtendByteToWord(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->movzx(result.cvt32(), result.cvt8());
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitByteReverseWord(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitByteReverseWord(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
     code->bswap(result);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitByteReverseHalf(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitByteReverseHalf(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg16 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt16();
     code->rol(result, 8);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitByteReverseDual(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitByteReverseDual(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
     code->bswap(result);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitCountLeadingZeros(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitCountLeadingZeros(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (code->DoesCpuSupport(Xbyak::util::Cpu::tLZCNT)) {
         Xbyak::Reg32 source = ctx.reg_alloc.UseGpr(args[0]).cvt32();
@@ -977,8 +977,8 @@ void EmitX64<PCT>::EmitCountLeadingZeros(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitSignedSaturatedAdd(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitSignedSaturatedAdd(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -1005,8 +1005,8 @@ void EmitX64<PCT>::EmitSignedSaturatedAdd(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitSignedSaturatedSub(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitSignedSaturatedSub(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -1033,8 +1033,8 @@ void EmitX64<PCT>::EmitSignedSaturatedSub(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -1065,8 +1065,8 @@ void EmitX64<PCT>::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -1116,8 +1116,8 @@ void EmitX64<PCT>::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddU8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedAddU8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1145,8 +1145,8 @@ void EmitX64<PCT>::EmitPackedAddU8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddS8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedAddS8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1174,8 +1174,8 @@ void EmitX64<PCT>::EmitPackedAddS8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddU16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedAddU16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1217,8 +1217,8 @@ void EmitX64<PCT>::EmitPackedAddU16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddS16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedAddS16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1246,8 +1246,8 @@ void EmitX64<PCT>::EmitPackedAddS16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubU8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSubU8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1271,8 +1271,8 @@ void EmitX64<PCT>::EmitPackedSubU8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubS8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSubS8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1300,8 +1300,8 @@ void EmitX64<PCT>::EmitPackedSubS8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubU16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSubU16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1340,8 +1340,8 @@ void EmitX64<PCT>::EmitPackedSubU16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubS16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSubS16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -1369,8 +1369,8 @@ void EmitX64<PCT>::EmitPackedSubS16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddU8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingAddU8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     if (args[0].IsInXmm() || args[1].IsInXmm()) {
@@ -1413,8 +1413,8 @@ void EmitX64<PCT>::EmitPackedHalvingAddU8(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddU16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingAddU16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     if (args[0].IsInXmm() || args[1].IsInXmm()) {
@@ -1452,8 +1452,8 @@ void EmitX64<PCT>::EmitPackedHalvingAddU16(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddS8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingAddS8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 reg_a = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -1482,8 +1482,8 @@ void EmitX64<PCT>::EmitPackedHalvingAddS8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddS16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingAddS16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -1504,8 +1504,8 @@ void EmitX64<PCT>::EmitPackedHalvingAddS16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubU8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingSubU8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 minuend = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -1535,8 +1535,8 @@ void EmitX64<PCT>::EmitPackedHalvingSubU8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, minuend);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubS8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingSubS8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 minuend = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -1572,8 +1572,8 @@ void EmitX64<PCT>::EmitPackedHalvingSubS8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, minuend);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubU16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingSubU16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm minuend = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -1596,8 +1596,8 @@ void EmitX64<PCT>::EmitPackedHalvingSubU16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, minuend);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubS16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingSubS16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm minuend = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -1694,43 +1694,43 @@ void EmitPackedSubAdd(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, bool 
     ctx.reg_alloc.DefineValue(inst, reg_a_hi);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddSubU16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedAddSubU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, true, false, false);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedAddSubS16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedAddSubS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, true, true, false);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubAddU16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSubAddU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, false, false, false);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSubAddS16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSubAddS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, false, true, false);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddSubU16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingAddSubU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, true, false, true);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingAddSubS16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingAddSubS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, true, true, true);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubAddU16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingSubAddU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, false, false, true);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedHalvingSubAddS16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedHalvingSubAddS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, false, true, true);
 }
 
@@ -1745,53 +1745,53 @@ static void EmitPackedOperation(BlockOfCode* code, EmitContext& ctx, IR::Inst* i
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedAddU8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSaturatedAddU8(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddusb);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedAddS8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSaturatedAddS8(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddsb);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedSubU8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSaturatedSubU8(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubusb);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedSubS8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSaturatedSubS8(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubsb);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedAddU16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSaturatedAddU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddusw);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedAddS16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSaturatedAddS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddsw);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedSubU16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSaturatedSubU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubusw);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSaturatedSubS16(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSaturatedSubS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubsw);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedAbsDiffSumS8(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedAbsDiffSumS8(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psadbw);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitPackedSelect(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitPackedSelect(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     size_t num_args_in_xmm = args[0].IsInXmm() + args[1].IsInXmm() + args[2].IsInXmm();
@@ -1830,6 +1830,7 @@ void EmitX64<PCT>::EmitPackedSelect(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
+template <typename JST>
 static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;
 
@@ -1842,10 +1843,11 @@ static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::R
     code->cmp(gpr_scratch, u32(0x007FFFFE));
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(A32JitState, FPSCR_IDC)], u32(1 << 7));
+    code->mov(dword[r15 + offsetof(JST, FPSCR_IDC)], u32(1 << 7));
     code->L(end);
 }
 
+template <typename JST>
 static void DenormalsAreZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
     Xbyak::Label end;
 
@@ -1860,10 +1862,11 @@ static void DenormalsAreZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::R
     code->cmp(gpr_scratch, penult_denormal);
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(A32JitState, FPSCR_IDC)], u32(1 << 7));
+    code->mov(dword[r15 + offsetof(JST, FPSCR_IDC)], u32(1 << 7));
     code->L(end);
 }
 
+template <typename JST>
 static void FlushToZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;
 
@@ -1873,10 +1876,11 @@ static void FlushToZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 
     code->cmp(gpr_scratch, u32(0x007FFFFE));
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(A32JitState, FPSCR_UFC)], u32(1 << 3));
+    code->mov(dword[r15 + offsetof(JST, FPSCR_UFC)], u32(1 << 3));
     code->L(end);
 }
 
+template <typename JST>
 static void FlushToZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
     Xbyak::Label end;
 
@@ -1891,7 +1895,7 @@ static void FlushToZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg64 
     code->cmp(gpr_scratch, penult_denormal);
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(A32JitState, FPSCR_UFC)], u32(1 << 3));
+    code->mov(dword[r15 + offsetof(JST, FPSCR_UFC)], u32(1 << 3));
     code->L(end);
 }
 
@@ -1919,6 +1923,7 @@ static void ZeroIfNaN64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_
     code->pand(xmm_value, xmm_scratch);
 }
 
+template <typename JST>
 static void FPThreeOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -1927,12 +1932,12 @@ static void FPThreeOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
     Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32(code, result, gpr_scratch);
-        DenormalsAreZero32(code, operand, gpr_scratch);
+        DenormalsAreZero32<JST>(code, result, gpr_scratch);
+        DenormalsAreZero32<JST>(code, operand, gpr_scratch);
     }
     (code->*fn)(result, operand);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero32(code, result, gpr_scratch);
+        FlushToZero32<JST>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
@@ -1941,6 +1946,7 @@ static void FPThreeOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+template <typename JST>
 static void FPThreeOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -1949,12 +1955,12 @@ static void FPThreeOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, result, gpr_scratch);
-        DenormalsAreZero64(code, operand, gpr_scratch);
+        DenormalsAreZero64<JST>(code, result, gpr_scratch);
+        DenormalsAreZero64<JST>(code, operand, gpr_scratch);
     }
     (code->*fn)(result, operand);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero64(code, result, gpr_scratch);
+        FlushToZero64<JST>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
@@ -1963,6 +1969,7 @@ static void FPThreeOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+template <typename JST>
 static void FPTwoOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -1970,12 +1977,12 @@ static void FPTwoOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
     Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32(code, result, gpr_scratch);
+        DenormalsAreZero32<JST>(code, result, gpr_scratch);
     }
 
     (code->*fn)(result, result);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero32(code, result, gpr_scratch);
+        FlushToZero32<JST>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
@@ -1984,6 +1991,7 @@ static void FPTwoOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+template <typename JST>
 static void FPTwoOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -1991,12 +1999,12 @@ static void FPTwoOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, result, gpr_scratch);
+        DenormalsAreZero64<JST>(code, result, gpr_scratch);
     }
 
     (code->*fn)(result, result);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero64(code, result, gpr_scratch);
+        FlushToZero64<JST>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
@@ -2005,20 +2013,20 @@ static void FPTwoOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitTransferFromFP32(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitTransferFromFP32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.DefineValue(inst, args[0]);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitTransferFromFP64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitTransferFromFP64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.DefineValue(inst, args[0]);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitTransferToFP32(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitTransferToFP32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate() && args[0].GetImmediateU32() == 0) {
         Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
@@ -2029,8 +2037,8 @@ void EmitX64<PCT>::EmitTransferToFP32(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitTransferToFP64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitTransferToFP64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsImmediate() && args[0].GetImmediateU64() == 0) {
         Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
@@ -2041,8 +2049,8 @@ void EmitX64<PCT>::EmitTransferToFP64(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
@@ -2051,8 +2059,8 @@ void EmitX64<PCT>::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPAbs64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPAbs64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
@@ -2061,8 +2069,8 @@ void EmitX64<PCT>::EmitFPAbs64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPNeg32(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPNeg32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
@@ -2071,8 +2079,8 @@ void EmitX64<PCT>::EmitFPNeg32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPNeg64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPNeg64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
@@ -2081,56 +2089,57 @@ void EmitX64<PCT>::EmitFPNeg64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPAdd32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::addss);
+template <typename JST>
+void EmitX64<JST>::EmitFPAdd32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32<JST>(code, ctx, inst, &Xbyak::CodeGenerator::addss);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPAdd64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::addsd);
+template <typename JST>
+void EmitX64<JST>::EmitFPAdd64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64<JST>(code, ctx, inst, &Xbyak::CodeGenerator::addsd);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPDiv32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::divss);
+template <typename JST>
+void EmitX64<JST>::EmitFPDiv32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32<JST>(code, ctx, inst, &Xbyak::CodeGenerator::divss);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPDiv64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::divsd);
+template <typename JST>
+void EmitX64<JST>::EmitFPDiv64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64<JST>(code, ctx, inst, &Xbyak::CodeGenerator::divsd);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::mulss);
+template <typename JST>
+void EmitX64<JST>::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32<JST>(code, ctx, inst, &Xbyak::CodeGenerator::mulss);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPMul64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::mulsd);
+template <typename JST>
+void EmitX64<JST>::EmitFPMul64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64<JST>(code, ctx, inst, &Xbyak::CodeGenerator::mulsd);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
-    FPTwoOp32(code, ctx, inst, &Xbyak::CodeGenerator::sqrtss);
+template <typename JST>
+void EmitX64<JST>::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
+    FPTwoOp32<JST>(code, ctx, inst, &Xbyak::CodeGenerator::sqrtss);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPSqrt64(EmitContext& ctx, IR::Inst* inst) {
-    FPTwoOp64(code, ctx, inst, &Xbyak::CodeGenerator::sqrtsd);
+template <typename JST>
+void EmitX64<JST>::EmitFPSqrt64(EmitContext& ctx, IR::Inst* inst) {
+    FPTwoOp64<JST>(code, ctx, inst, &Xbyak::CodeGenerator::sqrtsd);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPSub32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::subss);
+template <typename JST>
+void EmitX64<JST>::EmitFPSub32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32<JST>(code, ctx, inst, &Xbyak::CodeGenerator::subss);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPSub64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::subsd);
+template <typename JST>
+void EmitX64<JST>::EmitFPSub64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64<JST>(code, ctx, inst, &Xbyak::CodeGenerator::subsd);
 }
 
+template <typename JST>
 static void SetFpscrNzcvFromFlags(BlockOfCode* code, EmitContext& ctx) {
     ctx.reg_alloc.ScratchGpr({HostLoc::RCX}); // shifting requires use of cl
     Xbyak::Reg32 nzcv = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -2140,11 +2149,11 @@ static void SetFpscrNzcvFromFlags(BlockOfCode* code, EmitContext& ctx) {
     code->rcl(cl, 3);
     code->shl(nzcv, cl);
     code->and_(nzcv, 0xF0000000);
-    code->mov(dword[r15 + offsetof(A32JitState, FPSCR_nzcv)], nzcv);
+    code->mov(dword[r15 + offsetof(JST, FPSCR_nzcv)], nzcv);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm reg_a = ctx.reg_alloc.UseXmm(args[0]);
     Xbyak::Xmm reg_b = ctx.reg_alloc.UseXmm(args[1]);
@@ -2156,11 +2165,11 @@ void EmitX64<PCT>::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
         code->ucomiss(reg_a, reg_b);
     }
 
-    SetFpscrNzcvFromFlags(code, ctx);
+    SetFpscrNzcvFromFlags<JST>(code, ctx);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm reg_a = ctx.reg_alloc.UseXmm(args[0]);
     Xbyak::Xmm reg_b = ctx.reg_alloc.UseXmm(args[1]);
@@ -2172,21 +2181,21 @@ void EmitX64<PCT>::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
         code->ucomisd(reg_a, reg_b);
     }
 
-    SetFpscrNzcvFromFlags(code, ctx);
+    SetFpscrNzcvFromFlags<JST>(code, ctx);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32(code, result, gpr_scratch.cvt32());
+        DenormalsAreZero32<JST>(code, result, gpr_scratch.cvt32());
     }
     code->cvtss2sd(result, result);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero64(code, result, gpr_scratch);
+        FlushToZero64<JST>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
@@ -2195,18 +2204,18 @@ void EmitX64<PCT>::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, result, gpr_scratch);
+        DenormalsAreZero64<JST>(code, result, gpr_scratch);
     }
     code->cvtsd2ss(result, result);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero32(code, result, gpr_scratch.cvt32());
+        FlushToZero32<JST>(code, result, gpr_scratch.cvt32());
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
@@ -2215,8 +2224,8 @@ void EmitX64<PCT>::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -2227,7 +2236,7 @@ void EmitX64<PCT>::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
     // Conversion to double is lossless, and allows for clamping.
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32(code, from, to);
+        DenormalsAreZero32<JST>(code, from, to);
     }
     code->cvtss2sd(from, from);
     // First time is to set flags
@@ -2250,8 +2259,8 @@ void EmitX64<PCT>::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -2267,7 +2276,7 @@ void EmitX64<PCT>::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
 
     if (!ctx.FPSCR_RoundTowardsZero() && !round_towards_zero) {
         if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero32(code, from, to);
+            DenormalsAreZero32<JST>(code, from, to);
         }
         code->cvtss2sd(from, from);
         ZeroIfNaN64(code, from, xmm_scratch);
@@ -2287,7 +2296,7 @@ void EmitX64<PCT>::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg32 gpr_mask = ctx.reg_alloc.ScratchGpr().cvt32();
 
         if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero32(code, from, to);
+            DenormalsAreZero32<JST>(code, from, to);
         }
         code->cvtss2sd(from, from);
         ZeroIfNaN64(code, from, xmm_scratch);
@@ -2313,8 +2322,8 @@ void EmitX64<PCT>::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -2325,7 +2334,7 @@ void EmitX64<PCT>::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
     // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, from, gpr_scratch.cvt64());
+        DenormalsAreZero64<JST>(code, from, gpr_scratch.cvt64());
     }
     // First time is to set flags
     if (round_towards_zero) {
@@ -2347,8 +2356,8 @@ void EmitX64<PCT>::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -2362,7 +2371,7 @@ void EmitX64<PCT>::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
 
     if (!ctx.FPSCR_RoundTowardsZero() && !round_towards_zero) {
         if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero64(code, from, gpr_scratch.cvt64());
+            DenormalsAreZero64<JST>(code, from, gpr_scratch.cvt64());
         }
         ZeroIfNaN64(code, from, xmm_scratch);
         // Bring into SSE range
@@ -2381,7 +2390,7 @@ void EmitX64<PCT>::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg32 gpr_mask = ctx.reg_alloc.ScratchGpr().cvt32();
 
         if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero64(code, from, gpr_scratch.cvt64());
+            DenormalsAreZero64<JST>(code, from, gpr_scratch.cvt64());
         }
         ZeroIfNaN64(code, from, xmm_scratch);
         // Generate masks if out-of-signed-range
@@ -2406,8 +2415,8 @@ void EmitX64<PCT>::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 from = ctx.reg_alloc.UseGpr(args[0]).cvt32();
     Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
@@ -2419,8 +2428,8 @@ void EmitX64<PCT>::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
     Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
@@ -2434,8 +2443,8 @@ void EmitX64<PCT>::EmitFPU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 from = ctx.reg_alloc.UseGpr(args[0]).cvt32();
     Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
@@ -2447,8 +2456,8 @@ void EmitX64<PCT>::EmitFPS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
+template <typename JST>
+void EmitX64<JST>::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
     Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
@@ -2462,18 +2471,18 @@ void EmitX64<PCT>::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitAddCycles(size_t cycles) {
+template <typename JST>
+void EmitX64<JST>::EmitAddCycles(size_t cycles) {
     ASSERT(cycles < std::numeric_limits<u32>::max());
-    code->sub(qword[r15 + offsetof(A32JitState, cycles_remaining)], static_cast<u32>(cycles));
+    code->sub(qword[r15 + offsetof(JST, cycles_remaining)], static_cast<u32>(cycles));
 }
 
-template <typename PCT>
-Xbyak::Label EmitX64<PCT>::EmitCond(IR::Cond cond) {
+template <typename JST>
+Xbyak::Label EmitX64<JST>::EmitCond(IR::Cond cond) {
     Xbyak::Label label;
 
     const Xbyak::Reg32 cpsr = eax;
-    code->mov(cpsr, dword[r15 + offsetof(A32JitState, CPSR_nzcv)]);
+    code->mov(cpsr, dword[r15 + offsetof(JST, CPSR_nzcv)]);
 
     constexpr size_t n_shift = 31;
     constexpr size_t z_shift = 30;
@@ -2581,8 +2590,8 @@ Xbyak::Label EmitX64<PCT>::EmitCond(IR::Cond cond) {
     return label;
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitCondPrelude(const IR::Block& block) {
+template <typename JST>
+void EmitX64<JST>::EmitCondPrelude(const IR::Block& block) {
     if (block.GetCondition() == IR::Cond::AL) {
         ASSERT(!block.HasConditionFailedLocation());
         return;
@@ -2596,8 +2605,8 @@ void EmitX64<PCT>::EmitCondPrelude(const IR::Block& block) {
     code->L(pass);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor initial_location) {
+template <typename JST>
+void EmitX64<JST>::EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor initial_location) {
     Common::VisitVariant<void>(terminal, [this, &initial_location](auto x) {
         using T = std::decay_t<decltype(x)>;
         if constexpr (!std::is_same_v<T, IR::Term::Invalid>) {
@@ -2608,8 +2617,8 @@ void EmitX64<PCT>::EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor in
     });
 }
 
-template <typename PCT>
-void EmitX64<PCT>::Patch(const IR::LocationDescriptor& desc, CodePtr bb) {
+template <typename JST>
+void EmitX64<JST>::Patch(const IR::LocationDescriptor& desc, CodePtr bb) {
     const CodePtr save_code_ptr = code->getCurr();
     const PatchInformation& patch_info = patch_information[desc];
 
@@ -2631,20 +2640,20 @@ void EmitX64<PCT>::Patch(const IR::LocationDescriptor& desc, CodePtr bb) {
     code->SetCodePtr(save_code_ptr);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::Unpatch(const IR::LocationDescriptor& desc) {
+template <typename JST>
+void EmitX64<JST>::Unpatch(const IR::LocationDescriptor& desc) {
     Patch(desc, nullptr);
 }
 
-template <typename PCT>
-void EmitX64<PCT>::ClearCache() {
+template <typename JST>
+void EmitX64<JST>::ClearCache() {
     block_ranges.clear();
     block_descriptors.clear();
     patch_information.clear();
 }
 
-template <typename PCT>
-void EmitX64<PCT>::InvalidateCacheRanges(const boost::icl::interval_set<PCT>& ranges) {
+template <typename JST>
+void EmitX64<JST>::InvalidateCacheRanges(const boost::icl::interval_set<ProgramCounterType>& ranges) {
     // Remove cached block descriptors and patch information overlapping with the given range.
     std::unordered_set<IR::LocationDescriptor> erase_locations;
     for (auto invalidate_interval : ranges) {
@@ -2669,8 +2678,9 @@ void EmitX64<PCT>::InvalidateCacheRanges(const boost::icl::interval_set<PCT>& ra
     }
 }
 
-template class EmitX64<u32>;
-template class EmitX64<u64>;
-
 } // namespace BackendX64
 } // namespace Dynarmic
+
+#include "backend_x64/a32_jitstate.h"
+
+template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A32JitState>;

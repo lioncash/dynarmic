@@ -23,6 +23,8 @@ constexpr size_t SpillCount = 64;
 #endif
 
 struct A32JitState {
+    using ProgramCounterType = u32;
+
     A32JitState() { ResetRSB(); }
 
     std::array<u32, 16> Reg{}; // Current register file.

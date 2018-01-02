@@ -34,7 +34,7 @@ struct A32EmitContext final : public EmitContext {
     bool FPSCR_DN() const override;
 };
 
-class A32EmitX64 final : public EmitX64<u32> {
+class A32EmitX64 final : public EmitX64<A32JitState> {
 public:
     A32EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface);
     ~A32EmitX64();
