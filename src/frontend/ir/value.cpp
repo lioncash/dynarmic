@@ -23,6 +23,14 @@ Value::Value(A32::ExtReg value) : type(Type::A32ExtReg) {
     inner.imm_a32extregref = value;
 }
 
+Value::Value(A64::Reg value) : type(Type::A64Reg) {
+    inner.imm_a64regref = value;
+}
+
+Value::Value(A64::Vec value) : type(Type::A64Vec) {
+    inner.imm_a64vecref = value;
+}
+
 Value::Value(bool value) : type(Type::U1) {
     inner.imm_u1 = value;
 }
@@ -76,6 +84,16 @@ A32::Reg Value::GetA32RegRef() const {
 A32::ExtReg Value::GetA32ExtRegRef() const {
     ASSERT(type == Type::A32ExtReg);
     return inner.imm_a32extregref;
+}
+
+A64::Reg Value::GetA64RegRef() const {
+    ASSERT(type == Type::A64Reg);
+    return inner.imm_a64regref;
+}
+
+A64::Vec Value::GetA64VecRef() const {
+    ASSERT(type == Type::A64Vec);
+    return inner.imm_a64vecref;
 }
 
 Inst* Value::GetInst() const {

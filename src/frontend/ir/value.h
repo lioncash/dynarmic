@@ -9,6 +9,8 @@
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "frontend/A32/types.h"
+#include "frontend/A64/types.h"
+#include "frontend/ir/opcodes.h"
 
 namespace Dynarmic {
 namespace IR {
@@ -25,6 +27,8 @@ public:
     explicit Value(Inst* value);
     explicit Value(A32::Reg value);
     explicit Value(A32::ExtReg value);
+    explicit Value(A64::Reg value);
+    explicit Value(A64::Vec value);
     explicit Value(bool value);
     explicit Value(u8 value);
     explicit Value(u16 value);
@@ -39,6 +43,8 @@ public:
     Inst* GetInst() const;
     A32::Reg GetA32RegRef() const;
     A32::ExtReg GetA32ExtRegRef() const;
+    A64::Reg GetA64RegRef() const;
+    A64::Vec GetA64VecRef() const;
     bool GetU1() const;
     u8 GetU8() const;
     u16 GetU16() const;
@@ -53,6 +59,8 @@ private:
         Inst* inst; // type == Type::Opaque
         A32::Reg imm_a32regref;
         A32::ExtReg imm_a32extregref;
+        A64::Reg imm_a64regref;
+        A64::Vec imm_a64vecref;
         bool imm_u1;
         u8 imm_u8;
         u16 imm_u16;
@@ -86,6 +94,7 @@ using U32 = TypedValue<Type::U32>;
 using U64 = TypedValue<Type::U64>;
 using F32 = TypedValue<Type::F32>;
 using F64 = TypedValue<Type::F64>;
+using F128 = TypedValue<Type::F128>;
 using F32F64 = TypedValue<Type::F32 | Type::F64>;
 
 } // namespace IR

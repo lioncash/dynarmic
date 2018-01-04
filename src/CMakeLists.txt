@@ -51,6 +51,15 @@ add_library(dynarmic
     frontend/A32/translate/translate_thumb.cpp
     frontend/A32/types.cpp
     frontend/A32/types.h
+    frontend/A64/decoder/a64.h
+    frontend/A64/imm.h
+    frontend/A64/location_descriptor.cpp
+    frontend/A64/location_descriptor.h
+    frontend/A64/translate/impl/impl.h
+    frontend/A64/translate/translate.cpp
+    frontend/A64/translate/translate.h
+    frontend/A64/types.cpp
+    frontend/A64/types.h
     frontend/decoder/decoder_detail.h
     frontend/decoder/matcher.h
     frontend/ir/basic_block.cpp
