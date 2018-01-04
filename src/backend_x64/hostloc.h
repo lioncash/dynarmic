@@ -7,7 +7,6 @@
 
 #include <xbyak.h>
 
-#include "backend_x64/a32_jitstate.h"
 #include "common/assert.h"
 #include "common/common_types.h"
 
@@ -23,7 +22,7 @@ enum class HostLoc {
     FirstSpill,
 };
 
-constexpr size_t HostLocCount = static_cast<size_t>(HostLoc::FirstSpill) + SpillCount;
+constexpr size_t NonSpillHostLocCount = static_cast<size_t>(HostLoc::FirstSpill);
 
 inline bool HostLocIsGPR(HostLoc reg) {
     return reg >= HostLoc::RAX && reg <= HostLoc::R15;
@@ -42,12 +41,11 @@ inline bool HostLocIsFlag(HostLoc reg) {
 }
 
 inline HostLoc HostLocSpill(size_t i) {
-    ASSERT_MSG(i < SpillCount, "Invalid spill");
-    return static_cast<HostLoc>(static_cast<int>(HostLoc::FirstSpill) + i);
+    return static_cast<HostLoc>(static_cast<size_t>(HostLoc::FirstSpill) + i);
 }
 
 inline bool HostLocIsSpill(HostLoc reg) {
-    return reg >= HostLoc::FirstSpill && reg <= HostLocSpill(SpillCount - 1);
+    return reg >= HostLoc::FirstSpill;
 }
 
 using HostLocList = std::initializer_list<HostLoc>;
@@ -92,7 +90,16 @@ const HostLocList any_xmm = {
 
 Xbyak::Reg64 HostLocToReg64(HostLoc loc);
 Xbyak::Xmm HostLocToXmm(HostLoc loc);
-Xbyak::Address SpillToOpArg(HostLoc loc); ///< TODO: Remove from this file
+
+template <typename JitStateType>
+Xbyak::Address SpillToOpArg(HostLoc loc) {
+    ASSERT(HostLocIsSpill(loc));
+
+    size_t i = static_cast<size_t>(loc) - static_cast<size_t>(HostLoc::FirstSpill);
+    ASSERT_MSG(i < JitStateType::SpillCount, "Spill index greater than number of available spill locations");
+
+    return JitStateType::GetSpillLocationFromIndex(i);
+}
 
 } // namespace BackendX64
 } // namespace Dynarmic

@@ -6,7 +6,6 @@
 
 #include <xbyak.h>
 
-#include "backend_x64/a32_jitstate.h"
 #include "backend_x64/hostloc.h"
 
 namespace Dynarmic {
@@ -20,16 +19,6 @@ Xbyak::Reg64 HostLocToReg64(HostLoc loc) {
 Xbyak::Xmm HostLocToXmm(HostLoc loc) {
     ASSERT(HostLocIsXMM(loc));
     return Xbyak::Xmm(static_cast<int>(loc) - static_cast<int>(HostLoc::XMM0));
-}
-
-Xbyak::Address SpillToOpArg(HostLoc loc) {
-    using namespace Xbyak::util;
-
-    static_assert(std::is_same<decltype(A32JitState::Spill[0]), u64&>::value, "Spill must be u64");
-    ASSERT(HostLocIsSpill(loc));
-
-    size_t i = static_cast<size_t>(loc) - static_cast<size_t>(HostLoc::FirstSpill);
-    return qword[r15 + offsetof(A32JitState, Spill) + i * sizeof(u64)];
 }
 
 } // namespace BackendX64

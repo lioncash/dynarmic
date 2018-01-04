@@ -17,41 +17,51 @@
 #include "backend_x64/a32_emit_x64.h"
 #include "backend_x64/a32_jitstate.h"
 #include "backend_x64/block_of_code.h"
+#include "backend_x64/jitstate_info.h"
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "common/scope_exit.h"
-#include "dynarmic/context.h"
-#include "dynarmic/dynarmic.h"
+#include "dynarmic/A32/a32.h"
+#include "dynarmic/A32/context.h"
 #include "frontend/A32/translate/translate.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/location_descriptor.h"
 #include "ir_opt/passes.h"
 
 namespace Dynarmic {
+namespace A32 {
 
 using namespace BackendX64;
 
+RunCodeCallbacks GenRunCodeCallbacks(A32::UserCallbacks cb, CodePtr (*LookupBlock)(void* lookup_block_arg), void* arg) {
+    return RunCodeCallbacks{
+        LookupBlock,
+        arg,
+        cb.AddTicks,
+        cb.GetTicksRemaining
+    };
+}
+
 struct Jit::Impl {
-    Impl(Jit* jit, UserCallbacks callbacks)
-            : block_of_code(callbacks, &GetCurrentBlock, this)
-            , jit_state()
+    Impl(Jit* jit, A32::UserCallbacks callbacks)
+            : block_of_code(GenRunCodeCallbacks(callbacks, &GetCurrentBlock, this), JitStateInfo{jit_state})
             , emitter(&block_of_code, callbacks, jit)
             , callbacks(callbacks)
             , jit_interface(jit)
     {}
 
-    BlockOfCode block_of_code;
     A32JitState jit_state;
+    BlockOfCode block_of_code;
     A32EmitX64 emitter;
-    const UserCallbacks callbacks;
+    const A32::UserCallbacks callbacks;
 
     // Requests made during execution to invalidate the cache are queued up here.
     size_t invalid_cache_generation = 0;
     boost::icl::interval_set<u32> invalid_cache_ranges;
     bool invalidate_entire_cache = false;
 
-    void Execute(size_t cycle_count) {
-        block_of_code.RunCode(&jit_state, cycle_count);
+    void Execute() {
+        block_of_code.RunCode(&jit_state);
     }
 
     std::string Disassemble(const IR::LocationDescriptor& descriptor) {
@@ -163,14 +173,14 @@ Jit::Jit(UserCallbacks callbacks) : impl(std::make_unique<Impl>(this, callbacks)
 
 Jit::~Jit() {}
 
-void Jit::Run(size_t cycle_count) {
+void Jit::Run() {
     ASSERT(!is_executing);
     is_executing = true;
     SCOPE_EXIT({ this->is_executing = false; });
 
     impl->jit_state.halt_requested = false;
 
-    impl->Execute(cycle_count);
+    impl->Execute();
 
     impl->PerformCacheInvalidation();
 }
@@ -314,4 +324,5 @@ std::string Jit::Disassemble(const IR::LocationDescriptor& descriptor) {
     return impl->Disassemble(descriptor);
 }
 
+} // namespace A32
 } // namespace Dynarmic

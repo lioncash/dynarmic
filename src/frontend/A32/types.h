@@ -10,7 +10,7 @@
 #include <string>
 #include <utility>
 
-#include <dynarmic/coprocessor_util.h>
+#include <dynarmic/A32/coprocessor_util.h>
 
 #include "common/assert.h"
 #include "common/common_types.h"

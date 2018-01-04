@@ -6,18 +6,32 @@
 
 #include <catch.hpp>
 
-#include <dynarmic/dynarmic.h>
+#include <dynarmic/A32/a32.h>
 
 #include "common/common_types.h"
 #include "skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
 #include "skyeye_interpreter/skyeye_common/armstate.h"
 
+static u64 jit_num_ticks = 0;
 static std::array<u16, 1024> code_mem{};
 
+static u64 GetTicksRemaining();
+static void AddTicks(u64 ticks);
 static u32 MemoryRead32(u32 vaddr);
 static u32 MemoryReadCode(u32 vaddr);
-static void InterpreterFallback(u32 pc, Dynarmic::Jit* jit, void*);
-static Dynarmic::UserCallbacks GetUserCallbacks();
+static void InterpreterFallback(u32 pc, Dynarmic::A32::Jit* jit, void*);
+static Dynarmic::A32::UserCallbacks GetUserCallbacks();
+
+static u64 GetTicksRemaining() {
+    return jit_num_ticks;
+}
+static void AddTicks(u64 ticks) {
+    if (ticks > jit_num_ticks) {
+        jit_num_ticks = 0;
+        return;
+    }
+    jit_num_ticks -= ticks;
+}
 
 static u32 MemoryRead32(u32 vaddr) {
     return vaddr;
@@ -30,7 +44,7 @@ static u32 MemoryReadCode(u32 vaddr) {
     return 0xE7FEE7FE; //b +#0, b +#0
 }
 
-static void InterpreterFallback(u32 pc, Dynarmic::Jit* jit, void*) {
+static void InterpreterFallback(u32 pc, Dynarmic::A32::Jit* jit, void*) {
     ARMul_State interp_state{USER32MODE};
     interp_state.user_callbacks = GetUserCallbacks();
     interp_state.NumInstrsToExecute = 1;
@@ -46,19 +60,18 @@ static void InterpreterFallback(u32 pc, Dynarmic::Jit* jit, void*) {
     jit->SetCpsr(interp_state.Cpsr);
 }
 
-static void AddTicks(u64) {}
-
-static Dynarmic::UserCallbacks GetUserCallbacks() {
-    Dynarmic::UserCallbacks user_callbacks{};
+static Dynarmic::A32::UserCallbacks GetUserCallbacks() {
+    Dynarmic::A32::UserCallbacks user_callbacks{};
     user_callbacks.memory.Read32 = &MemoryRead32;
     user_callbacks.memory.ReadCode = &MemoryReadCode;
     user_callbacks.InterpreterFallback = &InterpreterFallback;
+    user_callbacks.GetTicksRemaining = &GetTicksRemaining;
     user_callbacks.AddTicks = &AddTicks;
     return user_callbacks;
 }
 
 TEST_CASE( "thumb: lsls r0, r1, #2", "[thumb]" ) {
-    Dynarmic::Jit jit{GetUserCallbacks()};
+    Dynarmic::A32::Jit jit{GetUserCallbacks()};
     code_mem.fill({});
     code_mem[0] = 0x0088; // lsls r0, r1, #2
     code_mem[1] = 0xE7FE; // b +#0
@@ -68,7 +81,8 @@ TEST_CASE( "thumb: lsls r0, r1, #2", "[thumb]" ) {
     jit.Regs()[15] = 0; // PC = 0
     jit.SetCpsr(0x00000030); // Thumb, User-mode
 
-    jit.Run(1);
+    jit_num_ticks = 1;
+    jit.Run();
 
     REQUIRE( jit.Regs()[0] == 8 );
     REQUIRE( jit.Regs()[1] == 2 );
@@ -77,7 +91,7 @@ TEST_CASE( "thumb: lsls r0, r1, #2", "[thumb]" ) {
 }
 
 TEST_CASE( "thumb: lsls r0, r1, #31", "[thumb]" ) {
-    Dynarmic::Jit jit{GetUserCallbacks()};
+    Dynarmic::A32::Jit jit{GetUserCallbacks()};
     code_mem.fill({});
     code_mem[0] = 0x07C8; // lsls r0, r1, #31
     code_mem[1] = 0xE7FE; // b +#0
@@ -87,7 +101,8 @@ TEST_CASE( "thumb: lsls r0, r1, #31", "[thumb]" ) {
     jit.Regs()[15] = 0; // PC = 0
     jit.SetCpsr(0x00000030); // Thumb, User-mode
 
-    jit.Run(1);
+    jit_num_ticks = 1;
+    jit.Run();
 
     REQUIRE( jit.Regs()[0] == 0x80000000 );
     REQUIRE( jit.Regs()[1] == 0xffffffff );
@@ -96,7 +111,7 @@ TEST_CASE( "thumb: lsls r0, r1, #31", "[thumb]" ) {
 }
 
 TEST_CASE( "thumb: revsh r4, r3", "[thumb]" ) {
-    Dynarmic::Jit jit{GetUserCallbacks()};
+    Dynarmic::A32::Jit jit{GetUserCallbacks()};
     code_mem.fill({});
     code_mem[0] = 0xBADC; // revsh r4, r3
     code_mem[1] = 0xE7FE; // b +#0
@@ -105,7 +120,8 @@ TEST_CASE( "thumb: revsh r4, r3", "[thumb]" ) {
     jit.Regs()[15] = 0; // PC = 0
     jit.SetCpsr(0x00000030); // Thumb, User-mode
 
-    jit.Run(1);
+    jit_num_ticks = 1;
+    jit.Run();
 
     REQUIRE( jit.Regs()[3] == 0x12345678 );
     REQUIRE( jit.Regs()[4] == 0x00007856 );
@@ -114,7 +130,7 @@ TEST_CASE( "thumb: revsh r4, r3", "[thumb]" ) {
 }
 
 TEST_CASE( "thumb: ldr r3, [r3, #28]", "[thumb]" ) {
-    Dynarmic::Jit jit{GetUserCallbacks()};
+    Dynarmic::A32::Jit jit{GetUserCallbacks()};
     code_mem.fill({});
     code_mem[0] = 0x69DB; // ldr r3, [r3, #28]
     code_mem[1] = 0xE7FE; // b +#0
@@ -123,7 +139,8 @@ TEST_CASE( "thumb: ldr r3, [r3, #28]", "[thumb]" ) {
     jit.Regs()[15] = 0; // PC = 0
     jit.SetCpsr(0x00000030); // Thumb, User-mode
 
-    jit.Run(1);
+    jit_num_ticks = 1;
+    jit.Run();
 
     REQUIRE( jit.Regs()[3] == 0x12345694 );
     REQUIRE( jit.Regs()[15] == 2 );
@@ -131,7 +148,7 @@ TEST_CASE( "thumb: ldr r3, [r3, #28]", "[thumb]" ) {
 }
 
 TEST_CASE( "thumb: blx +#67712", "[thumb]" ) {
-    Dynarmic::Jit jit{GetUserCallbacks()};
+    Dynarmic::A32::Jit jit{GetUserCallbacks()};
     code_mem.fill({});
     code_mem[0] = 0xF010; code_mem[1] = 0xEC3E; // blx +#67712
     code_mem[2] = 0xE7FE; // b +#0
@@ -139,7 +156,8 @@ TEST_CASE( "thumb: blx +#67712", "[thumb]" ) {
     jit.Regs()[15] = 0; // PC = 0
     jit.SetCpsr(0x00000030); // Thumb, User-mode
 
-    jit.Run(1);
+    jit_num_ticks = 1;
+    jit.Run();
 
     REQUIRE( jit.Regs()[14] == (0x4 | 1) );
     REQUIRE( jit.Regs()[15] == 0x10880 );
@@ -147,7 +165,7 @@ TEST_CASE( "thumb: blx +#67712", "[thumb]" ) {
 }
 
 TEST_CASE( "thumb: bl +#234584", "[thumb]" ) {
-    Dynarmic::Jit jit{GetUserCallbacks()};
+    Dynarmic::A32::Jit jit{GetUserCallbacks()};
     code_mem.fill({});
     code_mem[0] = 0xF039; code_mem[1] = 0xFA2A; // bl +#234584
     code_mem[2] = 0xE7FE; // b +#0
@@ -155,7 +173,8 @@ TEST_CASE( "thumb: bl +#234584", "[thumb]" ) {
     jit.Regs()[15] = 0; // PC = 0
     jit.SetCpsr(0x00000030); // Thumb, User-mode
 
-    jit.Run(1);
+    jit_num_ticks = 1;
+    jit.Run();
 
     REQUIRE( jit.Regs()[14] == (0x4 | 1) );
     REQUIRE( jit.Regs()[15] == 0x39458 );
@@ -163,7 +182,7 @@ TEST_CASE( "thumb: bl +#234584", "[thumb]" ) {
 }
 
 TEST_CASE( "thumb: bl -#42", "[thumb]" ) {
-    Dynarmic::Jit jit{GetUserCallbacks()};
+    Dynarmic::A32::Jit jit{GetUserCallbacks()};
     code_mem.fill({});
     code_mem[0] = 0xF7FF; code_mem[1] = 0xFFE9; // bl -#42
     code_mem[2] = 0xE7FE; // b +#0
@@ -171,7 +190,8 @@ TEST_CASE( "thumb: bl -#42", "[thumb]" ) {
     jit.Regs()[15] = 0; // PC = 0
     jit.SetCpsr(0x00000030); // Thumb, User-mode
 
-    jit.Run(1);
+    jit_num_ticks = 1;
+    jit.Run();
 
     REQUIRE( jit.Regs()[14] == (0x4 | 1) );
     REQUIRE( jit.Regs()[15] == 0xFFFFFFD6 );

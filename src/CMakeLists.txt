@@ -1,9 +1,9 @@
 add_library(dynarmic
-    ../include/dynarmic/callbacks.h
-    ../include/dynarmic/coprocessor.h
-    ../include/dynarmic/coprocessor_util.h
-    ../include/dynarmic/disassembler.h
-    ../include/dynarmic/dynarmic.h
+    ../include/dynarmic/A32/a32.h
+    ../include/dynarmic/A32/callbacks.h
+    ../include/dynarmic/A32/coprocessor.h
+    ../include/dynarmic/A32/coprocessor_util.h
+    ../include/dynarmic/A32/disassembler.h
     common/address_range.h
     common/assert.h
     common/bit_util.h
@@ -77,6 +77,7 @@ if (ARCHITECTURE_x86_64)
     target_sources(dynarmic PRIVATE
          backend_x64/a32_emit_x64.cpp
          backend_x64/a32_emit_x64.h
+         backend_x64/a32_interface.cpp
          backend_x64/a32_jitstate.cpp
          backend_x64/a32_jitstate.h
          backend_x64/abi.cpp
@@ -89,7 +90,7 @@ if (ARCHITECTURE_x86_64)
          backend_x64/emit_x64.h
          backend_x64/hostloc.cpp
          backend_x64/hostloc.h
-         backend_x64/interface_x64.cpp
+         backend_x64/jitstate_info.h
          backend_x64/oparg.h
          backend_x64/reg_alloc.cpp
          backend_x64/reg_alloc.h

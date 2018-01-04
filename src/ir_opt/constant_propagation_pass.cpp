@@ -4,7 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
-#include <dynarmic/callbacks.h>
+#include <dynarmic/A32/callbacks.h>
 
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/opcodes.h"
@@ -13,7 +13,7 @@
 namespace Dynarmic {
 namespace Optimization {
 
-void ConstantPropagation(IR::Block& block, const UserCallbacks::Memory& memory_callbacks) {
+void ConstantPropagation(IR::Block& block, const A32::UserCallbacks::Memory& memory_callbacks) {
     for (auto& inst : block) {
         switch (inst.GetOpcode()) {
         case IR::Opcode::A32SetCFlag: {

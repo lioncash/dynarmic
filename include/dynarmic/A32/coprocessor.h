@@ -11,17 +11,16 @@
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
-#include <dynarmic/coprocessor_util.h>
+#include <dynarmic/A32/coprocessor_util.h>
 
 namespace Dynarmic {
+namespace A32 {
 
 class Jit;
 
 class Coprocessor {
 public:
     virtual ~Coprocessor() = default;
-
-    using CoprocReg = A32::CoprocReg;
 
     struct Callback {
         /**
@@ -109,4 +108,5 @@ public:
     virtual boost::optional<Callback> CompileStoreWords(bool two, bool long_transfer, CoprocReg CRd, boost::optional<std::uint8_t> option) = 0;
 };
 
+} // namespace A32
 } // namespace Dynarmic

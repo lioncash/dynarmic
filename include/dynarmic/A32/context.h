@@ -11,6 +11,7 @@
 #include <memory>
 
 namespace Dynarmic {
+namespace A32 {
 
 struct Context {
 public:
@@ -41,4 +42,5 @@ private:
     std::unique_ptr<Impl> impl;
 };
 
+} // namespace A32
 } // namespace Dynarmic

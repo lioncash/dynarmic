@@ -12,27 +12,39 @@
 #include <xbyak.h>
 #include <xbyak_util.h>
 
-#include "backend_x64/a32_jitstate.h"
 #include "backend_x64/constant_pool.h"
+#include "backend_x64/jitstate_info.h"
 #include "common/common_types.h"
-#include "dynarmic/callbacks.h"
+#include "dynarmic/A32/callbacks.h"
 
 namespace Dynarmic {
 namespace BackendX64 {
 
-using LookupBlockCallback = CodePtr(*)(void*);
+using CodePtr = const void*;
+
+struct RunCodeCallbacks {
+    CodePtr (*LookupBlock)(void* lookup_block_arg);
+    void* lookup_block_arg;
+
+    void (*AddTicks)(std::uint64_t ticks);
+    std::uint64_t (*GetTicksRemaining)();
+};
 
 class BlockOfCode final : public Xbyak::CodeGenerator {
 public:
-    BlockOfCode(UserCallbacks cb, LookupBlockCallback lookup_block, void* lookup_block_arg);
+    BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi);
+    /// Call when external emitters have finished emitting their preludes.
+    void PreludeComplete();
 
     /// Clears this block of code and resets code pointer to beginning.
     void ClearCache();
     /// Calculates how much space is remaining to use. This is the minimum of near code and far code.
     size_t SpaceRemaining() const;
 
-    /// Runs emulated code for approximately `cycles_to_run` cycles.
-    void RunCode(A32JitState* jit_state, size_t cycles_to_run) const;
+    /// Runs emulated code.
+    void RunCode(void* jit_state) const;
+    /// Runs emulated code from code_ptr.
+    void RunCodeFrom(void* jit_state, CodePtr code_ptr) const;
     /// Code emitter: Returns to dispatcher
     void ReturnFromRunCode(bool mxcsr_already_exited = false);
     /// Code emitter: Returns to dispatcher, forces return to host
@@ -75,36 +87,6 @@ public:
         return return_from_run_code[FORCE_RETURN];
     }
 
-    const void* GetMemoryReadCallback(size_t bit_size) const {
-        switch (bit_size) {
-        case 8:
-            return read_memory_8;
-        case 16:
-            return read_memory_16;
-        case 32:
-            return read_memory_32;
-        case 64:
-            return read_memory_64;
-        default:
-            return nullptr;
-        }
-    }
-
-    const void* GetMemoryWriteCallback(size_t bit_size) const {
-        switch (bit_size) {
-        case 8:
-            return write_memory_8;
-        case 16:
-            return write_memory_16;
-        case 32:
-            return write_memory_32;
-        case 64:
-            return write_memory_64;
-        default:
-            return nullptr;
-        }
-    }
-
     void int3() { db(0xCC); }
 
     /// Allocate memory of `size` bytes from the same block of memory the code is in.
@@ -124,10 +106,10 @@ public:
     bool DoesCpuSupport(Xbyak::util::Cpu::Type type) const;
 
 private:
-    UserCallbacks cb;
-    LookupBlockCallback lookup_block;
-    void* lookup_block_arg;
+    RunCodeCallbacks cb;
+    JitStateInfo jsi;
 
+    bool prelude_complete = false;
     CodePtr near_code_begin;
     CodePtr far_code_begin;
 
@@ -137,24 +119,14 @@ private:
     CodePtr near_code_ptr;
     CodePtr far_code_ptr;
 
-    using RunCodeFuncType = void(*)(A32JitState*);
-    using RunCodeFromFuncType = void(*)(A32JitState*, u64);
+    using RunCodeFuncType = void(*)(void*);
+    using RunCodeFromFuncType = void(*)(void*, CodePtr);
     RunCodeFuncType run_code = nullptr;
     RunCodeFromFuncType run_code_from = nullptr;
     static constexpr size_t MXCSR_ALREADY_EXITED = 1 << 0;
     static constexpr size_t FORCE_RETURN = 1 << 1;
     std::array<const void*, 4> return_from_run_code;
     void GenRunCode();
-
-    const void* read_memory_8 = nullptr;
-    const void* read_memory_16 = nullptr;
-    const void* read_memory_32 = nullptr;
-    const void* read_memory_64 = nullptr;
-    const void* write_memory_8 = nullptr;
-    const void* write_memory_16 = nullptr;
-    const void* write_memory_32 = nullptr;
-    const void* write_memory_64 = nullptr;
-    void GenMemoryAccessors();
 
     class ExceptionHandler final {
     public:

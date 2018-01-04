@@ -14,7 +14,7 @@
 
 #include <catch.hpp>
 
-#include <dynarmic/dynarmic.h>
+#include <dynarmic/A32/a32.h>
 
 #include "common/bit_util.h"
 #include "common/common_types.h"
@@ -39,9 +39,12 @@ static bool operator==(const WriteRecord& a, const WriteRecord& b) {
     return std::tie(a.size, a.address, a.data) == std::tie(b.size, b.address, b.data);
 }
 
+static u64 jit_num_ticks = 0;
 static std::array<u16, 3000> code_mem{};
 static std::vector<WriteRecord> write_records;
 
+static u64 GetTicksRemaining();
+static void AddTicks(u64 ticks);
 static bool IsReadOnlyMemory(u32 vaddr);
 static u8 MemoryRead8(u32 vaddr);
 static u16 MemoryRead16(u32 vaddr);
@@ -51,8 +54,19 @@ static void MemoryWrite8(u32 vaddr, u8 value);
 static void MemoryWrite16(u32 vaddr, u16 value);
 static void MemoryWrite32(u32 vaddr, u32 value);
 static void MemoryWrite64(u32 vaddr, u64 value);
-static void InterpreterFallback(u32 pc, Dynarmic::Jit* jit, void*);
-static Dynarmic::UserCallbacks GetUserCallbacks();
+static void InterpreterFallback(u32 pc, Dynarmic::A32::Jit* jit, void*);
+static Dynarmic::A32::UserCallbacks GetUserCallbacks();
+
+static u64 GetTicksRemaining() {
+    return jit_num_ticks;
+}
+static void AddTicks(u64 ticks) {
+    if (ticks > jit_num_ticks) {
+        jit_num_ticks = 0;
+        return;
+    }
+    jit_num_ticks -= ticks;
+}
 
 static bool IsReadOnlyMemory(u32 vaddr) {
     return vaddr < code_mem.size();
@@ -94,7 +108,7 @@ static void MemoryWrite64(u32 vaddr, u64 value){
     write_records.push_back({64, vaddr, value});
 }
 
-static void InterpreterFallback(u32 pc, Dynarmic::Jit* jit, void*) {
+static void InterpreterFallback(u32 pc, Dynarmic::A32::Jit* jit, void*) {
     ARMul_State interp_state{USER32MODE};
     interp_state.user_callbacks = GetUserCallbacks();
     interp_state.NumInstrsToExecute = 1;
@@ -117,10 +131,8 @@ static void Fail() {
     FAIL();
 }
 
-static void AddTicks(u64) {}
-
-static Dynarmic::UserCallbacks GetUserCallbacks() {
-    Dynarmic::UserCallbacks user_callbacks{};
+static Dynarmic::A32::UserCallbacks GetUserCallbacks() {
+    Dynarmic::A32::UserCallbacks user_callbacks{};
     user_callbacks.InterpreterFallback = &InterpreterFallback;
     user_callbacks.CallSVC = (void (*)(u32)) &Fail;
     user_callbacks.memory.IsReadOnlyMemory = &IsReadOnlyMemory;
@@ -133,6 +145,7 @@ static Dynarmic::UserCallbacks GetUserCallbacks() {
     user_callbacks.memory.Write16 = &MemoryWrite16;
     user_callbacks.memory.Write32 = &MemoryWrite32;
     user_callbacks.memory.Write64 = &MemoryWrite64;
+    user_callbacks.GetTicksRemaining = &GetTicksRemaining;
     user_callbacks.AddTicks = &AddTicks;
     return user_callbacks;
 }
@@ -176,7 +189,7 @@ private:
     std::function<bool(u16)> is_valid;
 };
 
-static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::Jit& jit, const std::vector<WriteRecord>& interp_write_records, const std::vector<WriteRecord>& jit_write_records) {
+static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Jit& jit, const std::vector<WriteRecord>& interp_write_records, const std::vector<WriteRecord>& jit_write_records) {
     const auto interp_regs = interp.Reg;
     const auto jit_regs = jit.Regs();
 
@@ -192,7 +205,7 @@ void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_e
     // Prepare test subjects
     ARMul_State interp{USER32MODE};
     interp.user_callbacks = GetUserCallbacks();
-    Dynarmic::Jit jit{GetUserCallbacks()};
+    Dynarmic::A32::Jit jit{GetUserCallbacks()};
 
     for (size_t run_number = 0; run_number < run_count; run_number++) {
         interp.instruction_cache.clear();
@@ -224,7 +237,8 @@ void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_e
 
         // Run jit
         write_records.clear();
-        jit.Run(static_cast<unsigned>(instructions_to_execute_count));
+        jit_num_ticks = instructions_to_execute_count;
+        jit.Run();
         auto jit_write_records = write_records;
 
         // Compare

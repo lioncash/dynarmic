@@ -15,9 +15,11 @@
 
 #include <xbyak_util.h>
 
+#include "backend_x64/a32_jitstate.h"
 #include "backend_x64/emit_x64.h"
 #include "common/address_range.h"
-#include "dynarmic/callbacks.h"
+#include "dynarmic/A32/a32.h"
+#include "dynarmic/A32/callbacks.h"
 #include "frontend/A32/location_descriptor.h"
 #include "frontend/ir/terminal.h"
 
@@ -36,7 +38,7 @@ struct A32EmitContext final : public EmitContext {
 
 class A32EmitX64 final : public EmitX64<A32JitState> {
 public:
-    A32EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface);
+    A32EmitX64(BlockOfCode* code, A32::UserCallbacks cb, A32::Jit* jit_interface);
     ~A32EmitX64();
 
     /**
@@ -46,6 +48,19 @@ public:
     BlockDescriptor Emit(IR::Block& ir);
 
 protected:
+    const A32::UserCallbacks cb;
+    A32::Jit* jit_interface;
+
+    const void* read_memory_8;
+    const void* read_memory_16;
+    const void* read_memory_32;
+    const void* read_memory_64;
+    const void* write_memory_8;
+    const void* write_memory_16;
+    const void* write_memory_32;
+    const void* write_memory_64;
+    void GenMemoryAccessors();
+
     // Microinstruction emitters
 #define OPCODE(...)
 #define A32OPC(name, type, ...) void EmitA32##name(A32EmitContext& ctx, IR::Inst* inst);

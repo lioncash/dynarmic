@@ -8,7 +8,7 @@
 
 #include <initializer_list>
 
-#include <dynarmic/coprocessor_util.h>
+#include <dynarmic/A32/coprocessor_util.h>
 
 #include "common/common_types.h"
 #include "frontend/ir/basic_block.h"

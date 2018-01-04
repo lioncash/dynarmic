@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <dynarmic/coprocessor.h>
+#include <dynarmic/A32/coprocessor.h>
 
 #include "backend_x64/a32_emit_x64.h"
 #include "backend_x64/a32_jitstate.h"
@@ -68,8 +68,12 @@ bool A32EmitContext::FPSCR_DN() const {
     return Location().FPSCR().DN();
 }
 
-A32EmitX64::A32EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface)
-    : EmitX64(code, cb, jit_interface) {}
+A32EmitX64::A32EmitX64(BlockOfCode* code, A32::UserCallbacks cb, A32::Jit* jit_interface)
+    : EmitX64(code), cb(cb), jit_interface(jit_interface)
+{
+    GenMemoryAccessors();
+    code->PreludeComplete();
+}
 
 A32EmitX64::~A32EmitX64() {}
 
@@ -80,7 +84,7 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
     // Start emitting.
     EmitCondPrelude(block);
 
-    RegAlloc reg_alloc{code};
+    RegAlloc reg_alloc{code, A32JitState::SpillCount, SpillToOpArg<A32JitState>};
     A32EmitContext ctx{reg_alloc, block};
 
     for (auto iter = block.begin(); iter != block.end(); ++iter) {
@@ -126,6 +130,64 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
     block_ranges.add(std::make_pair(range, std::set<IR::LocationDescriptor>{descriptor}));
 
     return block_desc;
+}
+
+void A32EmitX64::GenMemoryAccessors() {
+    code->align();
+    read_memory_8 = code->getCurr<const void*>();
+    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    code->CallFunction(cb.memory.Read8);
+    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    code->ret();
+
+    code->align();
+    read_memory_16 = code->getCurr<const void*>();
+    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    code->CallFunction(cb.memory.Read16);
+    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    code->ret();
+
+    code->align();
+    read_memory_32 = code->getCurr<const void*>();
+    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    code->CallFunction(cb.memory.Read32);
+    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    code->ret();
+
+    code->align();
+    read_memory_64 = code->getCurr<const void*>();
+    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    code->CallFunction(cb.memory.Read64);
+    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    code->ret();
+
+    code->align();
+    write_memory_8 = code->getCurr<const void*>();
+    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    code->CallFunction(cb.memory.Write8);
+    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    code->ret();
+
+    code->align();
+    write_memory_16 = code->getCurr<const void*>();
+    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    code->CallFunction(cb.memory.Write16);
+    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    code->ret();
+
+    code->align();
+    write_memory_32 = code->getCurr<const void*>();
+    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    code->CallFunction(cb.memory.Write32);
+    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    code->ret();
+
+    code->align();
+    write_memory_64 = code->getCurr<const void*>();
+    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    code->CallFunction(cb.memory.Write64);
+    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    code->ret();
 }
 
 void A32EmitX64::EmitA32GetRegister(A32EmitContext& ctx, IR::Inst* inst) {
@@ -560,13 +622,13 @@ void A32EmitX64::EmitA32SetExclusive(A32EmitContext& ctx, IR::Inst* inst) {
     code->mov(dword[r15 + offsetof(A32JitState, exclusive_address)], address);
 }
 
-template <typename FunctionPointer>
-static void ReadMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, UserCallbacks& cb, size_t bit_size, FunctionPointer fn) {
+template <typename RawFn>
+static void ReadMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, const A32::UserCallbacks& cb, size_t bit_size, RawFn raw_fn, const CodePtr wrapped_fn) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     if (!cb.page_table) {
         reg_alloc.HostCall(inst, args[0]);
-        code->CallFunction(fn);
+        code->CallFunction(raw_fn);
         return;
     }
 
@@ -606,19 +668,19 @@ static void ReadMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, U
     }
     code->jmp(end);
     code->L(abort);
-    code->call(code->GetMemoryReadCallback(bit_size));
+    code->call(wrapped_fn);
     code->L(end);
 
     reg_alloc.DefineValue(inst, result);
 }
 
-template<typename FunctionPointer>
-static void WriteMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, UserCallbacks& cb, size_t bit_size, FunctionPointer fn) {
+template <typename RawFn>
+static void WriteMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, const A32::UserCallbacks& cb, size_t bit_size, RawFn raw_fn, const CodePtr wrapped_fn) {
     auto args = reg_alloc.GetArgumentInfo(inst);
 
     if (!cb.page_table) {
         reg_alloc.HostCall(nullptr, args[0], args[1]);
-        code->CallFunction(fn);
+        code->CallFunction(raw_fn);
         return;
     }
 
@@ -660,40 +722,40 @@ static void WriteMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, 
     }
     code->jmp(end);
     code->L(abort);
-    code->call(code->GetMemoryWriteCallback(bit_size));
+    code->call(wrapped_fn);
     code->L(end);
 }
 
 void A32EmitX64::EmitA32ReadMemory8(A32EmitContext& ctx, IR::Inst* inst) {
-    ReadMemory(code, ctx.reg_alloc, inst, cb, 8, cb.memory.Read8);
+    ReadMemory(code, ctx.reg_alloc, inst, cb, 8, cb.memory.Read8, read_memory_8);
 }
 
 void A32EmitX64::EmitA32ReadMemory16(A32EmitContext& ctx, IR::Inst* inst) {
-    ReadMemory(code, ctx.reg_alloc, inst, cb, 16, cb.memory.Read16);
+    ReadMemory(code, ctx.reg_alloc, inst, cb, 16, cb.memory.Read16, read_memory_16);
 }
 
 void A32EmitX64::EmitA32ReadMemory32(A32EmitContext& ctx, IR::Inst* inst) {
-    ReadMemory(code, ctx.reg_alloc, inst, cb, 32, cb.memory.Read32);
+    ReadMemory(code, ctx.reg_alloc, inst, cb, 32, cb.memory.Read32, read_memory_32);
 }
 
 void A32EmitX64::EmitA32ReadMemory64(A32EmitContext& ctx, IR::Inst* inst) {
-    ReadMemory(code, ctx.reg_alloc, inst, cb, 64, cb.memory.Read64);
+    ReadMemory(code, ctx.reg_alloc, inst, cb, 64, cb.memory.Read64, read_memory_64);
 }
 
 void A32EmitX64::EmitA32WriteMemory8(A32EmitContext& ctx, IR::Inst* inst) {
-    WriteMemory(code, ctx.reg_alloc, inst, cb, 8, cb.memory.Write8);
+    WriteMemory(code, ctx.reg_alloc, inst, cb, 8, cb.memory.Write8, write_memory_8);
 }
 
 void A32EmitX64::EmitA32WriteMemory16(A32EmitContext& ctx, IR::Inst* inst) {
-    WriteMemory(code, ctx.reg_alloc, inst, cb, 16, cb.memory.Write16);
+    WriteMemory(code, ctx.reg_alloc, inst, cb, 16, cb.memory.Write16, write_memory_16);
 }
 
 void A32EmitX64::EmitA32WriteMemory32(A32EmitContext& ctx, IR::Inst* inst) {
-    WriteMemory(code, ctx.reg_alloc, inst, cb, 32, cb.memory.Write32);
+    WriteMemory(code, ctx.reg_alloc, inst, cb, 32, cb.memory.Write32, write_memory_32);
 }
 
 void A32EmitX64::EmitA32WriteMemory64(A32EmitContext& ctx, IR::Inst* inst) {
-    WriteMemory(code, ctx.reg_alloc, inst, cb, 64, cb.memory.Write64);
+    WriteMemory(code, ctx.reg_alloc, inst, cb, 64, cb.memory.Write64, write_memory_64);
 }
 
 template <typename FunctionPointer>
@@ -749,7 +811,7 @@ static void EmitCoprocessorException() {
     ASSERT_MSG(false, "Should raise coproc exception here");
 }
 
-static void CallCoprocCallback(BlockOfCode* code, RegAlloc& reg_alloc, Jit* jit_interface, Coprocessor::Callback callback, IR::Inst* inst = nullptr, boost::optional<Argument&> arg0 = {}, boost::optional<Argument&> arg1 = {}) {
+static void CallCoprocCallback(BlockOfCode* code, RegAlloc& reg_alloc, A32::Jit* jit_interface, A32::Coprocessor::Callback callback, IR::Inst* inst = nullptr, boost::optional<Argument&> arg0 = {}, boost::optional<Argument&> arg1 = {}) {
     reg_alloc.HostCall(inst, {}, {}, arg0, arg1);
 
     code->mov(code->ABI_PARAM1, reinterpret_cast<u64>(jit_interface));
@@ -771,7 +833,7 @@ void A32EmitX64::EmitA32CoprocInternalOperation(A32EmitContext& ctx, IR::Inst* i
     A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[5]);
     unsigned opc2 = static_cast<unsigned>(coproc_info[6]);
 
-    std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -797,7 +859,7 @@ void A32EmitX64::EmitA32CoprocSendOneWord(A32EmitContext& ctx, IR::Inst* inst) {
     A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[4]);
     unsigned opc2 = static_cast<unsigned>(coproc_info[5]);
 
-    std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -809,7 +871,7 @@ void A32EmitX64::EmitA32CoprocSendOneWord(A32EmitContext& ctx, IR::Inst* inst) {
         EmitCoprocessorException();
         return;
     case 1:
-        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), nullptr, args[1]);
+        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<A32::Coprocessor::Callback>(action), nullptr, args[1]);
         return;
     case 2: {
         u32* destination_ptr = boost::get<u32*>(action);
@@ -836,7 +898,7 @@ void A32EmitX64::EmitA32CoprocSendTwoWords(A32EmitContext& ctx, IR::Inst* inst) 
     unsigned opc = static_cast<unsigned>(coproc_info[2]);
     A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[3]);
 
-    std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -848,7 +910,7 @@ void A32EmitX64::EmitA32CoprocSendTwoWords(A32EmitContext& ctx, IR::Inst* inst) 
         EmitCoprocessorException();
         return;
     case 1:
-        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), nullptr, args[1], args[2]);
+        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<A32::Coprocessor::Callback>(action), nullptr, args[1], args[2]);
         return;
     case 2: {
         auto destination_ptrs = boost::get<std::array<u32*, 2>>(action);
@@ -879,7 +941,7 @@ void A32EmitX64::EmitA32CoprocGetOneWord(A32EmitContext& ctx, IR::Inst* inst) {
     A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[4]);
     unsigned opc2 = static_cast<unsigned>(coproc_info[5]);
 
-    std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -891,7 +953,7 @@ void A32EmitX64::EmitA32CoprocGetOneWord(A32EmitContext& ctx, IR::Inst* inst) {
         EmitCoprocessorException();
         return;
     case 1:
-        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), inst);
+        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<A32::Coprocessor::Callback>(action), inst);
         return;
     case 2: {
         u32* source_ptr = boost::get<u32*>(action);
@@ -919,7 +981,7 @@ void A32EmitX64::EmitA32CoprocGetTwoWords(A32EmitContext& ctx, IR::Inst* inst) {
     unsigned opc = coproc_info[2];
     A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[3]);
 
-    std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -931,7 +993,7 @@ void A32EmitX64::EmitA32CoprocGetTwoWords(A32EmitContext& ctx, IR::Inst* inst) {
         EmitCoprocessorException();
         return;
     case 1:
-        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<Coprocessor::Callback>(action), inst);
+        CallCoprocCallback(code, ctx.reg_alloc, jit_interface, boost::get<A32::Coprocessor::Callback>(action), inst);
         return;
     case 2: {
         auto source_ptrs = boost::get<std::array<u32*, 2>>(action);
@@ -967,7 +1029,7 @@ void A32EmitX64::EmitA32CoprocLoadWords(A32EmitContext& ctx, IR::Inst* inst) {
     bool has_option = coproc_info[4] != 0;
     boost::optional<u8> option{has_option, coproc_info[5]};
 
-    std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -993,7 +1055,7 @@ void A32EmitX64::EmitA32CoprocStoreWords(A32EmitContext& ctx, IR::Inst* inst) {
     bool has_option = coproc_info[4] != 0;
     boost::optional<u8> option{has_option, coproc_info[5]};
 
-    std::shared_ptr<Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;

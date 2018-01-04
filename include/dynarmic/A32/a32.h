@@ -11,27 +11,29 @@
 #include <memory>
 #include <string>
 
-#include <dynarmic/callbacks.h>
+#include <dynarmic/A32/callbacks.h>
 
 namespace Dynarmic {
-
-struct Context;
-
 namespace IR {
 class LocationDescriptor;
 }
+}
+
+namespace Dynarmic {
+namespace A32 {
+
+struct Context;
 
 class Jit final {
 public:
-    explicit Jit(Dynarmic::UserCallbacks callbacks);
+    explicit Jit(UserCallbacks callbacks);
     ~Jit();
 
     /**
-     * Runs the emulated CPU for about cycle_count cycles.
+     * Runs the emulated CPU.
      * Cannot be recursively called.
-     * @param cycle_count Estimated number of cycles to run the CPU for.
      */
-    void Run(std::size_t cycle_count);
+    void Run();
 
     /**
      * Clears the code cache of all compiled code.
@@ -97,4 +99,5 @@ private:
     std::unique_ptr<Impl> impl;
 };
 
+} // namespace A32
 } // namespace Dynarmic

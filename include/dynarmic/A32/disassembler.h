@@ -10,10 +10,10 @@
 #include <string>
 
 namespace Dynarmic {
-namespace Arm {
+namespace A32 {
 
 std::string DisassembleArm(std::uint32_t instruction);
 std::string DisassembleThumb16(std::uint16_t instruction);
 
-} // namespace Arm
+} // namespace A32
 } // namespace Dynarmic

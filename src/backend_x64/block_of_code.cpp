@@ -13,7 +13,6 @@
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
 #include "common/assert.h"
-#include "dynarmic/callbacks.h"
 
 namespace Dynarmic {
 namespace BackendX64 {
@@ -35,22 +34,25 @@ const Xbyak::Reg64 BlockOfCode::ABI_PARAM4 = Xbyak::util::rcx;
 constexpr size_t TOTAL_CODE_SIZE = 128 * 1024 * 1024;
 constexpr size_t FAR_CODE_OFFSET = 100 * 1024 * 1024;
 
-BlockOfCode::BlockOfCode(UserCallbacks cb, LookupBlockCallback lookup_block, void* lookup_block_arg)
+BlockOfCode::BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi)
         : Xbyak::CodeGenerator(TOTAL_CODE_SIZE)
         , cb(cb)
-        , lookup_block(lookup_block)
-        , lookup_block_arg(lookup_block_arg)
+        , jsi(jsi)
         , constant_pool(this, 256)
 {
     GenRunCode();
-    GenMemoryAccessors();
     exception_handler.Register(this);
+}
+
+void BlockOfCode::PreludeComplete() {
+    prelude_complete = true;
     near_code_begin = getCurr();
     far_code_begin = getCurr() + FAR_CODE_OFFSET;
     ClearCache();
 }
 
 void BlockOfCode::ClearCache() {
+    ASSERT(prelude_complete);
     in_far_code = false;
     near_code_ptr = near_code_begin;
     far_code_ptr = far_code_begin;
@@ -58,6 +60,7 @@ void BlockOfCode::ClearCache() {
 }
 
 size_t BlockOfCode::SpaceRemaining() const {
+    ASSERT(prelude_complete);
     // This function provides an underestimate of near-code-size but that's okay.
     // (Why? The maximum size of near code should be measured from near_code_begin, not top_.)
     // These are offsets from Xbyak::CodeArray::top_.
@@ -76,20 +79,12 @@ size_t BlockOfCode::SpaceRemaining() const {
     return std::min(TOTAL_CODE_SIZE - far_code_offset, FAR_CODE_OFFSET - near_code_offset);
 }
 
-void BlockOfCode::RunCode(A32JitState* jit_state, size_t cycles_to_run) const {
-    constexpr size_t max_cycles_to_run = static_cast<size_t>(std::numeric_limits<decltype(jit_state->cycles_remaining)>::max());
-    ASSERT(cycles_to_run <= max_cycles_to_run);
+void BlockOfCode::RunCode(void* jit_state) const {
+    run_code(jit_state);
+}
 
-    jit_state->cycles_to_run = cycles_to_run;
-    jit_state->cycles_remaining = cycles_to_run;
-
-    u32 new_rsb_ptr = (jit_state->rsb_ptr - 1) & A32JitState::RSBPtrMask;
-    if (jit_state->GetUniqueHash() == jit_state->rsb_location_descriptors[new_rsb_ptr]) {
-        jit_state->rsb_ptr = new_rsb_ptr;
-        run_code_from(jit_state, jit_state->rsb_codeptrs[new_rsb_ptr]);
-    } else {
-        run_code(jit_state);
-    }
+void BlockOfCode::RunCodeFrom(void* jit_state, CodePtr code_ptr) const {
+    run_code_from(jit_state, code_ptr);
 }
 
 void BlockOfCode::ReturnFromRunCode(bool mxcsr_already_exited) {
@@ -113,9 +108,16 @@ void BlockOfCode::GenRunCode() {
     run_code_from = getCurr<RunCodeFromFuncType>();
 
     ABI_PushCalleeSaveRegistersAndAdjustStack(this);
+
     mov(r15, ABI_PARAM1);
+    mov(r14, ABI_PARAM2); // save temporarily in non-volatile register
+
+    CallFunction(cb.GetTicksRemaining);
+    mov(qword[r15 + jsi.offsetof_cycles_to_run], ABI_RETURN);
+    mov(qword[r15 + jsi.offsetof_cycles_remaining], ABI_RETURN);
+
     SwitchMxcsrOnEntry();
-    jmp(ABI_PARAM2);
+    jmp(r14);
 
     align();
     run_code = getCurr<RunCodeFuncType>();
@@ -128,18 +130,22 @@ void BlockOfCode::GenRunCode() {
 
     mov(r15, ABI_PARAM1);
 
+    CallFunction(cb.GetTicksRemaining);
+    mov(qword[r15 + jsi.offsetof_cycles_to_run], ABI_RETURN);
+    mov(qword[r15 + jsi.offsetof_cycles_remaining], ABI_RETURN);
+
     L(enter_mxcsr_then_loop);
     SwitchMxcsrOnEntry();
     L(loop);
-    mov(ABI_PARAM1, u64(lookup_block_arg));
-    CallFunction(lookup_block);
+    mov(ABI_PARAM1, u64(cb.lookup_block_arg));
+    CallFunction(cb.LookupBlock);
 
     jmp(ABI_RETURN);
 
     // Return from run code variants
     const auto emit_return_from_run_code = [this, &loop, &enter_mxcsr_then_loop](bool mxcsr_already_exited, bool force_return){
         if (!force_return) {
-            cmp(qword[r15 + offsetof(A32JitState, cycles_remaining)], 0);
+            cmp(qword[r15 + jsi.offsetof_cycles_remaining], 0);
             jg(mxcsr_already_exited ? enter_mxcsr_then_loop : loop);
         }
 
@@ -147,8 +153,8 @@ void BlockOfCode::GenRunCode() {
             SwitchMxcsrOnExit();
         }
 
-        mov(ABI_PARAM1, qword[r15 + offsetof(A32JitState, cycles_to_run)]);
-        sub(ABI_PARAM1, qword[r15 + offsetof(A32JitState, cycles_remaining)]);
+        mov(ABI_PARAM1, qword[r15 + jsi.offsetof_cycles_to_run]);
+        sub(ABI_PARAM1, qword[r15 + jsi.offsetof_cycles_remaining]);
         CallFunction(cb.AddTicks);
 
         ABI_PopCalleeSaveRegistersAndAdjustStack(this);
@@ -172,72 +178,14 @@ void BlockOfCode::GenRunCode() {
     emit_return_from_run_code(true, true);
 }
 
-void BlockOfCode::GenMemoryAccessors() {
-    align();
-    read_memory_8 = getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(this);
-    CallFunction(cb.memory.Read8);
-    ABI_PopCallerSaveRegistersAndAdjustStack(this);
-    ret();
-
-    align();
-    read_memory_16 = getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(this);
-    CallFunction(cb.memory.Read16);
-    ABI_PopCallerSaveRegistersAndAdjustStack(this);
-    ret();
-
-    align();
-    read_memory_32 = getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(this);
-    CallFunction(cb.memory.Read32);
-    ABI_PopCallerSaveRegistersAndAdjustStack(this);
-    ret();
-
-    align();
-    read_memory_64 = getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(this);
-    CallFunction(cb.memory.Read64);
-    ABI_PopCallerSaveRegistersAndAdjustStack(this);
-    ret();
-
-    align();
-    write_memory_8 = getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(this);
-    CallFunction(cb.memory.Write8);
-    ABI_PopCallerSaveRegistersAndAdjustStack(this);
-    ret();
-
-    align();
-    write_memory_16 = getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(this);
-    CallFunction(cb.memory.Write16);
-    ABI_PopCallerSaveRegistersAndAdjustStack(this);
-    ret();
-
-    align();
-    write_memory_32 = getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(this);
-    CallFunction(cb.memory.Write32);
-    ABI_PopCallerSaveRegistersAndAdjustStack(this);
-    ret();
-
-    align();
-    write_memory_64 = getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(this);
-    CallFunction(cb.memory.Write64);
-    ABI_PopCallerSaveRegistersAndAdjustStack(this);
-    ret();
-}
-
 void BlockOfCode::SwitchMxcsrOnEntry() {
-    stmxcsr(dword[r15 + offsetof(A32JitState, save_host_MXCSR)]);
-    ldmxcsr(dword[r15 + offsetof(A32JitState, guest_MXCSR)]);
+    stmxcsr(dword[r15 + jsi.offsetof_save_host_MXCSR]);
+    ldmxcsr(dword[r15 + jsi.offsetof_guest_MXCSR]);
 }
 
 void BlockOfCode::SwitchMxcsrOnExit() {
-    stmxcsr(dword[r15 + offsetof(A32JitState, guest_MXCSR)]);
-    ldmxcsr(dword[r15 + offsetof(A32JitState, save_host_MXCSR)]);
+    stmxcsr(dword[r15 + jsi.offsetof_guest_MXCSR]);
+    ldmxcsr(dword[r15 + jsi.offsetof_save_host_MXCSR]);
 }
 
 Xbyak::Address BlockOfCode::MConst(u64 constant) {
@@ -245,6 +193,7 @@ Xbyak::Address BlockOfCode::MConst(u64 constant) {
 }
 
 void BlockOfCode::SwitchToFarCode() {
+    ASSERT(prelude_complete);
     ASSERT(!in_far_code);
     in_far_code = true;
     near_code_ptr = getCurr();
@@ -254,6 +203,7 @@ void BlockOfCode::SwitchToFarCode() {
 }
 
 void BlockOfCode::SwitchToNearCode() {
+    ASSERT(prelude_complete);
     ASSERT(in_far_code);
     in_far_code = false;
     far_code_ptr = getCurr();

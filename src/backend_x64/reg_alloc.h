@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <functional>
 #include <vector>
 
 #include <boost/optional.hpp>
@@ -79,7 +80,8 @@ private:
 
 class RegAlloc final {
 public:
-    explicit RegAlloc(BlockOfCode* code) : code(code) {}
+    explicit RegAlloc(BlockOfCode* code, size_t num_spills, std::function<Xbyak::Address(HostLoc)> spill_to_addr)
+        : hostloc_info(NonSpillHostLocCount + num_spills), code(code), spill_to_addr(spill_to_addr) {}
 
     std::array<Argument, 3> GetArgumentInfo(IR::Inst* inst);
 
@@ -118,8 +120,6 @@ private:
     void DefineValueImpl(IR::Inst* def_inst, HostLoc host_loc);
     void DefineValueImpl(IR::Inst* def_inst, const IR::Value& use_inst);
 
-    BlockOfCode* code = nullptr;
-
     HostLoc LoadImmediate(IR::Value imm, HostLoc reg);
     void Move(HostLoc to, HostLoc from);
     void CopyToScratch(HostLoc to, HostLoc from);
@@ -129,9 +129,14 @@ private:
     void SpillRegister(HostLoc loc);
     HostLoc FindFreeSpill() const;
 
-    std::array<HostLocInfo, HostLocCount> hostloc_info;
+    std::vector<HostLocInfo> hostloc_info;
     HostLocInfo& LocInfo(HostLoc loc);
     const HostLocInfo& LocInfo(HostLoc loc) const;
+
+    BlockOfCode* code = nullptr;
+    std::function<Xbyak::Address(HostLoc)> spill_to_addr;
+    void EmitMove(HostLoc to, HostLoc from);
+    void EmitExchange(HostLoc a, HostLoc b);
 };
 
 } // namespace BackendX64

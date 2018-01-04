@@ -8,14 +8,14 @@
 
 #include <array>
 
+#include <xbyak.h>
+
 #include "common/common_types.h"
 
 namespace Dynarmic {
 namespace BackendX64 {
 
 class BlockOfCode;
-
-constexpr size_t SpillCount = 64;
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -41,7 +41,12 @@ struct A32JitState {
 
     alignas(u64) std::array<u32, 64> ExtReg{}; // Extension registers.
 
+    static constexpr size_t SpillCount = 64;
     std::array<u64, SpillCount> Spill{}; // Spill.
+    static Xbyak::Address GetSpillLocationFromIndex(size_t i) {
+        using namespace Xbyak::util;
+        return qword[r15 + offsetof(A32JitState, Spill) + i * sizeof(u64)];
+    }
 
     // For internal use (See: BlockOfCode::RunCode)
     u32 guest_MXCSR = 0x00001f80;

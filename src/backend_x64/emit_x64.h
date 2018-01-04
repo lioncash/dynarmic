@@ -17,13 +17,10 @@
 
 #include "backend_x64/reg_alloc.h"
 #include "common/address_range.h"
-#include "dynarmic/callbacks.h"
 #include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/terminal.h"
 
 namespace Dynarmic {
-
-class Jit;
 
 namespace IR {
 class Block;
@@ -60,7 +57,7 @@ public:
         boost::icl::discrete_interval<ProgramCounterType> range;
     };
 
-    EmitX64(BlockOfCode* code, UserCallbacks cb, Jit* jit_interface);
+    EmitX64(BlockOfCode* code);
     virtual ~EmitX64();
 
     /// Looks up an emitted host block in the cache.
@@ -109,8 +106,6 @@ protected:
 
     // State
     BlockOfCode* code;
-    UserCallbacks cb;
-    Jit* jit_interface;
     std::unordered_map<IR::LocationDescriptor, BlockDescriptor> block_descriptors;
     std::unordered_map<IR::LocationDescriptor, PatchInformation> patch_information;
     boost::icl::interval_map<ProgramCounterType, std::set<IR::LocationDescriptor>> block_ranges;

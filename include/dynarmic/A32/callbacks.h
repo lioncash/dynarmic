@@ -12,6 +12,7 @@
 #include <memory>
 
 namespace Dynarmic {
+namespace A32 {
 
 class Coprocessor;
 class Jit;
@@ -66,4 +67,5 @@ struct UserCallbacks {
     std::array<std::shared_ptr<Coprocessor>, 16> coprocessors;
 };
 
+} // namespace A32
 } // namespace Dynarmic

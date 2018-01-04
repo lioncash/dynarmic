@@ -39,38 +39,6 @@ static bool IsSameHostLocClass(HostLoc a, HostLoc b) {
            || (HostLocIsSpill(a) && HostLocIsSpill(b));
 }
 
-static void EmitMove(BlockOfCode* code, HostLoc to, HostLoc from) {
-    if (HostLocIsXMM(to) && HostLocIsXMM(from)) {
-        code->movaps(HostLocToXmm(to), HostLocToXmm(from));
-    } else if (HostLocIsGPR(to) && HostLocIsGPR(from)) {
-        code->mov(HostLocToReg64(to), HostLocToReg64(from));
-    } else if (HostLocIsXMM(to) && HostLocIsGPR(from)) {
-        code->movq(HostLocToXmm(to), HostLocToReg64(from));
-    } else if (HostLocIsGPR(to) && HostLocIsXMM(from)) {
-        code->movq(HostLocToReg64(to), HostLocToXmm(from));
-    } else if (HostLocIsXMM(to) && HostLocIsSpill(from)) {
-        code->movsd(HostLocToXmm(to), SpillToOpArg(from));
-    } else if (HostLocIsSpill(to) && HostLocIsXMM(from)) {
-        code->movsd(SpillToOpArg(to), HostLocToXmm(from));
-    } else if (HostLocIsGPR(to) && HostLocIsSpill(from)) {
-        code->mov(HostLocToReg64(to), SpillToOpArg(from));
-    } else if (HostLocIsSpill(to) && HostLocIsGPR(from)) {
-        code->mov(SpillToOpArg(to), HostLocToReg64(from));
-    } else {
-        ASSERT_MSG(false, "Invalid RegAlloc::EmitMove");
-    }
-}
-
-static void EmitExchange(BlockOfCode* code, HostLoc a, HostLoc b) {
-    if (HostLocIsGPR(a) && HostLocIsGPR(b)) {
-        code->xchg(HostLocToReg64(a), HostLocToReg64(b));
-    } else if (HostLocIsXMM(a) && HostLocIsXMM(b)) {
-        ASSERT_MSG(false, "Check your code: Exchanging XMM registers is unnecessary");
-    } else {
-        ASSERT_MSG(false, "Invalid RegAlloc::EmitExchange");
-    }
-}
-
 bool HostLocInfo::IsLocked() const {
     return is_being_used;
 }
@@ -385,7 +353,7 @@ HostLoc RegAlloc::SelectARegister(HostLocList desired_locations) const {
 }
 
 boost::optional<HostLoc> RegAlloc::ValueLocation(const IR::Inst* value) const {
-    for (size_t i = 0; i < HostLocCount; i++)
+    for (size_t i = 0; i < hostloc_info.size(); i++)
         if (hostloc_info[i].ContainsValue(value))
             return static_cast<HostLoc>(i);
 
@@ -448,13 +416,13 @@ void RegAlloc::Move(HostLoc to, HostLoc from) {
     LocInfo(to) = LocInfo(from);
     LocInfo(from) = {};
 
-    EmitMove(code, to, from);
+    EmitMove(to, from);
 }
 
 void RegAlloc::CopyToScratch(HostLoc to, HostLoc from) {
     ASSERT(LocInfo(to).IsEmpty() && !LocInfo(from).IsEmpty());
 
-    EmitMove(code, to, from);
+    EmitMove(to, from);
 }
 
 void RegAlloc::Exchange(HostLoc a, HostLoc b) {
@@ -472,7 +440,7 @@ void RegAlloc::Exchange(HostLoc a, HostLoc b) {
 
     std::swap(LocInfo(a), LocInfo(b));
 
-    EmitExchange(code, a, b);
+    EmitExchange(a, b);
 }
 
 void RegAlloc::MoveOutOfTheWay(HostLoc reg) {
@@ -492,9 +460,11 @@ void RegAlloc::SpillRegister(HostLoc loc) {
 }
 
 HostLoc RegAlloc::FindFreeSpill() const {
-    for (size_t i = 0; i < SpillCount; i++)
-        if (LocInfo(HostLocSpill(i)).IsEmpty())
-            return HostLocSpill(i);
+    for (size_t i = static_cast<size_t>(HostLoc::FirstSpill); i < hostloc_info.size(); i++) {
+        HostLoc loc = static_cast<HostLoc>(i);
+        if (LocInfo(loc).IsEmpty())
+            return loc;
+    }
 
     ASSERT_MSG(false, "All spill locations are full");
 }
@@ -507,6 +477,38 @@ HostLocInfo& RegAlloc::LocInfo(HostLoc loc) {
 const HostLocInfo& RegAlloc::LocInfo(HostLoc loc) const {
     ASSERT(loc != HostLoc::RSP && loc != HostLoc::R15);
     return hostloc_info[static_cast<size_t>(loc)];
+}
+
+void RegAlloc::EmitMove(HostLoc to, HostLoc from) {
+    if (HostLocIsXMM(to) && HostLocIsXMM(from)) {
+        code->movaps(HostLocToXmm(to), HostLocToXmm(from));
+    } else if (HostLocIsGPR(to) && HostLocIsGPR(from)) {
+        code->mov(HostLocToReg64(to), HostLocToReg64(from));
+    } else if (HostLocIsXMM(to) && HostLocIsGPR(from)) {
+        code->movq(HostLocToXmm(to), HostLocToReg64(from));
+    } else if (HostLocIsGPR(to) && HostLocIsXMM(from)) {
+        code->movq(HostLocToReg64(to), HostLocToXmm(from));
+    } else if (HostLocIsXMM(to) && HostLocIsSpill(from)) {
+        code->movsd(HostLocToXmm(to), spill_to_addr(from));
+    } else if (HostLocIsSpill(to) && HostLocIsXMM(from)) {
+        code->movsd(spill_to_addr(to), HostLocToXmm(from));
+    } else if (HostLocIsGPR(to) && HostLocIsSpill(from)) {
+        code->mov(HostLocToReg64(to), spill_to_addr(from));
+    } else if (HostLocIsSpill(to) && HostLocIsGPR(from)) {
+        code->mov(spill_to_addr(to), HostLocToReg64(from));
+    } else {
+        ASSERT_MSG(false, "Invalid RegAlloc::EmitMove");
+    }
+}
+
+void RegAlloc::EmitExchange(HostLoc a, HostLoc b) {
+    if (HostLocIsGPR(a) && HostLocIsGPR(b)) {
+        code->xchg(HostLocToReg64(a), HostLocToReg64(b));
+    } else if (HostLocIsXMM(a) && HostLocIsXMM(b)) {
+        ASSERT_MSG(false, "Check your code: Exchanging XMM registers is unnecessary");
+    } else {
+        ASSERT_MSG(false, "Invalid RegAlloc::EmitExchange");
+    }
 }
 
 } // namespace BackendX64
