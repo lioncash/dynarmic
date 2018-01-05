@@ -159,7 +159,7 @@ private:
             PerformCacheInvalidation();
         }
 
-        IR::Block ir_block = A32::Translate(descriptor, callbacks.memory.ReadCode);
+        IR::Block ir_block = A32::Translate(A32::LocationDescriptor{descriptor}, callbacks.memory.ReadCode);
         Optimization::GetSetElimination(ir_block);
         Optimization::DeadCodeElimination(ir_block);
         Optimization::ConstantPropagation(ir_block, callbacks.memory);

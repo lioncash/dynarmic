@@ -32,7 +32,7 @@ public:
     LocationDescriptor(u32 arm_pc, PSR cpsr, FPSCR fpscr)
             : arm_pc(arm_pc), cpsr(cpsr.Value() & CPSR_MODE_MASK), fpscr(fpscr.Value() & FPSCR_MODE_MASK) {}
 
-    /*implict*/ LocationDescriptor(const IR::LocationDescriptor& o) {
+    explicit LocationDescriptor(const IR::LocationDescriptor& o) {
         arm_pc = o.Value() >> 32;
         cpsr.T(o.Value() & 1);
         cpsr.E(o.Value() & 2);

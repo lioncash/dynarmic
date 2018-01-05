@@ -119,11 +119,11 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
     EmitX64::EmitTerminal(block.GetTerminal(), block.Location());
     code->int3();
 
-    const A32::LocationDescriptor descriptor = block.Location();
+    const A32::LocationDescriptor descriptor{block.Location()};
     Patch(descriptor, entrypoint);
 
     const size_t size = static_cast<size_t>(code->getCurr() - entrypoint);
-    const A32::LocationDescriptor end_location = block.EndLocation();
+    const A32::LocationDescriptor end_location{block.EndLocation()};
     const auto range = boost::icl::discrete_interval<u32>::closed(descriptor.PC(), end_location.PC() - 1);
     A32EmitX64::BlockDescriptor block_desc{entrypoint, size, block.Location(), range};
     block_descriptors.emplace(descriptor.UniqueHash(), block_desc);
@@ -1087,7 +1087,8 @@ void A32EmitX64::EmitTerminalImpl(IR::Term::ReturnToDispatch, IR::LocationDescri
     code->ReturnFromRunCode();
 }
 
-static u32 CalculateCpsr_et(const A32::LocationDescriptor& desc) {
+static u32 CalculateCpsr_et(const IR::LocationDescriptor& arg) {
+    const A32::LocationDescriptor desc{arg};
     u32 et = 0;
     et |= desc.EFlag() ? 2 : 0;
     et |= desc.TFlag() ? 1 : 0;
