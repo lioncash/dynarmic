@@ -31,8 +31,10 @@ constexpr size_t OpcodeCount = static_cast<size_t>(Opcode::NUM_OPCODE);
  */
 enum class Type {
     Void,
-    RegRef,
-    ExtRegRef,
+    A32Reg,
+    A32ExtReg,
+    A64Reg,
+    A64Vec,
     Opaque,
     U1,
     U8,

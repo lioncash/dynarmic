@@ -52,8 +52,8 @@ const char* GetNameOf(Opcode op) {
 }
 
 const char* GetNameOf(Type type) {
-    static const std::array<const char*, 12> names = {
-        "Void", "RegRef", "ExtRegRef", "Opaque", "U1", "U8", "U16", "U32", "U64", "F32", "F64", "CoprocInfo"
+    static const std::array<const char*, 14> names = {
+        "Void", "A32Reg", "A32ExtReg", "A64Reg", "A64Vec", "Opaque", "U1", "U8", "U16", "U32", "U64", "F32", "F64", "CoprocInfo"
     };
     return names.at(static_cast<size_t>(type));
 }

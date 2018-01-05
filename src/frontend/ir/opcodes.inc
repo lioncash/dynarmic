@@ -5,12 +5,12 @@ OPCODE(Identity,                T::Opaque,      T::Opaque                       
 OPCODE(Breakpoint,              T::Void,                                                        )
 
 // A32 Context getters/setters
-A32OPC(GetRegister,             T::U32,         T::RegRef                                       )
-A32OPC(GetExtendedRegister32,   T::F32,         T::ExtRegRef                                    )
-A32OPC(GetExtendedRegister64,   T::F64,         T::ExtRegRef                                    )
-A32OPC(SetRegister,             T::Void,        T::RegRef,      T::U32                          )
-A32OPC(SetExtendedRegister32,   T::Void,        T::ExtRegRef,   T::F32                          )
-A32OPC(SetExtendedRegister64,   T::Void,        T::ExtRegRef,   T::F64                          )
+A32OPC(GetRegister,             T::U32,         T::A32Reg                                       )
+A32OPC(GetExtendedRegister32,   T::F32,         T::A32ExtReg                                    )
+A32OPC(GetExtendedRegister64,   T::F64,         T::A32ExtReg                                    )
+A32OPC(SetRegister,             T::Void,        T::A32Reg,      T::U32                          )
+A32OPC(SetExtendedRegister32,   T::Void,        T::A32ExtReg,   T::F32                          )
+A32OPC(SetExtendedRegister64,   T::Void,        T::A32ExtReg,   T::F64                          )
 A32OPC(GetCpsr,                 T::U32,                                                         )
 A32OPC(SetCpsr,                 T::Void,        T::U32                                          )
 A32OPC(SetCpsrNZCV,             T::Void,        T::U32                                          )

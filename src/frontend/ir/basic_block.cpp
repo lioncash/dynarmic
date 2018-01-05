@@ -161,9 +161,9 @@ std::string DumpBlock(const IR::Block& block) {
             return fmt::format("#{}", arg.GetU8());
         case Type::U32:
             return fmt::format("#{:#x}", arg.GetU32());
-        case Type::RegRef:
+        case Type::A32Reg:
             return A32::RegToString(arg.GetA32RegRef());
-        case Type::ExtRegRef:
+        case Type::A32ExtReg:
             return A32::ExtRegToString(arg.GetA32ExtRegRef());
         default:
             return "<unknown immediate type>";
