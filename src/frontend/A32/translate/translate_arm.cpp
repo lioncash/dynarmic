@@ -121,7 +121,7 @@ bool ArmTranslatorVisitor::UnpredictableInstruction() {
     return false;
 }
 
-A32::IREmitter::ResultAndCarry ArmTranslatorVisitor::EmitImmShift(IR::Value value, ShiftType type, Imm5 imm5, IR::Value carry_in) {
+IR::ResultAndCarry<IR::U32> ArmTranslatorVisitor::EmitImmShift(IR::U32 value, ShiftType type, Imm5 imm5, IR::U1 carry_in) {
     switch (type) {
     case ShiftType::LSL:
         return ir.LogicalShiftLeft(value, ir.Imm8(imm5), carry_in);
@@ -141,7 +141,7 @@ A32::IREmitter::ResultAndCarry ArmTranslatorVisitor::EmitImmShift(IR::Value valu
     return {};
 }
 
-A32::IREmitter::ResultAndCarry ArmTranslatorVisitor::EmitRegShift(IR::Value value, ShiftType type, IR::Value amount, IR::Value carry_in) {
+IR::ResultAndCarry<IR::U32> ArmTranslatorVisitor::EmitRegShift(IR::U32 value, ShiftType type, IR::U8 amount, IR::U1 carry_in) {
     switch (type) {
     case ShiftType::LSL:
         return ir.LogicalShiftLeft(value, amount, carry_in);

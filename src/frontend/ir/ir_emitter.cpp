@@ -15,526 +15,521 @@ void IREmitter::Unimplemented() {
 
 }
 
-Value IREmitter::Imm1(bool imm1) {
-    return Value(imm1);
+U1 IREmitter::Imm1(bool imm1) {
+    return U1(Value(imm1));
 }
 
-Value IREmitter::Imm8(u8 imm8) {
-    return Value(imm8);
+U8 IREmitter::Imm8(u8 imm8) {
+    return U8(Value(imm8));
 }
 
-Value IREmitter::Imm32(u32 imm32) {
-    return Value(imm32);
+U32 IREmitter::Imm32(u32 imm32) {
+    return U32(Value(imm32));
 }
 
-Value IREmitter::Imm64(u64 imm64) {
-    return Value(imm64);
+U64 IREmitter::Imm64(u64 imm64) {
+    return U64(Value(imm64));
 }
 
 void IREmitter::PushRSB(const LocationDescriptor& return_location) {
-    Inst(Opcode::PushRSB, {IR::Value(return_location.Value())});
+    Inst(Opcode::PushRSB, IR::Value(return_location.Value()));
 }
 
-Value IREmitter::Pack2x32To1x64(const Value& lo, const Value& hi) {
-    return Inst(Opcode::Pack2x32To1x64, {lo, hi});
+U64 IREmitter::Pack2x32To1x64(const U32& lo, const U32& hi) {
+    return Inst<U64>(Opcode::Pack2x32To1x64, lo, hi);
 }
 
-Value IREmitter::LeastSignificantWord(const Value& value) {
-    return Inst(Opcode::LeastSignificantWord, {value});
+U32 IREmitter::LeastSignificantWord(const U64& value) {
+    return Inst<U32>(Opcode::LeastSignificantWord, value);
 }
 
-IREmitter::ResultAndCarry IREmitter::MostSignificantWord(const Value& value) {
-    auto result = Inst(Opcode::MostSignificantWord, {value});
-    auto carry_out = Inst(Opcode::GetCarryFromOp, {result});
+ResultAndCarry<U32> IREmitter::MostSignificantWord(const U64& value) {
+    auto result = Inst<U32>(Opcode::MostSignificantWord, value);
+    auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
 }
 
-Value IREmitter::LeastSignificantHalf(const Value& value) {
-    return Inst(Opcode::LeastSignificantHalf, {value});
+U16 IREmitter::LeastSignificantHalf(const U32& value) {
+    return Inst<U16>(Opcode::LeastSignificantHalf, value);
 }
 
-Value IREmitter::LeastSignificantByte(const Value& value) {
-    return Inst(Opcode::LeastSignificantByte, {value});
+U8 IREmitter::LeastSignificantByte(const U32& value) {
+    return Inst<U8>(Opcode::LeastSignificantByte, value);
 }
 
-Value IREmitter::MostSignificantBit(const Value& value) {
-    return Inst(Opcode::MostSignificantBit, {value});
+U1 IREmitter::MostSignificantBit(const U32& value) {
+    return Inst<U1>(Opcode::MostSignificantBit, value);
 }
 
-Value IREmitter::IsZero(const Value& value) {
-    return Inst(Opcode::IsZero, {value});
+U1 IREmitter::IsZero(const U32& value) {
+    return Inst<U1>(Opcode::IsZero, value);
 }
 
-Value IREmitter::IsZero64(const Value& value) {
-    return Inst(Opcode::IsZero64, {value});
+U1 IREmitter::IsZero64(const U64& value) {
+    return Inst<U1>(Opcode::IsZero64, value);
 }
 
-IREmitter::ResultAndCarry IREmitter::LogicalShiftLeft(const Value& value_in, const Value& shift_amount, const Value& carry_in) {
-    auto result = Inst(Opcode::LogicalShiftLeft, {value_in, shift_amount, carry_in});
-    auto carry_out = Inst(Opcode::GetCarryFromOp, {result});
+ResultAndCarry<U32> IREmitter::LogicalShiftLeft(const U32& value_in, const U8& shift_amount, const U1& carry_in) {
+    auto result = Inst<U32>(Opcode::LogicalShiftLeft, value_in, shift_amount, carry_in);
+    auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
 }
 
-IREmitter::ResultAndCarry IREmitter::LogicalShiftRight(const Value& value_in, const Value& shift_amount, const Value& carry_in) {
-    auto result = Inst(Opcode::LogicalShiftRight, {value_in, shift_amount, carry_in});
-    auto carry_out = Inst(Opcode::GetCarryFromOp, {result});
+ResultAndCarry<U32> IREmitter::LogicalShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in) {
+    auto result = Inst<U32>(Opcode::LogicalShiftRight, value_in, shift_amount, carry_in);
+    auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
 }
 
-Value IREmitter::LogicalShiftRight64(const Value& value_in, const Value& shift_amount) {
-    return Inst(Opcode::LogicalShiftRight64, {value_in, shift_amount});
+U64 IREmitter::LogicalShiftRight64(const U64& value_in, const U8& shift_amount) {
+    return Inst<U64>(Opcode::LogicalShiftRight64, value_in, shift_amount);
 }
 
-IREmitter::ResultAndCarry IREmitter::ArithmeticShiftRight(const Value& value_in, const Value& shift_amount, const Value& carry_in) {
-    auto result = Inst(Opcode::ArithmeticShiftRight, {value_in, shift_amount, carry_in});
-    auto carry_out = Inst(Opcode::GetCarryFromOp, {result});
+ResultAndCarry<U32> IREmitter::ArithmeticShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in) {
+    auto result = Inst<U32>(Opcode::ArithmeticShiftRight, value_in, shift_amount, carry_in);
+    auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
 }
 
-IREmitter::ResultAndCarry IREmitter::RotateRight(const Value& value_in, const Value& shift_amount, const Value& carry_in) {
-    auto result = Inst(Opcode::RotateRight, {value_in, shift_amount, carry_in});
-    auto carry_out = Inst(Opcode::GetCarryFromOp, {result});
+ResultAndCarry<U32> IREmitter::RotateRight(const U32& value_in, const U8& shift_amount, const U1& carry_in) {
+    auto result = Inst<U32>(Opcode::RotateRight, value_in, shift_amount, carry_in);
+    auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
 }
 
-IREmitter::ResultAndCarry IREmitter::RotateRightExtended(const Value& value_in, const Value& carry_in) {
-    auto result = Inst(Opcode::RotateRightExtended, {value_in, carry_in});
-    auto carry_out = Inst(Opcode::GetCarryFromOp, {result});
+ResultAndCarry<U32> IREmitter::RotateRightExtended(const U32& value_in, const U1& carry_in) {
+    auto result = Inst<U32>(Opcode::RotateRightExtended, value_in, carry_in);
+    auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
 }
 
-IREmitter::ResultAndCarryAndOverflow IREmitter::AddWithCarry(const Value& a, const Value& b, const Value& carry_in) {
-    auto result = Inst(Opcode::AddWithCarry, {a, b, carry_in});
-    auto carry_out = Inst(Opcode::GetCarryFromOp, {result});
-    auto overflow = Inst(Opcode::GetOverflowFromOp, {result});
+ResultAndCarryAndOverflow<U32> IREmitter::AddWithCarry(const Value& a, const Value& b, const U1& carry_in) {
+    auto result = Inst<U32>(Opcode::AddWithCarry, a, b, carry_in);
+    auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
+    auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
     return {result, carry_out, overflow};
 }
 
-Value IREmitter::Add(const Value& a, const Value& b) {
-    return Inst(Opcode::AddWithCarry, {a, b, Imm1(0)});
+U32 IREmitter::Add(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::AddWithCarry, a, b, Imm1(0));
 }
 
-Value IREmitter::Add64(const Value& a, const Value& b) {
-    return Inst(Opcode::Add64, {a, b});
+U64 IREmitter::Add64(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::Add64, a, b);
 }
 
-IREmitter::ResultAndCarryAndOverflow IREmitter::SubWithCarry(const Value& a, const Value& b, const Value& carry_in) {
+ResultAndCarryAndOverflow<U32> IREmitter::SubWithCarry(const U32& a, const U32& b, const U1& carry_in) {
     // This is equivalent to AddWithCarry(a, Not(b), carry_in).
-    auto result = Inst(Opcode::SubWithCarry, {a, b, carry_in});
-    auto carry_out = Inst(Opcode::GetCarryFromOp, {result});
-    auto overflow = Inst(Opcode::GetOverflowFromOp, {result});
+    auto result = Inst<U32>(Opcode::SubWithCarry, a, b, carry_in);
+    auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
+    auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
     return {result, carry_out, overflow};
 }
 
-Value IREmitter::Sub(const Value& a, const Value& b) {
-    return Inst(Opcode::SubWithCarry, {a, b, Imm1(1)});
+U32 IREmitter::Sub(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::SubWithCarry, a, b, Imm1(1));
 }
 
-Value IREmitter::Sub64(const Value& a, const Value& b) {
-    return Inst(Opcode::Sub64, {a, b});
+U64 IREmitter::Sub64(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::Sub64, a, b);
 }
 
-Value IREmitter::Mul(const Value& a, const Value& b) {
-    return Inst(Opcode::Mul, {a, b});
+U32 IREmitter::Mul(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::Mul, a, b);
 }
 
-Value IREmitter::Mul64(const Value& a, const Value& b) {
-    return Inst(Opcode::Mul64, {a, b});
+U64 IREmitter::Mul64(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::Mul64, a, b);
 }
 
-Value IREmitter::And(const Value& a, const Value& b) {
-    return Inst(Opcode::And, {a, b});
+U32 IREmitter::And(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::And, a, b);
 }
 
-Value IREmitter::Eor(const Value& a, const Value& b) {
-    return Inst(Opcode::Eor, {a, b});
+U32 IREmitter::Eor(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::Eor, a, b);
 }
 
-Value IREmitter::Or(const Value& a, const Value& b) {
-    return Inst(Opcode::Or, {a, b});
+U32 IREmitter::Or(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::Or, a, b);
 }
 
-Value IREmitter::Not(const Value& a) {
-    return Inst(Opcode::Not, {a});
+U32 IREmitter::Not(const U32& a) {
+    return Inst<U32>(Opcode::Not, a);
 }
 
-Value IREmitter::SignExtendWordToLong(const Value& a) {
-    return Inst(Opcode::SignExtendWordToLong, {a});
+U64 IREmitter::SignExtendWordToLong(const U32& a) {
+    return Inst<U64>(Opcode::SignExtendWordToLong, a);
 }
 
-Value IREmitter::SignExtendHalfToWord(const Value& a) {
-    return Inst(Opcode::SignExtendHalfToWord, {a});
+U32 IREmitter::SignExtendHalfToWord(const U16& a) {
+    return Inst<U32>(Opcode::SignExtendHalfToWord, a);
 }
 
-Value IREmitter::SignExtendByteToWord(const Value& a) {
-    return Inst(Opcode::SignExtendByteToWord, {a});
+U32 IREmitter::SignExtendByteToWord(const U8& a) {
+    return Inst<U32>(Opcode::SignExtendByteToWord, a);
 }
 
-Value IREmitter::ZeroExtendWordToLong(const Value& a) {
-    return Inst(Opcode::ZeroExtendWordToLong, {a});
+U64 IREmitter::ZeroExtendWordToLong(const U32& a) {
+    return Inst<U64>(Opcode::ZeroExtendWordToLong, a);
 }
 
-Value IREmitter::ZeroExtendHalfToWord(const Value& a) {
-    return Inst(Opcode::ZeroExtendHalfToWord, {a});
+U32 IREmitter::ZeroExtendHalfToWord(const U16& a) {
+    return Inst<U32>(Opcode::ZeroExtendHalfToWord, a);
 }
 
-Value IREmitter::ZeroExtendByteToWord(const Value& a) {
-    return Inst(Opcode::ZeroExtendByteToWord, {a});
+U32 IREmitter::ZeroExtendByteToWord(const U8& a) {
+    return Inst<U32>(Opcode::ZeroExtendByteToWord, a);
 }
 
-Value IREmitter::ByteReverseWord(const Value& a) {
-    return Inst(Opcode::ByteReverseWord, {a});
+U32 IREmitter::ByteReverseWord(const U32& a) {
+    return Inst<U32>(Opcode::ByteReverseWord, a);
 }
 
-Value IREmitter::ByteReverseHalf(const Value& a) {
-    return Inst(Opcode::ByteReverseHalf, {a});
+U16 IREmitter::ByteReverseHalf(const U16& a) {
+    return Inst<U16>(Opcode::ByteReverseHalf, a);
 }
 
-Value IREmitter::ByteReverseDual(const Value& a) {
-    return Inst(Opcode::ByteReverseDual, {a});
+U64 IREmitter::ByteReverseDual(const U64& a) {
+    return Inst<U64>(Opcode::ByteReverseDual, a);
 }
 
-Value IREmitter::CountLeadingZeros(const Value& a) {
-    return Inst(Opcode::CountLeadingZeros, {a});
+U32 IREmitter::CountLeadingZeros(const U32& a) {
+    return Inst<U32>(Opcode::CountLeadingZeros, a);
 }
 
-IREmitter::ResultAndOverflow IREmitter::SignedSaturatedAdd(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::SignedSaturatedAdd, {a, b});
-    auto overflow = Inst(Opcode::GetOverflowFromOp, {result});
+ResultAndOverflow<U32> IREmitter::SignedSaturatedAdd(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::SignedSaturatedAdd, a, b);
+    auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
     return {result, overflow};
 }
 
-IREmitter::ResultAndOverflow IREmitter::SignedSaturatedSub(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::SignedSaturatedSub, {a, b});
-    auto overflow = Inst(Opcode::GetOverflowFromOp, {result});
+ResultAndOverflow<U32> IREmitter::SignedSaturatedSub(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::SignedSaturatedSub, a, b);
+    auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
     return {result, overflow};
 }
 
-IREmitter::ResultAndOverflow IREmitter::UnsignedSaturation(const Value& a, size_t bit_size_to_saturate_to) {
+ResultAndOverflow<U32> IREmitter::UnsignedSaturation(const U32& a, size_t bit_size_to_saturate_to) {
     ASSERT(bit_size_to_saturate_to <= 31);
-    auto result = Inst(Opcode::UnsignedSaturation, {a, Imm8(static_cast<u8>(bit_size_to_saturate_to))});
-    auto overflow = Inst(Opcode::GetOverflowFromOp, {result});
+    auto result = Inst<U32>(Opcode::UnsignedSaturation, a, Imm8(static_cast<u8>(bit_size_to_saturate_to)));
+    auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
     return {result, overflow};
 }
 
-IREmitter::ResultAndOverflow IREmitter::SignedSaturation(const Value& a, size_t bit_size_to_saturate_to) {
+ResultAndOverflow<U32> IREmitter::SignedSaturation(const U32& a, size_t bit_size_to_saturate_to) {
     ASSERT(bit_size_to_saturate_to >= 1 && bit_size_to_saturate_to <= 32);
-    auto result = Inst(Opcode::SignedSaturation, {a, Imm8(static_cast<u8>(bit_size_to_saturate_to))});
-    auto overflow = Inst(Opcode::GetOverflowFromOp, {result});
+    auto result = Inst<U32>(Opcode::SignedSaturation, a, Imm8(static_cast<u8>(bit_size_to_saturate_to)));
+    auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
     return {result, overflow};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedAddU8(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedAddU8, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedAddU8(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedAddU8, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedAddS8(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedAddS8, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedAddS8(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedAddS8, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedAddU16(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedAddU16, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedAddU16(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedAddU16, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedAddS16(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedAddS16, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedAddS16(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedAddS16, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedSubU8(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedSubU8, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedSubU8(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedSubU8, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedSubS8(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedSubS8, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedSubS8(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedSubS8, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedSubU16(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedSubU16, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedSubU16(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedSubU16, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedSubS16(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedSubS16, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedSubS16(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedSubS16, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedAddSubU16(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedAddSubU16, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedAddSubU16(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedAddSubU16, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedAddSubS16(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedAddSubS16, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedAddSubS16(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedAddSubS16, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedSubAddU16(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedSubAddU16, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedSubAddU16(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedSubAddU16, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-IREmitter::ResultAndGE IREmitter::PackedSubAddS16(const Value& a, const Value& b) {
-    auto result = Inst(Opcode::PackedSubAddS16, {a, b});
-    auto ge = Inst(Opcode::GetGEFromOp, {result});
+ResultAndGE<U32> IREmitter::PackedSubAddS16(const U32& a, const U32& b) {
+    auto result = Inst<U32>(Opcode::PackedSubAddS16, a, b);
+    auto ge = Inst<U32>(Opcode::GetGEFromOp, result);
     return {result, ge};
 }
 
-Value IREmitter::PackedHalvingAddU8(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingAddU8, {a, b});
+U32 IREmitter::PackedHalvingAddU8(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingAddU8, a, b);
 }
 
-Value IREmitter::PackedHalvingAddS8(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingAddS8, {a, b});
+U32 IREmitter::PackedHalvingAddS8(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingAddS8, a, b);
 }
 
-Value IREmitter::PackedHalvingSubU8(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingSubU8, {a, b});
+U32 IREmitter::PackedHalvingSubU8(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingSubU8, a, b);
 }
 
-Value IREmitter::PackedHalvingSubS8(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingSubS8, {a, b});
+U32 IREmitter::PackedHalvingSubS8(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingSubS8, a, b);
 }
 
-Value IREmitter::PackedHalvingAddU16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingAddU16, {a, b});
+U32 IREmitter::PackedHalvingAddU16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingAddU16, a, b);
 }
 
-Value IREmitter::PackedHalvingAddS16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingAddS16, {a, b});
+U32 IREmitter::PackedHalvingAddS16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingAddS16, a, b);
 }
 
-Value IREmitter::PackedHalvingSubU16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingSubU16, {a, b});
+U32 IREmitter::PackedHalvingSubU16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingSubU16, a, b);
 }
 
-Value IREmitter::PackedHalvingSubS16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingSubS16, {a, b});
+U32 IREmitter::PackedHalvingSubS16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingSubS16, a, b);
 }
 
-Value IREmitter::PackedHalvingAddSubU16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingAddSubU16, {a, b});
+U32 IREmitter::PackedHalvingAddSubU16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingAddSubU16, a, b);
 }
 
-Value IREmitter::PackedHalvingAddSubS16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingAddSubS16, {a, b});
+U32 IREmitter::PackedHalvingAddSubS16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingAddSubS16, a, b);
 }
 
-Value IREmitter::PackedHalvingSubAddU16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingSubAddU16, {a, b});
+U32 IREmitter::PackedHalvingSubAddU16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingSubAddU16, a, b);
 }
 
-Value IREmitter::PackedHalvingSubAddS16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedHalvingSubAddS16, {a, b});
+U32 IREmitter::PackedHalvingSubAddS16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedHalvingSubAddS16, a, b);
 }
 
-Value IREmitter::PackedSaturatedAddU8(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedSaturatedAddU8, {a, b});
+U32 IREmitter::PackedSaturatedAddU8(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedSaturatedAddU8, a, b);
 }
 
-Value IREmitter::PackedSaturatedAddS8(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedSaturatedAddS8, {a, b});
+U32 IREmitter::PackedSaturatedAddS8(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedSaturatedAddS8, a, b);
 }
 
-Value IREmitter::PackedSaturatedSubU8(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedSaturatedSubU8, {a, b});
+U32 IREmitter::PackedSaturatedSubU8(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedSaturatedSubU8, a, b);
 }
 
-Value IREmitter::PackedSaturatedSubS8(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedSaturatedSubS8, {a, b});
+U32 IREmitter::PackedSaturatedSubS8(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedSaturatedSubS8, a, b);
 }
 
-Value IREmitter::PackedSaturatedAddU16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedSaturatedAddU16, {a, b});
+U32 IREmitter::PackedSaturatedAddU16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedSaturatedAddU16, a, b);
 }
 
-Value IREmitter::PackedSaturatedAddS16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedSaturatedAddS16, {a, b});
+U32 IREmitter::PackedSaturatedAddS16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedSaturatedAddS16, a, b);
 }
 
-Value IREmitter::PackedSaturatedSubU16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedSaturatedSubU16, {a, b});
+U32 IREmitter::PackedSaturatedSubU16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedSaturatedSubU16, a, b);
 }
 
-Value IREmitter::PackedSaturatedSubS16(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedSaturatedSubS16, {a, b});
+U32 IREmitter::PackedSaturatedSubS16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedSaturatedSubS16, a, b);
 }
 
-Value IREmitter::PackedAbsDiffSumS8(const Value& a, const Value& b) {
-    return Inst(Opcode::PackedAbsDiffSumS8, {a, b});
+U32 IREmitter::PackedAbsDiffSumS8(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedAbsDiffSumS8, a, b);
 }
 
-Value IREmitter::PackedSelect(const Value& ge, const Value& a, const Value& b) {
-    return Inst(Opcode::PackedSelect, {ge, a, b});
+U32 IREmitter::PackedSelect(const U32& ge, const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::PackedSelect, ge, a, b);
 }
 
-Value IREmitter::TransferToFP32(const Value& a) {
-    return Inst(Opcode::TransferToFP32, {a});
+F32 IREmitter::TransferToFP32(const U32& a) {
+    return Inst<F32>(Opcode::TransferToFP32, a);
 }
 
-Value IREmitter::TransferToFP64(const Value& a) {
-    return Inst(Opcode::TransferToFP64, {a});
+F64 IREmitter::TransferToFP64(const U64& a) {
+    return Inst<F64>(Opcode::TransferToFP64, a);
 }
 
-Value IREmitter::TransferFromFP32(const Value& a) {
-    return Inst(Opcode::TransferFromFP32, {a});
+U32 IREmitter::TransferFromFP32(const F32& a) {
+    return Inst<U32>(Opcode::TransferFromFP32, a);
 }
 
-Value IREmitter::TransferFromFP64(const Value& a) {
-    return Inst(Opcode::TransferFromFP64, {a});
+U64 IREmitter::TransferFromFP64(const F64& a) {
+    return Inst<U64>(Opcode::TransferFromFP64, a);
 }
 
-Value IREmitter::FPAbs32(const Value& a) {
-    return Inst(Opcode::FPAbs32, {a});
+F32 IREmitter::FPAbs32(const F32& a) {
+    return Inst<F32>(Opcode::FPAbs32, a);
 }
 
-Value IREmitter::FPAbs64(const Value& a) {
-    return Inst(Opcode::FPAbs64, {a});
+F64 IREmitter::FPAbs64(const F64& a) {
+    return Inst<F64>(Opcode::FPAbs64, a);
 }
 
-Value IREmitter::FPAdd32(const Value& a, const Value& b, bool fpscr_controlled) {
+F32 IREmitter::FPAdd32(const F32& a, const F32& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPAdd32, {a, b});
+    return Inst<F32>(Opcode::FPAdd32, a, b);
 }
 
-Value IREmitter::FPAdd64(const Value& a, const Value& b, bool fpscr_controlled) {
+F64 IREmitter::FPAdd64(const F64& a, const F64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPAdd64, {a, b});
+    return Inst<F64>(Opcode::FPAdd64, a, b);
 }
 
-void IREmitter::FPCompare32(const Value& a, const Value& b, bool exc_on_qnan, bool fpscr_controlled) {
+void IREmitter::FPCompare32(const F32& a, const F32& b, bool exc_on_qnan, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    Inst(Opcode::FPCompare32, {a, b, Imm1(exc_on_qnan)});
+    Inst(Opcode::FPCompare32, a, b, Imm1(exc_on_qnan));
 }
 
-void IREmitter::FPCompare64(const Value& a, const Value& b, bool exc_on_qnan, bool fpscr_controlled) {
+void IREmitter::FPCompare64(const F64& a, const F64& b, bool exc_on_qnan, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    Inst(Opcode::FPCompare64, {a, b, Imm1(exc_on_qnan)});
+    Inst(Opcode::FPCompare64, a, b, Imm1(exc_on_qnan));
 }
 
-Value IREmitter::FPDiv32(const Value& a, const Value& b, bool fpscr_controlled) {
+F32 IREmitter::FPDiv32(const F32& a, const F32& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPDiv32, {a, b});
+    return Inst<F32>(Opcode::FPDiv32, a, b);
 }
 
-Value IREmitter::FPDiv64(const Value& a, const Value& b, bool fpscr_controlled) {
+F64 IREmitter::FPDiv64(const F64& a, const F64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPDiv64, {a, b});
+    return Inst<F64>(Opcode::FPDiv64, a, b);
 }
 
-Value IREmitter::FPMul32(const Value& a, const Value& b, bool fpscr_controlled) {
+F32 IREmitter::FPMul32(const F32& a, const F32& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPMul32, {a, b});
+    return Inst<F32>(Opcode::FPMul32, a, b);
 }
 
-Value IREmitter::FPMul64(const Value& a, const Value& b, bool fpscr_controlled) {
+F64 IREmitter::FPMul64(const F64& a, const F64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPMul64, {a, b});
+    return Inst<F64>(Opcode::FPMul64, a, b);
 }
 
-Value IREmitter::FPNeg32(const Value& a) {
-    return Inst(Opcode::FPNeg32, {a});
+F32 IREmitter::FPNeg32(const F32& a) {
+    return Inst<F32>(Opcode::FPNeg32, a);
 }
 
-Value IREmitter::FPNeg64(const Value& a) {
-    return Inst(Opcode::FPNeg64, {a});
+F64 IREmitter::FPNeg64(const F64& a) {
+    return Inst<F64>(Opcode::FPNeg64, a);
 }
 
-Value IREmitter::FPSqrt32(const Value& a) {
-    return Inst(Opcode::FPSqrt32, {a});
+F32 IREmitter::FPSqrt32(const F32& a) {
+    return Inst<F32>(Opcode::FPSqrt32, a);
 }
 
-Value IREmitter::FPSqrt64(const Value& a) {
-    return Inst(Opcode::FPSqrt64, {a});
+F64 IREmitter::FPSqrt64(const F64& a) {
+    return Inst<F64>(Opcode::FPSqrt64, a);
 }
 
-Value IREmitter::FPSub32(const Value& a, const Value& b, bool fpscr_controlled) {
+F32 IREmitter::FPSub32(const F32& a, const F32& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPSub32, {a, b});
+    return Inst<F32>(Opcode::FPSub32, a, b);
 }
 
-Value IREmitter::FPSub64(const Value& a, const Value& b, bool fpscr_controlled) {
+F64 IREmitter::FPSub64(const F64& a, const F64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPSub64, {a, b});
+    return Inst<F64>(Opcode::FPSub64, a, b);
 }
 
-Value IREmitter::FPDoubleToSingle(const Value& a, bool fpscr_controlled) {
+F32 IREmitter::FPDoubleToSingle(const F64& a, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPDoubleToSingle, {a});
+    return Inst<F32>(Opcode::FPDoubleToSingle, a);
 }
 
-Value IREmitter::FPSingleToDouble(const Value& a, bool fpscr_controlled) {
+F64 IREmitter::FPSingleToDouble(const F32& a, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPSingleToDouble, {a});
+    return Inst<F64>(Opcode::FPSingleToDouble, a);
 }
 
-Value IREmitter::FPSingleToS32(const Value& a, bool round_towards_zero, bool fpscr_controlled) {
+F32 IREmitter::FPSingleToS32(const F32& a, bool round_towards_zero, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPSingleToS32, {a, Imm1(round_towards_zero)});
+    return Inst<F32>(Opcode::FPSingleToS32, a, Imm1(round_towards_zero));
 }
 
-Value IREmitter::FPSingleToU32(const Value& a, bool round_towards_zero, bool fpscr_controlled) {
+F32 IREmitter::FPSingleToU32(const F32& a, bool round_towards_zero, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPSingleToU32, {a, Imm1(round_towards_zero)});
+    return Inst<F32>(Opcode::FPSingleToU32, a, Imm1(round_towards_zero));
 }
 
-Value IREmitter::FPDoubleToS32(const Value& a, bool round_towards_zero, bool fpscr_controlled) {
+F32 IREmitter::FPDoubleToS32(const F32& a, bool round_towards_zero, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPDoubleToS32, {a, Imm1(round_towards_zero)});
+    return Inst<F32>(Opcode::FPDoubleToS32, a, Imm1(round_towards_zero));
 }
 
-Value IREmitter::FPDoubleToU32(const Value& a, bool round_towards_zero, bool fpscr_controlled) {
+F32 IREmitter::FPDoubleToU32(const F32& a, bool round_towards_zero, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPDoubleToU32, {a, Imm1(round_towards_zero)});
+    return Inst<F32>(Opcode::FPDoubleToU32, a, Imm1(round_towards_zero));
 }
 
-Value IREmitter::FPS32ToSingle(const Value& a, bool round_to_nearest, bool fpscr_controlled) {
+F32 IREmitter::FPS32ToSingle(const F32& a, bool round_to_nearest, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPS32ToSingle, {a, Imm1(round_to_nearest)});
+    return Inst<F32>(Opcode::FPS32ToSingle, a, Imm1(round_to_nearest));
 }
 
-Value IREmitter::FPU32ToSingle(const Value& a, bool round_to_nearest, bool fpscr_controlled) {
+F32 IREmitter::FPU32ToSingle(const F32& a, bool round_to_nearest, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPU32ToSingle, {a, Imm1(round_to_nearest)});
+    return Inst<F32>(Opcode::FPU32ToSingle, a, Imm1(round_to_nearest));
 }
 
-Value IREmitter::FPS32ToDouble(const Value& a, bool round_to_nearest, bool fpscr_controlled) {
+F64 IREmitter::FPS32ToDouble(const F32& a, bool round_to_nearest, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPS32ToDouble, {a, Imm1(round_to_nearest)});
+    return Inst<F64>(Opcode::FPS32ToDouble, a, Imm1(round_to_nearest));
 }
 
-Value IREmitter::FPU32ToDouble(const Value& a, bool round_to_nearest, bool fpscr_controlled) {
+F64 IREmitter::FPU32ToDouble(const F32& a, bool round_to_nearest, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst(Opcode::FPU32ToDouble, {a, Imm1(round_to_nearest)});
+    return Inst<F64>(Opcode::FPU32ToDouble, a, Imm1(round_to_nearest));
 }
 
 void IREmitter::Breakpoint() {
-    Inst(Opcode::Breakpoint, {});
+    Inst(Opcode::Breakpoint);
 }
 
 void IREmitter::SetTerm(const Terminal& terminal) {
     block.SetTerminal(terminal);
-}
-
-Value IREmitter::Inst(Opcode op, std::initializer_list<Value> args) {
-    block.AppendNewInst(op, args);
-    return Value(&block.back());
 }
 
 } // namespace IR

@@ -30,21 +30,29 @@ constexpr size_t OpcodeCount = static_cast<size_t>(Opcode::NUM_OPCODE);
  * The intermediate representation is typed. These are the used by our IR.
  */
 enum class Type {
-    Void,
-    A32Reg,
-    A32ExtReg,
-    A64Reg,
-    A64Vec,
-    Opaque,
-    U1,
-    U8,
-    U16,
-    U32,
-    U64,
-    F32,
-    F64,
-    CoprocInfo,
+    Void = 0,
+    A32Reg = 1 << 0,
+    A32ExtReg = 1 << 1,
+    A64Reg = 1 << 2,
+    A64Vec = 1 << 3,
+    Opaque = 1 << 4,
+    U1 = 1 << 5,
+    U8 = 1 << 6,
+    U16 = 1 << 7,
+    U32 = 1 << 8,
+    U64 = 1 << 9,
+    F32 = 1 << 10,
+    F64 = 1 << 11,
+    CoprocInfo = 1 << 12,
 };
+
+constexpr Type operator|(Type a, Type b) {
+    return static_cast<Type>(static_cast<size_t>(a) | static_cast<size_t>(b));
+}
+
+constexpr Type operator&(Type a, Type b) {
+    return static_cast<Type>(static_cast<size_t>(a) & static_cast<size_t>(b));
+}
 
 /// Get return type of an opcode
 Type GetTypeOf(Opcode op);

@@ -211,8 +211,7 @@ bool ArmTranslatorVisitor::arm_SMLAWy(Cond cond, Reg d, Reg a, Reg m, bool M, Re
         auto m32 = ir.GetRegister(m);
         if (M)
             m32 = ir.LogicalShiftRight(m32, ir.Imm8(16), ir.Imm1(0)).result;
-        auto m16 = ir.LeastSignificantHalf(m32);
-        m16 = ir.SignExtendWordToLong(ir.SignExtendHalfToWord(m16));
+        auto m16 = ir.SignExtendWordToLong(ir.SignExtendHalfToWord(ir.LeastSignificantHalf(m32)));
         auto product = ir.LeastSignificantWord(ir.LogicalShiftRight64(ir.Mul64(n32, m16), ir.Imm8(16)));
         auto result_overflow = ir.AddWithCarry(product, ir.GetRegister(a), ir.Imm1(0));
         ir.SetRegister(d, result_overflow.result);
@@ -229,8 +228,7 @@ bool ArmTranslatorVisitor::arm_SMULWy(Cond cond, Reg d, Reg m, bool M, Reg n) {
         auto m32 = ir.GetRegister(m);
         if (M)
             m32 = ir.LogicalShiftRight(m32, ir.Imm8(16), ir.Imm1(0)).result;
-        auto m16 = ir.LeastSignificantHalf(m32);
-        m16 = ir.SignExtendWordToLong(ir.SignExtendHalfToWord(m16));
+        auto m16 = ir.SignExtendWordToLong(ir.SignExtendHalfToWord(ir.LeastSignificantHalf(m32)));
         auto result = ir.LogicalShiftRight64(ir.Mul64(n32, m16), ir.Imm8(16));
         ir.SetRegister(d, ir.LeastSignificantWord(result));
     }

@@ -28,6 +28,31 @@ namespace IR {
 
 enum class Opcode;
 
+template <typename T>
+struct ResultAndCarry {
+    T result;
+    U1 carry;
+};
+
+template <typename T>
+struct ResultAndOverflow {
+    T result;
+    U1 overflow;
+};
+
+template <typename T>
+struct ResultAndCarryAndOverflow {
+    T result;
+    U1 carry;
+    U1 overflow;
+};
+
+template <typename T>
+struct ResultAndGE {
+    T result;
+    U32 ge;
+};
+
 /**
  * Convenience class to construct a basic block of the intermediate representation.
  * `block` is the resulting block.
@@ -39,151 +64,134 @@ public:
 
     Block block;
 
-    struct ResultAndCarry {
-        Value result;
-        Value carry;
-    };
-
-    struct ResultAndOverflow {
-        Value result;
-        Value overflow;
-    };
-
-    struct ResultAndCarryAndOverflow {
-        Value result;
-        Value carry;
-        Value overflow;
-    };
-
-    struct ResultAndGE {
-        Value result;
-        Value ge;
-    };
-
     void Unimplemented();
 
-    Value Imm1(bool value);
-    Value Imm8(u8 value);
-    Value Imm32(u32 value);
-    Value Imm64(u64 value);
+    U1 Imm1(bool value);
+    U8 Imm8(u8 value);
+    U32 Imm32(u32 value);
+    U64 Imm64(u64 value);
 
     void PushRSB(const LocationDescriptor& return_location);
 
-    Value Pack2x32To1x64(const Value& lo, const Value& hi);
-    Value LeastSignificantWord(const Value& value);
-    ResultAndCarry MostSignificantWord(const Value& value);
-    Value LeastSignificantHalf(const Value& value);
-    Value LeastSignificantByte(const Value& value);
-    Value MostSignificantBit(const Value& value);
-    Value IsZero(const Value& value);
-    Value IsZero64(const Value& value);
+    U64 Pack2x32To1x64(const U32& lo, const U32& hi);
+    U32 LeastSignificantWord(const U64& value);
+    ResultAndCarry<U32> MostSignificantWord(const U64& value);
+    U16 LeastSignificantHalf(const U32& value);
+    U8 LeastSignificantByte(const U32& value);
+    U1 MostSignificantBit(const U32& value);
+    U1 IsZero(const U32& value);
+    U1 IsZero64(const U64& value);
 
-    ResultAndCarry LogicalShiftLeft(const Value& value_in, const Value& shift_amount, const Value& carry_in);
-    ResultAndCarry LogicalShiftRight(const Value& value_in, const Value& shift_amount, const Value& carry_in);
-    Value LogicalShiftRight64(const Value& value_in, const Value& shift_amount);
-    ResultAndCarry ArithmeticShiftRight(const Value& value_in, const Value& shift_amount, const Value& carry_in);
-    ResultAndCarry RotateRight(const Value& value_in, const Value& shift_amount, const Value& carry_in);
-    ResultAndCarry RotateRightExtended(const Value& value_in, const Value& carry_in);
-    ResultAndCarryAndOverflow AddWithCarry(const Value& a, const Value& b, const Value& carry_in);
-    Value Add(const Value& a, const Value& b);
-    Value Add64(const Value& a, const Value& b);
-    ResultAndCarryAndOverflow SubWithCarry(const Value& a, const Value& b, const Value& carry_in);
-    Value Sub(const Value& a, const Value& b);
-    Value Sub64(const Value& a, const Value& b);
-    Value Mul(const Value& a, const Value& b);
-    Value Mul64(const Value& a, const Value& b);
-    Value And(const Value& a, const Value& b);
-    Value Eor(const Value& a, const Value& b);
-    Value Or(const Value& a, const Value& b);
-    Value Not(const Value& a);
-    Value SignExtendWordToLong(const Value& a);
-    Value SignExtendHalfToWord(const Value& a);
-    Value SignExtendByteToWord(const Value& a);
-    Value ZeroExtendWordToLong(const Value& a);
-    Value ZeroExtendHalfToWord(const Value& a);
-    Value ZeroExtendByteToWord(const Value& a);
-    Value ByteReverseWord(const Value& a);
-    Value ByteReverseHalf(const Value& a);
-    Value ByteReverseDual(const Value& a);
-    Value CountLeadingZeros(const Value& a);
+    ResultAndCarry<U32> LogicalShiftLeft(const U32& value_in, const U8& shift_amount, const U1& carry_in);
+    ResultAndCarry<U32> LogicalShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in);
+    U64 LogicalShiftRight64(const U64& value_in, const U8& shift_amount);
+    ResultAndCarry<U32> ArithmeticShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in);
+    ResultAndCarry<U32> RotateRight(const U32& value_in, const U8& shift_amount, const U1& carry_in);
+    ResultAndCarry<U32> RotateRightExtended(const U32& value_in, const U1& carry_in);
+    ResultAndCarryAndOverflow<U32> AddWithCarry(const Value& a, const Value& b, const U1& carry_in);
+    U32 Add(const U32& a, const U32& b);
+    U64 Add64(const U64& a, const U64& b);
+    ResultAndCarryAndOverflow<U32> SubWithCarry(const U32& a, const U32& b, const U1& carry_in);
+    U32 Sub(const U32& a, const U32& b);
+    U64 Sub64(const U64& a, const U64& b);
+    U32 Mul(const U32& a, const U32& b);
+    U64 Mul64(const U64& a, const U64& b);
+    U32 And(const U32& a, const U32& b);
+    U32 Eor(const U32& a, const U32& b);
+    U32 Or(const U32& a, const U32& b);
+    U32 Not(const U32& a);
+    U64 SignExtendWordToLong(const U32& a);
+    U32 SignExtendHalfToWord(const U16& a);
+    U32 SignExtendByteToWord(const U8& a);
+    U64 ZeroExtendWordToLong(const U32& a);
+    U32 ZeroExtendHalfToWord(const U16& a);
+    U32 ZeroExtendByteToWord(const U8& a);
+    U32 ByteReverseWord(const U32& a);
+    U16 ByteReverseHalf(const U16& a);
+    U64 ByteReverseDual(const U64& a);
+    U32 CountLeadingZeros(const U32& a);
 
-    ResultAndOverflow SignedSaturatedAdd(const Value& a, const Value& b);
-    ResultAndOverflow SignedSaturatedSub(const Value& a, const Value& b);
-    ResultAndOverflow UnsignedSaturation(const Value& a, size_t bit_size_to_saturate_to);
-    ResultAndOverflow SignedSaturation(const Value& a, size_t bit_size_to_saturate_to);
+    ResultAndOverflow<U32> SignedSaturatedAdd(const U32& a, const U32& b);
+    ResultAndOverflow<U32> SignedSaturatedSub(const U32& a, const U32& b);
+    ResultAndOverflow<U32> UnsignedSaturation(const U32& a, size_t bit_size_to_saturate_to);
+    ResultAndOverflow<U32> SignedSaturation(const U32& a, size_t bit_size_to_saturate_to);
 
-    ResultAndGE PackedAddU8(const Value& a, const Value& b);
-    ResultAndGE PackedAddS8(const Value& a, const Value& b);
-    ResultAndGE PackedAddU16(const Value& a, const Value& b);
-    ResultAndGE PackedAddS16(const Value& a, const Value& b);
-    ResultAndGE PackedSubU8(const Value& a, const Value& b);
-    ResultAndGE PackedSubS8(const Value& a, const Value& b);
-    ResultAndGE PackedSubU16(const Value& a, const Value& b);
-    ResultAndGE PackedSubS16(const Value& a, const Value& b);
-    ResultAndGE PackedAddSubU16(const Value& a, const Value& b);
-    ResultAndGE PackedAddSubS16(const Value& a, const Value& b);
-    ResultAndGE PackedSubAddU16(const Value& a, const Value& b);
-    ResultAndGE PackedSubAddS16(const Value& a, const Value& b);
-    Value PackedHalvingAddU8(const Value& a, const Value& b);
-    Value PackedHalvingAddS8(const Value& a, const Value& b);
-    Value PackedHalvingSubU8(const Value& a, const Value& b);
-    Value PackedHalvingSubS8(const Value& a, const Value& b);
-    Value PackedHalvingAddU16(const Value& a, const Value& b);
-    Value PackedHalvingAddS16(const Value& a, const Value& b);
-    Value PackedHalvingSubU16(const Value& a, const Value& b);
-    Value PackedHalvingSubS16(const Value& a, const Value& b);
-    Value PackedHalvingAddSubU16(const Value& a, const Value& b);
-    Value PackedHalvingAddSubS16(const Value& a, const Value& b);
-    Value PackedHalvingSubAddU16(const Value& a, const Value& b);
-    Value PackedHalvingSubAddS16(const Value& a, const Value& b);
-    Value PackedSaturatedAddU8(const Value& a, const Value& b);
-    Value PackedSaturatedAddS8(const Value& a, const Value& b);
-    Value PackedSaturatedSubU8(const Value& a, const Value& b);
-    Value PackedSaturatedSubS8(const Value& a, const Value& b);
-    Value PackedSaturatedAddU16(const Value& a, const Value& b);
-    Value PackedSaturatedAddS16(const Value& a, const Value& b);
-    Value PackedSaturatedSubU16(const Value& a, const Value& b);
-    Value PackedSaturatedSubS16(const Value& a, const Value& b);
-    Value PackedAbsDiffSumS8(const Value& a, const Value& b);
-    Value PackedSelect(const Value& ge, const Value& a, const Value& b);
+    ResultAndGE<U32> PackedAddU8(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedAddS8(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedAddU16(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedAddS16(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedSubU8(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedSubS8(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedSubU16(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedSubS16(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedAddSubU16(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedAddSubS16(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedSubAddU16(const U32& a, const U32& b);
+    ResultAndGE<U32> PackedSubAddS16(const U32& a, const U32& b);
+    U32 PackedHalvingAddU8(const U32& a, const U32& b);
+    U32 PackedHalvingAddS8(const U32& a, const U32& b);
+    U32 PackedHalvingSubU8(const U32& a, const U32& b);
+    U32 PackedHalvingSubS8(const U32& a, const U32& b);
+    U32 PackedHalvingAddU16(const U32& a, const U32& b);
+    U32 PackedHalvingAddS16(const U32& a, const U32& b);
+    U32 PackedHalvingSubU16(const U32& a, const U32& b);
+    U32 PackedHalvingSubS16(const U32& a, const U32& b);
+    U32 PackedHalvingAddSubU16(const U32& a, const U32& b);
+    U32 PackedHalvingAddSubS16(const U32& a, const U32& b);
+    U32 PackedHalvingSubAddU16(const U32& a, const U32& b);
+    U32 PackedHalvingSubAddS16(const U32& a, const U32& b);
+    U32 PackedSaturatedAddU8(const U32& a, const U32& b);
+    U32 PackedSaturatedAddS8(const U32& a, const U32& b);
+    U32 PackedSaturatedSubU8(const U32& a, const U32& b);
+    U32 PackedSaturatedSubS8(const U32& a, const U32& b);
+    U32 PackedSaturatedAddU16(const U32& a, const U32& b);
+    U32 PackedSaturatedAddS16(const U32& a, const U32& b);
+    U32 PackedSaturatedSubU16(const U32& a, const U32& b);
+    U32 PackedSaturatedSubS16(const U32& a, const U32& b);
+    U32 PackedAbsDiffSumS8(const U32& a, const U32& b);
+    U32 PackedSelect(const U32& ge, const U32& a, const U32& b);
 
-    Value TransferToFP32(const Value& a);
-    Value TransferToFP64(const Value& a);
-    Value TransferFromFP32(const Value& a);
-    Value TransferFromFP64(const Value& a);
-    Value FPAbs32(const Value& a);
-    Value FPAbs64(const Value& a);
-    Value FPAdd32(const Value& a, const Value& b, bool fpscr_controlled);
-    Value FPAdd64(const Value& a, const Value& b, bool fpscr_controlled);
-    void FPCompare32(const Value& a, const Value& b, bool exc_on_qnan, bool fpscr_controlled);
-    void FPCompare64(const Value& a, const Value& b, bool exc_on_qnan, bool fpscr_controlled);
-    Value FPDiv32(const Value& a, const Value& b, bool fpscr_controlled);
-    Value FPDiv64(const Value& a, const Value& b, bool fpscr_controlled);
-    Value FPMul32(const Value& a, const Value& b, bool fpscr_controlled);
-    Value FPMul64(const Value& a, const Value& b, bool fpscr_controlled);
-    Value FPNeg32(const Value& a);
-    Value FPNeg64(const Value& a);
-    Value FPSqrt32(const Value& a);
-    Value FPSqrt64(const Value& a);
-    Value FPSub32(const Value& a, const Value& b, bool fpscr_controlled);
-    Value FPSub64(const Value& a, const Value& b, bool fpscr_controlled);
-    Value FPDoubleToSingle(const Value& a, bool fpscr_controlled);
-    Value FPSingleToDouble(const Value& a, bool fpscr_controlled);
-    Value FPSingleToS32(const Value& a, bool round_towards_zero, bool fpscr_controlled);
-    Value FPSingleToU32(const Value& a, bool round_towards_zero, bool fpscr_controlled);
-    Value FPDoubleToS32(const Value& a, bool round_towards_zero, bool fpscr_controlled);
-    Value FPDoubleToU32(const Value& a, bool round_towards_zero, bool fpscr_controlled);
-    Value FPS32ToSingle(const Value& a, bool round_to_nearest, bool fpscr_controlled);
-    Value FPU32ToSingle(const Value& a, bool round_to_nearest, bool fpscr_controlled);
-    Value FPS32ToDouble(const Value& a, bool round_to_nearest, bool fpscr_controlled);
-    Value FPU32ToDouble(const Value& a, bool round_to_nearest, bool fpscr_controlled);
+    F32 TransferToFP32(const U32& a);
+    F64 TransferToFP64(const U64& a);
+    U32 TransferFromFP32(const F32& a);
+    U64 TransferFromFP64(const F64& a);
+    F32 FPAbs32(const F32& a);
+    F64 FPAbs64(const F64& a);
+    F32 FPAdd32(const F32& a, const F32& b, bool fpscr_controlled);
+    F64 FPAdd64(const F64& a, const F64& b, bool fpscr_controlled);
+    void FPCompare32(const F32& a, const F32& b, bool exc_on_qnan, bool fpscr_controlled);
+    void FPCompare64(const F64& a, const F64& b, bool exc_on_qnan, bool fpscr_controlled);
+    F32 FPDiv32(const F32& a, const F32& b, bool fpscr_controlled);
+    F64 FPDiv64(const F64& a, const F64& b, bool fpscr_controlled);
+    F32 FPMul32(const F32& a, const F32& b, bool fpscr_controlled);
+    F64 FPMul64(const F64& a, const F64& b, bool fpscr_controlled);
+    F32 FPNeg32(const F32& a);
+    F64 FPNeg64(const F64& a);
+    F32 FPSqrt32(const F32& a);
+    F64 FPSqrt64(const F64& a);
+    F32 FPSub32(const F32& a, const F32& b, bool fpscr_controlled);
+    F64 FPSub64(const F64& a, const F64& b, bool fpscr_controlled);
+    F32 FPDoubleToSingle(const F64& a, bool fpscr_controlled);
+    F64 FPSingleToDouble(const F32& a, bool fpscr_controlled);
+    F32 FPSingleToS32(const F32& a, bool round_towards_zero, bool fpscr_controlled);
+    F32 FPSingleToU32(const F32& a, bool round_towards_zero, bool fpscr_controlled);
+    F32 FPDoubleToS32(const F32& a, bool round_towards_zero, bool fpscr_controlled);
+    F32 FPDoubleToU32(const F32& a, bool round_towards_zero, bool fpscr_controlled);
+    F32 FPS32ToSingle(const F32& a, bool round_to_nearest, bool fpscr_controlled);
+    F32 FPU32ToSingle(const F32& a, bool round_to_nearest, bool fpscr_controlled);
+    F64 FPS32ToDouble(const F32& a, bool round_to_nearest, bool fpscr_controlled);
+    F64 FPU32ToDouble(const F32& a, bool round_to_nearest, bool fpscr_controlled);
 
     void Breakpoint();
 
     void SetTerm(const Terminal& terminal);
 
 protected:
-    Value Inst(Opcode op, std::initializer_list<Value> args);
+    template<typename T = Value, typename ...Args>
+    T Inst(Opcode op, Args ...args) {
+        block.AppendNewInst(op, {Value(args)...});
+        return T(Value(&block.back()));
+    }
 };
 
 } // namespace IR

@@ -49,10 +49,10 @@ struct ArmTranslatorVisitor final {
 
     struct ImmAndCarry {
         u32 imm32;
-        IR::Value carry;
+        IR::U1 carry;
     };
 
-    ImmAndCarry ArmExpandImm_C(int rotate, u32 imm8, IR::Value carry_in) {
+    ImmAndCarry ArmExpandImm_C(int rotate, u32 imm8, IR::U1 carry_in) {
         u32 imm32 = imm8;
         auto carry_out = carry_in;
         if (rotate) {
@@ -62,8 +62,8 @@ struct ArmTranslatorVisitor final {
         return {imm32, carry_out};
     }
 
-    A32::IREmitter::ResultAndCarry EmitImmShift(IR::Value value, ShiftType type, Imm5 imm5, IR::Value carry_in);
-    A32::IREmitter::ResultAndCarry EmitRegShift(IR::Value value, ShiftType type, IR::Value amount, IR::Value carry_in);
+    IR::ResultAndCarry<IR::U32> EmitImmShift(IR::U32 value, ShiftType type, Imm5 imm5, IR::U1 carry_in);
+    IR::ResultAndCarry<IR::U32> EmitRegShift(IR::U32 value, ShiftType type, IR::U8 amount, IR::U1 carry_in);
     template <typename FnT> bool EmitVfpVectorOperation(bool sz, ExtReg d, ExtReg n, ExtReg m, const FnT& fn);
     template <typename FnT> bool EmitVfpVectorOperation(bool sz, ExtReg d, ExtReg m, const FnT& fn);
 

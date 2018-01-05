@@ -26,65 +26,65 @@ namespace A32 {
  */
 class IREmitter : public IR::IREmitter {
 public:
-    explicit IREmitter(A32::LocationDescriptor descriptor) : IR::IREmitter(descriptor), current_location(descriptor) {}
+    explicit IREmitter(LocationDescriptor descriptor) : IR::IREmitter(descriptor), current_location(descriptor) {}
 
-    A32::LocationDescriptor current_location;
+    LocationDescriptor current_location;
 
     u32 PC();
     u32 AlignPC(size_t alignment);
 
-    IR::Value GetRegister(A32::Reg source_reg);
-    IR::Value GetExtendedRegister(A32::ExtReg source_reg);
-    void SetRegister(const A32::Reg dest_reg, const IR::Value& value);
-    void SetExtendedRegister(const A32::ExtReg dest_reg, const IR::Value& value);
+    IR::U32 GetRegister(Reg source_reg);
+    IR::F32F64 GetExtendedRegister(ExtReg source_reg);
+    void SetRegister(const Reg dest_reg, const IR::U32& value);
+    void SetExtendedRegister(const ExtReg dest_reg, const IR::F32F64& value);
 
-    void ALUWritePC(const IR::Value& value);
-    void BranchWritePC(const IR::Value& value);
-    void BXWritePC(const IR::Value& value);
-    void LoadWritePC(const IR::Value& value);
-    void CallSupervisor(const IR::Value& value);
+    void ALUWritePC(const IR::U32& value);
+    void BranchWritePC(const IR::U32& value);
+    void BXWritePC(const IR::U32& value);
+    void LoadWritePC(const IR::U32& value);
+    void CallSupervisor(const IR::U32& value);
 
-    IR::Value GetCpsr();
-    void SetCpsr(const IR::Value& value);
-    void SetCpsrNZCV(const IR::Value& value);
-    void SetCpsrNZCVQ(const IR::Value& value);
-    IR::Value GetCFlag();
-    void SetNFlag(const IR::Value& value);
-    void SetZFlag(const IR::Value& value);
-    void SetCFlag(const IR::Value& value);
-    void SetVFlag(const IR::Value& value);
-    void OrQFlag(const IR::Value& value);
-    IR::Value GetGEFlags();
-    void SetGEFlags(const IR::Value& value);
-    void SetGEFlagsCompressed(const IR::Value& value);
+    IR::U32 GetCpsr();
+    void SetCpsr(const IR::U32& value);
+    void SetCpsrNZCV(const IR::U32& value);
+    void SetCpsrNZCVQ(const IR::U32& value);
+    IR::U1 GetCFlag();
+    void SetNFlag(const IR::U1& value);
+    void SetZFlag(const IR::U1& value);
+    void SetCFlag(const IR::U1& value);
+    void SetVFlag(const IR::U1& value);
+    void OrQFlag(const IR::U1& value);
+    IR::U32 GetGEFlags();
+    void SetGEFlags(const IR::U32& value);
+    void SetGEFlagsCompressed(const IR::U32& value);
 
-    IR::Value GetFpscr();
-    void SetFpscr(const IR::Value& new_fpscr);
-    IR::Value GetFpscrNZCV();
-    void SetFpscrNZCV(const IR::Value& new_fpscr_nzcv);
+    IR::U32 GetFpscr();
+    void SetFpscr(const IR::U32& new_fpscr);
+    IR::U32 GetFpscrNZCV();
+    void SetFpscrNZCV(const IR::U32& new_fpscr_nzcv);
 
     void ClearExclusive();
-    void SetExclusive(const IR::Value& vaddr, size_t byte_size);
-    IR::Value ReadMemory8(const IR::Value& vaddr);
-    IR::Value ReadMemory16(const IR::Value& vaddr);
-    IR::Value ReadMemory32(const IR::Value& vaddr);
-    IR::Value ReadMemory64(const IR::Value& vaddr);
-    void WriteMemory8(const IR::Value& vaddr, const IR::Value& value);
-    void WriteMemory16(const IR::Value& vaddr, const IR::Value& value);
-    void WriteMemory32(const IR::Value& vaddr, const IR::Value& value);
-    void WriteMemory64(const IR::Value& vaddr, const IR::Value& value);
-    IR::Value ExclusiveWriteMemory8(const IR::Value& vaddr, const IR::Value& value);
-    IR::Value ExclusiveWriteMemory16(const IR::Value& vaddr, const IR::Value& value);
-    IR::Value ExclusiveWriteMemory32(const IR::Value& vaddr, const IR::Value& value);
-    IR::Value ExclusiveWriteMemory64(const IR::Value& vaddr, const IR::Value& value_lo, const IR::Value& value_hi);
+    void SetExclusive(const IR::U32& vaddr, size_t byte_size);
+    IR::U8 ReadMemory8(const IR::U32& vaddr);
+    IR::U16 ReadMemory16(const IR::U32& vaddr);
+    IR::U32 ReadMemory32(const IR::U32& vaddr);
+    IR::U64 ReadMemory64(const IR::U32& vaddr);
+    void WriteMemory8(const IR::U32& vaddr, const IR::U8& value);
+    void WriteMemory16(const IR::U32& vaddr, const IR::U16& value);
+    void WriteMemory32(const IR::U32& vaddr, const IR::U32& value);
+    void WriteMemory64(const IR::U32& vaddr, const IR::U64& value);
+    IR::U32 ExclusiveWriteMemory8(const IR::U32& vaddr, const IR::U8& value);
+    IR::U32 ExclusiveWriteMemory16(const IR::U32& vaddr, const IR::U16& value);
+    IR::U32 ExclusiveWriteMemory32(const IR::U32& vaddr, const IR::U32& value);
+    IR::U32 ExclusiveWriteMemory64(const IR::U32& vaddr, const IR::U32& value_lo, const IR::U32& value_hi);
 
-    void CoprocInternalOperation(size_t coproc_no, bool two, size_t opc1, A32::CoprocReg CRd, A32::CoprocReg CRn, A32::CoprocReg CRm, size_t opc2);
-    void CoprocSendOneWord(size_t coproc_no, bool two, size_t opc1, A32::CoprocReg CRn, A32::CoprocReg CRm, size_t opc2, const IR::Value& word);
-    void CoprocSendTwoWords(size_t coproc_no, bool two, size_t opc, A32::CoprocReg CRm, const IR::Value& word1, const IR::Value& word2);
-    IR::Value CoprocGetOneWord(size_t coproc_no, bool two, size_t opc1, A32::CoprocReg CRn, A32::CoprocReg CRm, size_t opc2);
-    IR::Value CoprocGetTwoWords(size_t coproc_no, bool two, size_t opc, A32::CoprocReg CRm);
-    void CoprocLoadWords(size_t coproc_no, bool two, bool long_transfer, A32::CoprocReg CRd, const IR::Value& address, bool has_option, u8 option);
-    void CoprocStoreWords(size_t coproc_no, bool two, bool long_transfer, A32::CoprocReg CRd, const IR::Value& address, bool has_option, u8 option);
+    void CoprocInternalOperation(size_t coproc_no, bool two, size_t opc1, CoprocReg CRd, CoprocReg CRn, CoprocReg CRm, size_t opc2);
+    void CoprocSendOneWord(size_t coproc_no, bool two, size_t opc1, CoprocReg CRn, CoprocReg CRm, size_t opc2, const IR::U32& word);
+    void CoprocSendTwoWords(size_t coproc_no, bool two, size_t opc, CoprocReg CRm, const IR::U32& word1, const IR::U32& word2);
+    IR::U32 CoprocGetOneWord(size_t coproc_no, bool two, size_t opc1, CoprocReg CRn, CoprocReg CRm, size_t opc2);
+    IR::U64 CoprocGetTwoWords(size_t coproc_no, bool two, size_t opc, CoprocReg CRm);
+    void CoprocLoadWords(size_t coproc_no, bool two, bool long_transfer, CoprocReg CRd, const IR::U32& address, bool has_option, u8 option);
+    void CoprocStoreWords(size_t coproc_no, bool two, bool long_transfer, CoprocReg CRd, const IR::U32& address, bool has_option, u8 option);
 };
 
 } // namespace IR
