@@ -5,6 +5,8 @@
  */
 #pragma once
 
+#include <functional>
+
 #include "common/common_types.h"
 
 namespace Dynarmic {
@@ -17,7 +19,7 @@ namespace A64 {
 
 class LocationDescriptor;
 
-using MemoryReadCodeFuncType = u32 (*)(u64 vaddr);
+using MemoryReadCodeFuncType = std::function<u32(u64 vaddr)>;
 
 /**
  * This function translates instructions in memory into our intermediate representation.

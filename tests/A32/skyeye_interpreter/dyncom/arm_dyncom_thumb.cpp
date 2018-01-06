@@ -7,8 +7,8 @@
 // We can provide simple Thumb simulation by decoding the Thumb instruction into its corresponding
 // ARM instruction, and using the existing ARM simulator.
 
-#include "skyeye_interpreter/dyncom/arm_dyncom_thumb.h"
-#include "skyeye_interpreter/skyeye_common/armsupp.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_thumb.h"
+#include "A32/skyeye_interpreter/skyeye_common/armsupp.h"
 
 // Decode a 16bit Thumb instruction.  The instruction is in the low 16-bits of the tinstr field,
 // with the following Thumb instruction held in the high 16-bits.  Passing in two Thumb instructions

@@ -9,8 +9,8 @@
 #include <dynarmic/A32/a32.h>
 
 #include "common/common_types.h"
-#include "skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
-#include "skyeye_interpreter/skyeye_common/armstate.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
+#include "A32/skyeye_interpreter/skyeye_common/armstate.h"
 
 static u64 jit_num_ticks = 0;
 static std::array<u16, 1024> code_mem{};

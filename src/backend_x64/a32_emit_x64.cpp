@@ -101,9 +101,11 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
         case IR::Opcode::A32##name:                \
             A32EmitX64::EmitA32##name(ctx, inst);  \
             break;
+#define A64OPC(...)
 #include "frontend/ir/opcodes.inc"
 #undef OPCODE
 #undef A32OPC
+#undef A64OPC
 
         default:
             ASSERT_MSG(false, "Invalid opcode %zu", static_cast<size_t>(inst->GetOpcode()));

@@ -17,9 +17,9 @@
 
 //#include "common/logging/log.h"
 
-#include "skyeye_interpreter/skyeye_common/arm_regformat.h"
-#include "skyeye_interpreter/skyeye_common/armstate.h"
-#include "skyeye_interpreter/skyeye_common/armsupp.h"
+#include "A32/skyeye_interpreter/skyeye_common/arm_regformat.h"
+#include "A32/skyeye_interpreter/skyeye_common/armstate.h"
+#include "A32/skyeye_interpreter/skyeye_common/armsupp.h"
 
 // Unsigned sum of absolute difference
 u8 ARMul_UnsignedAbsoluteDifference(u8 left, u8 right)

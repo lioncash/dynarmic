@@ -23,7 +23,7 @@
 #include <dynarmic/A32/callbacks.h>
 
 #include "common/common_types.h"
-#include "skyeye_interpreter/skyeye_common/arm_regformat.h"
+#include "A32/skyeye_interpreter/skyeye_common/arm_regformat.h"
 
 // Signal levels
 enum {

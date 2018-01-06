@@ -2,8 +2,8 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#include "skyeye_interpreter/dyncom/arm_dyncom_dec.h"
-#include "skyeye_interpreter/skyeye_common/armsupp.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_dec.h"
+#include "A32/skyeye_interpreter/skyeye_common/armsupp.h"
 
 const InstructionSetEncodingItem arm_instruction[] = {
     { "vmla", 5, ARMVFP2,      { 23, 27, 0x1C, 20, 21, 0x0, 9, 11, 0x5, 6, 6, 0, 4, 4, 0 }},

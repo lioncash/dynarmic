@@ -69,9 +69,9 @@
 #include "common/common_types.h"
 //#include "common/logging/log.h"
 
-#include "skyeye_interpreter/skyeye_common/vfp/vfp_helper.h"
-#include "skyeye_interpreter/skyeye_common/vfp/asm_vfp.h"
-#include "skyeye_interpreter/skyeye_common/vfp/vfp.h"
+#include "A32/skyeye_interpreter/skyeye_common/vfp/vfp_helper.h"
+#include "A32/skyeye_interpreter/skyeye_common/vfp/asm_vfp.h"
+#include "A32/skyeye_interpreter/skyeye_common/vfp/vfp.h"
 
 #define LOG_INFO(...) do{}while(0)
 #define LOG_TRACE(...) do{}while(0)

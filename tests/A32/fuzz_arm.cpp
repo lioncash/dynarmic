@@ -28,8 +28,8 @@
 #include "frontend/ir/location_descriptor.h"
 #include "ir_opt/passes.h"
 #include "rand_int.h"
-#include "skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
-#include "skyeye_interpreter/skyeye_common/armstate.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
+#include "A32/skyeye_interpreter/skyeye_common/armstate.h"
 
 #ifdef __unix__
 #include <signal.h>

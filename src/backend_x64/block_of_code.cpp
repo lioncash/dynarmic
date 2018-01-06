@@ -36,7 +36,7 @@ constexpr size_t FAR_CODE_OFFSET = 100 * 1024 * 1024;
 
 BlockOfCode::BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi)
         : Xbyak::CodeGenerator(TOTAL_CODE_SIZE)
-        , cb(cb)
+        , cb(std::move(cb))
         , jsi(jsi)
         , constant_pool(this, 256)
 {
@@ -112,7 +112,7 @@ void BlockOfCode::GenRunCode() {
     mov(r15, ABI_PARAM1);
     mov(r14, ABI_PARAM2); // save temporarily in non-volatile register
 
-    CallFunction(cb.GetTicksRemaining);
+    cb.GetTicksRemaining->EmitCall(this);
     mov(qword[r15 + jsi.offsetof_cycles_to_run], ABI_RETURN);
     mov(qword[r15 + jsi.offsetof_cycles_remaining], ABI_RETURN);
 
@@ -130,15 +130,14 @@ void BlockOfCode::GenRunCode() {
 
     mov(r15, ABI_PARAM1);
 
-    CallFunction(cb.GetTicksRemaining);
+    cb.GetTicksRemaining->EmitCall(this);
     mov(qword[r15 + jsi.offsetof_cycles_to_run], ABI_RETURN);
     mov(qword[r15 + jsi.offsetof_cycles_remaining], ABI_RETURN);
 
     L(enter_mxcsr_then_loop);
     SwitchMxcsrOnEntry();
     L(loop);
-    mov(ABI_PARAM1, u64(cb.lookup_block_arg));
-    CallFunction(cb.LookupBlock);
+    cb.LookupBlock->EmitCall(this);
 
     jmp(ABI_RETURN);
 
@@ -153,9 +152,10 @@ void BlockOfCode::GenRunCode() {
             SwitchMxcsrOnExit();
         }
 
-        mov(ABI_PARAM1, qword[r15 + jsi.offsetof_cycles_to_run]);
-        sub(ABI_PARAM1, qword[r15 + jsi.offsetof_cycles_remaining]);
-        CallFunction(cb.AddTicks);
+        cb.AddTicks->EmitCall(this, [this](Xbyak::Reg64 param1) {
+            mov(param1, qword[r15 + jsi.offsetof_cycles_to_run]);
+            sub(param1, qword[r15 + jsi.offsetof_cycles_remaining]);
+        });
 
         ABI_PopCalleeSaveRegistersAndAdjustStack(this);
         ret();

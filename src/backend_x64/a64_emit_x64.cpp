@@ -1,0 +1,211 @@
+/* This file is part of the dynarmic project.
+ * Copyright (c) 2016 MerryMage
+ * This software may be used and distributed according to the terms of the GNU
+ * General Public License version 2 or any later version.
+ */
+
+#include <unordered_map>
+#include <unordered_set>
+
+#include "backend_x64/a64_emit_x64.h"
+#include "backend_x64/a64_jitstate.h"
+#include "backend_x64/abi.h"
+#include "backend_x64/block_of_code.h"
+#include "backend_x64/emit_x64.h"
+#include "common/address_range.h"
+#include "common/assert.h"
+#include "common/bit_util.h"
+#include "common/common_types.h"
+#include "common/variant_util.h"
+#include "frontend/A64/location_descriptor.h"
+#include "frontend/A64/types.h"
+#include "frontend/ir/basic_block.h"
+#include "frontend/ir/microinstruction.h"
+#include "frontend/ir/opcodes.h"
+
+// TODO: Have ARM flags in host flags and not have them use up GPR registers unless necessary.
+// TODO: Actually implement that proper instruction selector you've always wanted to sweetheart.
+
+namespace Dynarmic {
+namespace BackendX64 {
+
+using namespace Xbyak::util;
+
+A64EmitContext::A64EmitContext(RegAlloc& reg_alloc, IR::Block& block)
+    : EmitContext(reg_alloc, block) {}
+
+A64::LocationDescriptor A64EmitContext::Location() const {
+    return A64::LocationDescriptor{block.Location()};
+}
+
+bool A64EmitContext::FPSCR_RoundTowardsZero() const {
+    return Location().FPCR().RMode() != A64::FPCR::RoundingMode::TowardsZero;
+}
+
+bool A64EmitContext::FPSCR_FTZ() const {
+    return Location().FPCR().FZ();
+}
+
+bool A64EmitContext::FPSCR_DN() const {
+    return Location().FPCR().DN();
+}
+
+A64EmitX64::A64EmitX64(BlockOfCode* code, A64::UserConfig conf)
+    : EmitX64(code), conf(conf)
+{
+    code->PreludeComplete();
+}
+
+A64EmitX64::~A64EmitX64() {}
+
+A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
+    code->align();
+    const u8* const entrypoint = code->getCurr();
+
+    // Start emitting.
+    EmitCondPrelude(block);
+
+    RegAlloc reg_alloc{code, A64JitState::SpillCount, SpillToOpArg<A64JitState>};
+    A64EmitContext ctx{reg_alloc, block};
+
+    for (auto iter = block.begin(); iter != block.end(); ++iter) {
+        IR::Inst* inst = &*iter;
+
+        // Call the relevant Emit* member function.
+        switch (inst->GetOpcode()) {
+
+#define OPCODE(name, type, ...)                 \
+        case IR::Opcode::name:                  \
+            A64EmitX64::Emit##name(ctx, inst);  \
+            break;
+#define A32OPC(...)
+#define A64OPC(name, type, ...)                    \
+        case IR::Opcode::A64##name:                \
+            A64EmitX64::EmitA64##name(ctx, inst);  \
+            break;
+#include "frontend/ir/opcodes.inc"
+#undef OPCODE
+#undef A32OPC
+#undef A64OPC
+
+        default:
+            ASSERT_MSG(false, "Invalid opcode %zu", static_cast<size_t>(inst->GetOpcode()));
+            break;
+        }
+
+        reg_alloc.EndOfAllocScope();
+    }
+
+    reg_alloc.AssertNoMoreUses();
+
+    EmitAddCycles(block.CycleCount());
+    EmitX64::EmitTerminal(block.GetTerminal(), block.Location());
+    code->int3();
+
+    const A64::LocationDescriptor descriptor{block.Location()};
+    Patch(descriptor, entrypoint);
+
+    const size_t size = static_cast<size_t>(code->getCurr() - entrypoint);
+    const A64::LocationDescriptor end_location{block.EndLocation()};
+    const auto range = boost::icl::discrete_interval<u64>::closed(descriptor.PC(), end_location.PC() - 1);
+    A64EmitX64::BlockDescriptor block_desc{entrypoint, size, block.Location(), range};
+    block_descriptors.emplace(descriptor.UniqueHash(), block_desc);
+    block_ranges.add(std::make_pair(range, std::set<IR::LocationDescriptor>{descriptor}));
+
+    return block_desc;
+}
+
+void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor) {
+    code->mov(code->ABI_PARAM1.cvt32(), A64::LocationDescriptor{terminal.next}.PC());
+    //code->mov(code->ABI_PARAM2, reinterpret_cast<u64>(jit_interface));
+    //code->mov(code->ABI_PARAM3, reinterpret_cast<u64>(cb.user_arg));
+    //code->mov(MJitStateReg(A64::Reg::PC), code->ABI_PARAM1.cvt32());
+    code->SwitchMxcsrOnExit();
+    //code->CallFunction(cb.InterpreterFallback);
+    code->ReturnFromRunCode(true); // TODO: Check cycles
+}
+
+void A64EmitX64::EmitTerminalImpl(IR::Term::ReturnToDispatch, IR::LocationDescriptor) {
+    code->ReturnFromRunCode();
+}
+
+void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlock terminal, IR::LocationDescriptor) {
+    code->cmp(qword[r15 + offsetof(A64JitState, cycles_remaining)], 0);
+
+    patch_information[terminal.next].jg.emplace_back(code->getCurr());
+    if (auto next_bb = GetBasicBlock(terminal.next)) {
+        EmitPatchJg(terminal.next, next_bb->entrypoint);
+    } else {
+        EmitPatchJg(terminal.next);
+    }
+    Xbyak::Label dest;
+    code->jmp(dest, Xbyak::CodeGenerator::T_NEAR);
+
+    code->SwitchToFarCode();
+    code->align(16);
+    code->L(dest);
+    //code->mov(MJitStateReg(A64::Reg::PC), A64::LocationDescriptor{terminal.next}.PC());
+    PushRSBHelper(rax, rbx, terminal.next);
+    code->ForceReturnFromRunCode();
+    code->SwitchToNearCode();
+}
+
+void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlockFast terminal, IR::LocationDescriptor) {
+    patch_information[terminal.next].jmp.emplace_back(code->getCurr());
+    if (auto next_bb = GetBasicBlock(terminal.next)) {
+        EmitPatchJmp(terminal.next, next_bb->entrypoint);
+    } else {
+        EmitPatchJmp(terminal.next);
+    }
+}
+
+void A64EmitX64::EmitTerminalImpl(IR::Term::PopRSBHint, IR::LocationDescriptor) {
+    ASSERT(false);
+}
+
+void A64EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor initial_location) {
+    Xbyak::Label pass = EmitCond(terminal.if_);
+    EmitTerminal(terminal.else_, initial_location);
+    code->L(pass);
+    EmitTerminal(terminal.then_, initial_location);
+}
+
+void A64EmitX64::EmitTerminalImpl(IR::Term::CheckHalt terminal, IR::LocationDescriptor initial_location) {
+    code->cmp(code->byte[r15 + offsetof(A64JitState, halt_requested)], u8(0));
+    code->jne(code->GetForceReturnFromRunCodeAddress());
+    EmitTerminal(terminal.else_, initial_location);
+}
+
+void A64EmitX64::EmitPatchJg(const IR::LocationDescriptor& /*target_desc*/, CodePtr target_code_ptr) {
+    const CodePtr patch_location = code->getCurr();
+    if (target_code_ptr) {
+        code->jg(target_code_ptr);
+    } else {
+        //code->mov(MJitStateReg(A64::Reg::PC), A64::LocationDescriptor{target_desc}.PC());
+        code->jg(code->GetReturnFromRunCodeAddress());
+    }
+    code->EnsurePatchLocationSize(patch_location, 14);
+}
+
+void A64EmitX64::EmitPatchJmp(const IR::LocationDescriptor& /*target_desc*/, CodePtr target_code_ptr) {
+    const CodePtr patch_location = code->getCurr();
+    if (target_code_ptr) {
+        code->jmp(target_code_ptr);
+    } else {
+        //code->mov(MJitStateReg(A64::Reg::PC), A64::LocationDescriptor{target_desc}.PC());
+        code->jmp(code->GetReturnFromRunCodeAddress());
+    }
+    code->EnsurePatchLocationSize(patch_location, 13);
+}
+
+void A64EmitX64::EmitPatchMovRcx(CodePtr target_code_ptr) {
+    if (!target_code_ptr) {
+        target_code_ptr = code->GetReturnFromRunCodeAddress();
+    }
+    const CodePtr patch_location = code->getCurr();
+    code->mov(code->rcx, reinterpret_cast<u64>(target_code_ptr));
+    code->EnsurePatchLocationSize(patch_location, 10);
+}
+
+} // namespace BackendX64
+} // namespace Dynarmic

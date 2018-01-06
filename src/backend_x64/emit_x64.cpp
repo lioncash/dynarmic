@@ -2679,5 +2679,7 @@ void EmitX64<JST>::InvalidateCacheRanges(const boost::icl::interval_set<ProgramC
 } // namespace Dynarmic
 
 #include "backend_x64/a32_jitstate.h"
+#include "backend_x64/a64_jitstate.h"
 
 template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A32JitState>;
+template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A64JitState>;

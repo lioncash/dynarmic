@@ -12,6 +12,7 @@
 #include <xbyak.h>
 #include <xbyak_util.h>
 
+#include "backend_x64/callback.h"
 #include "backend_x64/constant_pool.h"
 #include "backend_x64/jitstate_info.h"
 #include "common/common_types.h"
@@ -23,11 +24,9 @@ namespace BackendX64 {
 using CodePtr = const void*;
 
 struct RunCodeCallbacks {
-    CodePtr (*LookupBlock)(void* lookup_block_arg);
-    void* lookup_block_arg;
-
-    void (*AddTicks)(std::uint64_t ticks);
-    std::uint64_t (*GetTicksRemaining)();
+    std::unique_ptr<Callback> LookupBlock;
+    std::unique_ptr<Callback> AddTicks;
+    std::unique_ptr<Callback> GetTicksRemaining;
 };
 
 class BlockOfCode final : public Xbyak::CodeGenerator {

@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "skyeye_interpreter/skyeye_common/vfp/vfp_helper.h" /* for references to cdp SoftFloat functions */
+#include "A32/skyeye_interpreter/skyeye_common/vfp/vfp_helper.h" /* for references to cdp SoftFloat functions */
 
 #define LOG_INFO(...) do{}while(0)
 #define LOG_TRACE(...) do{}while(0)

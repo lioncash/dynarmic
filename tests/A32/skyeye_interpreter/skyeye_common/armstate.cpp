@@ -8,8 +8,8 @@
 
 #include <algorithm>
 #include "common/assert.h"
-#include "skyeye_interpreter/skyeye_common/armstate.h"
-#include "skyeye_interpreter/skyeye_common/vfp/vfp.h"
+#include "A32/skyeye_interpreter/skyeye_common/armstate.h"
+#include "A32/skyeye_interpreter/skyeye_common/vfp/vfp.h"
 
 namespace Common {
 inline u16 swap16(u16 data) {return (data >> 8) | (data << 8);}

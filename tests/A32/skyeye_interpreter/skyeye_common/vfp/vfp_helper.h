@@ -34,8 +34,8 @@
 
 #include <cstdio>
 #include "common/common_types.h"
-#include "skyeye_interpreter/skyeye_common/armstate.h"
-#include "skyeye_interpreter/skyeye_common/vfp/asm_vfp.h"
+#include "A32/skyeye_interpreter/skyeye_common/armstate.h"
+#include "A32/skyeye_interpreter/skyeye_common/vfp/asm_vfp.h"
 
 #define LOG_INFO(...) do{}while(0)
 #define LOG_TRACE(...) do{}while(0)

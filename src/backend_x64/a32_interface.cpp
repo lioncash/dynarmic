@@ -17,6 +17,7 @@
 #include "backend_x64/a32_emit_x64.h"
 #include "backend_x64/a32_jitstate.h"
 #include "backend_x64/block_of_code.h"
+#include "backend_x64/callback.h"
 #include "backend_x64/jitstate_info.h"
 #include "common/assert.h"
 #include "common/common_types.h"
@@ -33,12 +34,11 @@ namespace A32 {
 
 using namespace BackendX64;
 
-RunCodeCallbacks GenRunCodeCallbacks(A32::UserCallbacks cb, CodePtr (*LookupBlock)(void* lookup_block_arg), void* arg) {
+static RunCodeCallbacks GenRunCodeCallbacks(A32::UserCallbacks cb, CodePtr (*LookupBlock)(void* lookup_block_arg), void* arg) {
     return RunCodeCallbacks{
-        LookupBlock,
-        arg,
-        cb.AddTicks,
-        cb.GetTicksRemaining
+        std::make_unique<ArgCallback>(LookupBlock, reinterpret_cast<u64>(arg)),
+        std::make_unique<SimpleCallback>(cb.AddTicks),
+        std::make_unique<SimpleCallback>(cb.GetTicksRemaining),
     };
 }
 

@@ -18,15 +18,15 @@
 
 //#include "core/memory.h"
 //#include "core/hle/svc.h"
-//#include "skyeye_interpreter/disassembler/arm_disasm.h"
-#include "skyeye_interpreter/dyncom/arm_dyncom_dec.h"
-#include "skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
-#include "skyeye_interpreter/dyncom/arm_dyncom_thumb.h"
-#include "skyeye_interpreter/dyncom/arm_dyncom_trans.h"
-#include "skyeye_interpreter/dyncom/arm_dyncom_run.h"
-#include "skyeye_interpreter/skyeye_common/armstate.h"
-#include "skyeye_interpreter/skyeye_common/armsupp.h"
-#include "skyeye_interpreter/skyeye_common/vfp/vfp.h"
+//#include "A32/skyeye_interpreter/disassembler/arm_disasm.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_dec.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_thumb.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_trans.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_run.h"
+#include "A32/skyeye_interpreter/skyeye_common/armstate.h"
+#include "A32/skyeye_interpreter/skyeye_common/armsupp.h"
+#include "A32/skyeye_interpreter/skyeye_common/vfp/vfp.h"
 
 //#include "core/gdbstub/gdbstub.h"
 
@@ -4233,7 +4233,7 @@ unsigned InterpreterMainLoop(ARMul_State* cpu) {
     }
 
     #define VFP_INTERPRETER_IMPL
-    #include "skyeye_interpreter/skyeye_common/vfp/vfpinstr.cpp"
+    #include "A32/skyeye_interpreter/skyeye_common/vfp/vfpinstr.cpp"
     #undef VFP_INTERPRETER_IMPL
 
     END:

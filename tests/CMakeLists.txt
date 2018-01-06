@@ -1,31 +1,32 @@
 add_executable(dynarmic_tests
-    arm/fuzz_arm.cpp
-    arm/fuzz_thumb.cpp
-    arm/test_arm_disassembler.cpp
-    arm/test_thumb_instructions.cpp
+    A32/fuzz_arm.cpp
+    A32/fuzz_thumb.cpp
+    A32/skyeye_interpreter/dyncom/arm_dyncom_dec.cpp
+    A32/skyeye_interpreter/dyncom/arm_dyncom_dec.h
+    A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.cpp
+    A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.h
+    A32/skyeye_interpreter/dyncom/arm_dyncom_run.h
+    A32/skyeye_interpreter/dyncom/arm_dyncom_thumb.cpp
+    A32/skyeye_interpreter/dyncom/arm_dyncom_thumb.h
+    A32/skyeye_interpreter/dyncom/arm_dyncom_trans.cpp
+    A32/skyeye_interpreter/dyncom/arm_dyncom_trans.h
+    A32/skyeye_interpreter/skyeye_common/arm_regformat.h
+    A32/skyeye_interpreter/skyeye_common/armstate.cpp
+    A32/skyeye_interpreter/skyeye_common/armstate.h
+    A32/skyeye_interpreter/skyeye_common/armsupp.cpp
+    A32/skyeye_interpreter/skyeye_common/armsupp.h
+    A32/skyeye_interpreter/skyeye_common/vfp/asm_vfp.h
+    A32/skyeye_interpreter/skyeye_common/vfp/vfp.cpp
+    A32/skyeye_interpreter/skyeye_common/vfp/vfp.h
+    A32/skyeye_interpreter/skyeye_common/vfp/vfp_helper.h
+    A32/skyeye_interpreter/skyeye_common/vfp/vfpdouble.cpp
+    A32/skyeye_interpreter/skyeye_common/vfp/vfpinstr.cpp
+    A32/skyeye_interpreter/skyeye_common/vfp/vfpsingle.cpp
+    A32/test_arm_disassembler.cpp
+    A32/test_thumb_instructions.cpp
+    A64/a64.cpp
     main.cpp
     rand_int.h
-    skyeye_interpreter/dyncom/arm_dyncom_dec.cpp
-    skyeye_interpreter/dyncom/arm_dyncom_dec.h
-    skyeye_interpreter/dyncom/arm_dyncom_interpreter.cpp
-    skyeye_interpreter/dyncom/arm_dyncom_interpreter.h
-    skyeye_interpreter/dyncom/arm_dyncom_run.h
-    skyeye_interpreter/dyncom/arm_dyncom_thumb.cpp
-    skyeye_interpreter/dyncom/arm_dyncom_thumb.h
-    skyeye_interpreter/dyncom/arm_dyncom_trans.cpp
-    skyeye_interpreter/dyncom/arm_dyncom_trans.h
-    skyeye_interpreter/skyeye_common/arm_regformat.h
-    skyeye_interpreter/skyeye_common/armstate.cpp
-    skyeye_interpreter/skyeye_common/armstate.h
-    skyeye_interpreter/skyeye_common/armsupp.cpp
-    skyeye_interpreter/skyeye_common/armsupp.h
-    skyeye_interpreter/skyeye_common/vfp/asm_vfp.h
-    skyeye_interpreter/skyeye_common/vfp/vfp.cpp
-    skyeye_interpreter/skyeye_common/vfp/vfp.h
-    skyeye_interpreter/skyeye_common/vfp/vfp_helper.h
-    skyeye_interpreter/skyeye_common/vfp/vfpdouble.cpp
-    skyeye_interpreter/skyeye_common/vfp/vfpinstr.cpp
-    skyeye_interpreter/skyeye_common/vfp/vfpsingle.cpp
 )
 
 include(CreateDirectoryGroups)

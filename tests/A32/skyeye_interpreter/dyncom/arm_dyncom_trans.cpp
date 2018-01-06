@@ -3,11 +3,11 @@
 #include "common/assert.h"
 #include "common/common_types.h"
 
-#include "skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
-#include "skyeye_interpreter/dyncom/arm_dyncom_trans.h"
-#include "skyeye_interpreter/skyeye_common/armstate.h"
-#include "skyeye_interpreter/skyeye_common/armsupp.h"
-#include "skyeye_interpreter/skyeye_common/vfp/vfp.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
+#include "A32/skyeye_interpreter/dyncom/arm_dyncom_trans.h"
+#include "A32/skyeye_interpreter/skyeye_common/armstate.h"
+#include "A32/skyeye_interpreter/skyeye_common/armsupp.h"
+#include "A32/skyeye_interpreter/skyeye_common/vfp/vfp.h"
 
 #define LOG_INFO(...) do{}while(0)
 #define LOG_TRACE(...) do{}while(0)
@@ -1971,7 +1971,7 @@ static ARM_INST_PTR INTERPRETER_TRANSLATE(yield)(unsigned int inst, int index)
 
 // Floating point VFPv3 instructions
 #define VFP_INTERPRETER_TRANS
-#include "skyeye_interpreter/skyeye_common/vfp/vfpinstr.cpp"
+#include "A32/skyeye_interpreter/skyeye_common/vfp/vfpinstr.cpp"
 #undef VFP_INTERPRETER_TRANS
 
 const transop_fp_t arm_instruction_trans[] = {

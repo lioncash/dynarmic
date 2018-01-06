@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "skyeye_interpreter/skyeye_common/armstate.h"
+#include "A32/skyeye_interpreter/skyeye_common/armstate.h"
 
 /**
  * Checks if the PC is being read, and if so, word-aligns it.

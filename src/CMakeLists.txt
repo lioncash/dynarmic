@@ -89,10 +89,17 @@ if (ARCHITECTURE_x86_64)
          backend_x64/a32_interface.cpp
          backend_x64/a32_jitstate.cpp
          backend_x64/a32_jitstate.h
+         backend_x64/a64_emit_x64.cpp
+         backend_x64/a64_emit_x64.h
+         backend_x64/a64_interface.cpp
+         backend_x64/a64_jitstate.cpp
+         backend_x64/a64_jitstate.h
          backend_x64/abi.cpp
          backend_x64/abi.h
          backend_x64/block_of_code.cpp
          backend_x64/block_of_code.h
+         backend_x64/callback.cpp
+         backend_x64/callback.h
          backend_x64/constant_pool.cpp
          backend_x64/constant_pool.h
          backend_x64/emit_x64.cpp

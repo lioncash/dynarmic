@@ -478,7 +478,7 @@ struct pkh_inst {
 
 // Floating point VFPv3 structures
 #define VFP_INTERPRETER_STRUCT
-#include "skyeye_interpreter/skyeye_common/vfp/vfpinstr.cpp"
+#include "A32/skyeye_interpreter/skyeye_common/vfp/vfpinstr.cpp"
 #undef VFP_INTERPRETER_STRUCT
 
 typedef void (*get_addr_fp_t)(ARMul_State *cpu, unsigned int inst, unsigned int &virt_addr);
