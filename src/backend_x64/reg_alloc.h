@@ -56,6 +56,8 @@ public:
     IR::Type GetType() const;
     bool IsImmediate() const;
 
+    bool FitsInImmediateU32() const;
+
     bool GetImmediateU1() const;
     u8 GetImmediateU8() const;
     u16 GetImmediateU16() const;

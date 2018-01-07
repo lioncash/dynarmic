@@ -100,6 +100,13 @@ bool Argument::IsImmediate() const {
     return value.IsImmediate();
 }
 
+bool Argument::FitsInImmediateU32() const {
+    if (!IsImmediate())
+        return false;
+    u64 imm = ImmediateToU64(value);
+    return imm < 0x100000000;
+}
+
 bool Argument::GetImmediateU1() const {
     return value.GetU1();
 }

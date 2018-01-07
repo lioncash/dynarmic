@@ -173,8 +173,8 @@ void A64EmitX64::EmitA64SetX(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     A64::Reg reg = inst->GetArg(0).GetA64RegRef();
     auto addr = qword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)];
-    if (args[1].IsImmediate()) {
-        code->mov(addr, args[1].GetImmediateU64());
+    if (args[1].FitsInImmediateU32()) {
+        code->mov(addr, args[1].GetImmediateU32());
     } else if (args[1].IsInXmm()) {
         Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
         code->movq(addr, to_store);
@@ -187,8 +187,8 @@ void A64EmitX64::EmitA64SetX(A64EmitContext& ctx, IR::Inst* inst) {
 void A64EmitX64::EmitA64SetSP(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto addr = qword[r15 + offsetof(A64JitState, sp)];
-    if (args[0].IsImmediate()) {
-        code->mov(addr, args[0].GetImmediateU64());
+    if (args[0].FitsInImmediateU32()) {
+        code->mov(addr, args[0].GetImmediateU32());
     } else if (args[0].IsInXmm()) {
         Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[0]);
         code->movq(addr, to_store);

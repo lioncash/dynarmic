@@ -30,8 +30,8 @@ std::vector<Matcher<V>> GetDecodeTable() {
 #define INST(fn, name, bitstring) Decoder::detail::detail<Matcher<V>>::GetMatcher(fn, name, bitstring)
 
         // Data processing - Immediate - PC relative addressing
-        //INST(&V::ADR,                    "ADR",                                       "0ii10000iiiiiiiiiiiiiiiiiiiddddd"),
-        //INST(&V::ADRP,                   "ADRP",                                      "1ii10000iiiiiiiiiiiiiiiiiiiddddd"),
+        INST(&V::ADR,                    "ADR",                                       "0ii10000iiiiiiiiiiiiiiiiiiiddddd"),
+        INST(&V::ADRP,                   "ADRP",                                      "1ii10000iiiiiiiiiiiiiiiiiiiddddd"),
 
         // Data processing - Immediate - Add/Sub
         INST(&V::ADD_imm,                "ADD (immediate)",                           "z0010001ssiiiiiiiiiiiinnnnnddddd"),
