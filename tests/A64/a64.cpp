@@ -1,5 +1,5 @@
 /* This file is part of the dynarmic project.
- * Copyright (c) 2016 MerryMage
+ * Copyright (c) 2018 MerryMage
  * This software may be used and distributed according to the terms of the GNU
  * General Public License version 2 or any later version.
  */
@@ -14,6 +14,7 @@
 #include "common/common_types.h"
 
 class TestEnv final : public Dynarmic::A64::UserCallbacks {
+public:
     u64 ticks_left = 0;
     std::array<u32, 3000> code_mem{};
 
@@ -22,7 +23,7 @@ class TestEnv final : public Dynarmic::A64::UserCallbacks {
             size_t index = vaddr / sizeof(u32);
             return code_mem[index];
         }
-        ASSERT_MSG(false, "MemoryReadCode(%llx)", vaddr);
+        return 0x14000000; // B .
     }
 
     std::uint8_t MemoryRead8(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead8(%llx)", vaddr); }
@@ -49,10 +50,25 @@ class TestEnv final : public Dynarmic::A64::UserCallbacks {
     std::uint64_t GetTicksRemaining() override {
         return ticks_left;
     }
-
 };
 
-TEST_CASE("A64", "[a64]") {
+TEST_CASE("A64: ADD", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x8b020020; // ADD X0, X1, X2
+    env.code_mem[1] = 0x14000000; // B .
+
+    jit.SetRegister(0, 0);
+    jit.SetRegister(1, 1);
+    jit.SetRegister(2, 2);
+    jit.SetPC(0);
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetRegister(0) == 3);
+    REQUIRE(jit.GetRegister(1) == 1);
+    REQUIRE(jit.GetRegister(2) == 2);
+    REQUIRE(jit.GetPC() == 4);
 }

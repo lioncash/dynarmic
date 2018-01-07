@@ -373,7 +373,7 @@ std::vector<Matcher<V>> GetDecodeTable() {
         //INST(&V::BICS,                   "BICS (shifted register)",                   "z1101010ss1mmmmmiiiiiinnnnnddddd"),
 
         // Data Processing - Register - Add/Sub (shifted register)
-        //INST(&V::ADD_shift,              "ADD (shifted register)",                    "z0001011ss0mmmmmiiiiiinnnnnddddd"),
+        INST(&V::ADD_shift,              "ADD (shifted register)",                    "z0001011ss0mmmmmiiiiiinnnnnddddd"),
         //INST(&V::ADDS_shift,             "ADDS (shifted register)",                   "z0101011ss0mmmmmiiiiiinnnnnddddd"),
         //INST(&V::SUB_shift,              "SUB (shifted register)",                    "z1001011ss0mmmmmiiiiiinnnnnddddd"),
         //INST(&V::SUBS_shift,             "SUBS (shifted register)",                   "z1101011ss0mmmmmiiiiiinnnnnddddd"),

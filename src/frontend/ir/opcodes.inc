@@ -34,6 +34,12 @@ A32OPC(SetFpscr,                T::Void,        T::U32,                         
 A32OPC(GetFpscrNZCV,            T::U32,                                                         )
 A32OPC(SetFpscrNZCV,            T::Void,        T::U32,                                         )
 
+// A64 Context getters/setters
+A64OPC(GetW,                    T::U32,         T::A64Reg                                       )
+A64OPC(GetX,                    T::U64,         T::A64Reg                                       )
+A64OPC(SetW,                    T::Void,        T::A64Reg,      T::U32                          )
+A64OPC(SetX,                    T::Void,        T::A64Reg,      T::U64                          )
+
 // Hints
 OPCODE(PushRSB,                 T::Void,        T::U64                                          )
 
@@ -51,11 +57,14 @@ OPCODE(LeastSignificantByte,    T::U8,          T::U32                          
 OPCODE(MostSignificantBit,      T::U1,          T::U32                                          )
 OPCODE(IsZero,                  T::U1,          T::U32                                          )
 OPCODE(IsZero64,                T::U1,          T::U64                                          )
-OPCODE(LogicalShiftLeft,        T::U32,         T::U32,         T::U8,          T::U1           )
-OPCODE(LogicalShiftRight,       T::U32,         T::U32,         T::U8,          T::U1           )
+OPCODE(LogicalShiftLeft32,      T::U32,         T::U32,         T::U8,          T::U1           )
+OPCODE(LogicalShiftLeft64,      T::U64,         T::U64,         T::U8                           )
+OPCODE(LogicalShiftRight32,     T::U32,         T::U32,         T::U8,          T::U1           )
 OPCODE(LogicalShiftRight64,     T::U64,         T::U64,         T::U8                           )
-OPCODE(ArithmeticShiftRight,    T::U32,         T::U32,         T::U8,          T::U1           )
-OPCODE(RotateRight,             T::U32,         T::U32,         T::U8,          T::U1           )
+OPCODE(ArithmeticShiftRight32,  T::U32,         T::U32,         T::U8,          T::U1           )
+OPCODE(ArithmeticShiftRight64,  T::U64,         T::U64,         T::U8                           )
+OPCODE(RotateRight32,           T::U32,         T::U32,         T::U8,          T::U1           )
+OPCODE(RotateRight64,           T::U64,         T::U64,         T::U8                           )
 OPCODE(RotateRightExtended,     T::U32,         T::U32,         T::U1                           )
 OPCODE(AddWithCarry,            T::U32,         T::U32,         T::U32,         T::U1           )
 OPCODE(SubWithCarry,            T::U32,         T::U32,         T::U32,         T::U1           )

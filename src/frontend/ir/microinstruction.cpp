@@ -13,18 +13,21 @@ namespace Dynarmic {
 namespace IR {
 
 bool Inst::IsArithmeticShift() const {
-    return op == Opcode::ArithmeticShiftRight;
+    return op == Opcode::ArithmeticShiftRight32 ||
+           op == Opcode::ArithmeticShiftRight64;
 }
 
 bool Inst::IsCircularShift() const {
-    return op == Opcode::RotateRight ||
+    return op == Opcode::RotateRight32 ||
+           op == Opcode::RotateRight64 ||
            op == Opcode::RotateRightExtended;
 }
 
 bool Inst::IsLogicalShift() const {
     switch (op) {
-    case Opcode::LogicalShiftLeft:
-    case Opcode::LogicalShiftRight:
+    case Opcode::LogicalShiftLeft32:
+    case Opcode::LogicalShiftLeft64:
+    case Opcode::LogicalShiftRight32:
     case Opcode::LogicalShiftRight64:
         return true;
 
@@ -133,6 +136,8 @@ bool Inst::ReadsFromCoreRegister() const {
     case Opcode::A32GetRegister:
     case Opcode::A32GetExtendedRegister32:
     case Opcode::A32GetExtendedRegister64:
+    case Opcode::A64GetW:
+    case Opcode::A64GetX:
         return true;
 
     default:
@@ -146,6 +151,8 @@ bool Inst::WritesToCoreRegister() const {
     case Opcode::A32SetExtendedRegister32:
     case Opcode::A32SetExtendedRegister64:
     case Opcode::A32BXWritePC:
+    case Opcode::A64SetW:
+    case Opcode::A64SetX:
         return true;
 
     default:

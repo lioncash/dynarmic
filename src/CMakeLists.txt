@@ -52,9 +52,14 @@ add_library(dynarmic
     frontend/A32/types.cpp
     frontend/A32/types.h
     frontend/A64/decoder/a64.h
+    frontend/A64/FPCR.h
     frontend/A64/imm.h
+    frontend/A64/ir_emitter.cpp
+    frontend/A64/ir_emitter.h
     frontend/A64/location_descriptor.cpp
     frontend/A64/location_descriptor.h
+    frontend/A64/translate/impl/data_processing_addsub.cpp
+    frontend/A64/translate/impl/impl.cpp
     frontend/A64/translate/impl/impl.h
     frontend/A64/translate/translate.cpp
     frontend/A64/translate/translate.h

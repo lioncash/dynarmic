@@ -28,13 +28,13 @@ public:
 
     template <typename T = u32>
     T ZeroExtend() const {
-        static_assert(Common::BitSize<T>() <= bit_size);
+        static_assert(Common::BitSize<T>() >= bit_size);
         return value;
     }
 
     template <typename T = s32>
     T SignExtend() const {
-        static_assert(Common::BitSize<T>() <= bit_size);
+        static_assert(Common::BitSize<T>() >= bit_size);
         return static_cast<T>(Common::SignExtend<bit_size>(value));
     }
 

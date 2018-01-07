@@ -23,6 +23,12 @@ struct TranslatorVisitor final {
 
     bool InterpretThisInstruction();
     bool UnpredictableInstruction();
+    bool ReservedValue();
+
+    IR::U32U64 X(size_t bitsize, Reg reg);
+    void X(size_t bitsize, Reg reg, IR::U32U64 value);
+
+    IR::U32U64 ShiftReg(size_t bitsize, Reg reg, Imm<2> shift, IR::U8 amount);
 
     // Data processing - Immediate - PC relative addressing
     bool ADR(Imm<2> immlo, Imm<19> immhi, Reg Rd);

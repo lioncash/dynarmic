@@ -115,11 +115,56 @@ A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
     return block_desc;
 }
 
+void A64EmitX64::EmitA64GetW(A64EmitContext& ctx, IR::Inst* inst) {
+    A64::Reg reg = inst->GetArg(0).GetA64RegRef();
+
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
+    code->mov(result, dword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)]);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void A64EmitX64::EmitA64GetX(A64EmitContext& ctx, IR::Inst* inst) {
+    A64::Reg reg = inst->GetArg(0).GetA64RegRef();
+
+    Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
+    code->mov(result, qword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)]);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void A64EmitX64::EmitA64SetW(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    A64::Reg reg = inst->GetArg(0).GetA64RegRef();
+    auto addr = dword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)];
+    if (args[1].IsImmediate()) {
+        code->mov(addr, args[1].GetImmediateU32());
+    } else if (args[1].IsInXmm()) {
+        Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
+        code->movd(addr, to_store);
+    } else {
+        Xbyak::Reg32 to_store = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+        code->mov(addr, to_store);
+    }
+}
+
+void A64EmitX64::EmitA64SetX(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    A64::Reg reg = inst->GetArg(0).GetA64RegRef();
+    auto addr = qword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)];
+    if (args[1].IsImmediate()) {
+        code->mov(addr, args[1].GetImmediateU64());
+    } else if (args[1].IsInXmm()) {
+        Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
+        code->movq(addr, to_store);
+    } else {
+        Xbyak::Reg64 to_store = ctx.reg_alloc.UseGpr(args[1]);
+        code->mov(addr, to_store);
+    }
+}
+
 void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor) {
-    code->mov(code->ABI_PARAM1.cvt32(), A64::LocationDescriptor{terminal.next}.PC());
-    //code->mov(code->ABI_PARAM2, reinterpret_cast<u64>(jit_interface));
-    //code->mov(code->ABI_PARAM3, reinterpret_cast<u64>(cb.user_arg));
-    //code->mov(MJitStateReg(A64::Reg::PC), code->ABI_PARAM1.cvt32());
+    code->mov(code->ABI_PARAM1, A64::LocationDescriptor{terminal.next}.PC());
+    code->mov(code->ABI_PARAM2.cvt32(), 1);
+    code->mov(qword[r15 + offsetof(A64JitState, pc)], code->ABI_PARAM1.cvt32());
     code->SwitchMxcsrOnExit();
     //code->CallFunction(cb.InterpreterFallback);
     code->ReturnFromRunCode(true); // TODO: Check cycles
@@ -144,7 +189,7 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlock terminal, IR::LocationDesc
     code->SwitchToFarCode();
     code->align(16);
     code->L(dest);
-    //code->mov(MJitStateReg(A64::Reg::PC), A64::LocationDescriptor{terminal.next}.PC());
+    code->mov(qword[r15 + offsetof(A64JitState, pc)], A64::LocationDescriptor{terminal.next}.PC());
     PushRSBHelper(rax, rbx, terminal.next);
     code->ForceReturnFromRunCode();
     code->SwitchToNearCode();
@@ -176,23 +221,23 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::CheckHalt terminal, IR::LocationDesc
     EmitTerminal(terminal.else_, initial_location);
 }
 
-void A64EmitX64::EmitPatchJg(const IR::LocationDescriptor& /*target_desc*/, CodePtr target_code_ptr) {
+void A64EmitX64::EmitPatchJg(const IR::LocationDescriptor& target_desc, CodePtr target_code_ptr) {
     const CodePtr patch_location = code->getCurr();
     if (target_code_ptr) {
         code->jg(target_code_ptr);
     } else {
-        //code->mov(MJitStateReg(A64::Reg::PC), A64::LocationDescriptor{target_desc}.PC());
+        code->mov(qword[r15 + offsetof(A64JitState, pc)], A64::LocationDescriptor{target_desc}.PC());
         code->jg(code->GetReturnFromRunCodeAddress());
     }
     code->EnsurePatchLocationSize(patch_location, 14);
 }
 
-void A64EmitX64::EmitPatchJmp(const IR::LocationDescriptor& /*target_desc*/, CodePtr target_code_ptr) {
+void A64EmitX64::EmitPatchJmp(const IR::LocationDescriptor& target_desc, CodePtr target_code_ptr) {
     const CodePtr patch_location = code->getCurr();
     if (target_code_ptr) {
         code->jmp(target_code_ptr);
     } else {
-        //code->mov(MJitStateReg(A64::Reg::PC), A64::LocationDescriptor{target_desc}.PC());
+        code->mov(qword[r15 + offsetof(A64JitState, pc)], A64::LocationDescriptor{target_desc}.PC());
         code->jmp(code->GetReturnFromRunCodeAddress());
     }
     code->EnsurePatchLocationSize(patch_location, 13);

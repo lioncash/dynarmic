@@ -84,18 +84,23 @@ public:
 
     ResultAndCarry<U32> LogicalShiftLeft(const U32& value_in, const U8& shift_amount, const U1& carry_in);
     ResultAndCarry<U32> LogicalShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in);
-    U64 LogicalShiftRight64(const U64& value_in, const U8& shift_amount);
     ResultAndCarry<U32> ArithmeticShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in);
     ResultAndCarry<U32> RotateRight(const U32& value_in, const U8& shift_amount, const U1& carry_in);
+    U64 LogicalShiftRight(const U64& value_in, const U8& shift_amount);
+    U32U64 LogicalShiftLeft(const U32U64& value_in, const U8& shift_amount);
+    U32U64 LogicalShiftRight(const U32U64& value_in, const U8& shift_amount);
+    U32U64 ArithmeticShiftRight(const U32U64& value_in, const U8& shift_amount);
+    U32U64 RotateRight(const U32U64& value_in, const U8& shift_amount);
     ResultAndCarry<U32> RotateRightExtended(const U32& value_in, const U1& carry_in);
     ResultAndCarryAndOverflow<U32> AddWithCarry(const Value& a, const Value& b, const U1& carry_in);
     U32 Add(const U32& a, const U32& b);
-    U64 Add64(const U64& a, const U64& b);
+    U64 Add(const U64& a, const U64& b);
+    U32U64 Add(const U32U64& a, const U32U64& b);
     ResultAndCarryAndOverflow<U32> SubWithCarry(const U32& a, const U32& b, const U1& carry_in);
     U32 Sub(const U32& a, const U32& b);
-    U64 Sub64(const U64& a, const U64& b);
+    U64 Sub(const U64& a, const U64& b);
     U32 Mul(const U32& a, const U32& b);
-    U64 Mul64(const U64& a, const U64& b);
+    U64 Mul(const U64& a, const U64& b);
     U32 And(const U32& a, const U32& b);
     U32 Eor(const U32& a, const U32& b);
     U32 Or(const U32& a, const U32& b);

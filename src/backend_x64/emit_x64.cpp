@@ -213,7 +213,7 @@ void EmitX64<JST>::EmitIsZero64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitLogicalShiftLeft(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64<JST>::EmitLogicalShiftLeft32(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -314,7 +314,41 @@ void EmitX64<JST>::EmitLogicalShiftLeft(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitLogicalShiftRight(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64<JST>::EmitLogicalShiftLeft64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    auto& operand_arg = args[0];
+    auto& shift_arg = args[1];
+
+    if (shift_arg.IsImmediate()) {
+        Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(operand_arg);
+        u8 shift = shift_arg.GetImmediateU8();
+
+        if (shift < 64) {
+            code->shl(result, shift);
+        } else {
+            code->xor_(result.cvt32(), result.cvt32());
+        }
+
+        ctx.reg_alloc.DefineValue(inst, result);
+    } else {
+        ctx.reg_alloc.Use(shift_arg, HostLoc::RCX);
+        Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(operand_arg);
+        Xbyak::Reg64 zero = ctx.reg_alloc.ScratchGpr();
+
+        // The x64 SHL instruction masks the shift count by 0x1F before performing the shift.
+        // ARM differs from the behaviour: It does not mask the count, so shifts above 31 result in zeros.
+
+        code->shl(result, code->cl);
+        code->xor_(zero.cvt32(), zero.cvt32());
+        code->cmp(code->cl, 64);
+        code->cmovnb(result, zero);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+    }
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitLogicalShiftRight32(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -419,19 +453,36 @@ void EmitX64<JST>::EmitLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
     auto& operand_arg = args[0];
     auto& shift_arg = args[1];
 
-    ASSERT_MSG(shift_arg.IsImmediate(), "variable 64 bit shifts are not implemented");
-    ASSERT_MSG(shift_arg.GetImmediateU8() < 64, "shift width clamping is not implemented");
+    if (shift_arg.IsImmediate()) {
+        Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(operand_arg);
+        u8 shift = shift_arg.GetImmediateU8();
 
-    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(operand_arg);
-    u8 shift = shift_arg.GetImmediateU8();
+        if (shift < 64) {
+            code->shr(result, shift);
+        } else {
+            code->xor_(result.cvt32(), result.cvt32());
+        }
 
-    code->shr(result.cvt64(), shift);
+        ctx.reg_alloc.DefineValue(inst, result);
+    } else {
+        ctx.reg_alloc.Use(shift_arg, HostLoc::RCX);
+        Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(operand_arg);
+        Xbyak::Reg64 zero = ctx.reg_alloc.ScratchGpr();
 
-    ctx.reg_alloc.DefineValue(inst, result);
+        // The x64 SHR instruction masks the shift count by 0x1F before performing the shift.
+        // ARM differs from the behaviour: It does not mask the count, so shifts above 31 result in zeros.
+
+        code->shr(result, code->cl);
+        code->xor_(zero.cvt32(), zero.cvt32());
+        code->cmp(code->cl, 64);
+        code->cmovnb(result, zero);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+    }
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitArithmeticShiftRight(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64<JST>::EmitArithmeticShiftRight32(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -520,7 +571,39 @@ void EmitX64<JST>::EmitArithmeticShiftRight(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitRotateRight(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64<JST>::EmitArithmeticShiftRight64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    auto& operand_arg = args[0];
+    auto& shift_arg = args[1];
+
+    if (shift_arg.IsImmediate()) {
+        u8 shift = shift_arg.GetImmediateU8();
+        Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(operand_arg);
+
+        code->sar(result, u8(shift < 63 ? shift : 63));
+
+        ctx.reg_alloc.DefineValue(inst, result);
+    } else {
+        ctx.reg_alloc.UseScratch(shift_arg, HostLoc::RCX);
+        Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(operand_arg);
+        Xbyak::Reg64 const63 = ctx.reg_alloc.ScratchGpr();
+
+        // The 64-bit x64 SAR instruction masks the shift count by 0x3F before performing the shift.
+        // ARM differs from the behaviour: It does not mask the count.
+
+        // We note that all shift values above 63 have the same behaviour as 63 does, so we saturate `shift` to 63.
+        code->mov(const63, 63);
+        code->movzx(code->ecx, code->cl);
+        code->cmp(code->ecx, u32(63));
+        code->cmovg(code->ecx, const63);
+        code->sar(result, code->cl);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+    }
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitRotateRight32(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -596,6 +679,30 @@ void EmitX64<JST>::EmitRotateRight(EmitContext& ctx, IR::Inst* inst) {
             ctx.reg_alloc.DefineValue(inst, result);
             ctx.reg_alloc.DefineValue(carry_inst, carry);
         }
+    }
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitRotateRight64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    auto& operand_arg = args[0];
+    auto& shift_arg = args[1];
+
+    if (shift_arg.IsImmediate()) {
+        u8 shift = shift_arg.GetImmediateU8();
+        Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(operand_arg);
+
+        code->ror(result, u8(shift & 0x3F));
+
+        ctx.reg_alloc.DefineValue(inst, result);
+    } else {
+        ctx.reg_alloc.Use(shift_arg, HostLoc::RCX);
+        Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(operand_arg);
+
+        // x64 ROR instruction does (shift & 0x3F) for us.
+        code->ror(result, code->cl);
+
+        ctx.reg_alloc.DefineValue(inst, result);
     }
 }
 

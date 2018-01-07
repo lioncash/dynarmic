@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "frontend/A32/types.h"
@@ -76,9 +78,8 @@ class TypedValue final : public Value {
 public:
     TypedValue() : Value() {}
 
-    template <Type other_type>
+    template <Type other_type, typename = std::enable_if_t<(other_type & type_) != Type::Void>>
     /* implicit */ TypedValue(const TypedValue<other_type>& value) : Value(value) {
-        static_assert((other_type & type_) != Type::Void);
         ASSERT((value.GetType() & type_) != Type::Void);
     }
 
@@ -92,6 +93,7 @@ using U8 = TypedValue<Type::U8>;
 using U16 = TypedValue<Type::U16>;
 using U32 = TypedValue<Type::U32>;
 using U64 = TypedValue<Type::U64>;
+using U32U64 = TypedValue<Type::U32 | Type::U64>;
 using F32 = TypedValue<Type::F32>;
 using F64 = TypedValue<Type::F64>;
 using F128 = TypedValue<Type::F128>;

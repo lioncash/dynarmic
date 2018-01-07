@@ -70,29 +70,25 @@ U1 IREmitter::IsZero64(const U64& value) {
 }
 
 ResultAndCarry<U32> IREmitter::LogicalShiftLeft(const U32& value_in, const U8& shift_amount, const U1& carry_in) {
-    auto result = Inst<U32>(Opcode::LogicalShiftLeft, value_in, shift_amount, carry_in);
+    auto result = Inst<U32>(Opcode::LogicalShiftLeft32, value_in, shift_amount, carry_in);
     auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
 }
 
 ResultAndCarry<U32> IREmitter::LogicalShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in) {
-    auto result = Inst<U32>(Opcode::LogicalShiftRight, value_in, shift_amount, carry_in);
+    auto result = Inst<U32>(Opcode::LogicalShiftRight32, value_in, shift_amount, carry_in);
     auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
 }
 
-U64 IREmitter::LogicalShiftRight64(const U64& value_in, const U8& shift_amount) {
-    return Inst<U64>(Opcode::LogicalShiftRight64, value_in, shift_amount);
-}
-
 ResultAndCarry<U32> IREmitter::ArithmeticShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in) {
-    auto result = Inst<U32>(Opcode::ArithmeticShiftRight, value_in, shift_amount, carry_in);
+    auto result = Inst<U32>(Opcode::ArithmeticShiftRight32, value_in, shift_amount, carry_in);
     auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
 }
 
 ResultAndCarry<U32> IREmitter::RotateRight(const U32& value_in, const U8& shift_amount, const U1& carry_in) {
-    auto result = Inst<U32>(Opcode::RotateRight, value_in, shift_amount, carry_in);
+    auto result = Inst<U32>(Opcode::RotateRight32, value_in, shift_amount, carry_in);
     auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
 }
@@ -101,6 +97,42 @@ ResultAndCarry<U32> IREmitter::RotateRightExtended(const U32& value_in, const U1
     auto result = Inst<U32>(Opcode::RotateRightExtended, value_in, carry_in);
     auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     return {result, carry_out};
+}
+
+U64 IREmitter::LogicalShiftRight(const U64& value_in, const U8& shift_amount) {
+    return Inst<U64>(Opcode::LogicalShiftRight64, value_in, shift_amount);
+}
+
+U32U64 IREmitter::LogicalShiftLeft(const U32U64& value_in, const U8& shift_amount) {
+    if (value_in.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::LogicalShiftLeft32, value_in, shift_amount, Imm1(0));
+    } else {
+        return Inst<U64>(Opcode::LogicalShiftLeft64, value_in, shift_amount);
+    }
+}
+
+U32U64 IREmitter::LogicalShiftRight(const U32U64& value_in, const U8& shift_amount) {
+    if (value_in.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::LogicalShiftRight32, value_in, shift_amount, Imm1(0));
+    } else {
+        return Inst<U64>(Opcode::LogicalShiftRight64, value_in, shift_amount);
+    }
+}
+
+U32U64 IREmitter::ArithmeticShiftRight(const U32U64& value_in, const U8& shift_amount) {
+    if (value_in.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::ArithmeticShiftRight32, value_in, shift_amount, Imm1(0));
+    } else {
+        return Inst<U64>(Opcode::ArithmeticShiftRight64, value_in, shift_amount);
+    }
+}
+
+U32U64 IREmitter::RotateRight(const U32U64& value_in, const U8& shift_amount) {
+    if (value_in.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::RotateRight32, value_in, shift_amount, Imm1(0));
+    } else {
+        return Inst<U64>(Opcode::RotateRight64, value_in, shift_amount);
+    }
 }
 
 ResultAndCarryAndOverflow<U32> IREmitter::AddWithCarry(const Value& a, const Value& b, const U1& carry_in) {
@@ -114,8 +146,17 @@ U32 IREmitter::Add(const U32& a, const U32& b) {
     return Inst<U32>(Opcode::AddWithCarry, a, b, Imm1(0));
 }
 
-U64 IREmitter::Add64(const U64& a, const U64& b) {
+U64 IREmitter::Add(const U64& a, const U64& b) {
     return Inst<U64>(Opcode::Add64, a, b);
+}
+
+U32U64 IREmitter::Add(const U32U64& a, const U32U64& b) {
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::AddWithCarry, a, b, Imm1(0));
+    } else {
+        return Inst<U64>(Opcode::Add64, a, b);
+    }
 }
 
 ResultAndCarryAndOverflow<U32> IREmitter::SubWithCarry(const U32& a, const U32& b, const U1& carry_in) {
@@ -130,7 +171,7 @@ U32 IREmitter::Sub(const U32& a, const U32& b) {
     return Inst<U32>(Opcode::SubWithCarry, a, b, Imm1(1));
 }
 
-U64 IREmitter::Sub64(const U64& a, const U64& b) {
+U64 IREmitter::Sub(const U64& a, const U64& b) {
     return Inst<U64>(Opcode::Sub64, a, b);
 }
 
@@ -138,7 +179,7 @@ U32 IREmitter::Mul(const U32& a, const U32& b) {
     return Inst<U32>(Opcode::Mul, a, b);
 }
 
-U64 IREmitter::Mul64(const U64& a, const U64& b) {
+U64 IREmitter::Mul(const U64& a, const U64& b) {
     return Inst<U64>(Opcode::Mul64, a, b);
 }
 

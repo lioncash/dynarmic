@@ -23,10 +23,10 @@ void ConstantPropagation(IR::Block& block, const A32::UserCallbacks::Memory& mem
             }
             break;
         }
-        case IR::Opcode::LogicalShiftLeft:
-        case IR::Opcode::LogicalShiftRight:
-        case IR::Opcode::ArithmeticShiftRight:
-        case IR::Opcode::RotateRight: {
+        case IR::Opcode::LogicalShiftLeft32:
+        case IR::Opcode::LogicalShiftRight32:
+        case IR::Opcode::ArithmeticShiftRight32:
+        case IR::Opcode::RotateRight32: {
             if (!inst.GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp)) {
                 inst.SetArg(2, IR::Value(false));
             }

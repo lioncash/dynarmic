@@ -14,6 +14,7 @@
 
 #include "common/assert.h"
 #include "frontend/A32/types.h"
+#include "frontend/A64/types.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/opcodes.h"
 
@@ -22,7 +23,7 @@ namespace IR {
 
 void Block::AppendNewInst(Opcode opcode, std::initializer_list<IR::Value> args) {
     IR::Inst* inst = new(instruction_alloc_pool->Alloc()) IR::Inst(opcode);
-    DEBUG_ASSERT(args.size() == inst->NumArgs());
+    ASSERT(args.size() == inst->NumArgs());
 
     std::for_each(args.begin(), args.end(), [&inst, index = size_t(0)](const auto& arg) mutable {
         inst->SetArg(index, arg);
@@ -165,6 +166,10 @@ std::string DumpBlock(const IR::Block& block) {
             return A32::RegToString(arg.GetA32RegRef());
         case Type::A32ExtReg:
             return A32::ExtRegToString(arg.GetA32ExtRegRef());
+        case Type::A64Reg:
+            return A64::RegToString(arg.GetA64RegRef());
+        case Type::A64Vec:
+            return A64::VecToString(arg.GetA64VecRef());
         default:
             return "<unknown immediate type>";
         }
