@@ -33,6 +33,12 @@ struct A64JitState {
 
     u32 CPSR_nzcv = 0;
     u32 FPSCR_nzcv = 0;
+    u32 GetPstate() const {
+        return CPSR_nzcv;
+    }
+    void SetPstate(u32 new_pstate) {
+        CPSR_nzcv = new_pstate & 0xF0000000;
+    }
 
     alignas(16) std::array<u64, 64> vec{}; // Extension registers.
 

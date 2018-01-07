@@ -128,7 +128,8 @@ void A64EmitX64::EmitA64SetNZCV(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg32 to_store = ctx.reg_alloc.UseGpr(args[0]).cvt32();
     code->and_(to_store, 0b11000001'00000001);
     code->imul(to_store, to_store, 0b00010000'00100001);
-    code->and_(to_store, 0xFF000000);
+    code->shl(to_store, 16);
+    code->and_(to_store, 0xF0000000);
     code->mov(dword[r15 + offsetof(A64JitState, CPSR_nzcv)], to_store);
 }
 

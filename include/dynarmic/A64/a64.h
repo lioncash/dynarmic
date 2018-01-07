@@ -83,6 +83,11 @@ public:
     /// Modify FPCR.
     void SetFpcr(std::uint32_t value);
 
+    /// View PSTATE
+    std::uint32_t GetPstate() const;
+    /// Modify PSTATE
+    void SetPstate(std::uint32_t value);
+
     /**
      * Returns true if Jit::Run was called but hasn't returned yet.
      * i.e.: We're in a callback.

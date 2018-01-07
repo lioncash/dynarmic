@@ -125,6 +125,14 @@ public:
         jit_state.SetFpcr(value);
     }
 
+    u32 GetPstate() const {
+        return jit_state.GetPstate();
+    }
+
+    void SetPstate(u32 value) {
+        jit_state.SetPstate(value);
+    }
+
     bool IsExecuting() const {
         return is_executing;
     }
@@ -255,6 +263,14 @@ u32 Jit::GetFpcr() const {
 
 void Jit::SetFpcr(u32 value) {
     impl->SetFpcr(value);
+}
+
+u32 Jit::GetPstate() const {
+    return impl->GetPstate();
+}
+
+void Jit::SetPstate(u32 value) {
+    impl->SetPstate(value);
 }
 
 bool Jit::IsExecuting() const {

@@ -124,6 +124,7 @@ bool Inst::WritesToCPSR() const {
     case Opcode::A32OrQFlag:
     case Opcode::A32SetGEFlags:
     case Opcode::A32SetGEFlagsCompressed:
+    case Opcode::A64SetNZCV:
         return true;
 
     default:
@@ -387,7 +388,7 @@ void Inst::Use(const Value& value) {
         break;
     case Opcode::GetNZCVFromOp:
         ASSERT_MSG(!value.GetInst()->nzcv_inst, "Only one of each type of pseudo-op allowed");
-        ASSERT_MSG(MayGetNZCVFromOp(), "This instruction doesn't support the GetNZCVFromOp pseduo-op");
+        ASSERT_MSG(value.GetInst()->MayGetNZCVFromOp(), "This value doesn't support the GetNZCVFromOp pseduo-op");
         value.GetInst()->nzcv_inst = this;
         break;
     default:

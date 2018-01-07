@@ -113,3 +113,58 @@ TEST_CASE("A64: Bitmasks", "[a64]") {
     REQUIRE(jit.GetRegister(2) == 1);
     REQUIRE(jit.GetPC() == 12);
 }
+
+TEST_CASE("A64: ANDS NZCV", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x6a020020; // ANDS W0, W1, W2
+    env.code_mem[1] = 0x14000000; // B .
+
+    SECTION("N=1, Z=0") {
+        jit.SetRegister(0, 0);
+        jit.SetRegister(1, 0xFFFFFFFF);
+        jit.SetRegister(2, 0xFFFFFFFF);
+        jit.SetPC(0);
+
+        env.ticks_left = 2;
+        jit.Run();
+
+        REQUIRE(jit.GetRegister(0) == 0xFFFFFFFF);
+        REQUIRE(jit.GetRegister(1) == 0xFFFFFFFF);
+        REQUIRE(jit.GetRegister(2) == 0xFFFFFFFF);
+        REQUIRE(jit.GetPC() == 4);
+        REQUIRE((jit.GetPstate() & 0xF0000000) == 0x80000000);
+    }
+
+    SECTION("N=0, Z=1") {
+        jit.SetRegister(0, 0);
+        jit.SetRegister(1, 0xFFFFFFFF);
+        jit.SetRegister(2, 0x00000000);
+        jit.SetPC(0);
+
+        env.ticks_left = 2;
+        jit.Run();
+
+        REQUIRE(jit.GetRegister(0) == 0x00000000);
+        REQUIRE(jit.GetRegister(1) == 0xFFFFFFFF);
+        REQUIRE(jit.GetRegister(2) == 0x00000000);
+        REQUIRE(jit.GetPC() == 4);
+        REQUIRE((jit.GetPstate() & 0xF0000000) == 0x40000000);
+    }
+    SECTION("N=0, Z=0") {
+        jit.SetRegister(0, 0);
+        jit.SetRegister(1, 0x12345678);
+        jit.SetRegister(2, 0x7324a993);
+        jit.SetPC(0);
+
+        env.ticks_left = 2;
+        jit.Run();
+
+        REQUIRE(jit.GetRegister(0) == 0x12240010);
+        REQUIRE(jit.GetRegister(1) == 0x12345678);
+        REQUIRE(jit.GetRegister(2) == 0x7324a993);
+        REQUIRE(jit.GetPC() == 4);
+        REQUIRE((jit.GetPstate() & 0xF0000000) == 0x00000000);
+    }
+}
