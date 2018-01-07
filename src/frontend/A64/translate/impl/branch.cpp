@@ -38,5 +38,29 @@ bool TranslatorVisitor::BL(Imm<26> imm26) {
     return false;
 }
 
+bool TranslatorVisitor::BLR(Reg Rn) {
+    X(64, Reg::R30, ir.Imm64(ir.PC() + 4));
+    ir.PushRSB(ir.current_location.AdvancePC(4));
+
+    auto target = X(64, Rn);
+    ir.SetPC(target);
+    ir.SetTerm(IR::Term::ReturnToDispatch{});
+    return false;
+}
+
+bool TranslatorVisitor::BR(Reg Rn) {
+    auto target = X(64, Rn);
+    ir.SetPC(target);
+    ir.SetTerm(IR::Term::ReturnToDispatch{});
+    return false;
+}
+
+bool TranslatorVisitor::RET(Reg Rn) {
+    auto target = X(64, Rn);
+    ir.SetPC(target);
+    ir.SetTerm(IR::Term::PopRSBHint{});
+    return false;
+}
+
 } // namespace A64
 } // namespace Dynarmic

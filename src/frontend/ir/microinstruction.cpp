@@ -155,6 +155,7 @@ bool Inst::WritesToCoreRegister() const {
     case Opcode::A64SetW:
     case Opcode::A64SetX:
     case Opcode::A64SetSP:
+    case Opcode::A64SetPC:
         return true;
 
     default:

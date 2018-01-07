@@ -102,15 +102,15 @@ std::vector<Matcher<V>> GetDecodeTable() {
         //INST(&V::MRS,                    "MRS",                                       "110101010011poooNNNNMMMMooottttt"),
 
         // Unconditonal branch (Register)
-        //INST(&V::BR,                     "BR",                                        "1101011000011111000000nnnnn00000"),
-        //INST(&V::BRA,                    "BRAA, BRAAZ, BRAB, BRABZ",                  "1101011Z0001111100001Mnnnnnmmmmm"),
-        //INST(&V::BLR,                    "BLR",                                       "1101011000111111000000nnnnn00000"),
-        //INST(&V::BLRA,                   "BLRAA, BLRAAZ, BLRAB, BLRABZ",              "1101011Z0011111100001Mnnnnnmmmmm"),
-        //INST(&V::RET,                    "RET",                                       "1101011001011111000000nnnnn00000"),
-        //INST(&V::RETA,                   "RETAA, RETAB",                              "110101100101111100001M1111111111"),
-        //INST(&V::ERET,                   "ERET",                                      "11010110100111110000001111100000"),
-        //INST(&V::ERETA,                  "ERETAA, ERETAB",                            "110101101001111100001M1111111111"),
+        INST(&V::BLR,                    "BLR",                                       "1101011000111111000000nnnnn00000"),
+        INST(&V::BR,                     "BR",                                        "1101011000011111000000nnnnn00000"),
         //INST(&V::DRPS,                   "DRPS",                                      "11010110101111110000001111100000"),
+        //INST(&V::ERET,                   "ERET",                                      "11010110100111110000001111100000"),
+        INST(&V::RET,                    "RET",                                       "1101011001011111000000nnnnn00000"),
+        //INST(&V::BLRA,                   "BLRAA, BLRAAZ, BLRAB, BLRABZ",              "1101011Z0011111100001Mnnnnnmmmmm"), // ARMv8.3
+        //INST(&V::BRA,                    "BRAA, BRAAZ, BRAB, BRABZ",                  "1101011Z0001111100001Mnnnnnmmmmm"), // ARMv8.3
+        //INST(&V::ERETA,                  "ERETAA, ERETAB",                            "110101101001111100001M1111111111"), // ARMv8.3
+        //INST(&V::RETA,                   "RETAA, RETAB",                              "110101100101111100001M1111111111"), // ARMv8.3
 
         // Unconditonal branch (immediate)
         INST(&V::B_uncond,               "B",                                         "000101iiiiiiiiiiiiiiiiiiiiiiiiii"),

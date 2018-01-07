@@ -62,5 +62,9 @@ void IREmitter::SetSP(const IR::U64& value) {
     Inst(Opcode::A64SetSP, value);
 }
 
+void IREmitter::SetPC(const IR::U64& value) {
+    Inst(Opcode::A64SetPC, value);
+}
+
 } // namespace IR
 } // namespace Dynarmic

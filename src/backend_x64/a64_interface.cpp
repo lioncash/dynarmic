@@ -53,6 +53,7 @@ public:
         SCOPE_EXIT({ this->is_executing = false; });
         jit_state.halt_requested = false;
 
+        // TODO: Check code alignment
         block_of_code.RunCode(&jit_state);
 
         PerformRequestedCacheInvalidation();

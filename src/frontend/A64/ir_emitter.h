@@ -40,6 +40,7 @@ public:
     void SetW(Reg dest_reg, const IR::U32& value);
     void SetX(Reg dest_reg, const IR::U64& value);
     void SetSP(const IR::U64& value);
+    void SetPC(const IR::U64& value);
 };
 
 } // namespace IR

@@ -43,6 +43,7 @@ A64OPC(GetSP,                   T::U64,                                         
 A64OPC(SetW,                    T::Void,        T::A64Reg,      T::U32                          )
 A64OPC(SetX,                    T::Void,        T::A64Reg,      T::U64                          )
 A64OPC(SetSP,                   T::Void,        T::U64                                          )
+A64OPC(SetPC,                   T::Void,        T::U64                                          )
 
 // Hints
 OPCODE(PushRSB,                 T::Void,        T::U64                                          )

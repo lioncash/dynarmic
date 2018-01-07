@@ -198,6 +198,20 @@ void A64EmitX64::EmitA64SetSP(A64EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
+void A64EmitX64::EmitA64SetPC(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    auto addr = qword[r15 + offsetof(A64JitState, pc)];
+    if (args[0].FitsInImmediateU32()) {
+        code->mov(addr, args[0].GetImmediateU32());
+    } else if (args[0].IsInXmm()) {
+        Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[0]);
+        code->movq(addr, to_store);
+    } else {
+        Xbyak::Reg64 to_store = ctx.reg_alloc.UseGpr(args[0]);
+        code->mov(addr, to_store);
+    }
+}
+
 void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor) {
     code->mov(code->ABI_PARAM1, A64::LocationDescriptor{terminal.next}.PC());
     code->mov(code->ABI_PARAM2.cvt32(), 1);
