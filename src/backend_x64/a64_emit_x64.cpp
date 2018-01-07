@@ -115,6 +115,23 @@ A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
     return block_desc;
 }
 
+void A64EmitX64::EmitA64GetCFlag(A64EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
+    code->mov(result, dword[r15 + offsetof(A64JitState, CPSR_nzcv)]);
+    code->shr(result, 29);
+    code->and_(result, 1);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void A64EmitX64::EmitA64SetNZCV(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg32 to_store = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    code->and_(to_store, 0b11000001'00000001);
+    code->imul(to_store, to_store, 0b00010000'00100001);
+    code->and_(to_store, 0xFF000000);
+    code->mov(dword[r15 + offsetof(A64JitState, CPSR_nzcv)], to_store);
+}
+
 void A64EmitX64::EmitA64GetW(A64EmitContext& ctx, IR::Inst* inst) {
     A64::Reg reg = inst->GetArg(0).GetA64RegRef();
 
@@ -128,6 +145,12 @@ void A64EmitX64::EmitA64GetX(A64EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
     code->mov(result, qword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)]);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void A64EmitX64::EmitA64GetSP(A64EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
+    code->mov(result, qword[r15 + offsetof(A64JitState, sp)]);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -157,6 +180,20 @@ void A64EmitX64::EmitA64SetX(A64EmitContext& ctx, IR::Inst* inst) {
         code->movq(addr, to_store);
     } else {
         Xbyak::Reg64 to_store = ctx.reg_alloc.UseGpr(args[1]);
+        code->mov(addr, to_store);
+    }
+}
+
+void A64EmitX64::EmitA64SetSP(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    auto addr = qword[r15 + offsetof(A64JitState, sp)];
+    if (args[0].IsImmediate()) {
+        code->mov(addr, args[0].GetImmediateU64());
+    } else if (args[0].IsInXmm()) {
+        Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[0]);
+        code->movq(addr, to_store);
+    } else {
+        Xbyak::Reg64 to_store = ctx.reg_alloc.UseGpr(args[0]);
         code->mov(addr, to_store);
     }
 }

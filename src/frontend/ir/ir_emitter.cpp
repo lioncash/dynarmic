@@ -49,11 +49,17 @@ ResultAndCarry<U32> IREmitter::MostSignificantWord(const U64& value) {
     return {result, carry_out};
 }
 
-U16 IREmitter::LeastSignificantHalf(const U32& value) {
+U16 IREmitter::LeastSignificantHalf(U32U64 value) {
+    if (value.GetType() == Type::U64) {
+        value = LeastSignificantWord(value);
+    }
     return Inst<U16>(Opcode::LeastSignificantHalf, value);
 }
 
-U8 IREmitter::LeastSignificantByte(const U32& value) {
+U8 IREmitter::LeastSignificantByte(U32U64 value) {
+    if (value.GetType() == Type::U64) {
+        value = LeastSignificantWord(value);
+    }
     return Inst<U8>(Opcode::LeastSignificantByte, value);
 }
 
@@ -67,6 +73,10 @@ U1 IREmitter::IsZero(const U32& value) {
 
 U1 IREmitter::IsZero64(const U64& value) {
     return Inst<U1>(Opcode::IsZero64, value);
+}
+
+NZCV IREmitter::NZCVFrom(const Value& value) {
+    return Inst<NZCV>(Opcode::GetNZCVFromOp, value);
 }
 
 ResultAndCarry<U32> IREmitter::LogicalShiftLeft(const U32& value_in, const U8& shift_amount, const U1& carry_in) {
@@ -135,48 +145,75 @@ U32U64 IREmitter::RotateRight(const U32U64& value_in, const U8& shift_amount) {
     }
 }
 
-ResultAndCarryAndOverflow<U32> IREmitter::AddWithCarry(const Value& a, const Value& b, const U1& carry_in) {
-    auto result = Inst<U32>(Opcode::AddWithCarry, a, b, carry_in);
+ResultAndCarryAndOverflow<U32> IREmitter::AddWithCarry(const U32& a, const U32& b, const U1& carry_in) {
+    auto result = Inst<U32>(Opcode::Add32, a, b, carry_in);
     auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
     return {result, carry_out, overflow};
 }
 
+U32U64 IREmitter::AddWithCarry(const U32U64& a, const U32U64& b, const U1& carry_in) {
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::Add32, a, b, carry_in);
+    } else {
+        return Inst<U64>(Opcode::Add64, a, b, carry_in);
+    }
+}
+
 U32 IREmitter::Add(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::AddWithCarry, a, b, Imm1(0));
+    return Inst<U32>(Opcode::Add32, a, b, Imm1(0));
 }
 
 U64 IREmitter::Add(const U64& a, const U64& b) {
-    return Inst<U64>(Opcode::Add64, a, b);
+    return Inst<U64>(Opcode::Add64, a, b, Imm1(0));
 }
 
 U32U64 IREmitter::Add(const U32U64& a, const U32U64& b) {
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
-        return Inst<U32>(Opcode::AddWithCarry, a, b, Imm1(0));
+        return Inst<U32>(Opcode::Add32, a, b, Imm1(0));
     } else {
-        return Inst<U64>(Opcode::Add64, a, b);
+        return Inst<U64>(Opcode::Add64, a, b, Imm1(0));
     }
 }
 
 ResultAndCarryAndOverflow<U32> IREmitter::SubWithCarry(const U32& a, const U32& b, const U1& carry_in) {
     // This is equivalent to AddWithCarry(a, Not(b), carry_in).
-    auto result = Inst<U32>(Opcode::SubWithCarry, a, b, carry_in);
+    auto result = Inst<U32>(Opcode::Sub32, a, b, carry_in);
     auto carry_out = Inst<U1>(Opcode::GetCarryFromOp, result);
     auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
     return {result, carry_out, overflow};
 }
 
+U32U64 IREmitter::SubWithCarry(const U32U64& a, const U32U64& b, const U1& carry_in) {
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::Sub32, a, b, carry_in);
+    } else {
+        return Inst<U64>(Opcode::Sub64, a, b, carry_in);
+    }
+}
+
 U32 IREmitter::Sub(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::SubWithCarry, a, b, Imm1(1));
+    return Inst<U32>(Opcode::Sub32, a, b, Imm1(1));
 }
 
 U64 IREmitter::Sub(const U64& a, const U64& b) {
-    return Inst<U64>(Opcode::Sub64, a, b);
+    return Inst<U64>(Opcode::Sub64, a, b, Imm1(1));
+}
+
+U32U64 IREmitter::Sub(const U32U64& a, const U32U64& b) {
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::Sub32, a, b, Imm1(1));
+    } else {
+        return Inst<U64>(Opcode::Sub64, a, b, Imm1(1));
+    }
 }
 
 U32 IREmitter::Mul(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::Mul, a, b);
+    return Inst<U32>(Opcode::Mul32, a, b);
 }
 
 U64 IREmitter::Mul(const U64& a, const U64& b) {
@@ -199,6 +236,38 @@ U32 IREmitter::Not(const U32& a) {
     return Inst<U32>(Opcode::Not, a);
 }
 
+U64 IREmitter::SignExtendToLong(const UAny& a) {
+    switch (a.GetType()) {
+    case Type::U8:
+        return Inst<U64>(Opcode::SignExtendByteToLong, a);
+    case Type::U16:
+        return Inst<U64>(Opcode::SignExtendHalfToLong, a);
+    case Type::U32:
+        return Inst<U64>(Opcode::SignExtendWordToLong, a);
+    case Type::U64:
+        return U64(a);
+    default:
+        ASSERT_MSG(false, "Unreachable");
+        return {};
+    }
+}
+
+U32 IREmitter::SignExtendToWord(const UAny& a) {
+    switch (a.GetType()) {
+    case Type::U8:
+        return Inst<U32>(Opcode::SignExtendByteToWord, a);
+    case Type::U16:
+        return Inst<U32>(Opcode::SignExtendHalfToWord, a);
+    case Type::U32:
+        return U32(a);
+    case Type::U64:
+        return Inst<U32>(Opcode::LeastSignificantWord, a);
+    default:
+        ASSERT_MSG(false, "Unreachable");
+        return {};
+    }
+}
+
 U64 IREmitter::SignExtendWordToLong(const U32& a) {
     return Inst<U64>(Opcode::SignExtendWordToLong, a);
 }
@@ -209,6 +278,38 @@ U32 IREmitter::SignExtendHalfToWord(const U16& a) {
 
 U32 IREmitter::SignExtendByteToWord(const U8& a) {
     return Inst<U32>(Opcode::SignExtendByteToWord, a);
+}
+
+U64 IREmitter::ZeroExtendToLong(const UAny& a) {
+    switch (a.GetType()) {
+    case Type::U8:
+        return Inst<U64>(Opcode::ZeroExtendByteToLong, a);
+    case Type::U16:
+        return Inst<U64>(Opcode::ZeroExtendHalfToLong, a);
+    case Type::U32:
+        return Inst<U64>(Opcode::ZeroExtendWordToLong, a);
+    case Type::U64:
+        return U64(a);
+    default:
+        ASSERT_MSG(false, "Unreachable");
+        return {};
+    }
+}
+
+U32 IREmitter::ZeroExtendToWord(const UAny& a) {
+    switch (a.GetType()) {
+    case Type::U8:
+        return Inst<U32>(Opcode::ZeroExtendByteToWord, a);
+    case Type::U16:
+        return Inst<U32>(Opcode::ZeroExtendHalfToWord, a);
+    case Type::U32:
+        return U32(a);
+    case Type::U64:
+        return Inst<U32>(Opcode::LeastSignificantWord, a);
+    default:
+        ASSERT_MSG(false, "Unreachable");
+        return {};
+    }
 }
 
 U64 IREmitter::ZeroExtendWordToLong(const U32& a) {

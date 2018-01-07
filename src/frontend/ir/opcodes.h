@@ -47,6 +47,7 @@ enum class Type {
     F64 = 1 << 11,
     F128 = 1 << 12,
     CoprocInfo = 1 << 13,
+    NZCVFlags = 1 << 14,
 };
 
 constexpr Type operator|(Type a, Type b) {

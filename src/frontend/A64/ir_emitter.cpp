@@ -22,20 +22,44 @@ u64 IREmitter::AlignPC(size_t alignment) {
     return static_cast<u64>(pc - pc % alignment);
 }
 
+IR::U1 IREmitter::GetCFlag() {
+    return Inst<IR::U1>(Opcode::A64GetCFlag);
+}
+
+void IREmitter::SetNZCV(const IR::NZCV& nzcv) {
+    Inst(Opcode::A64SetNZCV, nzcv);
+}
+
 IR::U32 IREmitter::GetW(Reg reg) {
+    if (reg == Reg::ZR)
+        return Imm32(0);
     return Inst<IR::U32>(Opcode::A64GetW, IR::Value(reg));
 }
 
 IR::U64 IREmitter::GetX(Reg reg) {
+    if (reg == Reg::ZR)
+        return Imm64(0);
     return Inst<IR::U64>(Opcode::A64GetX, IR::Value(reg));
 }
 
+IR::U64 IREmitter::GetSP() {
+    return Inst<IR::U64>(Opcode::A64GetSP);
+}
+
 void IREmitter::SetW(const Reg reg, const IR::U32& value) {
+    if (reg == Reg::ZR)
+        return;
     Inst(Opcode::A64SetW, IR::Value(reg), value);
 }
 
 void IREmitter::SetX(const Reg reg, const IR::U64& value) {
+    if (reg == Reg::ZR)
+        return;
     Inst(Opcode::A64SetX, IR::Value(reg), value);
+}
+
+void IREmitter::SetSP(const IR::U64& value) {
+    Inst(Opcode::A64SetSP, value);
 }
 
 } // namespace IR

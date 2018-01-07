@@ -76,11 +76,14 @@ public:
     U64 Pack2x32To1x64(const U32& lo, const U32& hi);
     U32 LeastSignificantWord(const U64& value);
     ResultAndCarry<U32> MostSignificantWord(const U64& value);
-    U16 LeastSignificantHalf(const U32& value);
-    U8 LeastSignificantByte(const U32& value);
+    U16 LeastSignificantHalf(U32U64 value);
+    U8 LeastSignificantByte(U32U64 value);
     U1 MostSignificantBit(const U32& value);
     U1 IsZero(const U32& value);
     U1 IsZero64(const U64& value);
+
+    // This pseudo-instruction may only be added to instructions that support it.
+    NZCV NZCVFrom(const Value& value);
 
     ResultAndCarry<U32> LogicalShiftLeft(const U32& value_in, const U8& shift_amount, const U1& carry_in);
     ResultAndCarry<U32> LogicalShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in);
@@ -92,25 +95,32 @@ public:
     U32U64 ArithmeticShiftRight(const U32U64& value_in, const U8& shift_amount);
     U32U64 RotateRight(const U32U64& value_in, const U8& shift_amount);
     ResultAndCarry<U32> RotateRightExtended(const U32& value_in, const U1& carry_in);
-    ResultAndCarryAndOverflow<U32> AddWithCarry(const Value& a, const Value& b, const U1& carry_in);
+    ResultAndCarryAndOverflow<U32> AddWithCarry(const U32& a, const U32& b, const U1& carry_in);
+    ResultAndCarryAndOverflow<U32> SubWithCarry(const U32& a, const U32& b, const U1& carry_in);
+    U32U64 AddWithCarry(const U32U64& a, const U32U64& b, const U1& carry_in);
+    U32U64 SubWithCarry(const U32U64& a, const U32U64& b, const U1& carry_in);
     U32 Add(const U32& a, const U32& b);
     U64 Add(const U64& a, const U64& b);
     U32U64 Add(const U32U64& a, const U32U64& b);
-    ResultAndCarryAndOverflow<U32> SubWithCarry(const U32& a, const U32& b, const U1& carry_in);
     U32 Sub(const U32& a, const U32& b);
     U64 Sub(const U64& a, const U64& b);
+    U32U64 Sub(const U32U64& a, const U32U64& b);
     U32 Mul(const U32& a, const U32& b);
     U64 Mul(const U64& a, const U64& b);
     U32 And(const U32& a, const U32& b);
     U32 Eor(const U32& a, const U32& b);
     U32 Or(const U32& a, const U32& b);
     U32 Not(const U32& a);
-    U64 SignExtendWordToLong(const U32& a);
-    U32 SignExtendHalfToWord(const U16& a);
+    U32 SignExtendToWord(const UAny& a);
+    U64 SignExtendToLong(const UAny& a);
     U32 SignExtendByteToWord(const U8& a);
-    U64 ZeroExtendWordToLong(const U32& a);
-    U32 ZeroExtendHalfToWord(const U16& a);
+    U32 SignExtendHalfToWord(const U16& a);
+    U64 SignExtendWordToLong(const U32& a);
+    U32 ZeroExtendToWord(const UAny& a);
+    U64 ZeroExtendToLong(const UAny& a);
     U32 ZeroExtendByteToWord(const U8& a);
+    U32 ZeroExtendHalfToWord(const U16& a);
+    U64 ZeroExtendWordToLong(const U32& a);
     U32 ByteReverseWord(const U32& a);
     U16 ByteReverseHalf(const U16& a);
     U64 ByteReverseDual(const U64& a);

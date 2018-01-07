@@ -76,6 +76,13 @@ public:
     /// Determines whether or not this instruction may have side-effects.
     bool MayHaveSideEffects() const;
 
+    /// Determines whether or not this instruction is a pseduo-instruction.
+    /// Pseudo-instructions depend on their parent instructions for their semantics.
+    bool IsAPseudoOperation() const;
+
+    /// Determins whether or not this instruction supports the GetNZCVFromOp pseudo-operation.
+    bool MayGetNZCVFromOp() const;
+
     /// Determines if all arguments of this instruction are immediates.
     bool AreAllArgsImmediates() const;
 
@@ -116,6 +123,7 @@ private:
         Inst* ge_inst;
     };
     Inst* overflow_inst = nullptr;
+    Inst* nzcv_inst = nullptr;
 };
 
 } // namespace IR

@@ -34,10 +34,10 @@ std::vector<Matcher<V>> GetDecodeTable() {
         //INST(&V::ADRP,                   "ADRP",                                      "1ii10000iiiiiiiiiiiiiiiiiiiddddd"),
 
         // Data processing - Immediate - Add/Sub
-        //INST(&V::ADD_imm,                "ADD (immediate)",                           "z0010001ssiiiiiiiiiiiinnnnnddddd"),
-        //INST(&V::ADDS_imm,               "ADDS (immediate)",                          "z0110001ssiiiiiiiiiiiinnnnnddddd"),
-        //INST(&V::SUB_imm,                "SUB (immediate)",                           "z1010001ssiiiiiiiiiiiinnnnnddddd"),
-        //INST(&V::SUBS_imm,               "SUBS (immediate)",                          "z1110001ssiiiiiiiiiiiinnnnnddddd"),
+        INST(&V::ADD_imm,                "ADD (immediate)",                           "z0010001ssiiiiiiiiiiiinnnnnddddd"),
+        INST(&V::ADDS_imm,               "ADDS (immediate)",                          "z0110001ssiiiiiiiiiiiinnnnnddddd"),
+        INST(&V::SUB_imm,                "SUB (immediate)",                           "z1010001ssiiiiiiiiiiiinnnnnddddd"),
+        INST(&V::SUBS_imm,               "SUBS (immediate)",                          "z1110001ssiiiiiiiiiiiinnnnnddddd"),
 
         // Data processing - Immediate - Logical
         //INST(&V::AND_imm,                "AND (immediate)",                           "z00100100Nrrrrrrssssssnnnnnddddd"),
@@ -374,21 +374,21 @@ std::vector<Matcher<V>> GetDecodeTable() {
 
         // Data Processing - Register - Add/Sub (shifted register)
         INST(&V::ADD_shift,              "ADD (shifted register)",                    "z0001011ss0mmmmmiiiiiinnnnnddddd"),
-        //INST(&V::ADDS_shift,             "ADDS (shifted register)",                   "z0101011ss0mmmmmiiiiiinnnnnddddd"),
-        //INST(&V::SUB_shift,              "SUB (shifted register)",                    "z1001011ss0mmmmmiiiiiinnnnnddddd"),
-        //INST(&V::SUBS_shift,             "SUBS (shifted register)",                   "z1101011ss0mmmmmiiiiiinnnnnddddd"),
+        INST(&V::ADDS_shift,             "ADDS (shifted register)",                   "z0101011ss0mmmmmiiiiiinnnnnddddd"),
+        INST(&V::SUB_shift,              "SUB (shifted register)",                    "z1001011ss0mmmmmiiiiiinnnnnddddd"),
+        INST(&V::SUBS_shift,             "SUBS (shifted register)",                   "z1101011ss0mmmmmiiiiiinnnnnddddd"),
 
         // Data Processing - Register - Add/Sub (shifted register)
-        //INST(&V::ADD_ext,                "ADD (extended register)",                   "z0001011001mmmmmxxxiiinnnnnddddd"),
-        //INST(&V::ADDS_ext,               "ADDS (extended register)",                  "z0101011001mmmmmxxxiiinnnnnddddd"),
-        //INST(&V::SUB_ext,                "SUB (extended register)",                   "z1001011001mmmmmxxxiiinnnnnddddd"),
-        //INST(&V::SUBS_ext,               "SUBS (extended register)",                  "z1101011001mmmmmxxxiiinnnnnddddd"),
+        INST(&V::ADD_ext,                "ADD (extended register)",                   "z0001011001mmmmmxxxiiinnnnnddddd"),
+        INST(&V::ADDS_ext,               "ADDS (extended register)",                  "z0101011001mmmmmxxxiiinnnnnddddd"),
+        INST(&V::SUB_ext,                "SUB (extended register)",                   "z1001011001mmmmmxxxiiinnnnnddddd"),
+        INST(&V::SUBS_ext,               "SUBS (extended register)",                  "z1101011001mmmmmxxxiiinnnnnddddd"),
 
         // Data Processing - Register - Add/Sub (with carry)
-        //INST(&V::ADC,                    "ADC",                                       "z0011010000mmmmm000000nnnnnddddd"),
-        //INST(&V::ADCS,                   "ADCS",                                      "z0111010000mmmmm000000nnnnnddddd"),
-        //INST(&V::SBC,                    "SBC",                                       "z1011010000mmmmm000000nnnnnddddd"),
-        //INST(&V::SBCS,                   "SBCS",                                      "z1111010000mmmmm000000nnnnnddddd"),
+        INST(&V::ADC,                    "ADC",                                       "z0011010000mmmmm000000nnnnnddddd"),
+        INST(&V::ADCS,                   "ADCS",                                      "z0111010000mmmmm000000nnnnnddddd"),
+        INST(&V::SBC,                    "SBC",                                       "z1011010000mmmmm000000nnnnnddddd"),
+        INST(&V::SBCS,                   "SBCS",                                      "z1111010000mmmmm000000nnnnnddddd"),
 
         // Data Processing - Register - Conditional compare
         //INST(&V::CCMN_reg,               "CCMN (register)",                           "z0111010010mmmmmcccc00nnnnn0ffff"),

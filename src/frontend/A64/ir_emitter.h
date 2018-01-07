@@ -31,10 +31,15 @@ public:
     u64 PC();
     u64 AlignPC(size_t alignment);
 
+    IR::U1 GetCFlag();
+    void SetNZCV(const IR::NZCV& nzcv);
+
     IR::U32 GetW(Reg source_reg);
     IR::U64 GetX(Reg source_reg);
+    IR::U64 GetSP();
     void SetW(Reg dest_reg, const IR::U32& value);
     void SetX(Reg dest_reg, const IR::U64& value);
+    void SetSP(const IR::U64& value);
 };
 
 } // namespace IR

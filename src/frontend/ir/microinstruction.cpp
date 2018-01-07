@@ -138,6 +138,7 @@ bool Inst::ReadsFromCoreRegister() const {
     case Opcode::A32GetExtendedRegister64:
     case Opcode::A64GetW:
     case Opcode::A64GetX:
+    case Opcode::A64GetSP:
         return true;
 
     default:
@@ -153,6 +154,7 @@ bool Inst::WritesToCoreRegister() const {
     case Opcode::A32BXWritePC:
     case Opcode::A64SetW:
     case Opcode::A64SetX:
+    case Opcode::A64SetSP:
         return true;
 
     default:
@@ -252,26 +254,55 @@ bool Inst::MayHaveSideEffects() const {
            IsCoprocessorInstruction();
 }
 
+bool Inst::IsAPseudoOperation() const {
+    switch (op) {
+    case Opcode::GetCarryFromOp:
+    case Opcode::GetOverflowFromOp:
+    case Opcode::GetGEFromOp:
+    case Opcode::GetNZCVFromOp:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+bool Inst::MayGetNZCVFromOp() const {
+    switch (op) {
+    case Opcode::Add32:
+    case Opcode::Add64:
+    case Opcode::Sub32:
+    case Opcode::Sub64:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
 bool Inst::AreAllArgsImmediates() const {
     return std::all_of(args.begin(), args.begin() + NumArgs(), [](const auto& value){ return value.IsImmediate(); });
 }
 
 bool Inst::HasAssociatedPseudoOperation() const {
-    return carry_inst || overflow_inst || ge_inst;
+    return carry_inst || overflow_inst || ge_inst || nzcv_inst;
 }
 
 Inst* Inst::GetAssociatedPseudoOperation(Opcode opcode) {
     // This is faster than doing a search through the block.
     switch (opcode) {
-    case IR::Opcode::GetCarryFromOp:
+    case Opcode::GetCarryFromOp:
         ASSERT(!carry_inst || carry_inst->GetOpcode() == Opcode::GetCarryFromOp);
         return carry_inst;
-    case IR::Opcode::GetOverflowFromOp:
+    case Opcode::GetOverflowFromOp:
         ASSERT(!overflow_inst || overflow_inst->GetOpcode() == Opcode::GetOverflowFromOp);
         return overflow_inst;
-    case IR::Opcode::GetGEFromOp:
+    case Opcode::GetGEFromOp:
         ASSERT(!ge_inst || ge_inst->GetOpcode() == Opcode::GetGEFromOp);
         return ge_inst;
+    case Opcode::GetNZCVFromOp:
+        ASSERT(!nzcv_inst || nzcv_inst->GetOpcode() == Opcode::GetNZCVFromOp);
+        return nzcv_inst;
     default:
         break;
     }
@@ -345,6 +376,11 @@ void Inst::Use(const Value& value) {
         ASSERT_MSG(!value.GetInst()->ge_inst, "Only one of each type of pseudo-op allowed");
         value.GetInst()->ge_inst = this;
         break;
+    case Opcode::GetNZCVFromOp:
+        ASSERT_MSG(!value.GetInst()->nzcv_inst, "Only one of each type of pseudo-op allowed");
+        ASSERT_MSG(MayGetNZCVFromOp(), "This instruction doesn't support the GetNZCVFromOp pseduo-op");
+        value.GetInst()->nzcv_inst = this;
+        break;
     default:
         break;
     }
@@ -365,6 +401,10 @@ void Inst::UndoUse(const Value& value) {
     case Opcode::GetGEFromOp:
         ASSERT(value.GetInst()->ge_inst->GetOpcode() == Opcode::GetGEFromOp);
         value.GetInst()->ge_inst = nullptr;
+        break;
+    case Opcode::GetNZCVFromOp:
+        ASSERT(value.GetInst()->nzcv_inst->GetOpcode() == Opcode::GetNZCVFromOp);
+        value.GetInst()->nzcv_inst = nullptr;
         break;
     default:
         break;
