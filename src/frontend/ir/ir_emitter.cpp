@@ -221,19 +221,54 @@ U64 IREmitter::Mul(const U64& a, const U64& b) {
 }
 
 U32 IREmitter::And(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::And, a, b);
+    return Inst<U32>(Opcode::And32, a, b);
+}
+
+U32U64 IREmitter::And(const U32U64& a, const U32U64& b) {
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::And32, a, b);
+    } else {
+        return Inst<U64>(Opcode::And64, a, b);
+    }
 }
 
 U32 IREmitter::Eor(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::Eor, a, b);
+    return Inst<U32>(Opcode::Eor32, a, b);
+}
+
+U32U64 IREmitter::Eor(const U32U64& a, const U32U64& b) {
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::Eor32, a, b);
+    } else {
+        return Inst<U64>(Opcode::Eor64, a, b);
+    }
 }
 
 U32 IREmitter::Or(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::Or, a, b);
+    return Inst<U32>(Opcode::Or32, a, b);
+}
+
+U32U64 IREmitter::Or(const U32U64& a, const U32U64& b) {
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::Or32, a, b);
+    } else {
+        return Inst<U64>(Opcode::Or64, a, b);
+    }
 }
 
 U32 IREmitter::Not(const U32& a) {
-    return Inst<U32>(Opcode::Not, a);
+    return Inst<U32>(Opcode::Not32, a);
+}
+
+U32U64 IREmitter::Not(const U32U64& a) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::Not32, a);
+    } else {
+        return Inst<U64>(Opcode::Not64, a);
+    }
 }
 
 U64 IREmitter::SignExtendToLong(const UAny& a) {

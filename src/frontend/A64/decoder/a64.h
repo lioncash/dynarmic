@@ -40,10 +40,10 @@ std::vector<Matcher<V>> GetDecodeTable() {
         INST(&V::SUBS_imm,               "SUBS (immediate)",                          "z1110001ssiiiiiiiiiiiinnnnnddddd"),
 
         // Data processing - Immediate - Logical
-        //INST(&V::AND_imm,                "AND (immediate)",                           "z00100100Nrrrrrrssssssnnnnnddddd"),
-        //INST(&V::ORR_imm,                "ORR (immediate)",                           "z01100100Nrrrrrrssssssnnnnnddddd"),
-        //INST(&V::EOR_imm,                "EOR (immediate)",                           "z10100100Nrrrrrrssssssnnnnnddddd"),
-        //INST(&V::ANDS_imm,               "ANDS (immediate)",                          "z11100100Nrrrrrrssssssnnnnnddddd"),
+        INST(&V::AND_imm,                "AND (immediate)",                           "z00100100Nrrrrrrssssssnnnnnddddd"),
+        INST(&V::ORR_imm,                "ORR (immediate)",                           "z01100100Nrrrrrrssssssnnnnnddddd"),
+        INST(&V::EOR_imm,                "EOR (immediate)",                           "z10100100Nrrrrrrssssssnnnnnddddd"),
+        INST(&V::ANDS_imm,               "ANDS (immediate)",                          "z11100100Nrrrrrrssssssnnnnnddddd"),
 
         // Data processing - Immediate - Move Wide
         //INST(&V::MOVN,                   "MOVN",                                      "z00100101ssiiiiiiiiiiiiiiiiddddd"),
@@ -363,14 +363,14 @@ std::vector<Matcher<V>> GetDecodeTable() {
         //INST(&V::AUTDB,                  "AUTDB, AUTDZB",                             "110110101100000100Z111nnnnnddddd"),
 
         // Data Processing - Register - Logical (shifted register)
-        //INST(&V::AND_shift,              "AND (shifted register)",                    "z0001010ss0mmmmmiiiiiinnnnnddddd"),
-        //INST(&V::BIC_shift,              "BIC (shifted register)",                    "z0001010ss1mmmmmiiiiiinnnnnddddd"),
-        //INST(&V::ORR_shift,              "ORR (shifted register)",                    "z0101010ss0mmmmmiiiiiinnnnnddddd"),
-        //INST(&V::ORN_shift,              "ORN (shifted register)",                    "z0101010ss1mmmmmiiiiiinnnnnddddd"),
-        //INST(&V::EOR_shift,              "EOR (shifted register)",                    "z1001010ss0mmmmmiiiiiinnnnnddddd"),
-        //INST(&V::EON,                    "EON (shifted register)",                    "z1001010ss1mmmmmiiiiiinnnnnddddd"),
-        //INST(&V::ANDS_shift,             "ANDS (shifted register)",                   "z1101010ss0mmmmmiiiiiinnnnnddddd"),
-        //INST(&V::BICS,                   "BICS (shifted register)",                   "z1101010ss1mmmmmiiiiiinnnnnddddd"),
+        INST(&V::AND_shift,              "AND (shifted register)",                    "z0001010ss0mmmmmiiiiiinnnnnddddd"),
+        INST(&V::BIC_shift,              "BIC (shifted register)",                    "z0001010ss1mmmmmiiiiiinnnnnddddd"),
+        INST(&V::ORR_shift,              "ORR (shifted register)",                    "z0101010ss0mmmmmiiiiiinnnnnddddd"),
+        INST(&V::ORN_shift,              "ORN (shifted register)",                    "z0101010ss1mmmmmiiiiiinnnnnddddd"),
+        INST(&V::EOR_shift,              "EOR (shifted register)",                    "z1001010ss0mmmmmiiiiiinnnnnddddd"),
+        INST(&V::EON,                    "EON (shifted register)",                    "z1001010ss1mmmmmiiiiiinnnnnddddd"),
+        INST(&V::ANDS_shift,             "ANDS (shifted register)",                   "z1101010ss0mmmmmiiiiiinnnnnddddd"),
+        INST(&V::BICS,                   "BICS (shifted register)",                   "z1101010ss1mmmmmiiiiiinnnnnddddd"),
 
         // Data Processing - Register - Add/Sub (shifted register)
         INST(&V::ADD_shift,              "ADD (shifted register)",                    "z0001011ss0mmmmmiiiiiinnnnnddddd"),

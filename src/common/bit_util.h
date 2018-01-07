@@ -9,6 +9,7 @@
 #include <bitset>
 #include <climits>
 #include <cstddef>
+#include <type_traits>
 
 #include "common/assert.h"
 
@@ -84,6 +85,38 @@ inline T SignExtend(const size_t bit_count, const T value) {
 template <typename Integral>
 inline size_t BitCount(Integral value) {
     return std::bitset<BitSize<Integral>()>(value).count();
+}
+
+template <typename T>
+inline int HighestSetBit(T value) {
+    auto x = static_cast<std::make_unsigned_t<T>>(value);
+    int result = -1;
+    while (x != 0) {
+        x >>= 1;
+        result++;
+    }
+    return result;
+}
+
+template <typename T>
+inline T Ones(size_t count) {
+    ASSERT_MSG(count <= BitSize<T>(), "count larger than bitsize of T");
+    return ~(~static_cast<T>(0) << count);
+}
+
+template <typename T>
+inline T Replicate(T value, size_t element_size) {
+    ASSERT_MSG(BitSize<T>() % element_size == 0, "bitsize of T not divisible by element_size");
+    if (element_size == BitSize<T>())
+        return value;
+    return Replicate(value | (value << element_size), element_size * 2);
+}
+
+template <typename T>
+inline T RotateRight(T value, size_t amount) {
+    amount %= BitSize<T>();
+    auto x = static_cast<std::make_unsigned_t<T>>(value);
+    return static_cast<T>((x >> amount) | (x << (BitSize<T>() - amount)));
 }
 
 } // namespace Common

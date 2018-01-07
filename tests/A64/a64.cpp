@@ -72,3 +72,44 @@ TEST_CASE("A64: ADD", "[a64]") {
     REQUIRE(jit.GetRegister(2) == 2);
     REQUIRE(jit.GetPC() == 4);
 }
+
+TEST_CASE("A64: AND", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x8a020020; // AND X0, X1, X2
+    env.code_mem[1] = 0x14000000; // B .
+
+    jit.SetRegister(0, 0);
+    jit.SetRegister(1, 1);
+    jit.SetRegister(2, 3);
+    jit.SetPC(0);
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetRegister(0) == 1);
+    REQUIRE(jit.GetRegister(1) == 1);
+    REQUIRE(jit.GetRegister(2) == 3);
+    REQUIRE(jit.GetPC() == 4);
+}
+
+TEST_CASE("A64: Bitmasks", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x3200c3e0; // ORR W0, WZR, #0x01010101
+    env.code_mem[1] = 0x320c8fe1; // ORR W1, WZR, #0x00F000F0
+    env.code_mem[2] = 0x320003e2; // ORR W2, WZR, #1
+    env.code_mem[3] = 0x14000000; // B .
+
+    jit.SetPC(0);
+
+    env.ticks_left = 4;
+    jit.Run();
+
+    REQUIRE(jit.GetRegister(0) == 0x01010101);
+    REQUIRE(jit.GetRegister(1) == 0x00F000F0);
+    REQUIRE(jit.GetRegister(2) == 1);
+    REQUIRE(jit.GetPC() == 12);
+}

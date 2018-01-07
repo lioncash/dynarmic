@@ -108,9 +108,13 @@ public:
     U32 Mul(const U32& a, const U32& b);
     U64 Mul(const U64& a, const U64& b);
     U32 And(const U32& a, const U32& b);
+    U32U64 And(const U32U64& a, const U32U64& b);
     U32 Eor(const U32& a, const U32& b);
+    U32U64 Eor(const U32U64& a, const U32U64& b);
     U32 Or(const U32& a, const U32& b);
+    U32U64 Or(const U32U64& a, const U32U64& b);
     U32 Not(const U32& a);
+    U32U64 Not(const U32U64& a);
     U32 SignExtendToWord(const UAny& a);
     U64 SignExtendToLong(const UAny& a);
     U32 SignExtendByteToWord(const U8& a);

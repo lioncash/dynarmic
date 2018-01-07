@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <boost/optional.hpp>
+
 #include "frontend/A64/imm.h"
 #include "frontend/A64/ir_emitter.h"
 #include "frontend/A64/location_descriptor.h"
@@ -24,6 +26,12 @@ struct TranslatorVisitor final {
     bool InterpretThisInstruction();
     bool UnpredictableInstruction();
     bool ReservedValue();
+
+    struct BitMasks {
+        u64 wmask, tmask;
+    };
+
+    boost::optional<BitMasks> DecodeBitMasks(bool N, Imm<6> immr, Imm<6> imms, bool immediate);
 
     IR::U32U64 I(size_t bitsize, u64 value);
     IR::U32U64 X(size_t bitsize, Reg reg);

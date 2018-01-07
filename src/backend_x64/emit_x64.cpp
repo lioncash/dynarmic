@@ -133,8 +133,31 @@ void EmitX64<JST>::EmitGetGEFromOp(EmitContext&, IR::Inst*) {
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitGetNZCVFromOp(EmitContext&, IR::Inst*) {
-    ASSERT_MSG(false, "should never happen");
+void EmitX64<JST>::EmitGetNZCVFromOp(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const size_t bitsize = [&]{
+        switch (args[0].GetType()) {
+        case IR::Type::U8:
+            return 8;
+        case IR::Type::U16:
+            return 16;
+        case IR::Type::U32:
+            return 32;
+        case IR::Type::U64:
+            return 64;
+        default:
+            ASSERT_MSG(false, "Unreachable");
+            return 0;
+        }
+    }();
+
+    Xbyak::Reg64 nzcv = ctx.reg_alloc.ScratchGpr({HostLoc::RAX});
+    Xbyak::Reg value = ctx.reg_alloc.UseGpr(args[0]).changeBit(bitsize);
+    code->cmp(value, 0);
+    code->lahf();
+    code->seto(code->al);
+    ctx.reg_alloc.DefineValue(inst, nzcv);
 }
 
 template <typename JST>
@@ -934,7 +957,7 @@ void EmitX64<JST>::EmitMul64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitAnd(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64<JST>::EmitAnd32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -954,7 +977,27 @@ void EmitX64<JST>::EmitAnd(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitEor(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64<JST>::EmitAnd64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
+
+    if (args[1].FitsInImmediateU32()) {
+        u32 op_arg = args[1].GetImmediateU32();
+
+        code->and_(result, op_arg);
+    } else {
+        OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
+        op_arg.setBit(64);
+
+        code->and_(result, *op_arg);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitEor32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -974,7 +1017,27 @@ void EmitX64<JST>::EmitEor(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitOr(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64<JST>::EmitEor64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
+
+    if (args[1].FitsInImmediateU32()) {
+        u32 op_arg = args[1].GetImmediateU32();
+
+        code->xor_(result, op_arg);
+    } else {
+        OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
+        op_arg.setBit(64);
+
+        code->xor_(result, *op_arg);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitOr32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -994,7 +1057,27 @@ void EmitX64<JST>::EmitOr(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitNot(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64<JST>::EmitOr64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
+
+    if (args[1].FitsInImmediateU32()) {
+        u32 op_arg = args[1].GetImmediateU32();
+
+        code->or_(result, op_arg);
+    } else {
+        OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
+        op_arg.setBit(64);
+
+        code->or_(result, *op_arg);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitNot32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 result;
@@ -1003,6 +1086,21 @@ void EmitX64<JST>::EmitNot(EmitContext& ctx, IR::Inst* inst) {
         code->mov(result, u32(~args[0].GetImmediateU32()));
     } else {
         result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+        code->not_(result);
+    }
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitNot64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Reg64 result;
+    if (args[0].IsImmediate()) {
+        result = ctx.reg_alloc.ScratchGpr();
+        code->mov(result, ~args[0].GetImmediateU64());
+    } else {
+        result = ctx.reg_alloc.UseScratchGpr(args[0]);
         code->not_(result);
     }
     ctx.reg_alloc.DefineValue(inst, result);

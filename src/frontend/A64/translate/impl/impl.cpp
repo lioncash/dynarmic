@@ -4,6 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
+#include "common/bit_util.h"
 #include "frontend/ir/terminal.h"
 #include "frontend/A64/translate/impl/impl.h"
 
@@ -23,6 +24,29 @@ bool TranslatorVisitor::UnpredictableInstruction() {
 bool TranslatorVisitor::ReservedValue() {
     ASSERT_MSG(false, "RESERVEDVALUE");
     return false;
+}
+
+boost::optional<TranslatorVisitor::BitMasks> TranslatorVisitor::DecodeBitMasks(bool immN, Imm<6> imms, Imm<6> immr, bool immediate) {
+    int len = Common::HighestSetBit((immN ? 1 << 6 : 0) | (imms.ZeroExtend() ^ 0b111111));
+    if (len < 1)
+        return boost::none;
+
+    size_t levels = Common::Ones<size_t>(len);
+
+    if (immediate && (imms.ZeroExtend() & levels) == levels)
+        return boost::none;
+
+    s32 S = s32(imms.ZeroExtend() & levels);
+    s32 R = s32(immr.ZeroExtend() & levels);
+    u64 d = u64(S - R) & levels;
+
+    size_t esize = 1 << len;
+    u64 welem = Common::Ones<u64>(S + 1);
+    u64 telem = Common::Ones<u64>(d + 1);
+    u64 wmask = Common::RotateRight(Common::Replicate(welem, esize), R);
+    u64 tmask = Common::Replicate(telem, esize);
+
+    return BitMasks{wmask, tmask};
 }
 
 IR::U32U64 TranslatorVisitor::I(size_t bitsize, u64 value) {
