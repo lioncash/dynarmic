@@ -44,7 +44,7 @@ public:
         return !operator==(o);
     }
 
-    LocationDescriptor SetPC(u32 new_pc) const {
+    LocationDescriptor SetPC(u64 new_pc) const {
         return LocationDescriptor(new_pc, fpcr);
     }
 

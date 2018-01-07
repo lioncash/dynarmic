@@ -59,7 +59,7 @@ std::vector<Matcher<V>> GetDecodeTable() {
         //INST(&V::EXTR,                   "EXTR",                                      "z00100111N0mmmmmssssssnnnnnddddd"),
 
         // Conditional branch
-        //INST(&V::B_cond,                 "B.cond",                                    "01010100iiiiiiiiiiiiiiiiiii0cccc"),
+        INST(&V::B_cond,                 "B.cond",                                    "01010100iiiiiiiiiiiiiiiiiii0cccc"),
 
         // Exception generation
         //INST(&V::SVC,                    "SVC",                                       "11010100000iiiiiiiiiiiiiiii00001"),
@@ -113,8 +113,8 @@ std::vector<Matcher<V>> GetDecodeTable() {
         //INST(&V::DRPS,                   "DRPS",                                      "11010110101111110000001111100000"),
 
         // Unconditonal branch (immediate)
-        //INST(&V::B_uncond,               "B",                                         "000101iiiiiiiiiiiiiiiiiiiiiiiiii"),
-        //INST(&V::BL,                     "BL",                                        "100101iiiiiiiiiiiiiiiiiiiiiiiiii"),
+        INST(&V::B_uncond,               "B",                                         "000101iiiiiiiiiiiiiiiiiiiiiiiiii"),
+        INST(&V::BL,                     "BL",                                        "100101iiiiiiiiiiiiiiiiiiiiiiiiii"),
 
         // Compare and branch (immediate)
         //INST(&V::CBZ,                    "CBZ",                                       "z0110100iiiiiiiiiiiiiiiiiiittttt"),
