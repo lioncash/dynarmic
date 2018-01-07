@@ -55,6 +55,7 @@ struct A64JitState {
     s64 cycles_to_run = 0;
     s64 cycles_remaining = 0;
     bool halt_requested = false;
+    bool check_bit = false;
 
     static constexpr size_t RSBSize = 8; // MUST be a power of 2.
     static constexpr size_t RSBPtrMask = RSBSize - 1;

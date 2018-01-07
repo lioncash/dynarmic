@@ -1161,6 +1161,10 @@ void A32EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor 
     EmitTerminal(terminal.then_, initial_location);
 }
 
+void A32EmitX64::EmitTerminalImpl(IR::Term::CheckBit, IR::LocationDescriptor) {
+    ASSERT_MSG(false, "Term::CheckBit should never be emitted by the A32 frontend");
+}
+
 void A32EmitX64::EmitTerminalImpl(IR::Term::CheckHalt terminal, IR::LocationDescriptor initial_location) {
     code->cmp(code->byte[r15 + offsetof(A32JitState, halt_requested)], u8(0));
     code->jne(code->GetForceReturnFromRunCodeAddress());

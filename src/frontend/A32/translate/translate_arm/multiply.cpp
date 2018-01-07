@@ -57,7 +57,7 @@ bool ArmTranslatorVisitor::arm_SMLAL(Cond cond, bool S, Reg dHi, Reg dLo, Reg m,
         ir.SetRegister(dHi, hi);
         if (S) {
             ir.SetNFlag(ir.MostSignificantBit(hi));
-            ir.SetZFlag(ir.IsZero64(result));
+            ir.SetZFlag(ir.IsZero(result));
         }
     }
     return true;
@@ -78,7 +78,7 @@ bool ArmTranslatorVisitor::arm_SMULL(Cond cond, bool S, Reg dHi, Reg dLo, Reg m,
         ir.SetRegister(dHi, hi);
         if (S) {
             ir.SetNFlag(ir.MostSignificantBit(hi));
-            ir.SetZFlag(ir.IsZero64(result));
+            ir.SetZFlag(ir.IsZero(result));
         }
     }
     return true;
@@ -117,7 +117,7 @@ bool ArmTranslatorVisitor::arm_UMLAL(Cond cond, bool S, Reg dHi, Reg dLo, Reg m,
         ir.SetRegister(dHi, hi);
         if (S) {
             ir.SetNFlag(ir.MostSignificantBit(hi));
-            ir.SetZFlag(ir.IsZero64(result));
+            ir.SetZFlag(ir.IsZero(result));
         }
     }
     return true;
@@ -138,7 +138,7 @@ bool ArmTranslatorVisitor::arm_UMULL(Cond cond, bool S, Reg dHi, Reg dLo, Reg m,
         ir.SetRegister(dHi, hi);
         if (S) {
             ir.SetNFlag(ir.MostSignificantBit(hi));
-            ir.SetZFlag(ir.IsZero64(result));
+            ir.SetZFlag(ir.IsZero(result));
         }
     }
     return true;

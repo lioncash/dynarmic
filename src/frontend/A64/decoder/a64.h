@@ -117,10 +117,10 @@ std::vector<Matcher<V>> GetDecodeTable() {
         INST(&V::BL,                     "BL",                                        "100101iiiiiiiiiiiiiiiiiiiiiiiiii"),
 
         // Compare and branch (immediate)
-        //INST(&V::CBZ,                    "CBZ",                                       "z0110100iiiiiiiiiiiiiiiiiiittttt"),
-        //INST(&V::CBNZ,                   "CBNZ",                                      "z0110101iiiiiiiiiiiiiiiiiiittttt"),
-        //INST(&V::TBZ,                    "TBZ",                                       "b0110110bbbbbiiiiiiiiiiiiiittttt"),
-        //INST(&V::TBNZ,                   "TBNZ",                                      "b0110111bbbbbiiiiiiiiiiiiiittttt"),
+        INST(&V::CBZ,                    "CBZ",                                       "z0110100iiiiiiiiiiiiiiiiiiittttt"),
+        INST(&V::CBNZ,                   "CBNZ",                                      "z0110101iiiiiiiiiiiiiiiiiiittttt"),
+        INST(&V::TBZ,                    "TBZ",                                       "b0110110bbbbbiiiiiiiiiiiiiittttt"),
+        INST(&V::TBNZ,                   "TBNZ",                                      "b0110111bbbbbiiiiiiiiiiiiiittttt"),
 
         // Loads and stores - Advanced SIMD Load/Store multiple structures
         //INST(&V::ST4_mult_1,             "ST4 (multiple structures)",                 "0Q001100000000000000zznnnnnttttt"),

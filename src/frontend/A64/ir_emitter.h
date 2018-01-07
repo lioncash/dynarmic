@@ -31,6 +31,7 @@ public:
     u64 PC();
     u64 AlignPC(size_t alignment);
 
+    void SetCheckBit(const IR::U1& value);
     IR::U1 GetCFlag();
     void SetNZCV(const IR::NZCV& nzcv);
 

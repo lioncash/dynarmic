@@ -127,6 +127,10 @@ static std::string TerminalToString(const Terminal& terminal_variant) {
         return fmt::format("If{{{}, {}, {}}}", A32::CondToString(terminal.if_), TerminalToString(terminal.then_), TerminalToString(terminal.else_));
     }
     case 7: {
+        auto terminal = boost::get<IR::Term::CheckBit>(terminal_variant);
+        return fmt::format("CheckBit{{{}, {}}}", TerminalToString(terminal.then_), TerminalToString(terminal.else_));
+    }
+    case 8: {
         auto terminal = boost::get<IR::Term::CheckHalt>(terminal_variant);
         return fmt::format("CheckHalt{{{}}}", TerminalToString(terminal.else_));
     }

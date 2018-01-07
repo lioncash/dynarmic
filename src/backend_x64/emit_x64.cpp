@@ -219,7 +219,7 @@ void EmitX64<JST>::EmitMostSignificantBit(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitIsZero(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64<JST>::EmitIsZero32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
     // TODO: Flag optimization
@@ -237,6 +237,17 @@ void EmitX64<JST>::EmitIsZero64(EmitContext& ctx, IR::Inst* inst) {
     code->test(result, result);
     code->sete(result.cvt8());
     code->movzx(result, result.cvt8());
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitTestBit(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
+    ASSERT(args[1].IsImmediate());
+    // TODO: Flag optimization
+    code->bt(result, args[1].GetImmediateU8());
+    code->setc(result.cvt8());
     ctx.reg_alloc.DefineValue(inst, result);
 }
 

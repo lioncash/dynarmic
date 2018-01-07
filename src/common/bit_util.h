@@ -25,7 +25,7 @@ constexpr size_t BitSize() {
 /// Extract bits [begin_bit, end_bit] inclusive from value of type T.
 template<size_t begin_bit, size_t end_bit, typename T>
 constexpr T Bits(const T value) {
-    static_assert(begin_bit < end_bit,
+    static_assert(begin_bit <= end_bit,
                   "invalid bit range (position of beginning bit cannot be greater than that of end bit)");
     static_assert(begin_bit < BitSize<T>(), "begin_bit must be smaller than size of T");
     static_assert(end_bit < BitSize<T>(), "begin_bit must be smaller than size of T");

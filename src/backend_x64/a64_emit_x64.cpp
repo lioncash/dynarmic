@@ -115,6 +115,12 @@ A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
     return block_desc;
 }
 
+void A64EmitX64::EmitA64SetCheckBit(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg8 to_store = ctx.reg_alloc.UseGpr(args[0]).cvt8();
+    code->mov(code->byte[r15 + offsetof(A64JitState, check_bit)], to_store);
+}
+
 void A64EmitX64::EmitA64GetCFlag(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
     code->mov(result, dword[r15 + offsetof(A64JitState, CPSR_nzcv)]);
@@ -265,6 +271,15 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor 
     EmitTerminal(terminal.else_, initial_location);
     code->L(pass);
     EmitTerminal(terminal.then_, initial_location);
+}
+
+void A64EmitX64::EmitTerminalImpl(IR::Term::CheckBit terminal, IR::LocationDescriptor initial_location) {
+    Xbyak::Label fail;
+    code->cmp(code->byte[r15 + offsetof(A64JitState, check_bit)], u8(0));
+    code->jz(fail);
+    EmitTerminal(terminal.then_, initial_location);
+    code->L(fail);
+    EmitTerminal(terminal.else_, initial_location);
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::CheckHalt terminal, IR::LocationDescriptor initial_location) {

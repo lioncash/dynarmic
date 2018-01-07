@@ -80,7 +80,9 @@ public:
     U8 LeastSignificantByte(U32U64 value);
     U1 MostSignificantBit(const U32& value);
     U1 IsZero(const U32& value);
-    U1 IsZero64(const U64& value);
+    U1 IsZero(const U64& value);
+    U1 IsZero(const U32U64& value);
+    U1 TestBit(const U32U64& value, const U8& bit);
 
     // This pseudo-instruction may only be added to instructions that support it.
     NZCV NZCVFrom(const Value& value);
@@ -125,6 +127,8 @@ public:
     U32 ZeroExtendByteToWord(const U8& a);
     U32 ZeroExtendHalfToWord(const U16& a);
     U64 ZeroExtendWordToLong(const U32& a);
+    U32 IndeterminateExtendToWord(const UAny& a);
+    U64 IndeterminateExtendToLong(const UAny& a);
     U32 ByteReverseWord(const U32& a);
     U16 ByteReverseHalf(const U16& a);
     U64 ByteReverseDual(const U64& a);

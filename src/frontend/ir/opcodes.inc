@@ -35,6 +35,7 @@ A32OPC(GetFpscrNZCV,            T::U32,                                         
 A32OPC(SetFpscrNZCV,            T::Void,        T::U32,                                         )
 
 // A64 Context getters/setters
+A64OPC(SetCheckBit,             T::Void,        T::U1                                           )
 A64OPC(GetCFlag,                T::U1,                                                          )
 A64OPC(SetNZCV,                 T::Void,        T::NZCVFlags                                    )
 A64OPC(GetW,                    T::U32,         T::A64Reg                                       )
@@ -61,8 +62,9 @@ OPCODE(MostSignificantWord,     T::U32,         T::U64                          
 OPCODE(LeastSignificantHalf,    T::U16,         T::U32                                          )
 OPCODE(LeastSignificantByte,    T::U8,          T::U32                                          )
 OPCODE(MostSignificantBit,      T::U1,          T::U32                                          )
-OPCODE(IsZero,                  T::U1,          T::U32                                          )
+OPCODE(IsZero32,                T::U1,          T::U32                                          )
 OPCODE(IsZero64,                T::U1,          T::U64                                          )
+OPCODE(TestBit,                 T::U1,          T::U64,         T::U8                           )
 OPCODE(LogicalShiftLeft32,      T::U32,         T::U32,         T::U8,          T::U1           )
 OPCODE(LogicalShiftLeft64,      T::U64,         T::U64,         T::U8                           )
 OPCODE(LogicalShiftRight32,     T::U32,         T::U32,         T::U8,          T::U1           )

@@ -22,6 +22,10 @@ u64 IREmitter::AlignPC(size_t alignment) {
     return static_cast<u64>(pc - pc % alignment);
 }
 
+void IREmitter::SetCheckBit(const IR::U1& value) {
+    Inst(Opcode::A64SetCheckBit, value);
+}
+
 IR::U1 IREmitter::GetCFlag() {
     return Inst<IR::U1>(Opcode::A64GetCFlag);
 }

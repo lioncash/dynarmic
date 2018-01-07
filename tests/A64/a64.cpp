@@ -168,3 +168,80 @@ TEST_CASE("A64: ANDS NZCV", "[a64]") {
         REQUIRE((jit.GetPstate() & 0xF0000000) == 0x00000000);
     }
 }
+
+TEST_CASE("A64: CBZ", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x34000060; // CBZ X0, label
+    env.code_mem[1] = 0x320003e2; // MOV X2, 1
+    env.code_mem[2] = 0x14000000; // B.
+    env.code_mem[3] = 0x321f03e2; // label: MOV X2, 2
+    env.code_mem[4] = 0x14000000; // B .
+
+    SECTION("no branch") {
+        jit.SetPC(0);
+        jit.SetRegister(0, 1);
+
+        env.ticks_left = 4;
+        jit.Run();
+
+        REQUIRE(jit.GetRegister(2) == 1);
+        REQUIRE(jit.GetPC() == 8);
+    }
+
+    SECTION("branch") {
+        jit.SetPC(0);
+        jit.SetRegister(0, 0);
+
+        env.ticks_left = 4;
+        jit.Run();
+
+        REQUIRE(jit.GetRegister(2) == 2);
+        REQUIRE(jit.GetPC() == 16);
+    }
+}
+
+TEST_CASE("A64: TBZ", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x36180060; // TBZ X0, 3, label
+    env.code_mem[1] = 0x320003e2; // MOV X2, 1
+    env.code_mem[2] = 0x14000000; // B .
+    env.code_mem[3] = 0x321f03e2; // label: MOV X2, 2
+    env.code_mem[4] = 0x14000000; // B .
+
+    SECTION("no branch") {
+        jit.SetPC(0);
+        jit.SetRegister(0, 0xFF);
+
+        env.ticks_left = 4;
+        jit.Run();
+
+        REQUIRE(jit.GetRegister(2) == 1);
+        REQUIRE(jit.GetPC() == 8);
+    }
+
+    SECTION("branch with zero") {
+        jit.SetPC(0);
+        jit.SetRegister(0, 0);
+
+        env.ticks_left = 4;
+        jit.Run();
+
+        REQUIRE(jit.GetRegister(2) == 2);
+        REQUIRE(jit.GetPC() == 16);
+    }
+
+    SECTION("branch with non-zero") {
+        jit.SetPC(0);
+        jit.SetRegister(0, 1);
+
+        env.ticks_left = 4;
+        jit.Run();
+
+        REQUIRE(jit.GetRegister(2) == 2);
+        REQUIRE(jit.GetPC() == 16);
+    }
+}

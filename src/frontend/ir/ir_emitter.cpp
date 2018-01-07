@@ -68,11 +68,27 @@ U1 IREmitter::MostSignificantBit(const U32& value) {
 }
 
 U1 IREmitter::IsZero(const U32& value) {
-    return Inst<U1>(Opcode::IsZero, value);
+    return Inst<U1>(Opcode::IsZero32, value);
 }
 
-U1 IREmitter::IsZero64(const U64& value) {
+U1 IREmitter::IsZero(const U64& value) {
     return Inst<U1>(Opcode::IsZero64, value);
+}
+
+U1 IREmitter::IsZero(const U32U64& value) {
+    if (value.GetType() == Type::U32) {
+        return Inst<U1>(Opcode::IsZero32, value);
+    } else {
+        return Inst<U1>(Opcode::IsZero64, value);
+    }
+}
+
+U1 IREmitter::TestBit(const U32U64& value, const U8& bit) {
+    if (value.GetType() == Type::U32) {
+        return Inst<U1>(Opcode::TestBit, IndeterminateExtendToLong(value), bit);
+    } else {
+        return Inst<U1>(Opcode::TestBit, value, bit);
+    }
 }
 
 NZCV IREmitter::NZCVFrom(const Value& value) {
@@ -357,6 +373,16 @@ U32 IREmitter::ZeroExtendHalfToWord(const U16& a) {
 
 U32 IREmitter::ZeroExtendByteToWord(const U8& a) {
     return Inst<U32>(Opcode::ZeroExtendByteToWord, a);
+}
+
+U32 IREmitter::IndeterminateExtendToWord(const UAny& a) {
+    // TODO: Implement properly
+    return ZeroExtendToWord(a);
+}
+
+U64 IREmitter::IndeterminateExtendToLong(const UAny& a) {
+    // TODO: Implement properly
+    return ZeroExtendToLong(a);
 }
 
 U32 IREmitter::ByteReverseWord(const U32& a) {
