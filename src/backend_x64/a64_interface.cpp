@@ -4,6 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
+#include <cstring>
 #include <memory>
 
 #include <boost/icl/interval_set.hpp>
@@ -108,13 +109,33 @@ public:
         jit_state.reg.at(index) = value;
     }
 
+    std::array<u64, 31> GetRegisters() const {
+        return jit_state.reg;
+    }
+
+    void SetRegisters(const std::array<u64, 31>& value) {
+        jit_state.reg = value;
+    }
+
     Vector GetVector(size_t index) const {
         return {jit_state.vec.at(index * 2), jit_state.vec.at(index * 2 + 1)};
     }
 
     void SetVector(size_t index, Vector value) {
-        jit_state.vec.at(index * 2) = value.low;
-        jit_state.vec.at(index * 2 + 1) = value.high;
+        jit_state.vec.at(index * 2) = value[0];
+        jit_state.vec.at(index * 2 + 1) = value[1];
+    }
+
+    std::array<Jit::Vector, 32> GetVectors() const {
+        std::array<Jit::Vector, 32> ret;
+        static_assert(sizeof(ret) == sizeof(jit_state.vec));
+        std::memcpy(ret.data(), jit_state.vec.data(), sizeof(jit_state.vec));
+        return ret;
+    }
+
+    void SetVectors(const std::array<Jit::Vector, 32>& value) {
+        static_assert(sizeof(value) == sizeof(jit_state.vec));
+        std::memcpy(jit_state.vec.data(), value.data(), sizeof(jit_state.vec));
     }
 
     u32 GetFpcr() const {
@@ -249,12 +270,28 @@ void Jit::SetRegister(size_t index, u64 value) {
     impl->SetRegister(index, value);
 }
 
+std::array<u64, 31> Jit::GetRegisters() const {
+    return impl->GetRegisters();
+}
+
+void Jit::SetRegisters(const std::array<u64, 31>& value) {
+    impl->SetRegisters(value);
+}
+
 Jit::Vector Jit::GetVector(size_t index) const {
     return impl->GetVector(index);
 }
 
 void Jit::SetVector(size_t index, Vector value) {
     impl->SetVector(index, value);
+}
+
+std::array<Jit::Vector, 32> Jit::GetVectors() const {
+    return impl->GetVectors();
+}
+
+void Jit::SetVectors(const std::array<Jit::Vector, 32>& value) {
+    impl->SetVectors(value);
 }
 
 u32 Jit::GetFpcr() const {

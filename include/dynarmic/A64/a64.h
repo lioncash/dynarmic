@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -68,15 +69,23 @@ public:
     /// Modify general-purpose register.
     void SetRegister(size_t index, std::uint64_t value);
 
-    struct Vector {
-        std::uint64_t low;
-        std::uint64_t high;
-    };
+    /// Read all general-purpose registers.
+    std::array<std::uint64_t, 31> GetRegisters() const;
+    /// Modify all general-purpose registers.
+    void SetRegisters(const std::array<std::uint64_t, 31>& value);
+
+    using Vector = std::array<std::uint64_t, 2>;
+    static_assert(sizeof(Vector) == sizeof(std::uint64_t) * 2);
 
     /// Read floating point and SIMD register.
     Vector GetVector(std::size_t index) const;
     /// Modify floating point and SIMD register.
     void SetVector(std::size_t index, Vector value);
+
+    /// Read all floating point and SIMD registers.
+    std::array<Vector, 32> GetVectors() const;
+    /// Modify all floating point and SIMD registers.
+    void SetVectors(const std::array<Vector, 32>& value);
 
     /// View FPCR.
     std::uint32_t GetFpcr() const;
