@@ -35,6 +35,8 @@ public:
     IR::U1 GetCFlag();
     void SetNZCV(const IR::NZCV& nzcv);
 
+    void CallSupervisor(u32 imm);
+
     IR::U32 GetW(Reg source_reg);
     IR::U64 GetX(Reg source_reg);
     IR::U64 GetSP();

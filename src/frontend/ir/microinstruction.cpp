@@ -219,8 +219,9 @@ bool Inst::WritesToFPSCR() const {
 }
 
 bool Inst::CausesCPUException() const {
-    return op == Opcode::Breakpoint ||
-           op == Opcode::A32CallSupervisor;
+    return op == Opcode::Breakpoint        ||
+           op == Opcode::A32CallSupervisor ||
+           op == Opcode::A64CallSupervisor;
 }
 
 bool Inst::AltersExclusiveState() const {

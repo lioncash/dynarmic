@@ -62,7 +62,7 @@ std::vector<Matcher<V>> GetDecodeTable() {
         INST(&V::B_cond,                 "B.cond",                                    "01010100iiiiiiiiiiiiiiiiiii0cccc"),
 
         // Exception generation
-        //INST(&V::SVC,                    "SVC",                                       "11010100000iiiiiiiiiiiiiiii00001"),
+        INST(&V::SVC,                    "SVC",                                       "11010100000iiiiiiiiiiiiiiii00001"),
         //INST(&V::HVC,                    "HVC",                                       "11010100000iiiiiiiiiiiiiiii00010"),
         //INST(&V::SMC,                    "SMC",                                       "11010100000iiiiiiiiiiiiiiii00011"),
         //INST(&V::BRK,                    "BRK",                                       "11010100001iiiiiiiiiiiiiiii00000"),

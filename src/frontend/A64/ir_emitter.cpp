@@ -34,6 +34,10 @@ void IREmitter::SetNZCV(const IR::NZCV& nzcv) {
     Inst(Opcode::A64SetNZCV, nzcv);
 }
 
+void IREmitter::CallSupervisor(u32 imm) {
+    Inst(Opcode::A64CallSupervisor, Imm32(imm));
+}
+
 IR::U32 IREmitter::GetW(Reg reg) {
     if (reg == Reg::ZR)
         return Imm32(0);

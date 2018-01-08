@@ -62,6 +62,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/data_processing_addsub.cpp
     frontend/A64/translate/impl/data_processing_logical.cpp
     frontend/A64/translate/impl/data_processing_pcrel.cpp
+    frontend/A64/translate/impl/exception_generating.cpp
     frontend/A64/translate/impl/impl.cpp
     frontend/A64/translate/impl/impl.h
     frontend/A64/translate/translate.cpp
