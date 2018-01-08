@@ -911,6 +911,7 @@ static void EmitSub(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, size_t 
 
     if (nzcv_inst) {
         ctx.EraseInstruction(nzcv_inst);
+        code->cmc();
         code->lahf();
         code->seto(code->al);
         ctx.reg_alloc.DefineValue(nzcv_inst, nzcv);
