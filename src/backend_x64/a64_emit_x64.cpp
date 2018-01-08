@@ -11,6 +11,7 @@
 #include "backend_x64/a64_jitstate.h"
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
+#include "backend_x64/devirtualize.h"
 #include "backend_x64/emit_x64.h"
 #include "common/address_range.h"
 #include "common/assert.h"
@@ -220,11 +221,12 @@ void A64EmitX64::EmitA64SetPC(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor) {
-    code->mov(code->ABI_PARAM1, A64::LocationDescriptor{terminal.next}.PC());
-    code->mov(code->ABI_PARAM2.cvt32(), 1);
-    code->mov(qword[r15 + offsetof(A64JitState, pc)], code->ABI_PARAM1.cvt32());
+    //code->mov(qword[r15 + offsetof(A64JitState, pc)], code->ABI_PARAM1.cvt32());
     code->SwitchMxcsrOnExit();
-    //code->CallFunction(cb.InterpreterFallback);
+    Devirtualize<&A64::UserCallbacks::InterpreterFallback>(conf.callbacks).EmitCall(code, [&](Xbyak::Reg64 param1, Xbyak::Reg64 param2){
+        code->mov(param1, A64::LocationDescriptor{terminal.next}.PC());
+        code->mov(param2.cvt32(), 1);
+    });
     code->ReturnFromRunCode(true); // TODO: Check cycles
 }
 

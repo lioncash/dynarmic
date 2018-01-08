@@ -72,5 +72,13 @@ using parameter_type_t = typename FunctionInfo<Function>::template Parameter<Par
 template <typename Function>
 using return_type_t = typename FunctionInfo<Function>::return_type;
 
+/**
+ * Helper template for retrieving the class type of a member function.
+ *
+ * @tparam Function The function type to get the return type of.
+ */
+template <typename Function>
+using class_type_t = typename FunctionInfo<Function>::class_type;
+
 } // namespace mp
 } // namespace Dynarmic
