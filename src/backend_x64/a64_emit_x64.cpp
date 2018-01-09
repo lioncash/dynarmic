@@ -132,7 +132,7 @@ void A64EmitX64::EmitA64GetCFlag(A64EmitContext& ctx, IR::Inst* inst) {
 
 void A64EmitX64::EmitA64SetNZCV(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 to_store = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Reg32 to_store = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
     code->and_(to_store, 0b11000001'00000001);
     code->imul(to_store, to_store, 0b00010000'00100001);
     code->shl(to_store, 16);
