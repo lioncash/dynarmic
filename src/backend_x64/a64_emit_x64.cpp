@@ -251,17 +251,9 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlock terminal, IR::LocationDesc
     } else {
         EmitPatchJg(terminal.next);
     }
-    Xbyak::Label dest;
-    code->jmp(dest, Xbyak::CodeGenerator::T_NEAR);
-
-    code->SwitchToFarCode();
-    code->align(16);
-    code->L(dest);
     code->mov(rax, A64::LocationDescriptor{terminal.next}.PC());
     code->mov(qword[r15 + offsetof(A64JitState, pc)], rax);
-    // PushRSBHelper(rax, rbx, terminal.next);
     code->ForceReturnFromRunCode();
-    code->SwitchToNearCode();
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlockFast terminal, IR::LocationDescriptor) {
