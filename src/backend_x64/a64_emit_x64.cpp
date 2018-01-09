@@ -165,14 +165,13 @@ void A64EmitX64::EmitA64GetSP(A64EmitContext& ctx, IR::Inst* inst) {
 void A64EmitX64::EmitA64SetW(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     A64::Reg reg = inst->GetArg(0).GetA64RegRef();
-    auto addr = dword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)];
+    auto addr = qword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)];
     if (args[1].IsImmediate()) {
         code->mov(addr, args[1].GetImmediateU32());
-    } else if (args[1].IsInXmm()) {
-        Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
-        code->movd(addr, to_store);
     } else {
-        Xbyak::Reg32 to_store = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+        // TODO: zext tracking, xmm variant
+        Xbyak::Reg64 to_store = ctx.reg_alloc.UseScratchGpr(args[1]);
+        code->mov(to_store.cvt32(), to_store.cvt32());
         code->mov(addr, to_store);
     }
 }
