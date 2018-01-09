@@ -35,7 +35,7 @@ public:
     template <typename T = s32>
     T SignExtend() const {
         static_assert(Common::BitSize<T>() >= bit_size);
-        return static_cast<T>(Common::SignExtend<bit_size>(value));
+        return Common::SignExtend<bit_size, T>(value);
     }
 
     template <size_t bit>
