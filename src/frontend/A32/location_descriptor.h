@@ -43,8 +43,8 @@ public:
     bool TFlag() const { return cpsr.T(); }
     bool EFlag() const { return cpsr.E(); }
 
-    PSR CPSR() const { return cpsr; }
-    FPSCR FPSCR() const { return fpscr; }
+    A32::PSR CPSR() const { return cpsr; }
+    A32::FPSCR FPSCR() const { return fpscr; }
 
     bool operator == (const LocationDescriptor& o) const {
         return std::tie(arm_pc, cpsr, fpscr) == std::tie(o.arm_pc, o.cpsr, o.fpscr);
