@@ -61,6 +61,8 @@ bool TranslatorVisitor::STP_LDP_gen(Imm<2> opc, bool not_postindex, bool wback, 
         }
         break;
     }
+    case MemOp::PREFETCH:
+        UNREACHABLE();
     }
 
     if (wback) {
