@@ -240,21 +240,13 @@ struct TranslatorVisitor final {
     bool LDNP_fpsimd(Imm<2> opc, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
 
     // Loads and stores - Load/Store register pair
-    bool STP_gen_1(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
-    bool STP_gen_2(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
-    bool STP_gen_3(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
-    bool LDP_gen_1(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
-    bool LDP_gen_2(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
-    bool LDP_gen_3(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
+    bool STP_LDP_gen(Imm<2> opc, bool not_postindex, bool wback, Imm<1> L, Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
     bool STP_fpsimd_1(Imm<2> opc, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
     bool STP_fpsimd_2(Imm<2> opc, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
     bool STP_fpsimd_3(Imm<2> opc, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
     bool LDP_fpsimd_1(Imm<2> opc, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
     bool LDP_fpsimd_2(Imm<2> opc, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
     bool LDP_fpsimd_3(Imm<2> opc, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
-    bool LDPSW_1(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
-    bool LDPSW_2(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
-    bool LDPSW_3(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
 
     // Loads and stores - Load/Store register (immediate)
     bool load_store_register_immediate(bool wback, bool postindex, size_t scale, u64 offset, Imm<2> size, Imm<2> opc, Reg Rn, Reg Rt);

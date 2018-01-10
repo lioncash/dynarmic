@@ -213,21 +213,16 @@ std::vector<Matcher<V>> GetDecodeTable() {
         //INST(&V::LDNP_fpsimd,            "LDNP (SIMD&FP)",                            "oo10110001iiiiiiiuuuuunnnnnttttt"),
 
         // Loads and stores - Load/Store register pair
-        //INST(&V::STP_gen_1,              "STP",                                       "-010100010iiiiiiiuuuuunnnnnttttt"),
-        //INST(&V::STP_gen_2,              "STP",                                       "-010100110iiiiiiiuuuuunnnnnttttt"),
-        //INST(&V::STP_gen_3,              "STP",                                       "-010100100iiiiiiiuuuuunnnnnttttt"),
-        //INST(&V::LDP_gen_1,              "LDP",                                       "-010100011iiiiiiiuuuuunnnnnttttt"),
-        //INST(&V::LDP_gen_2,              "LDP",                                       "-010100111iiiiiiiuuuuunnnnnttttt"),
-        //INST(&V::LDP_gen_3,              "LDP",                                       "-010100101iiiiiiiuuuuunnnnnttttt"),
+        INST(&V::STP_LDP_gen,            "STP/LDP",                                   "oo10100pwLiiiiiiiuuuuunnnnnttttt"),
+        INST(&V::UnallocatedEncoding,    "",                                          "--1010000-----------------------"),
+        INST(&V::UnallocatedEncoding,    "",                                          "-110100--0----------------------"),
+        INST(&V::UnallocatedEncoding,    "",                                          "1110100-------------------------"),
         //INST(&V::STP_fpsimd_1,           "STP (SIMD&FP)",                             "oo10110010iiiiiiiuuuuunnnnnttttt"),
         //INST(&V::STP_fpsimd_2,           "STP (SIMD&FP)",                             "oo10110110iiiiiiiuuuuunnnnnttttt"),
         //INST(&V::STP_fpsimd_3,           "STP (SIMD&FP)",                             "oo10110100iiiiiiiuuuuunnnnnttttt"),
         //INST(&V::LDP_fpsimd_1,           "LDP (SIMD&FP)",                             "oo10110011iiiiiiiuuuuunnnnnttttt"),
         //INST(&V::LDP_fpsimd_2,           "LDP (SIMD&FP)",                             "oo10110111iiiiiiiuuuuunnnnnttttt"),
         //INST(&V::LDP_fpsimd_3,           "LDP (SIMD&FP)",                             "oo10110101iiiiiiiuuuuunnnnnttttt"),
-        //INST(&V::LDPSW_1,                "LDPSW",                                     "0110100011iiiiiiiuuuuunnnnnttttt"),
-        //INST(&V::LDPSW_2,                "LDPSW",                                     "0110100111iiiiiiiuuuuunnnnnttttt"),
-        //INST(&V::LDPSW_3,                "LDPSW",                                     "0110100101iiiiiiiuuuuunnnnnttttt"),
 
         // Loads and stores - Load/Store register (unscaled immediate)
         INST(&V::STURx_LDURx,            "STURx/LDURx",                               "zz111000oo0iiiiiiiii00nnnnnttttt"),

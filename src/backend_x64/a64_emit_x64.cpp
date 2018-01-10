@@ -94,7 +94,7 @@ A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
             break;
         }
 
-        reg_alloc.EndOfAllocScope();
+        ctx.reg_alloc.EndOfAllocScope();
     }
 
     reg_alloc.AssertNoMoreUses();
