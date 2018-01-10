@@ -180,7 +180,7 @@ OPCODE(FPS32ToSingle,           T::F32,         T::F32,         T::U1           
 OPCODE(FPU32ToDouble,           T::F64,         T::F32,         T::U1                           )
 OPCODE(FPS32ToDouble,           T::F64,         T::F32,         T::U1                           )
 
-// Memory access
+// A32 Memory access
 A32OPC(ClearExclusive,          T::Void,                                                        )
 A32OPC(SetExclusive,            T::Void,        T::U32,         T::U8                           )
 A32OPC(ReadMemory8,             T::U8,          T::U32                                          )
@@ -195,6 +195,16 @@ A32OPC(ExclusiveWriteMemory8,   T::U32,         T::U32,         T::U8           
 A32OPC(ExclusiveWriteMemory16,  T::U32,         T::U32,         T::U16                          )
 A32OPC(ExclusiveWriteMemory32,  T::U32,         T::U32,         T::U32                          )
 A32OPC(ExclusiveWriteMemory64,  T::U32,         T::U32,         T::U32,         T::U32          )
+
+// A64 Memory access
+A64OPC(ReadMemory8,             T::U8,          T::U64                                          )
+A64OPC(ReadMemory16,            T::U16,         T::U64                                          )
+A64OPC(ReadMemory32,            T::U32,         T::U64                                          )
+A64OPC(ReadMemory64,            T::U64,         T::U64                                          )
+A64OPC(WriteMemory8,            T::Void,        T::U64,         T::U8                           )
+A64OPC(WriteMemory16,           T::Void,        T::U64,         T::U16                          )
+A64OPC(WriteMemory32,           T::Void,        T::U64,         T::U32                          )
+A64OPC(WriteMemory64,           T::Void,        T::U64,         T::U64                          )
 
 // Coprocessor
 A32OPC(CoprocInternalOperation, T::Void,        T::CoprocInfo                                   )

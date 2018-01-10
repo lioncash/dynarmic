@@ -24,7 +24,7 @@ bool TranslatorVisitor::ADD_imm(bool sf, Imm<2> shift, Imm<12> imm12, Reg Rn, Re
         return ReservedValue();
     }
 
-    auto operand1 = Rn == Reg::SP ? SP(datasize) : X(datasize, Rn);
+    auto operand1 = Rn == Reg::SP ? SP(datasize) : IR::U32U64(X(datasize, Rn));
 
     auto result = ir.Add(operand1, I(datasize, imm));
 
@@ -52,7 +52,7 @@ bool TranslatorVisitor::ADDS_imm(bool sf, Imm<2> shift, Imm<12> imm12, Reg Rn, R
         return ReservedValue();
     }
 
-    auto operand1 = Rn == Reg::SP ? SP(datasize) : X(datasize, Rn);
+    auto operand1 = Rn == Reg::SP ? SP(datasize) : IR::U32U64(X(datasize, Rn));
 
     auto result = ir.Add(operand1, I(datasize, imm));
 
@@ -78,7 +78,7 @@ bool TranslatorVisitor::SUB_imm(bool sf, Imm<2> shift, Imm<12> imm12, Reg Rn, Re
         return ReservedValue();
     }
 
-    auto operand1 = Rn == Reg::SP ? SP(datasize) : X(datasize, Rn);
+    auto operand1 = Rn == Reg::SP ? SP(datasize) : IR::U32U64(X(datasize, Rn));
 
     auto result = ir.Sub(operand1, I(datasize, imm));
 
@@ -106,7 +106,7 @@ bool TranslatorVisitor::SUBS_imm(bool sf, Imm<2> shift, Imm<12> imm12, Reg Rn, R
         return ReservedValue();
     }
 
-    auto operand1 = Rn == Reg::SP ? SP(datasize) : X(datasize, Rn);
+    auto operand1 = Rn == Reg::SP ? SP(datasize) : IR::U32U64(X(datasize, Rn));
 
     auto result = ir.Sub(operand1, I(datasize, imm));
 
@@ -198,7 +198,7 @@ bool TranslatorVisitor::ADD_ext(bool sf, Reg Rm, Imm<3> option, Imm<3> imm3, Reg
     u8 shift = imm3.ZeroExtend<u8>();
     if (shift > 4) return ReservedValue();
 
-    auto operand1 = Rn == Reg::SP ? SP(datasize) : X(datasize, Rn);
+    auto operand1 = Rn == Reg::SP ? SP(datasize) : IR::U32U64(X(datasize, Rn));
     auto operand2 = ExtendReg(datasize, Rm, option, shift);
 
     auto result = ir.Add(operand1, operand2);
@@ -217,7 +217,7 @@ bool TranslatorVisitor::ADDS_ext(bool sf, Reg Rm, Imm<3> option, Imm<3> imm3, Re
     u8 shift = imm3.ZeroExtend<u8>();
     if (shift > 4) return ReservedValue();
 
-    auto operand1 = Rn == Reg::SP ? SP(datasize) : X(datasize, Rn);
+    auto operand1 = Rn == Reg::SP ? SP(datasize) : IR::U32U64(X(datasize, Rn));
     auto operand2 = ExtendReg(datasize, Rm, option, shift);
 
     auto result = ir.Add(operand1, operand2);
@@ -238,7 +238,7 @@ bool TranslatorVisitor::SUB_ext(bool sf, Reg Rm, Imm<3> option, Imm<3> imm3, Reg
     u8 shift = imm3.ZeroExtend<u8>();
     if (shift > 4) return ReservedValue();
 
-    auto operand1 = Rn == Reg::SP ? SP(datasize) : X(datasize, Rn);
+    auto operand1 = Rn == Reg::SP ? SP(datasize) : IR::U32U64(X(datasize, Rn));
     auto operand2 = ExtendReg(datasize, Rm, option, shift);
 
     auto result = ir.Sub(operand1, operand2);
@@ -257,7 +257,7 @@ bool TranslatorVisitor::SUBS_ext(bool sf, Reg Rm, Imm<3> option, Imm<3> imm3, Re
     u8 shift = imm3.ZeroExtend<u8>();
     if (shift > 4) return ReservedValue();
 
-    auto operand1 = Rn == Reg::SP ? SP(datasize) : X(datasize, Rn);
+    auto operand1 = Rn == Reg::SP ? SP(datasize) : IR::U32U64(X(datasize, Rn));
     auto operand2 = ExtendReg(datasize, Rm, option, shift);
 
     auto result = ir.Sub(operand1, operand2);
@@ -276,8 +276,8 @@ bool TranslatorVisitor::SUBS_ext(bool sf, Reg Rm, Imm<3> option, Imm<3> imm3, Re
 bool TranslatorVisitor::ADC(bool sf, Reg Rm, Reg Rn, Reg Rd) {
     size_t datasize = sf ? 64 : 32;
 
-    auto operand1 = X(datasize, Rn);
-    auto operand2 = X(datasize, Rm);
+    IR::U32U64 operand1 = X(datasize, Rn);
+    IR::U32U64 operand2 = X(datasize, Rm);
 
     auto result = ir.AddWithCarry(operand1, operand2, ir.GetCFlag());
 
@@ -289,8 +289,8 @@ bool TranslatorVisitor::ADC(bool sf, Reg Rm, Reg Rn, Reg Rd) {
 bool TranslatorVisitor::ADCS(bool sf, Reg Rm, Reg Rn, Reg Rd) {
     size_t datasize = sf ? 64 : 32;
 
-    auto operand1 = X(datasize, Rn);
-    auto operand2 = X(datasize, Rm);
+    IR::U32U64 operand1 = X(datasize, Rn);
+    IR::U32U64 operand2 = X(datasize, Rm);
 
     auto result = ir.AddWithCarry(operand1, operand2, ir.GetCFlag());
 
@@ -304,8 +304,8 @@ bool TranslatorVisitor::ADCS(bool sf, Reg Rm, Reg Rn, Reg Rd) {
 bool TranslatorVisitor::SBC(bool sf, Reg Rm, Reg Rn, Reg Rd) {
     size_t datasize = sf ? 64 : 32;
 
-    auto operand1 = X(datasize, Rn);
-    auto operand2 = X(datasize, Rm);
+    IR::U32U64 operand1 = X(datasize, Rn);
+    IR::U32U64 operand2 = X(datasize, Rm);
 
     auto result = ir.SubWithCarry(operand1, operand2, ir.GetCFlag());
 
@@ -317,8 +317,8 @@ bool TranslatorVisitor::SBC(bool sf, Reg Rm, Reg Rn, Reg Rd) {
 bool TranslatorVisitor::SBCS(bool sf, Reg Rm, Reg Rn, Reg Rd) {
     size_t datasize = sf ? 64 : 32;
 
-    auto operand1 = X(datasize, Rn);
-    auto operand2 = X(datasize, Rm);
+    IR::U32U64 operand1 = X(datasize, Rn);
+    IR::U32U64 operand2 = X(datasize, Rm);
 
     auto result = ir.SubWithCarry(operand1, operand2, ir.GetCFlag());
 

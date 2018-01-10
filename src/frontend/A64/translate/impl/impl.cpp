@@ -26,6 +26,11 @@ bool TranslatorVisitor::ReservedValue() {
     return false;
 }
 
+bool TranslatorVisitor::UnallocatedEncoding() {
+    ASSERT_MSG(false, "UNALLOCATEDENCODING");
+    return false;
+}
+
 boost::optional<TranslatorVisitor::BitMasks> TranslatorVisitor::DecodeBitMasks(bool immN, Imm<6> imms, Imm<6> immr, bool immediate) {
     int len = Common::HighestSetBit((immN ? 1 << 6 : 0) | (imms.ZeroExtend() ^ 0b111111));
     if (len < 1)
@@ -61,8 +66,12 @@ IR::U32U64 TranslatorVisitor::I(size_t bitsize, u64 value) {
     }
 }
 
-IR::U32U64 TranslatorVisitor::X(size_t bitsize, Reg reg) {
+IR::UAny TranslatorVisitor::X(size_t bitsize, Reg reg) {
     switch (bitsize) {
+    case 8:
+        return ir.LeastSignificantByte(ir.GetW(reg));
+    case 16:
+        return ir.LeastSignificantHalf(ir.GetW(reg));
     case 32:
         return ir.GetW(reg);
     case 64:
@@ -111,8 +120,68 @@ void TranslatorVisitor::SP(size_t bitsize, IR::U32U64 value) {
     }
 }
 
+IR::UAny TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acctype*/) {
+    switch (bytesize) {
+    case 1:
+        return ir.ReadMemory8(address);
+    case 2:
+        return ir.ReadMemory16(address);
+    case 4:
+        return ir.ReadMemory32(address);
+    case 8:
+        return ir.ReadMemory64(address);
+    default:
+        ASSERT_MSG(false, "Invalid bytesize parameter %zu", bytesize);
+        return {};
+    }
+}
+
+void TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acctype*/, IR::UAny value) {
+    switch (bytesize) {
+    case 1:
+        ir.WriteMemory8(address, value);
+        return;
+    case 2:
+        ir.WriteMemory16(address, value);
+        return;
+    case 4:
+        ir.WriteMemory32(address, value);
+        return;
+    case 8:
+        ir.WriteMemory64(address, value);
+        return;
+    default:
+        ASSERT_MSG(false, "Invalid bytesize parameter %zu", bytesize);
+        return;
+    }
+}
+
+IR::U32U64 TranslatorVisitor::SignExtend(IR::UAny value, size_t to_size) {
+    switch (to_size) {
+    case 32:
+        return ir.SignExtendToWord(value);
+    case 64:
+        return ir.SignExtendToLong(value);
+    default:
+        ASSERT_MSG(false, "Invalid size parameter %zu", to_size);
+        return {};
+    }
+}
+
+IR::U32U64 TranslatorVisitor::ZeroExtend(IR::UAny value, size_t to_size) {
+    switch (to_size) {
+    case 32:
+        return ir.ZeroExtendToWord(value);
+    case 64:
+        return ir.ZeroExtendToLong(value);
+    default:
+        ASSERT_MSG(false, "Invalid size parameter %zu", to_size);
+        return {};
+    }
+}
+
 IR::U32U64 TranslatorVisitor::ShiftReg(size_t bitsize, Reg reg, Imm<2> shift, IR::U8 amount) {
-    auto result = X(bitsize, reg);
+    IR::U32U64 result = X(bitsize, reg);
     switch (shift.ZeroExtend()) {
     case 0b00:
         return ir.LogicalShiftLeft(result, amount);

@@ -66,7 +66,7 @@ bool TranslatorVisitor::CBZ(bool sf, Imm<19> imm19, Reg Rt) {
     size_t datasize = sf ? 64 : 32;
     s64 offset = concatenate(imm19, Imm<2>{0}).SignExtend<s64>();
 
-    auto operand1 = X(datasize, Rt);
+    IR::U32U64 operand1 = X(datasize, Rt);
 
     ir.SetCheckBit(ir.IsZero(operand1));
 
@@ -81,7 +81,7 @@ bool TranslatorVisitor::CBNZ(bool sf, Imm<19> imm19, Reg Rt) {
     size_t datasize = sf ? 64 : 32;
     s64 offset = concatenate(imm19, Imm<2>{0}).SignExtend<s64>();
 
-    auto operand1 = X(datasize, Rt);
+    IR::U32U64 operand1 = X(datasize, Rt);
 
     ir.SetCheckBit(ir.IsZero(operand1));
 

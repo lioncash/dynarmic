@@ -38,6 +38,38 @@ void IREmitter::CallSupervisor(u32 imm) {
     Inst(Opcode::A64CallSupervisor, Imm32(imm));
 }
 
+IR::U8 IREmitter::ReadMemory8(const IR::U64& vaddr) {
+    return Inst<IR::U8>(Opcode::A64ReadMemory8, vaddr);
+}
+
+IR::U16 IREmitter::ReadMemory16(const IR::U64& vaddr) {
+    return Inst<IR::U16>(Opcode::A64ReadMemory16, vaddr);
+}
+
+IR::U32 IREmitter::ReadMemory32(const IR::U64& vaddr) {
+    return Inst<IR::U32>(Opcode::A64ReadMemory32, vaddr);
+}
+
+IR::U64 IREmitter::ReadMemory64(const IR::U64& vaddr) {
+    return Inst<IR::U64>(Opcode::A64ReadMemory64, vaddr);
+}
+
+void IREmitter::WriteMemory8(const IR::U64& vaddr, const IR::U8& value) {
+    Inst(Opcode::A64WriteMemory8, vaddr, value);
+}
+
+void IREmitter::WriteMemory16(const IR::U64& vaddr, const IR::U16& value) {
+    Inst(Opcode::A64WriteMemory16, vaddr, value);
+}
+
+void IREmitter::WriteMemory32(const IR::U64& vaddr, const IR::U32& value) {
+    Inst(Opcode::A64WriteMemory32, vaddr, value);
+}
+
+void IREmitter::WriteMemory64(const IR::U64& vaddr, const IR::U64& value) {
+    Inst(Opcode::A64WriteMemory64, vaddr, value);
+}
+
 IR::U32 IREmitter::GetW(Reg reg) {
     if (reg == Reg::ZR)
         return Imm32(0);

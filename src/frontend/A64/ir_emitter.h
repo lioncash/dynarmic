@@ -37,6 +37,15 @@ public:
 
     void CallSupervisor(u32 imm);
 
+    IR::U8 ReadMemory8(const IR::U64& vaddr);
+    IR::U16 ReadMemory16(const IR::U64& vaddr);
+    IR::U32 ReadMemory32(const IR::U64& vaddr);
+    IR::U64 ReadMemory64(const IR::U64& vaddr);
+    void WriteMemory8(const IR::U64& vaddr, const IR::U8& value);
+    void WriteMemory16(const IR::U64& vaddr, const IR::U16& value);
+    void WriteMemory32(const IR::U64& vaddr, const IR::U32& value);
+    void WriteMemory64(const IR::U64& vaddr, const IR::U64& value);
+
     IR::U32 GetW(Reg source_reg);
     IR::U64 GetX(Reg source_reg);
     IR::U64 GetSP();

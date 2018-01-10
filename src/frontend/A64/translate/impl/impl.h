@@ -16,6 +16,14 @@
 namespace Dynarmic {
 namespace A64 {
 
+enum class AccType {
+    NORMAL, VEC, STREAM, VECSTREAM, ATOMIC, ORDERED, UNPRIV, IFETCH, PTW, DC, IC, AT,
+};
+
+enum class MemOp {
+    LOAD, STORE, PREFETCH,
+};
+
 struct TranslatorVisitor final {
     using instruction_return_type = bool;
 
@@ -26,6 +34,7 @@ struct TranslatorVisitor final {
     bool InterpretThisInstruction();
     bool UnpredictableInstruction();
     bool ReservedValue();
+    bool UnallocatedEncoding();
 
     struct BitMasks {
         u64 wmask, tmask;
@@ -34,11 +43,16 @@ struct TranslatorVisitor final {
     boost::optional<BitMasks> DecodeBitMasks(bool N, Imm<6> immr, Imm<6> imms, bool immediate);
 
     IR::U32U64 I(size_t bitsize, u64 value);
-    IR::U32U64 X(size_t bitsize, Reg reg);
+    IR::UAny X(size_t bitsize, Reg reg);
     void X(size_t bitsize, Reg reg, IR::U32U64 value);
     IR::U32U64 SP(size_t bitsize);
     void SP(size_t bitsize, IR::U32U64 value);
 
+    IR::UAny Mem(IR::U64 address, size_t size, AccType acctype);
+    void Mem(IR::U64 address, size_t size, AccType acctype, IR::UAny value);
+
+    IR::U32U64 SignExtend(IR::UAny value, size_t to_size);
+    IR::U32U64 ZeroExtend(IR::UAny value, size_t to_size);
     IR::U32U64 ShiftReg(size_t bitsize, Reg reg, Imm<2> shift, IR::U8 amount);
     IR::U32U64 ExtendReg(size_t bitsize, Reg reg, Imm<3> option, u8 shift);
 
@@ -214,10 +228,10 @@ struct TranslatorVisitor final {
     bool LDAR(Reg Rn, Reg Rt);
 
     // Loads and stores - Load register (literal)
-    bool LDR_lit_gen(Imm<19> imm19, Reg Rt);
+    bool LDR_lit_gen(bool opc_0, Imm<19> imm19, Reg Rt);
     bool LDR_lit_fpsimd(Imm<2> opc, Imm<19> imm19, Vec Vt);
     bool LDRSW_lit(Imm<19> imm19, Reg Rt);
-    bool PRFM_lit(Imm<19> imm19, Reg Rt);
+    bool PRFM_lit(Imm<19> imm19, Imm<5> prfop);
 
     // Loads and stores - Load/Store no-allocate pair
     bool STNP_gen(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
@@ -242,55 +256,18 @@ struct TranslatorVisitor final {
     bool LDPSW_2(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
     bool LDPSW_3(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
 
-    // Loads and stores - Load/Store register (unscaled immediate)
-    bool STURB(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDURB(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDURSB(Imm<9> imm9, Reg Rn, Reg Rt);
+    // Loads and stores - Load/Store register (immediate)
+    bool load_store_register_immediate(bool wback, bool postindex, size_t scale, u64 offset, Imm<2> size, Imm<2> opc, Reg Rn, Reg Rt);
+    bool STRx_LDRx_imm_1(Imm<2> size, Imm<2> opc, Imm<9> imm9, bool not_postindex, Reg Rn, Reg Rt);
+    bool STRx_LDRx_imm_2(Imm<2> size, Imm<2> opc, Imm<12> imm12, Reg Rn, Reg Rt);
+    bool STURx_LDURx(Imm<2> size, Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt);
+    bool PRFM_imm(Imm<12> imm12, Reg Rn, Reg Rt);
+    bool STR_imm_fpsimd_1(Imm<2> size, Imm<9> imm9, bool not_postindex, Reg Rn, Vec Vt);
+    bool STR_imm_fpsimd_2(Imm<2> size, Imm<12> imm12, Reg Rn, Vec Vt);
+    bool LDR_imm_fpsimd_1(Imm<2> size, Imm<9> imm9, bool not_postindex, Reg Rn, Vec Vt);
+    bool LDR_imm_fpsimd_2(Imm<2> size, Imm<12> imm12, Reg Rn, Vec Vt);
     bool STUR_fpsimd(Imm<2> size, Imm<9> imm9, Reg Rn, Vec Vt);
     bool LDUR_fpsimd(Imm<2> size, Imm<9> imm9, Reg Rn, Vec Vt);
-    bool STURH(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDURH(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDURSH(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool STUR_gen(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDUR_gen(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDURSW(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool PRFUM(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool PRFM_imm(Imm<12> imm12, Reg Rn, Reg Rt);
-
-    // Loads and stores - Load/Store register (immediate pre/post-indexed)
-    bool STRB_imm_1(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool STRB_imm_2(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool STRB_imm_3(Imm<12> imm12, Reg Rn, Reg Rt);
-    bool LDRB_imm_1(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDRB_imm_2(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDRB_imm_3(Imm<12> imm12, Reg Rn, Reg Rt);
-    bool LDRSB_imm_1(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDRSB_imm_2(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDRSB_imm_3(Imm<12> imm12, Reg Rn, Reg Rt);
-    bool STR_imm_fpsimd_1(Imm<2> size, Imm<9> imm9, Reg Rn, Vec Vt);
-    bool STR_imm_fpsimd_2(Imm<2> size, Imm<9> imm9, Reg Rn, Vec Vt);
-    bool STR_imm_fpsimd_3(Imm<2> size, Imm<12> imm12, Reg Rn, Vec Vt);
-    bool LDR_imm_fpsimd_1(Imm<2> size, Imm<9> imm9, Reg Rn, Vec Vt);
-    bool LDR_imm_fpsimd_2(Imm<2> size, Imm<9> imm9, Reg Rn, Vec Vt);
-    bool LDR_imm_fpsimd_3(Imm<2> size, Imm<12> imm12, Reg Rn, Vec Vt);
-    bool STRH_imm_1(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool STRH_imm_2(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool STRH_imm_3(Imm<12> imm12, Reg Rn, Reg Rt);
-    bool LDRH_imm_1(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDRH_imm_2(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDRH_imm_3(Imm<12> imm12, Reg Rn, Reg Rt);
-    bool LDRSH_imm_1(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDRSH_imm_2(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDRSH_imm_3(Imm<12> imm12, Reg Rn, Reg Rt);
-    bool STR_imm_gen_1(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool STR_imm_gen_2(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool STR_imm_gen_3(Imm<12> imm12, Reg Rn, Reg Rt);
-    bool LDR_imm_gen_1(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDR_imm_gen_2(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDR_imm_gen_3(Imm<12> imm12, Reg Rn, Reg Rt);
-    bool LDRSW_imm_1(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDRSW_imm_2(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDRSW_imm_3(Imm<12> imm12, Reg Rn, Reg Rt);
 
     // Loads and stores - Load/Store register (unprivileged)
     bool STTRB(Imm<9> imm9, Reg Rn, Reg Rt);
