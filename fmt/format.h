@@ -28,6 +28,7 @@
 #ifndef FMT_FORMAT_H_
 #define FMT_FORMAT_H_
 
+#define FMT_INCLUDE
 #include <cassert>
 #include <clocale>
 #include <cmath>
@@ -39,11 +40,26 @@
 #include <string>
 #include <vector>
 #include <utility>  // for std::pair
+#undef FMT_INCLUDE
 
 // The fmt library version in the form major * 10000 + minor * 100 + patch.
-#define FMT_VERSION 40000
+#define FMT_VERSION 40100
 
-#ifdef _SECURE_SCL
+#if defined(__has_include)
+# define FMT_HAS_INCLUDE(x) __has_include(x)
+#else
+# define FMT_HAS_INCLUDE(x) 0
+#endif
+
+#if (FMT_HAS_INCLUDE(<string_view>) && __cplusplus > 201402L) || \
+    (defined(_MSVC_LANG) && _MSVC_LANG > 201402L && _MSC_VER >= 1910)
+# include <string_view>
+# define FMT_HAS_STRING_VIEW 1
+#else
+# define FMT_HAS_STRING_VIEW 0
+#endif
+
+#if defined _SECURE_SCL && _SECURE_SCL
 # define FMT_SECURE_SCL _SECURE_SCL
 #else
 # define FMT_SECURE_SCL 0
@@ -97,7 +113,9 @@ typedef __int64          intmax_t;
 #  define FMT_HAS_GXX_CXX11 1
 # endif
 #else
+# define FMT_GCC_VERSION 0
 # define FMT_GCC_EXTENSION
+# define FMT_HAS_GXX_CXX11 0
 #endif
 
 #if defined(__INTEL_COMPILER)
@@ -135,6 +153,32 @@ typedef __int64          intmax_t;
 # define FMT_HAS_CPP_ATTRIBUTE(x) 0
 #endif
 
+#if FMT_HAS_CPP_ATTRIBUTE(maybe_unused)
+# define FMT_HAS_CXX17_ATTRIBUTE_MAYBE_UNUSED
+// VC++ 1910 support /std: option and that will set _MSVC_LANG macro
+// Clang with Microsoft CodeGen doesn't define _MSVC_LANG macro
+#elif defined(_MSVC_LANG) && _MSVC_LANG > 201402 && _MSC_VER >= 1910
+# define FMT_HAS_CXX17_ATTRIBUTE_MAYBE_UNUSED
+#endif
+
+#ifdef FMT_HAS_CXX17_ATTRIBUTE_MAYBE_UNUSED
+# define FMT_MAYBE_UNUSED [[maybe_unused]]
+// g++/clang++ also support [[gnu::unused]]. However, we don't use it.
+#elif defined(__GNUC__)
+# define FMT_MAYBE_UNUSED __attribute__((unused))
+#else
+# define FMT_MAYBE_UNUSED
+#endif
+
+// Use the compiler's attribute noreturn
+#if defined(__MINGW32__) || defined(__MINGW64__)
+# define FMT_NORETURN __attribute__((noreturn))
+#elif FMT_HAS_CPP_ATTRIBUTE(noreturn) && __cplusplus >= 201103L
+# define FMT_NORETURN [[noreturn]]
+#else
+# define FMT_NORETURN
+#endif
+
 #ifndef FMT_USE_VARIADIC_TEMPLATES
 // Variadic templates are available in GCC since version 4.4
 // (http://gcc.gnu.org/projects/cxx0x.html) and in Visual C++
@@ -154,6 +198,12 @@ typedef __int64          intmax_t;
     (FMT_HAS_FEATURE(cxx_rvalue_references) || \
         (FMT_GCC_VERSION >= 403 && FMT_HAS_GXX_CXX11) || FMT_MSC_VER >= 1600)
 # endif
+#endif
+
+#if __cplusplus >= 201103L || FMT_MSC_VER >= 1700
+# define FMT_USE_ALLOCATOR_TRAITS 1
+#else
+# define FMT_USE_ALLOCATOR_TRAITS 0
 #endif
 
 // Check if exceptions are disabled.
@@ -262,11 +312,14 @@ typedef __int64          intmax_t;
 // makes the fmt::literals implementation easier. However, an explicit check
 // for variadic templates is added here just in case.
 // For Intel's compiler both it and the system gcc/msc must support UDLs.
-# define FMT_USE_USER_DEFINED_LITERALS \
-   FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES && \
+# if FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES && \
    (FMT_HAS_FEATURE(cxx_user_literals) || \
      (FMT_GCC_VERSION >= 407 && FMT_HAS_GXX_CXX11) || FMT_MSC_VER >= 1900) && \
    (!defined(FMT_ICC_VERSION) || FMT_ICC_VERSION >= 1500)
+#  define FMT_USE_USER_DEFINED_LITERALS 1
+# else
+#  define FMT_USE_USER_DEFINED_LITERALS 0
+# endif
 #endif
 
 #ifndef FMT_USE_EXTERN_TEMPLATES
@@ -305,7 +358,10 @@ typedef __int64          intmax_t;
 
 namespace fmt {
 namespace internal {
-# pragma intrinsic(_BitScanReverse)
+// avoid Clang with Microsoft CodeGen's -Wunknown-pragmas warning
+# ifndef __clang__
+#  pragma intrinsic(_BitScanReverse)
+# endif
 inline uint32_t clz(uint32_t x) {
   unsigned long r = 0;
   _BitScanReverse(&r, x);
@@ -319,7 +375,8 @@ inline uint32_t clz(uint32_t x) {
 }
 # define FMT_BUILTIN_CLZ(n) fmt::internal::clz(n)
 
-# ifdef _WIN64
+// avoid Clang with Microsoft CodeGen's -Wunknown-pragmas warning
+# if defined(_WIN64) && !defined(__clang__)
 #  pragma intrinsic(_BitScanReverse64)
 # endif
 
@@ -505,6 +562,26 @@ class BasicStringRef {
       const std::basic_string<Char, std::char_traits<Char>, Allocator> &s)
   : data_(s.c_str()), size_(s.size()) {}
 
+#if FMT_HAS_STRING_VIEW
+  /**
+    \rst
+    Constructs a string reference from a ``std::basic_string_view`` object.
+    \endrst
+   */
+  BasicStringRef(
+      const std::basic_string_view<Char, std::char_traits<Char>> &s)
+  : data_(s.data()), size_(s.size()) {}
+
+  /**
+   \rst
+   Converts a string reference to an ``std::string_view`` object.
+   \endrst
+  */
+  explicit operator std::basic_string_view<Char>() const FMT_NOEXCEPT {
+    return std::basic_string_view<Char>(data_, size_);
+  }
+#endif
+
   /**
     \rst
     Converts a string reference to an ``std::string`` object.
@@ -609,7 +686,7 @@ class FormatError : public std::runtime_error {
   explicit FormatError(CStringRef message)
   : std::runtime_error(message.c_str()) {}
   FormatError(const FormatError &ferr) : std::runtime_error(ferr) {}
-  FMT_API ~FormatError() FMT_DTOR_NOEXCEPT;
+  FMT_API ~FormatError() FMT_DTOR_NOEXCEPT FMT_OVERRIDE;
 };
 
 namespace internal {
@@ -726,7 +803,7 @@ template <typename T>
 template <typename U>
 void Buffer<T>::append(const U *begin, const U *end) {
   FMT_ASSERT(end >= begin, "negative value");
-  std::size_t new_size = size_ + (end - begin);
+  std::size_t new_size = size_ + static_cast<std::size_t>(end - begin);
   if (new_size > capacity_)
     grow(new_size);
   std::uninitialized_copy(begin, end,
@@ -754,7 +831,7 @@ class MemoryBuffer : private Allocator, public Buffer<T> {
  public:
   explicit MemoryBuffer(const Allocator &alloc = Allocator())
       : Allocator(alloc), Buffer<T>(data_, SIZE) {}
-  ~MemoryBuffer() { deallocate(); }
+  ~MemoryBuffer() FMT_OVERRIDE { deallocate(); }
 
 #if FMT_USE_RVALUE_REFERENCES
  private:
@@ -798,7 +875,12 @@ void MemoryBuffer<T, SIZE, Allocator>::grow(std::size_t size) {
   std::size_t new_capacity = this->capacity_ + this->capacity_ / 2;
   if (size > new_capacity)
       new_capacity = size;
+#if FMT_USE_ALLOCATOR_TRAITS
+  T *new_ptr =
+      std::allocator_traits<Allocator>::allocate(*this, new_capacity, FMT_NULL);
+#else
   T *new_ptr = this->allocate(new_capacity, FMT_NULL);
+#endif
   // The following code doesn't throw, so the raw pointer above doesn't leak.
   std::uninitialized_copy(this->ptr_, this->ptr_ + this->size_,
                           make_ptr(new_ptr, new_capacity));
@@ -916,7 +998,7 @@ struct IntTraits {
     TypeSelector<std::numeric_limits<T>::digits <= 32>::Type MainType;
 };
 
-FMT_API void report_unknown_type(char code, const char *type);
+FMT_API FMT_NORETURN void report_unknown_type(char code, const char *type);
 
 // Static data is placed in this class template to allow header-only
 // configuration.
@@ -1155,17 +1237,17 @@ T &get();
 Yes &convert(fmt::ULongLong);
 No &convert(...);
 
-template<typename T, bool ENABLE_CONVERSION>
+template <typename T, bool ENABLE_CONVERSION>
 struct ConvertToIntImpl {
   enum { value = ENABLE_CONVERSION };
 };
 
-template<typename T, bool ENABLE_CONVERSION>
+template <typename T, bool ENABLE_CONVERSION>
 struct ConvertToIntImpl2 {
   enum { value = false };
 };
 
-template<typename T>
+template <typename T>
 struct ConvertToIntImpl2<T, true> {
   enum {
     // Don't convert numeric types.
@@ -1173,7 +1255,7 @@ struct ConvertToIntImpl2<T, true> {
   };
 };
 
-template<typename T>
+template <typename T>
 struct ConvertToInt {
   enum {
     enable_conversion = sizeof(fmt::internal::convert(get<T>())) == sizeof(Yes)
@@ -1190,16 +1272,16 @@ FMT_DISABLE_CONVERSION_TO_INT(float);
 FMT_DISABLE_CONVERSION_TO_INT(double);
 FMT_DISABLE_CONVERSION_TO_INT(long double);
 
-template<bool B, class T = void>
+template <bool B, class T = void>
 struct EnableIf {};
 
-template<class T>
+template <class T>
 struct EnableIf<true, T> { typedef T type; };
 
-template<bool B, class T, class F>
+template <bool B, class T, class F>
 struct Conditional { typedef T type; };
 
-template<class T, class F>
+template <class T, class F>
 struct Conditional<false, T, F> { typedef F type; };
 
 // For bcc32 which doesn't understand ! in template arguments.
@@ -1248,9 +1330,9 @@ inline fmt::StringRef thousands_sep(...) { return ""; }
   typedef int FMT_CONCAT_(Assert, __LINE__)[(cond) ? 1 : -1] FMT_UNUSED
 #endif
 
-template <typename Formatter, typename Char, typename T>
-void format_arg(Formatter &, const Char *, const T &) {
-  FMT_STATIC_ASSERT(FalseType<T>::value,
+template <typename Formatter>
+void format_arg(Formatter&, ...) {
+  FMT_STATIC_ASSERT(FalseType<Formatter>::value,
                     "Cannot format argument. To enable the use of ostream "
                     "operator<< include fmt/ostream.h. Otherwise provide "
                     "an overload of format_arg.");
@@ -1283,6 +1365,9 @@ class MakeValue : public Arg {
   MakeValue(typename WCharHelper<wchar_t *, Char>::Unsupported);
   MakeValue(typename WCharHelper<const wchar_t *, Char>::Unsupported);
   MakeValue(typename WCharHelper<const std::wstring &, Char>::Unsupported);
+#if FMT_HAS_STRING_VIEW
+  MakeValue(typename WCharHelper<const std::wstring_view &, Char>::Unsupported);
+#endif
   MakeValue(typename WCharHelper<WStringRef, Char>::Unsupported);
 
   void set_string(StringRef str) {
@@ -1352,6 +1437,20 @@ class MakeValue : public Arg {
   FMT_MAKE_VALUE(unsigned char, uint_value, UINT)
   FMT_MAKE_VALUE(char, int_value, CHAR)
 
+#if __cplusplus >= 201103L
+  template <
+    typename T,
+    typename = typename std::enable_if<
+      std::is_enum<T>::value && ConvertToInt<T>::value>::type>
+   MakeValue(T value) { int_value = value; }
+
+  template <
+    typename T,
+    typename = typename std::enable_if<
+      std::is_enum<T>::value && ConvertToInt<T>::value>::type>
+  static uint64_t type(T) { return Arg::INT; }
+#endif
+
 #if !defined(_MSC_VER) || defined(_NATIVE_WCHAR_T_DEFINED)
   MakeValue(typename WCharHelper<wchar_t, Char>::Supported value) {
     int_value = value;
@@ -1370,6 +1469,9 @@ class MakeValue : public Arg {
   FMT_MAKE_VALUE(unsigned char *, ustring.value, CSTRING)
   FMT_MAKE_VALUE(const unsigned char *, ustring.value, CSTRING)
   FMT_MAKE_STR_VALUE(const std::string &, STRING)
+#if FMT_HAS_STRING_VIEW
+  FMT_MAKE_STR_VALUE(const std::string_view &, STRING)
+#endif
   FMT_MAKE_STR_VALUE(StringRef, STRING)
   FMT_MAKE_VALUE_(CStringRef, string.value, CSTRING, value.c_str())
 
@@ -1382,6 +1484,9 @@ class MakeValue : public Arg {
   FMT_MAKE_WSTR_VALUE(wchar_t *, WSTRING)
   FMT_MAKE_WSTR_VALUE(const wchar_t *, WSTRING)
   FMT_MAKE_WSTR_VALUE(const std::wstring &, WSTRING)
+#if FMT_HAS_STRING_VIEW
+  FMT_MAKE_WSTR_VALUE(const std::wstring_view &, WSTRING)
+#endif
   FMT_MAKE_WSTR_VALUE(WStringRef, WSTRING)
 
   FMT_MAKE_VALUE(void *, pointer, POINTER)
@@ -1447,7 +1552,7 @@ class RuntimeError : public std::runtime_error {
  protected:
   RuntimeError() : std::runtime_error("") {}
   RuntimeError(const RuntimeError &rerr) : std::runtime_error(rerr) {}
-  FMT_API ~RuntimeError() FMT_DTOR_NOEXCEPT;
+  FMT_API ~RuntimeError() FMT_DTOR_NOEXCEPT FMT_OVERRIDE;
 };
 
 template <typename Char>
@@ -1921,7 +2026,7 @@ class ArgMap {
   MapType map_;
 
  public:
-  FMT_API void init(const ArgList &args);
+  void init(const ArgList &args);
 
   const internal::Arg *find(const fmt::BasicStringRef<Char> &name) const {
     // The list is unsorted, so just return the first matching name.
@@ -1933,6 +2038,51 @@ class ArgMap {
     return FMT_NULL;
   }
 };
+
+template <typename Char>
+void ArgMap<Char>::init(const ArgList &args) {
+  if (!map_.empty())
+    return;
+  typedef internal::NamedArg<Char> NamedArg;
+  const NamedArg *named_arg = FMT_NULL;
+  bool use_values =
+      args.type(ArgList::MAX_PACKED_ARGS - 1) == internal::Arg::NONE;
+  if (use_values) {
+    for (unsigned i = 0;/*nothing*/; ++i) {
+      internal::Arg::Type arg_type = args.type(i);
+      switch (arg_type) {
+      case internal::Arg::NONE:
+        return;
+      case internal::Arg::NAMED_ARG:
+        named_arg = static_cast<const NamedArg*>(args.values_[i].pointer);
+        map_.push_back(Pair(named_arg->name, *named_arg));
+        break;
+      default:
+        /*nothing*/;
+      }
+    }
+    return;
+  }
+  for (unsigned i = 0; i != ArgList::MAX_PACKED_ARGS; ++i) {
+    internal::Arg::Type arg_type = args.type(i);
+    if (arg_type == internal::Arg::NAMED_ARG) {
+      named_arg = static_cast<const NamedArg*>(args.args_[i].pointer);
+      map_.push_back(Pair(named_arg->name, *named_arg));
+    }
+  }
+  for (unsigned i = ArgList::MAX_PACKED_ARGS;/*nothing*/; ++i) {
+    switch (args.args_[i].type) {
+    case internal::Arg::NONE:
+      return;
+    case internal::Arg::NAMED_ARG:
+      named_arg = static_cast<const NamedArg*>(args.args_[i].pointer);
+      map_.push_back(Pair(named_arg->name, *named_arg));
+      break;
+    default:
+      /*nothing*/;
+    }
+  }
+}
 
 template <typename Impl, typename Char, typename Spec = fmt::FormatSpec>
 class ArgFormatterBase : public ArgVisitor<Impl, void> {
@@ -2220,7 +2370,8 @@ struct ArgArray;
 
 template <std::size_t N>
 struct ArgArray<N, true/*IsPacked*/> {
-  typedef Value Type[N > 0 ? N : 1];
+  // '+' is used to silence GCC -Wduplicated-branches warning.
+  typedef Value Type[N > 0 ? N : +1];
 
   template <typename Formatter, typename T>
   static Value make(const T &value) {
@@ -2410,7 +2561,7 @@ class SystemError : public internal::RuntimeError {
   FMT_DEFAULTED_COPY_CTOR(SystemError)
   FMT_VARIADIC_CTOR(SystemError, init, int, CStringRef)
 
-  FMT_API ~SystemError() FMT_DTOR_NOEXCEPT;
+  FMT_API ~SystemError() FMT_DTOR_NOEXCEPT FMT_OVERRIDE;
 
   int error_code() const { return error_code_; }
 };
@@ -3483,10 +3634,10 @@ void arg(WStringRef, const internal::NamedArg<Char>&) FMT_DELETED_OR_UNDEFINED;
 #define FMT_GET_ARG_NAME(type, index) arg##index
 
 #if FMT_USE_VARIADIC_TEMPLATES
-# define FMT_VARIADIC_(Char, ReturnType, func, call, ...) \
+# define FMT_VARIADIC_(Const, Char, ReturnType, func, call, ...) \
   template <typename... Args> \
   ReturnType func(FMT_FOR_EACH(FMT_ADD_ARG_NAME, __VA_ARGS__), \
-      const Args & ... args) { \
+      const Args & ... args) Const { \
     typedef fmt::internal::ArgArray<sizeof...(Args)> ArgArray; \
     typename ArgArray::Type array{ \
       ArgArray::template make<fmt::BasicFormatter<Char> >(args)...}; \
@@ -3496,35 +3647,35 @@ void arg(WStringRef, const internal::NamedArg<Char>&) FMT_DELETED_OR_UNDEFINED;
 #else
 // Defines a wrapper for a function taking __VA_ARGS__ arguments
 // and n additional arguments of arbitrary types.
-# define FMT_WRAP(Char, ReturnType, func, call, n, ...) \
+# define FMT_WRAP(Const, Char, ReturnType, func, call, n, ...) \
   template <FMT_GEN(n, FMT_MAKE_TEMPLATE_ARG)> \
   inline ReturnType func(FMT_FOR_EACH(FMT_ADD_ARG_NAME, __VA_ARGS__), \
-      FMT_GEN(n, FMT_MAKE_ARG)) { \
+      FMT_GEN(n, FMT_MAKE_ARG)) Const { \
     fmt::internal::ArgArray<n>::Type arr; \
     FMT_GEN(n, FMT_ASSIGN_##Char); \
     call(FMT_FOR_EACH(FMT_GET_ARG_NAME, __VA_ARGS__), fmt::ArgList( \
       fmt::internal::make_type(FMT_GEN(n, FMT_MAKE_REF2)), arr)); \
   }
 
-# define FMT_VARIADIC_(Char, ReturnType, func, call, ...) \
-  inline ReturnType func(FMT_FOR_EACH(FMT_ADD_ARG_NAME, __VA_ARGS__)) { \
+# define FMT_VARIADIC_(Const, Char, ReturnType, func, call, ...) \
+  inline ReturnType func(FMT_FOR_EACH(FMT_ADD_ARG_NAME, __VA_ARGS__)) Const { \
     call(FMT_FOR_EACH(FMT_GET_ARG_NAME, __VA_ARGS__), fmt::ArgList()); \
   } \
-  FMT_WRAP(Char, ReturnType, func, call, 1, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 2, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 3, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 4, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 5, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 6, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 7, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 8, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 9, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 10, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 11, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 12, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 13, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 14, __VA_ARGS__) \
-  FMT_WRAP(Char, ReturnType, func, call, 15, __VA_ARGS__)
+  FMT_WRAP(Const, Char, ReturnType, func, call, 1, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 2, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 3, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 4, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 5, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 6, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 7, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 8, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 9, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 10, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 11, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 12, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 13, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 14, __VA_ARGS__) \
+  FMT_WRAP(Const, Char, ReturnType, func, call, 15, __VA_ARGS__)
 #endif  // FMT_USE_VARIADIC_TEMPLATES
 
 /**
@@ -3555,10 +3706,16 @@ void arg(WStringRef, const internal::NamedArg<Char>&) FMT_DELETED_OR_UNDEFINED;
   \endrst
  */
 #define FMT_VARIADIC(ReturnType, func, ...) \
-  FMT_VARIADIC_(char, ReturnType, func, return func, __VA_ARGS__)
+  FMT_VARIADIC_(, char, ReturnType, func, return func, __VA_ARGS__)
+
+#define FMT_VARIADIC_CONST(ReturnType, func, ...) \
+  FMT_VARIADIC_(const, char, ReturnType, func, return func, __VA_ARGS__)
 
 #define FMT_VARIADIC_W(ReturnType, func, ...) \
-  FMT_VARIADIC_(wchar_t, ReturnType, func, return func, __VA_ARGS__)
+  FMT_VARIADIC_(, wchar_t, ReturnType, func, return func, __VA_ARGS__)
+
+#define FMT_VARIADIC_CONST_W(ReturnType, func, ...) \
+  FMT_VARIADIC_(const, wchar_t, ReturnType, func, return func, __VA_ARGS__)
 
 #define FMT_CAPTURE_ARG_(id, index) ::fmt::arg(#id, id)
 
@@ -3601,17 +3758,19 @@ template <typename Char>
 unsigned parse_nonnegative_int(const Char *&s) {
   assert('0' <= *s && *s <= '9');
   unsigned value = 0;
-  do {
-    unsigned new_value = value * 10 + (*s++ - '0');
-    // Check if value wrapped around.
-    if (new_value < value) {
-      value = (std::numeric_limits<unsigned>::max)();
-      break;
-    }
-    value = new_value;
-  } while ('0' <= *s && *s <= '9');
   // Convert to unsigned to prevent a warning.
   unsigned max_int = (std::numeric_limits<int>::max)();
+  unsigned big = max_int / 10;
+  do {
+    // Check for overflow.
+    if (value > big) {
+      value = max_int + 1;
+      break;
+    }
+    value = value * 10 + (*s - '0');
+    ++s;
+  } while ('0' <= *s && *s <= '9');
+  // Convert to unsigned to prevent a warning.
   if (value > max_int)
     FMT_THROW(FormatError("number is too big"));
   return value;
@@ -3783,7 +3942,8 @@ const Char *BasicFormatter<Char, ArgFormatter>::format(
       default:
         FMT_THROW(FormatError("width is not integer"));
       }
-      if (value > (std::numeric_limits<int>::max)())
+      unsigned max_int = (std::numeric_limits<int>::max)();
+      if (value > max_int)
         FMT_THROW(FormatError("number is too big"));
       spec.width_ = static_cast<int>(value);
     }
@@ -3821,7 +3981,8 @@ const Char *BasicFormatter<Char, ArgFormatter>::format(
           default:
             FMT_THROW(FormatError("precision is not integer"));
         }
-        if (value > (std::numeric_limits<int>::max)())
+        unsigned max_int = (std::numeric_limits<int>::max)();
+        if (value > max_int)
           FMT_THROW(FormatError("number is too big"));
         spec.precision_ = static_cast<int>(value);
       } else {
