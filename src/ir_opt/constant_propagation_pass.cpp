@@ -13,16 +13,9 @@
 namespace Dynarmic {
 namespace Optimization {
 
-void ConstantPropagation(IR::Block& block, const A32::UserCallbacks::Memory& memory_callbacks) {
+void ConstantPropagation(IR::Block& block) {
     for (auto& inst : block) {
         switch (inst.GetOpcode()) {
-        case IR::Opcode::A32SetCFlag: {
-            IR::Value arg = inst.GetArg(0);
-            if (!arg.IsImmediate() && arg.GetInst()->GetOpcode() == IR::Opcode::A32GetCFlag) {
-                inst.Invalidate();
-            }
-            break;
-        }
         case IR::Opcode::LogicalShiftLeft32:
         case IR::Opcode::LogicalShiftRight32:
         case IR::Opcode::ArithmeticShiftRight32:
@@ -38,50 +31,6 @@ void ConstantPropagation(IR::Block& block, const A32::UserCallbacks::Memory& mem
                     carry_inst->ReplaceUsesWith(inst.GetArg(2));
                 }
                 inst.ReplaceUsesWith(inst.GetArg(0));
-            }
-            break;
-        }
-        case IR::Opcode::A32ReadMemory8: {
-            if (!inst.AreAllArgsImmediates())
-                break;
-
-            u32 vaddr = inst.GetArg(0).GetU32();
-            if (memory_callbacks.IsReadOnlyMemory(vaddr)) {
-                u8 value_from_memory = memory_callbacks.Read8(vaddr);
-                inst.ReplaceUsesWith(IR::Value{value_from_memory});
-            }
-            break;
-        }
-        case IR::Opcode::A32ReadMemory16: {
-            if (!inst.AreAllArgsImmediates())
-                break;
-
-            u32 vaddr = inst.GetArg(0).GetU32();
-            if (memory_callbacks.IsReadOnlyMemory(vaddr)) {
-                u16 value_from_memory = memory_callbacks.Read16(vaddr);
-                inst.ReplaceUsesWith(IR::Value{value_from_memory});
-            }
-            break;
-        }
-        case IR::Opcode::A32ReadMemory32: {
-            if (!inst.AreAllArgsImmediates())
-                break;
-
-            u32 vaddr = inst.GetArg(0).GetU32();
-            if (memory_callbacks.IsReadOnlyMemory(vaddr)) {
-                u32 value_from_memory = memory_callbacks.Read32(vaddr);
-                inst.ReplaceUsesWith(IR::Value{value_from_memory});
-            }
-            break;
-        }
-        case IR::Opcode::A32ReadMemory64: {
-            if (!inst.AreAllArgsImmediates())
-                break;
-
-            u32 vaddr = inst.GetArg(0).GetU32();
-            if (memory_callbacks.IsReadOnlyMemory(vaddr)) {
-                u64 value_from_memory = memory_callbacks.Read64(vaddr);
-                inst.ReplaceUsesWith(IR::Value{value_from_memory});
             }
             break;
         }

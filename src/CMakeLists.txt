@@ -87,9 +87,10 @@ add_library(dynarmic
     frontend/ir/terminal.h
     frontend/ir/value.cpp
     frontend/ir/value.h
+    ir_opt/a32_constant_memory_reads_pass.cpp
+    ir_opt/a32_get_set_elimination_pass.cpp
     ir_opt/constant_propagation_pass.cpp
     ir_opt/dead_code_elimination_pass.cpp
-    ir_opt/get_set_elimination_pass.cpp
     ir_opt/passes.h
     ir_opt/verification_pass.cpp
 )

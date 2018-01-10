@@ -15,7 +15,7 @@
 namespace Dynarmic {
 namespace Optimization {
 
-void GetSetElimination(IR::Block& block) {
+void A32GetSetElimination(IR::Block& block) {
     using Iterator = IR::Block::iterator;
     struct RegisterInfo {
         IR::Value register_value;

@@ -17,8 +17,9 @@ class Block;
 namespace Dynarmic {
 namespace Optimization {
 
-void GetSetElimination(IR::Block& block);
-void ConstantPropagation(IR::Block& block, const A32::UserCallbacks::Memory& memory_callbacks);
+void A32GetSetElimination(IR::Block& block);
+void A32ConstantMemoryReads(IR::Block& block, const A32::UserCallbacks::Memory& memory_callbacks);
+void ConstantPropagation(IR::Block& block);
 void DeadCodeElimination(IR::Block& block);
 void VerificationPass(const IR::Block& block);
 

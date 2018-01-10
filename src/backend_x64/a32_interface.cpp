@@ -160,9 +160,10 @@ private:
         }
 
         IR::Block ir_block = A32::Translate(A32::LocationDescriptor{descriptor}, callbacks.memory.ReadCode);
-        Optimization::GetSetElimination(ir_block);
+        Optimization::A32GetSetElimination(ir_block);
         Optimization::DeadCodeElimination(ir_block);
-        Optimization::ConstantPropagation(ir_block, callbacks.memory);
+        Optimization::A32ConstantMemoryReads(ir_block, callbacks.memory);
+        Optimization::ConstantPropagation(ir_block);
         Optimization::DeadCodeElimination(ir_block);
         Optimization::VerificationPass(ir_block);
         return emitter.Emit(ir_block);

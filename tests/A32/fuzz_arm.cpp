@@ -327,7 +327,10 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
             while (num_insts < instructions_to_execute_count) {
                 Dynarmic::A32::LocationDescriptor descriptor = {u32(num_insts * 4), Dynarmic::A32::PSR{}, Dynarmic::A32::FPSCR{}};
                 Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, &MemoryReadCode);
-                Dynarmic::Optimization::GetSetElimination(ir_block);
+                Dynarmic::Optimization::A32GetSetElimination(ir_block);
+                Dynarmic::Optimization::DeadCodeElimination(ir_block);
+                Dynarmic::Optimization::A32ConstantMemoryReads(ir_block, GetUserCallbacks().memory);
+                Dynarmic::Optimization::ConstantPropagation(ir_block);
                 Dynarmic::Optimization::DeadCodeElimination(ir_block);
                 Dynarmic::Optimization::VerificationPass(ir_block);
                 printf("\n\nIR:\n%s", Dynarmic::IR::DumpBlock(ir_block).c_str());
