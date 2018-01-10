@@ -34,7 +34,7 @@ public:
         : pc(o.Value() & PC_MASK), fpcr((o.Value() >> 37) & FPCR_MASK) {}
 
     u64 PC() const { return Common::SignExtend<56>(pc); }
-    FPCR FPCR() const { return fpcr; }
+    A64::FPCR FPCR() const { return fpcr; }
 
     bool operator == (const LocationDescriptor& o) const {
         return std::tie(pc, fpcr) == std::tie(o.pc, o.fpcr);
