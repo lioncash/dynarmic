@@ -52,6 +52,7 @@ add_library(dynarmic
     frontend/A32/types.cpp
     frontend/A32/types.h
     frontend/A64/decoder/a64.h
+    frontend/A64/decoder/a64.inc
     frontend/A64/FPCR.h
     frontend/A64/imm.h
     frontend/A64/ir_emitter.cpp
