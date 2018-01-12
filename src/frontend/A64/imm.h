@@ -30,7 +30,7 @@ public:
     template <typename T = u32>
     T ZeroExtend() const {
         static_assert(Common::BitSize<T>() >= bit_size);
-        return value;
+        return static_cast<T>(value);
     }
 
     template <typename T = s32>
