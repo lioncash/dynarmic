@@ -5,6 +5,7 @@
  */
 
 #include <array>
+#include <cinttypes>
 
 #include <catch.hpp>
 
@@ -26,17 +27,17 @@ public:
         return 0x14000000; // B .
     }
 
-    std::uint8_t MemoryRead8(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead8(%llx)", vaddr); }
-    std::uint16_t MemoryRead16(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead16(%llx)", vaddr); }
-    std::uint32_t MemoryRead32(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead32(%llx)", vaddr); }
-    std::uint64_t MemoryRead64(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead64(%llx)", vaddr); }
+    std::uint8_t MemoryRead8(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead8(%" PRIx64 ")", vaddr); }
+    std::uint16_t MemoryRead16(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead16(%" PRIx64 ")", vaddr); }
+    std::uint32_t MemoryRead32(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead32(%" PRIx64 ")", vaddr); }
+    std::uint64_t MemoryRead64(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead64(%" PRIx64 ")", vaddr); }
 
-    void MemoryWrite8(u64 vaddr, std::uint8_t value) override { ASSERT_MSG(false, "MemoryWrite8(%llx, %hhi)", vaddr, value); }
-    void MemoryWrite16(u64 vaddr, std::uint16_t value) override { ASSERT_MSG(false, "MemoryWrite16(%llx, %hi)", vaddr, value); }
-    void MemoryWrite32(u64 vaddr, std::uint32_t value) override { ASSERT_MSG(false, "MemoryWrite32(%llx, %i)", vaddr, value); }
-    void MemoryWrite64(u64 vaddr, std::uint64_t value) override { ASSERT_MSG(false, "MemoryWrite64(%llx, %lli)", vaddr, value); }
+    void MemoryWrite8(u64 vaddr, std::uint8_t value) override { ASSERT_MSG(false, "MemoryWrite8(%" PRIx64 ", %" PRIx8 ")", vaddr, value); }
+    void MemoryWrite16(u64 vaddr, std::uint16_t value) override { ASSERT_MSG(false, "MemoryWrite16(%" PRIx64 ", %" PRIx16 ")", vaddr, value); }
+    void MemoryWrite32(u64 vaddr, std::uint32_t value) override { ASSERT_MSG(false, "MemoryWrite32(%" PRIx64 ", %" PRIx32 ")", vaddr, value); }
+    void MemoryWrite64(u64 vaddr, std::uint64_t value) override { ASSERT_MSG(false, "MemoryWrite64(%" PRIx64 ", %" PRIx64 ")", vaddr, value); }
 
-    void InterpreterFallback(u64 pc, size_t num_instructions) override { ASSERT_MSG(false, "InterpreterFallback(%llx, %zu)", pc, num_instructions); }
+    void InterpreterFallback(u64 pc, size_t num_instructions) override { ASSERT_MSG(false, "InterpreterFallback(%" PRIx64 ", %zu)", pc, num_instructions); }
 
     void CallSVC(std::uint32_t swi) override { ASSERT_MSG(false, "CallSVC(%u)", swi); }
 
