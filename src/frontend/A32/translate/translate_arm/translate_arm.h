@@ -26,7 +26,7 @@ enum class ConditionalState {
 struct ArmTranslatorVisitor final {
     using instruction_return_type = bool;
 
-    explicit ArmTranslatorVisitor(LocationDescriptor descriptor) : ir(descriptor) {
+    explicit ArmTranslatorVisitor(IR::Block& block, LocationDescriptor descriptor) : ir(block, descriptor) {
         ASSERT_MSG(!descriptor.TFlag(), "The processor must be in Arm mode");
     }
 

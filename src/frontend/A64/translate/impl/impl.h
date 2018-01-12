@@ -27,7 +27,7 @@ enum class MemOp {
 struct TranslatorVisitor final {
     using instruction_return_type = bool;
 
-    explicit TranslatorVisitor(LocationDescriptor descriptor) : ir(descriptor) {}
+    explicit TranslatorVisitor(IR::Block& block, LocationDescriptor descriptor) : ir(block, descriptor) {}
 
     A64::IREmitter ir;
 

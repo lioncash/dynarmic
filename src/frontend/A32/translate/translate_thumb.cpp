@@ -23,7 +23,7 @@ namespace {
 struct ThumbTranslatorVisitor final {
     using instruction_return_type = bool;
 
-    explicit ThumbTranslatorVisitor(LocationDescriptor descriptor) : ir(descriptor) {
+    explicit ThumbTranslatorVisitor(IR::Block& block, LocationDescriptor descriptor) : ir(block, descriptor) {
         ASSERT_MSG(descriptor.TFlag(), "The processor must be in Thumb mode");
     }
 
@@ -878,7 +878,8 @@ std::tuple<u32, ThumbInstSize> ReadThumbInstruction(u32 arm_pc, MemoryReadCodeFu
 } // local namespace
 
 IR::Block TranslateThumb(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code) {
-    ThumbTranslatorVisitor visitor{descriptor};
+    IR::Block block{descriptor};
+    ThumbTranslatorVisitor visitor{block, descriptor};
 
     bool should_continue = true;
     while (should_continue) {
@@ -906,12 +907,12 @@ IR::Block TranslateThumb(LocationDescriptor descriptor, MemoryReadCodeFuncType m
 
         s32 advance_pc = (inst_size == ThumbInstSize::Thumb16) ? 2 : 4;
         visitor.ir.current_location = visitor.ir.current_location.AdvancePC(advance_pc);
-        visitor.ir.block.CycleCount()++;
+        block.CycleCount()++;
     }
 
-    visitor.ir.block.SetEndLocation(visitor.ir.current_location);
+    block.SetEndLocation(visitor.ir.current_location);
 
-    return std::move(visitor.ir.block);
+    return block;
 }
 
 } // namespace A32

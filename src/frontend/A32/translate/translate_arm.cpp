@@ -29,7 +29,8 @@ static bool CondCanContinue(ConditionalState cond_state, const A32::IREmitter& i
 }
 
 IR::Block TranslateArm(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code) {
-    ArmTranslatorVisitor visitor{descriptor};
+    IR::Block block{descriptor};
+    ArmTranslatorVisitor visitor{block, descriptor};
 
     bool should_continue = true;
     while (should_continue && CondCanContinue(visitor.cond_state, visitor.ir)) {
@@ -49,7 +50,7 @@ IR::Block TranslateArm(LocationDescriptor descriptor, MemoryReadCodeFuncType mem
         }
 
         visitor.ir.current_location = visitor.ir.current_location.AdvancePC(4);
-        visitor.ir.block.CycleCount()++;
+        block.CycleCount()++;
     }
 
     if (visitor.cond_state == ConditionalState::Translating || visitor.cond_state == ConditionalState::Trailing) {
@@ -58,11 +59,11 @@ IR::Block TranslateArm(LocationDescriptor descriptor, MemoryReadCodeFuncType mem
         }
     }
 
-    ASSERT_MSG(visitor.ir.block.HasTerminal(), "Terminal has not been set");
+    ASSERT_MSG(block.HasTerminal(), "Terminal has not been set");
 
-    visitor.ir.block.SetEndLocation(visitor.ir.current_location);
+    block.SetEndLocation(visitor.ir.current_location);
 
-    return std::move(visitor.ir.block);
+    return block;
 }
 
 bool ArmTranslatorVisitor::ConditionPassed(Cond cond) {

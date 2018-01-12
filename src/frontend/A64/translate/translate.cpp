@@ -14,7 +14,8 @@ namespace Dynarmic {
 namespace A64 {
 
 IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code) {
-    TranslatorVisitor visitor{descriptor};
+    IR::Block block{descriptor};
+    TranslatorVisitor visitor{block, descriptor};
 
     bool should_continue = true;
     while (should_continue) {
@@ -28,14 +29,32 @@ IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory
         }
 
         visitor.ir.current_location = visitor.ir.current_location.AdvancePC(4);
-        visitor.ir.block.CycleCount()++;
+        block.CycleCount()++;
     }
 
-    ASSERT_MSG(visitor.ir.block.HasTerminal(), "Terminal has not been set");
+    ASSERT_MSG(block.HasTerminal(), "Terminal has not been set");
 
-    visitor.ir.block.SetEndLocation(visitor.ir.current_location);
+    block.SetEndLocation(visitor.ir.current_location);
 
-    return std::move(visitor.ir.block);
+    return block;
+}
+
+bool TranslateSingleInstruction(IR::Block& block, LocationDescriptor descriptor, u32 instruction) {
+    TranslatorVisitor visitor{block, descriptor};
+
+    bool should_continue = true;
+    if (auto decoder = Decode<TranslatorVisitor>(instruction)) {
+        should_continue = decoder->call(visitor, instruction);
+    } else {
+        should_continue = visitor.InterpretThisInstruction();
+    }
+
+    visitor.ir.current_location = visitor.ir.current_location.AdvancePC(4);
+    block.CycleCount()++;
+
+    block.SetEndLocation(visitor.ir.current_location);
+
+    return should_continue;
 }
 
 } // namespace A64

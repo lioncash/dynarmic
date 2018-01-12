@@ -60,9 +60,9 @@ struct ResultAndGE {
  */
 class IREmitter {
 public:
-    explicit IREmitter(IR::LocationDescriptor descriptor) : block(descriptor) {}
+    explicit IREmitter(Block& block) : block(block) {}
 
-    Block block;
+    Block& block;
 
     void Unimplemented();
 

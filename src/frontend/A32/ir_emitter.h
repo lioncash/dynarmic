@@ -26,7 +26,7 @@ namespace A32 {
  */
 class IREmitter : public IR::IREmitter {
 public:
-    explicit IREmitter(LocationDescriptor descriptor) : IR::IREmitter(descriptor), current_location(descriptor) {}
+    explicit IREmitter(IR::Block& block, LocationDescriptor descriptor) : IR::IREmitter(block), current_location(descriptor) {}
 
     LocationDescriptor current_location;
 
