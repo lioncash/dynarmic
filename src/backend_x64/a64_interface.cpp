@@ -12,6 +12,7 @@
 #include "backend_x64/a64_emit_x64.h"
 #include "backend_x64/a64_jitstate.h"
 #include "backend_x64/block_of_code.h"
+#include "backend_x64/devirtualize.h"
 #include "backend_x64/jitstate_info.h"
 #include "common/assert.h"
 #include "common/scope_exit.h"
@@ -25,16 +26,11 @@ namespace A64 {
 
 using namespace BackendX64;
 
-template <auto fn, typename Ret, typename ...Args>
-static Ret Thunk(A64::UserCallbacks* cb, Args... args) {
-    return (cb->*fn)(std::forward<Args>(args)...);
-}
-
 static RunCodeCallbacks GenRunCodeCallbacks(A64::UserCallbacks* cb, CodePtr (*LookupBlock)(void* lookup_block_arg), void* arg) {
     return RunCodeCallbacks{
         std::make_unique<ArgCallback>(LookupBlock, reinterpret_cast<u64>(arg)),
-        std::make_unique<ArgCallback>(&Thunk<&A64::UserCallbacks::AddTicks, void, u64>, reinterpret_cast<u64>(cb)),
-        std::make_unique<ArgCallback>(&Thunk<&A64::UserCallbacks::GetTicksRemaining, u64>, reinterpret_cast<u64>(cb)),
+        std::make_unique<ArgCallback>(DEVIRT(cb, &A64::UserCallbacks::AddTicks)),
+        std::make_unique<ArgCallback>(DEVIRT(cb, &A64::UserCallbacks::GetTicksRemaining)),
     };
 }
 

@@ -94,7 +94,7 @@ bool TranslatorVisitor::CBNZ(bool sf, Imm<19> imm19, Reg Rt) {
 
 bool TranslatorVisitor::TBZ(Imm<1> b5, Imm<5> b40, Imm<14> imm14, Reg Rt) {
     size_t datasize = b5 == 1 ? 64 : 32;
-    size_t bit_pos = concatenate(b5, b40).ZeroExtend<size_t>();
+    u8 bit_pos = concatenate(b5, b40).ZeroExtend<u8>();
     s64 offset = concatenate(imm14, Imm<2>{0}).SignExtend<s64>();
 
     auto operand = X(datasize, Rt);
@@ -110,7 +110,7 @@ bool TranslatorVisitor::TBZ(Imm<1> b5, Imm<5> b40, Imm<14> imm14, Reg Rt) {
 
 bool TranslatorVisitor::TBNZ(Imm<1> b5, Imm<5> b40, Imm<14> imm14, Reg Rt) {
     size_t datasize = b5 == 1 ? 64 : 32;
-    size_t bit_pos = concatenate(b5, b40).ZeroExtend<size_t>();
+    u8 bit_pos = concatenate(b5, b40).ZeroExtend<u8>();
     s64 offset = concatenate(imm14, Imm<2>{0}).SignExtend<s64>();
 
     auto operand = X(datasize, Rt);

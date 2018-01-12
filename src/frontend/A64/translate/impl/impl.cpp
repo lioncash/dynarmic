@@ -45,7 +45,7 @@ boost::optional<TranslatorVisitor::BitMasks> TranslatorVisitor::DecodeBitMasks(b
     s32 R = s32(immr.ZeroExtend() & levels);
     u64 d = u64(S - R) & levels;
 
-    size_t esize = 1 << len;
+    size_t esize = static_cast<size_t>(1) << len;
     u64 welem = Common::Ones<u64>(S + 1);
     u64 telem = Common::Ones<u64>(d + 1);
     u64 wmask = Common::RotateRight(Common::Replicate(welem, esize), R);

@@ -136,7 +136,7 @@ template <typename JST>
 void EmitX64<JST>::EmitGetNZCVFromOp(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    const size_t bitsize = [&]{
+    const int bitsize = [&]{
         switch (args[0].GetType()) {
         case IR::Type::U8:
             return 8;
@@ -787,7 +787,7 @@ static Xbyak::Reg64 DoNZCV(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* nzc
     return nzcv;
 }
 
-static void EmitAdd(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, size_t bitsize) {
+static void EmitAdd(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, int bitsize) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
     auto nzcv_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetNZCVFromOp);
@@ -861,7 +861,7 @@ void EmitX64<JST>::EmitAdd64(EmitContext& ctx, IR::Inst* inst) {
     EmitAdd(code, ctx, inst, 64);
 }
 
-static void EmitSub(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, size_t bitsize) {
+static void EmitSub(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, int bitsize) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
     auto nzcv_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetNZCVFromOp);

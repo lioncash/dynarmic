@@ -28,8 +28,6 @@ bool TranslatorVisitor::STP_LDP_gen(Imm<2> opc, bool not_postindex, bool wback, 
         return UnpredictableInstruction();
 
     IR::U64 address;
-    IR::U32U64 data1;
-    IR::U32U64 data2;
     const size_t dbytes = datasize / 8;
 
     if (Rn == Reg::SP)
