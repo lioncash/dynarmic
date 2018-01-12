@@ -15,7 +15,7 @@ configuration:
 install:
   - git submodule update --init --recursive
   - cd externals
-  - git clone https://github.com/citra-emu/ext-boost boost
+  - git clone https://github.com/MerryMage/ext-boost boost
   - cd ..
 
 before_build:
