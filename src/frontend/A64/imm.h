@@ -86,7 +86,7 @@ bool operator!=(const Imm<bit_size>& a, u32 b) {
  * This is equivalent to a:b:...:z in ASL.
  */
 template <size_t first_bit_size, size_t ...rest_bit_sizes>
-auto concatenate(Imm<first_bit_size> first, Imm<rest_bit_sizes> ...rest) -> Imm<Common::Sum(first_bit_size, rest_bit_sizes...)> {
+auto concatenate(Imm<first_bit_size> first, Imm<rest_bit_sizes> ...rest) {
     if constexpr (sizeof...(rest) == 0) {
         return first;
     } else {
