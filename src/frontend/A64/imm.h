@@ -9,6 +9,7 @@
 #include "common/assert.h"
 #include "common/bit_util.h"
 #include "common/common_types.h"
+#include "common/math_util.h"
 
 namespace Dynarmic {
 namespace A64 {
@@ -85,13 +86,13 @@ bool operator!=(const Imm<bit_size>& a, u32 b) {
  * This is equivalent to a:b:...:z in ASL.
  */
 template <size_t first_bit_size, size_t ...rest_bit_sizes>
-auto concatenate(Imm<first_bit_size> first, Imm<rest_bit_sizes> ...rest) -> Imm<(first_bit_size + ... + rest_bit_sizes)> {
+auto concatenate(Imm<first_bit_size> first, Imm<rest_bit_sizes> ...rest) -> Imm<Common::Sum(first_bit_size, rest_bit_sizes...)> {
     if constexpr (sizeof...(rest) == 0) {
         return first;
     } else {
         const auto concat_rest = concatenate(rest...);
         const u32 value = (first.ZeroExtend() << concat_rest.bit_size) | concat_rest.ZeroExtend();
-        return Imm<(first_bit_size + ... + rest_bit_sizes)>{value};
+        return Imm<Common::Sum(first_bit_size, rest_bit_sizes...)>{value};
     }
 }
 
