@@ -60,5 +60,5 @@ private:
     uc_hook intr_hook{};
     uc_hook mem_invalid_hook{};
 
-    std::vector<Page*> pages;
+    std::vector<std::unique_ptr<Page>> pages;
 };

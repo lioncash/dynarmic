@@ -29,7 +29,6 @@ Unicorn::Unicorn(TestEnv& testenv) : testenv(testenv) {
 Unicorn::~Unicorn() {
     for (const auto& page : pages) {
         CHECKED(uc_mem_unmap(uc, page->address, 4096));
-        delete page;
     }
     CHECKED(uc_hook_del(uc, intr_hook));
     CHECKED(uc_hook_del(uc, mem_invalid_hook));
@@ -171,29 +170,42 @@ void Unicorn::InterruptHook(uc_engine* uc, u32, void* user_data) {
 bool Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 start_address, int size, u64 /*value*/, void* user_data) {
     Unicorn* this_ = reinterpret_cast<Unicorn*>(user_data);
 
-    const auto generate_page = [&](u64 base_address) -> Page* {
+    const auto generate_page = [&](u64 base_address) {
         printf("generate_page(%" PRIx64 ")\n", base_address);
 
         const u32 permissions = [&]{
             if (base_address < this_->testenv.code_mem.size() * 4)
-                return UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC;
+                return UC_PROT_READ | UC_PROT_EXEC;
             return UC_PROT_READ | UC_PROT_WRITE;
         }();
 
-        auto page = new Page();
+        auto page = std::make_unique<Page>();
         page->address = base_address;
         for (size_t i = 0; i < page->data.size(); ++i)
             page->data[i] = this_->testenv.MemoryRead8(base_address + i);
-        CHECKED(uc_mem_map_ptr(uc, base_address, page->data.size(), permissions, page->data.data()));
-        return page;
+
+        uc_err err = uc_mem_map_ptr(uc, base_address, page->data.size(), permissions, page->data.data());
+        if (err == UC_ERR_MAP)
+            return; // page already exists
+        CHECKED(err);
+
+        this_->pages.emplace_back(std::move(page));
+    };
+
+    const auto is_in_range = [](u64 addr, u64 start, u64 end) {
+        if (start <= end)
+            return addr >= start && addr <= end; // fffff[tttttt]fffff
+        return addr >= start || addr <= end;     // ttttt]ffffff[ttttt
     };
 
     const u64 start_address_page = start_address & ~u64(0xFFF);
     const u64 end_address = start_address + size - 1;
-    generate_page(start_address_page);
-    for (u64 addr = start_address_page + 0x1000; addr <= end_address && addr >= start_address_page; addr += 0x1000) {
-        this_->pages.emplace_back(generate_page(addr));
-    }
+
+    u64 current_address = start_address_page;
+    do {
+        generate_page(current_address);
+        current_address += 0x1000;
+    } while (is_in_range(current_address, start_address_page, end_address) && current_address != start_address_page);
 
     return true;
 }
