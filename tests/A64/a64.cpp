@@ -4,54 +4,9 @@
  * General Public License version 2 or any later version.
  */
 
-#include <array>
-#include <cinttypes>
-
 #include <catch.hpp>
 
-#include <dynarmic/A64/a64.h>
-
-#include "common/assert.h"
-#include "common/common_types.h"
-
-class TestEnv final : public Dynarmic::A64::UserCallbacks {
-public:
-    u64 ticks_left = 0;
-    std::array<u32, 3000> code_mem{};
-
-    std::uint32_t MemoryReadCode(u64 vaddr) override {
-        if (vaddr < code_mem.size() * sizeof(u32)) {
-            size_t index = vaddr / sizeof(u32);
-            return code_mem[index];
-        }
-        return 0x14000000; // B .
-    }
-
-    std::uint8_t MemoryRead8(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead8(%" PRIx64 ")", vaddr); }
-    std::uint16_t MemoryRead16(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead16(%" PRIx64 ")", vaddr); }
-    std::uint32_t MemoryRead32(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead32(%" PRIx64 ")", vaddr); }
-    std::uint64_t MemoryRead64(u64 vaddr) override { ASSERT_MSG(false, "MemoryRead64(%" PRIx64 ")", vaddr); }
-
-    void MemoryWrite8(u64 vaddr, std::uint8_t value) override { ASSERT_MSG(false, "MemoryWrite8(%" PRIx64 ", %" PRIx8 ")", vaddr, value); }
-    void MemoryWrite16(u64 vaddr, std::uint16_t value) override { ASSERT_MSG(false, "MemoryWrite16(%" PRIx64 ", %" PRIx16 ")", vaddr, value); }
-    void MemoryWrite32(u64 vaddr, std::uint32_t value) override { ASSERT_MSG(false, "MemoryWrite32(%" PRIx64 ", %" PRIx32 ")", vaddr, value); }
-    void MemoryWrite64(u64 vaddr, std::uint64_t value) override { ASSERT_MSG(false, "MemoryWrite64(%" PRIx64 ", %" PRIx64 ")", vaddr, value); }
-
-    void InterpreterFallback(u64 pc, size_t num_instructions) override { ASSERT_MSG(false, "InterpreterFallback(%" PRIx64 ", %zu)", pc, num_instructions); }
-
-    void CallSVC(std::uint32_t swi) override { ASSERT_MSG(false, "CallSVC(%u)", swi); }
-
-    void AddTicks(std::uint64_t ticks) override {
-        if (ticks > ticks_left) {
-            ticks_left = 0;
-            return;
-        }
-        ticks_left -= ticks;
-    }
-    std::uint64_t GetTicksRemaining() override {
-        return ticks_left;
-    }
-};
+#include "testenv.h"
 
 TEST_CASE("A64: ADD", "[a64]") {
     TestEnv env;
