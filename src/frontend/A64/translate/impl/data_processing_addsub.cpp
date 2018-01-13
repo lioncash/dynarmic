@@ -224,11 +224,7 @@ bool TranslatorVisitor::ADDS_ext(bool sf, Reg Rm, Imm<3> option, Imm<3> imm3, Re
 
     ir.SetNZCV(ir.NZCVFrom(result));
 
-    if (Rd == Reg::SP) {
-        SP(datasize, result);
-    } else {
-        X(datasize, Rd, result);
-    }
+    X(datasize, Rd, result);
 
     return true;
 }
@@ -264,11 +260,7 @@ bool TranslatorVisitor::SUBS_ext(bool sf, Reg Rm, Imm<3> option, Imm<3> imm3, Re
 
     ir.SetNZCV(ir.NZCVFrom(result));
 
-    if (Rd == Reg::SP) {
-        SP(datasize, result);
-    } else {
-        X(datasize, Rd, result);
-    }
+    X(datasize, Rd, result);
 
     return true;
 }
