@@ -31,7 +31,6 @@ void A64MergeInterpretBlocksPass(IR::Block& block, A64::UserCallbacks* cb) {
 
         const IR::Terminal terminal = new_block.GetTerminal();
         if (auto term = boost::get<IR::Term::Interpret>(&terminal)) {
-            printf("INTERPET %08x \\x%02x\\x%02x\\x%02x\\x%02x \n", instruction, u8(instruction >> 0), u8(instruction >> 8), u8(instruction >> 16), u8(instruction >> 24));
             return term->next == location;
         }
 
@@ -49,8 +48,6 @@ void A64MergeInterpretBlocksPass(IR::Block& block, A64::UserCallbacks* cb) {
     while (is_interpret_instruction(location.AdvancePC(static_cast<int>(num_instructions * 4)))) {
         num_instructions++;
     }
-
-    printf("%zu\n", num_instructions);
 
     term->num_instructions = num_instructions;
     block.ReplaceTerminal(terminal);
