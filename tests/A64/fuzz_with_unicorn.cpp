@@ -121,7 +121,7 @@ restart:
     return instruction;
 }
 
-static void TestInstance(const std::array<u64, 31>& regs, const std::vector<u32>& instructions) {
+static void TestInstance(const std::array<u64, 31>& regs, const std::vector<u32>& instructions, u32 pstate) {
     TestEnv jit_env;
     TestEnv uni_env;
 
@@ -136,11 +136,11 @@ static void TestInstance(const std::array<u64, 31>& regs, const std::vector<u32>
     jit.SetRegisters(regs);
     jit.SetPC(0);
     jit.SetSP(0x8000000);
-    jit.SetPstate(0);
+    jit.SetPstate(pstate);
     uni.SetRegisters(regs);
     uni.SetPC(0);
     uni.SetSP(0x8000000);
-    uni.SetPstate(0);
+    uni.SetPstate(pstate);
 
     jit_env.ticks_left = instructions.size();
     jit.Run();
@@ -160,9 +160,10 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
         std::generate_n(regs.begin(), 31, []{ return RandInt<u64>(0, ~u64(0)); });
         std::vector<u32> instructions;
         instructions.push_back(GenRandomInst(0));
+        u32 pstate = RandInt<u32>(0, 0xF) << 28;
 
         printf("%zu: %08x\n", iteration, instructions[0]);
 
-        TestInstance(regs, instructions);
+        TestInstance(regs, instructions, pstate);
     }
 }
