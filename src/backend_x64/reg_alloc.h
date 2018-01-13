@@ -57,11 +57,13 @@ public:
     bool IsImmediate() const;
 
     bool FitsInImmediateU32() const;
+    bool FitsInImmediateS32() const;
 
     bool GetImmediateU1() const;
     u8 GetImmediateU8() const;
     u16 GetImmediateU16() const;
     u32 GetImmediateU32() const;
+    u64 GetImmediateS32() const;
     u64 GetImmediateU64() const;
 
     /// Is this value currently in a GPR?

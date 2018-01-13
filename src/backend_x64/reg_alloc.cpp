@@ -107,6 +107,13 @@ bool Argument::FitsInImmediateU32() const {
     return imm < 0x100000000;
 }
 
+bool Argument::FitsInImmediateS32() const {
+    if (!IsImmediate())
+        return false;
+    s64 imm = static_cast<s64>(ImmediateToU64(value));
+    return -s64(0x80000000) <= imm && imm <= s64(0x7FFFFFFF);
+}
+
 bool Argument::GetImmediateU1() const {
     return value.GetU1();
 }
@@ -129,19 +136,31 @@ u32 Argument::GetImmediateU32() const {
     return u32(imm);
 }
 
+u64 Argument::GetImmediateS32() const {
+    ASSERT(FitsInImmediateS32());
+    u64 imm = ImmediateToU64(value);
+    return imm;
+}
+
 u64 Argument::GetImmediateU64() const {
     return ImmediateToU64(value);
 }
 
 bool Argument::IsInGpr() const {
+    if (IsImmediate())
+        return false;
     return HostLocIsGPR(*reg_alloc.ValueLocation(value.GetInst()));
 }
 
 bool Argument::IsInXmm() const {
+    if (IsImmediate())
+        return false;
     return HostLocIsXMM(*reg_alloc.ValueLocation(value.GetInst()));
 }
 
 bool Argument::IsInMemory() const {
+    if (IsImmediate())
+        return false;
     return HostLocIsSpill(*reg_alloc.ValueLocation(value.GetInst()));
 }
 
