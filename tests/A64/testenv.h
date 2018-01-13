@@ -68,7 +68,7 @@ public:
         MemoryWrite32(vaddr + 4, static_cast<u32>(value >> 32));
     }
 
-    void InterpreterFallback(u64 pc, size_t num_instructions) override { ASSERT_MSG(false, "InterpreterFallback(%llx, %zu)", pc, num_instructions); }
+    void InterpreterFallback(u64 pc, size_t num_instructions) override { ASSERT_MSG(false, "InterpreterFallback(%" PRIx64 ", %zu)", pc, num_instructions); }
 
     void CallSVC(std::uint32_t swi) override { ASSERT_MSG(false, "CallSVC(%u)", swi); }
 
