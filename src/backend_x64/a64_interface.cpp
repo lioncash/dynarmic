@@ -176,6 +176,7 @@ private:
         // JIT Compile
         IR::Block ir_block = A64::Translate(A64::LocationDescriptor{current_location}, [this](u64 vaddr) { return conf.callbacks->MemoryReadCode(vaddr); });
         Optimization::DeadCodeElimination(ir_block);
+        Optimization::A64MergeInterpretBlocksPass(ir_block, conf.callbacks);
         // printf("%s\n", IR::DumpBlock(ir_block).c_str());
         Optimization::VerificationPass(ir_block);
         return emitter.Emit(ir_block).entrypoint;

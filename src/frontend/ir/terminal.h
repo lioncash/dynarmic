@@ -20,11 +20,12 @@ struct Invalid {};
 
 /**
  * This terminal instruction calls the interpreter, starting at `next`.
- * The interpreter must interpret exactly one instruction.
+ * The interpreter must interpret exactly `num_instructions` instructions.
  */
 struct Interpret {
     explicit Interpret(const LocationDescriptor& next_) : next(next_) {}
     LocationDescriptor next; ///< Location at which interpretation starts.
+    size_t num_instructions = 1;
 };
 
 /**

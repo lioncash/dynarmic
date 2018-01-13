@@ -1075,6 +1075,7 @@ void A32EmitX64::EmitA32CoprocStoreWords(A32EmitContext& ctx, IR::Inst* inst) {
 void A32EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor initial_location) {
     ASSERT_MSG(A32::LocationDescriptor{terminal.next}.TFlag() == A32::LocationDescriptor{initial_location}.TFlag(), "Unimplemented");
     ASSERT_MSG(A32::LocationDescriptor{terminal.next}.EFlag() == A32::LocationDescriptor{initial_location}.EFlag(), "Unimplemented");
+    ASSERT_MSG(terminal.num_instructions == 1, "Unimplemented");
 
     code->mov(code->ABI_PARAM1.cvt32(), A32::LocationDescriptor{terminal.next}.PC());
     code->mov(code->ABI_PARAM2, reinterpret_cast<u64>(jit_interface));

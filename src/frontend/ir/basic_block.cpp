@@ -90,6 +90,11 @@ void Block::SetTerminal(Terminal term) {
     terminal = term;
 }
 
+void Block::ReplaceTerminal(Terminal term) {
+    ASSERT_MSG(HasTerminal(), "Terminal has not been set.");
+    terminal = term;
+}
+
 bool Block::HasTerminal() const {
     return terminal.which() != 0;
 }

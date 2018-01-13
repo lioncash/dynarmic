@@ -310,7 +310,7 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDesc
     DEVIRT(conf.callbacks, &A64::UserCallbacks::InterpreterFallback).EmitCall(code, [&](Xbyak::Reg64 param1, Xbyak::Reg64 param2) {
         code->mov(param1, A64::LocationDescriptor{terminal.next}.PC());
         code->mov(qword[r15 + offsetof(A64JitState, pc)], param1);
-        code->mov(param2.cvt32(), 1);
+        code->mov(param2.cvt32(), terminal.num_instructions);
     });
     code->ReturnFromRunCode(true); // TODO: Check cycles
 }

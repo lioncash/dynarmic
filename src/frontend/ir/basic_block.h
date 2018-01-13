@@ -111,6 +111,8 @@ public:
     Terminal GetTerminal() const;
     /// Sets the terminal instruction for this basic block.
     void SetTerminal(Terminal term);
+    /// Replaces the terminal instruction for this basic block.
+    void ReplaceTerminal(Terminal term);
     /// Determines whether or not this basic block has a terminal instruction.
     bool HasTerminal() const;
 
