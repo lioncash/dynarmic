@@ -228,6 +228,18 @@ void A64EmitX64::EmitA64CallSupervisor(A64EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
+void A64EmitX64::EmitA64ExceptionRaised(A64EmitContext& ctx, IR::Inst* inst) {
+    ctx.reg_alloc.HostCall(nullptr);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ASSERT(args[0].IsImmediate() && args[1].IsImmediate());
+    u64 pc = args[0].GetImmediateU64();
+    u64 exception = args[1].GetImmediateU64();
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::ExceptionRaised).EmitCall(code, [&](Xbyak::Reg64 param1, Xbyak::Reg64 param2) {
+        code->mov(param1, pc);
+        code->mov(param2, exception);
+    });
+}
+
 void A64EmitX64::EmitA64ReadMemory8(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead8).EmitCall(code, [&](Xbyak::Reg64 vaddr) {
         ASSERT(vaddr == code->ABI_PARAM2);

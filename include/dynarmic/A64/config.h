@@ -16,6 +16,17 @@ namespace A64 {
 
 using VAddr = std::uint64_t;
 
+enum class Exception {
+    /// An UndefinedFault occured due to executing instruction with an unallocated encoding
+    UnallocatedEncoding,
+    /// An UndefinedFault occured due to executing instruction containing a reserved value
+    ReservedValue,
+    /// An unpredictable instruction is to be executed. Implementation-defined behaviour should now happen.
+    /// This behaviour is up to the user of this library to define.
+    /// Note: Constraints on unpredictable behaviour are specified in the ARMv8 ARM.
+    UnpredictableInstruction,
+};
+
 struct UserCallbacks {
     virtual ~UserCallbacks() = default;
 
@@ -46,6 +57,8 @@ struct UserCallbacks {
 
     // This callback is called whenever a SVC instruction is executed.
     virtual void CallSVC(std::uint32_t swi) = 0;
+
+    virtual void ExceptionRaised(VAddr pc, Exception exception) = 0;
 
     // Timing-related callbacks
     // ticks ticks have passed

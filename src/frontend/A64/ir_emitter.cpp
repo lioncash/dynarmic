@@ -38,6 +38,10 @@ void IREmitter::CallSupervisor(u32 imm) {
     Inst(Opcode::A64CallSupervisor, Imm32(imm));
 }
 
+void IREmitter::ExceptionRaised(Exception exception) {
+    Inst(Opcode::A64ExceptionRaised, Imm64(PC()), Imm64(static_cast<u64>(exception)));
+}
+
 IR::U8 IREmitter::ReadMemory8(const IR::U64& vaddr) {
     return Inst<IR::U8>(Opcode::A64ReadMemory8, vaddr);
 }

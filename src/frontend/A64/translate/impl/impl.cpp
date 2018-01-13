@@ -17,17 +17,20 @@ bool TranslatorVisitor::InterpretThisInstruction() {
 }
 
 bool TranslatorVisitor::UnpredictableInstruction() {
-    ASSERT_MSG(false, "UNPREDICTABLE");
+    ir.ExceptionRaised(Exception::UnpredictableInstruction);
+    ir.SetTerm(IR::Term::CheckHalt{IR::Term::ReturnToDispatch{}});
     return false;
 }
 
 bool TranslatorVisitor::ReservedValue() {
-    ASSERT_MSG(false, "RESERVEDVALUE");
+    ir.ExceptionRaised(Exception::ReservedValue);
+    ir.SetTerm(IR::Term::CheckHalt{IR::Term::ReturnToDispatch{}});
     return false;
 }
 
 bool TranslatorVisitor::UnallocatedEncoding() {
-    ASSERT_MSG(false, "UNALLOCATEDENCODING");
+    ir.ExceptionRaised(Exception::UnallocatedEncoding);
+    ir.SetTerm(IR::Term::CheckHalt{IR::Term::ReturnToDispatch{}});
     return false;
 }
 

@@ -8,6 +8,8 @@
 
 #include <initializer_list>
 
+#include <dynarmic/A64/config.h>
+
 #include "common/common_types.h"
 #include "frontend/A64/location_descriptor.h"
 #include "frontend/A64/types.h"
@@ -36,6 +38,7 @@ public:
     void SetNZCV(const IR::NZCV& nzcv);
 
     void CallSupervisor(u32 imm);
+    void ExceptionRaised(Exception exception);
 
     IR::U8 ReadMemory8(const IR::U64& vaddr);
     IR::U16 ReadMemory16(const IR::U64& vaddr);
