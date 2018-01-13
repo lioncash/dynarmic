@@ -12,6 +12,7 @@ endif()
 option(DYNARMIC_USE_SYSTEM_BOOST "Use the system boost libraries" ON)
 option(DYNARMIC_USE_LLVM "Support disassembly of jitted x86_64 code using LLVM" OFF)
 option(DYNARMIC_TESTS "Build tests" ${MASTER_PROJECT})
+option(DYNARMIC_TESTS_USE_UNICORN "Enable fuzzing tests against unicorn" OFF)
 option(DYNARMIC_WARNINGS_AS_ERRORS "Warnings as errors" ${MASTER_PROJECT})
 
 # Default to a Release build
@@ -123,6 +124,13 @@ if (DYNARMIC_USE_LLVM)
     include_directories(${LLVM_INCLUDE_DIRS})
     add_definitions(-DDYNARMIC_USE_LLVM ${LLVM_DEFINITIONS})
     llvm_map_components_to_libnames(llvm_libs x86desc x86disassembler)
+endif()
+
+if (DYNARMIC_TESTS_USE_UNICORN)
+    find_package(unicorn REQUIRED)
+    add_library(unicorn INTERFACE)
+    target_link_libraries(unicorn INTERFACE "${LIBUNICORN_LIBRARY}")
+    target_include_directories(unicorn INTERFACE "${LIBUNICORN_INCLUDE_DIR}")
 endif()
 
 # Pull in externals CMakeLists for libs where available

@@ -159,6 +159,7 @@ static Dynarmic::A32::UserCallbacks GetUserCallbacks() {
     return user_callbacks;
 }
 
+namespace {
 struct InstructionGenerator final {
 public:
     InstructionGenerator(const char* format, std::function<bool(u32)> is_valid = [](u32){ return true; }) : is_valid(is_valid) {
@@ -207,6 +208,7 @@ private:
     u32 mask = 0;
     std::function<bool(u32)> is_valid;
 };
+} // namespace
 
 static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Jit& jit, const std::vector<WriteRecord>& interp_write_records, const std::vector<WriteRecord>& jit_write_records) {
     return interp.Reg == jit.Regs()
