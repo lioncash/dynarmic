@@ -80,6 +80,8 @@ static u16 MemoryRead16(u32 vaddr) {
 static u32 MemoryRead32(u32 vaddr) {
     if (vaddr < code_mem.size() * sizeof(u16)) {
         size_t index = vaddr / sizeof(u16);
+        if (index + 1 >= code_mem.size())
+            return code_mem[index];
         return code_mem[index] | (code_mem[index+1] << 16);
     }
     return vaddr;
@@ -90,6 +92,8 @@ static u64 MemoryRead64(u32 vaddr) {
 static u32 MemoryReadCode(u32 vaddr) {
     if (vaddr < code_mem.size() * sizeof(u16)) {
         size_t index = vaddr / sizeof(u16);
+        if (index + 1 >= code_mem.size())
+            return code_mem[index];
         return code_mem[index] | (code_mem[index + 1] << 16);
     }
     return 0xE7FEE7FE; // b +#0, b +#0
@@ -198,6 +202,90 @@ static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Ji
             && interp_write_records == jit_write_records;
 }
 
+static void RunInstance(size_t run_number, ARMul_State& interp, Dynarmic::A32::Jit& jit, const std::array<u32, 16>& initial_regs, size_t instruction_count, size_t instructions_to_execute_count) {
+    interp.instruction_cache.clear();
+    InterpreterClearCache();
+    jit.ClearCache();
+
+    // Setup initial state
+
+    interp.Cpsr = 0x000001F0;
+    interp.Reg = initial_regs;
+    jit.SetCpsr(0x000001F0);
+    jit.Regs() = initial_regs;
+
+    // Run interpreter
+    write_records.clear();
+    interp.NumInstrsToExecute = static_cast<unsigned>(instructions_to_execute_count);
+    InterpreterMainLoop(&interp);
+    auto interp_write_records = write_records;
+    {
+        bool T = Dynarmic::Common::Bit<5>(interp.Cpsr);
+        interp.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
+    }
+
+    // Run jit
+    write_records.clear();
+    jit_num_ticks = instructions_to_execute_count;
+    jit.Run();
+    auto jit_write_records = write_records;
+
+    // Compare
+    if (!DoesBehaviorMatch(interp, jit, interp_write_records, jit_write_records)) {
+        printf("Failed at execution number %zu\n", run_number);
+
+        printf("\nInstruction Listing: \n");
+        for (size_t i = 0; i < instruction_count; i++) {
+            printf("%04x %s\n", code_mem[i], Dynarmic::A32::DisassembleThumb16(code_mem[i]).c_str());
+        }
+
+        printf("\nInitial Register Listing: \n");
+        for (int i = 0; i <= 15; i++) {
+            printf("%4i: %08x\n", i, initial_regs[i]);
+        }
+
+        printf("\nFinal Register Listing: \n");
+        printf("      interp   jit\n");
+        for (int i = 0; i <= 15; i++) {
+            printf("%4i: %08x %08x %s\n", i, interp.Reg[i], jit.Regs()[i], interp.Reg[i] != jit.Regs()[i] ? "*" : "");
+        }
+        printf("CPSR: %08x %08x %s\n", interp.Cpsr, jit.Cpsr(), interp.Cpsr != jit.Cpsr() ? "*" : "");
+
+        printf("\nInterp Write Records:\n");
+        for (auto& record : interp_write_records) {
+            printf("%zu [%x] = %" PRIu64 "\n", record.size, record.address, record.data);
+        }
+
+        printf("\nJIT Write Records:\n");
+        for (auto& record : jit_write_records) {
+            printf("%zu [%x] = %" PRIu64 "\n", record.size, record.address, record.data);
+        }
+
+        Dynarmic::A32::PSR cpsr;
+        cpsr.T(true);
+
+        size_t num_insts = 0;
+        while (num_insts < instructions_to_execute_count) {
+            Dynarmic::A32::LocationDescriptor descriptor = {u32(num_insts * 4), cpsr, Dynarmic::A32::FPSCR{}};
+            Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, &MemoryReadCode);
+            Dynarmic::Optimization::A32GetSetElimination(ir_block);
+            Dynarmic::Optimization::DeadCodeElimination(ir_block);
+            Dynarmic::Optimization::A32ConstantMemoryReads(ir_block, GetUserCallbacks().memory);
+            Dynarmic::Optimization::ConstantPropagation(ir_block);
+            Dynarmic::Optimization::DeadCodeElimination(ir_block);
+            Dynarmic::Optimization::VerificationPass(ir_block);
+            printf("\n\nIR:\n%s", Dynarmic::IR::DumpBlock(ir_block).c_str());
+            printf("\n\nx86_64:\n%s", jit.Disassemble(descriptor).c_str());
+            num_insts += ir_block.CycleCount();
+        }
+
+#ifdef _MSC_VER
+        __debugbreak();
+#endif
+        FAIL();
+    }
+}
+
 void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_execute_count, const size_t run_count, const std::function<u16()> instruction_generator) {
     // Prepare memory
     code_mem.fill(0xE7FE); // b +#0
@@ -208,95 +296,13 @@ void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_e
     Dynarmic::A32::Jit jit{GetUserCallbacks()};
 
     for (size_t run_number = 0; run_number < run_count; run_number++) {
-        interp.instruction_cache.clear();
-        InterpreterClearCache();
-        jit.ClearCache();
-
-        // Setup initial state
-
         std::array<u32, 16> initial_regs;
         std::generate_n(initial_regs.begin(), 15, []{ return RandInt<u32>(0, 0xFFFFFFFF); });
         initial_regs[15] = 0;
 
-        interp.Cpsr = 0x000001F0;
-        interp.Reg = initial_regs;
-        jit.SetCpsr(0x000001F0);
-        jit.Regs() = initial_regs;
-
         std::generate_n(code_mem.begin(), instruction_count, instruction_generator);
 
-        // Run interpreter
-        write_records.clear();
-        interp.NumInstrsToExecute = static_cast<unsigned>(instructions_to_execute_count);
-        InterpreterMainLoop(&interp);
-        auto interp_write_records = write_records;
-        {
-            bool T = Dynarmic::Common::Bit<5>(interp.Cpsr);
-            interp.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
-        }
-
-        // Run jit
-        write_records.clear();
-        jit_num_ticks = instructions_to_execute_count;
-        jit.Run();
-        auto jit_write_records = write_records;
-
-        // Compare
-        if (!DoesBehaviorMatch(interp, jit, interp_write_records, jit_write_records)) {
-            printf("Failed at execution number %zu\n", run_number);
-
-            printf("\nInstruction Listing: \n");
-            for (size_t i = 0; i < instruction_count; i++) {
-                printf("%s\n", Dynarmic::A32::DisassembleThumb16(code_mem[i]).c_str());
-            }
-
-            printf("\nInitial Register Listing: \n");
-            for (int i = 0; i <= 15; i++) {
-                printf("%4i: %08x\n", i, initial_regs[i]);
-            }
-
-            printf("\nFinal Register Listing: \n");
-            printf("      interp   jit\n");
-            for (int i = 0; i <= 15; i++) {
-                printf("%4i: %08x %08x %s\n", i, interp.Reg[i], jit.Regs()[i], interp.Reg[i] != jit.Regs()[i] ? "*" : "");
-            }
-            printf("CPSR: %08x %08x %s\n", interp.Cpsr, jit.Cpsr(), interp.Cpsr != jit.Cpsr() ? "*" : "");
-
-            printf("\nInterp Write Records:\n");
-            for (auto& record : interp_write_records) {
-                printf("%zu [%x] = %" PRIu64 "\n", record.size, record.address, record.data);
-            }
-
-            printf("\nJIT Write Records:\n");
-            for (auto& record : jit_write_records) {
-                printf("%zu [%x] = %" PRIu64 "\n", record.size, record.address, record.data);
-            }
-
-            Dynarmic::A32::PSR cpsr;
-            cpsr.T(true);
-
-            size_t num_insts = 0;
-            while (num_insts < instructions_to_execute_count) {
-                Dynarmic::A32::LocationDescriptor descriptor = {u32(num_insts * 4), cpsr, Dynarmic::A32::FPSCR{}};
-                Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, &MemoryReadCode);
-                Dynarmic::Optimization::A32GetSetElimination(ir_block);
-                Dynarmic::Optimization::DeadCodeElimination(ir_block);
-                Dynarmic::Optimization::A32ConstantMemoryReads(ir_block, GetUserCallbacks().memory);
-                Dynarmic::Optimization::ConstantPropagation(ir_block);
-                Dynarmic::Optimization::DeadCodeElimination(ir_block);
-                Dynarmic::Optimization::VerificationPass(ir_block);
-                printf("\n\nIR:\n%s", Dynarmic::IR::DumpBlock(ir_block).c_str());
-                printf("\n\nx86_64:\n%s", jit.Disassemble(descriptor).c_str());
-                num_insts += ir_block.CycleCount();
-            }
-
-#ifdef _MSC_VER
-            __debugbreak();
-#endif
-            FAIL();
-        }
-
-        if (run_number % 10 == 0) printf("%zu\r", run_number);
+        RunInstance(run_number, interp, jit, initial_regs, instruction_count, instructions_to_execute_count);
     }
 }
 
@@ -379,4 +385,41 @@ TEST_CASE("Fuzz Thumb instructions set 2 (affects PC)", "[JitX64][Thumb]") {
     };
 
     FuzzJitThumb(1, 1, 10000, instruction_select);
+}
+
+TEST_CASE("Verify fix for off by one error in MemoryRead32 worked", "[Thumb]") {
+    // Prepare memory
+    code_mem.fill(0xE7FE); // b +#0
+
+    // Prepare test subjects
+    ARMul_State interp{USER32MODE};
+    interp.user_callbacks = GetUserCallbacks();
+    Dynarmic::A32::Jit jit{GetUserCallbacks()};
+
+    std::array<u32, 16> initial_regs {
+        0xe90ecd70,
+        0x3e3b73c3,
+        0x571616f9,
+        0x0b1ef45a,
+        0xb3a829f2,
+        0x915a7a6a,
+        0x579c38f4,
+        0xd9ffe391,
+        0x55b6682b,
+        0x458d8f37,
+        0x8f3eb3dc,
+        0xe18c0e7d,
+        0x6752657a,
+        0x00001766,
+        0xdbbf23e3,
+        0x00000000,
+    };
+
+    code_mem[0] = 0x40B8; // lsls r0, r7, #0
+    code_mem[1] = 0x01CA; // lsls r2, r1, #7
+    code_mem[2] = 0x83A1; // strh r1, [r4, #28]
+    code_mem[3] = 0x708A; // strb r2, [r1, #2]
+    code_mem[4] = 0xBCC4; // pop {r2, r6, r7}
+
+    RunInstance(1, interp, jit, initial_regs, 5, 5);
 }
