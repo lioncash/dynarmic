@@ -73,7 +73,7 @@ std::array<u64, 31> Unicorn::GetRegisters() const {
     for (size_t i = 0; i < num_gprs; ++i)
         ptrs[i] = &regs[i];
 
-    CHECKED(uc_reg_read_batch(uc, (int*)gpr_ids.data(), (void**)ptrs.data(), num_gprs));
+    CHECKED(uc_reg_read_batch(uc, const_cast<int*>(gpr_ids.data()), (void**)ptrs.data(), num_gprs));
     return regs;
 }
 
@@ -82,7 +82,7 @@ void Unicorn::SetRegisters(const std::array<u64, 31>& value) {
     for (size_t i = 0; i < num_gprs; ++i)
         ptrs[i] = &value[i];
 
-    CHECKED(uc_reg_write_batch(uc, (int*)gpr_ids.data(), (void**)ptrs.data(), num_gprs));
+    CHECKED(uc_reg_write_batch(uc, const_cast<int*>(gpr_ids.data()), (void**)ptrs.data(), num_gprs));
 }
 
 using Vector = Unicorn::Vector;
@@ -100,7 +100,7 @@ std::array<Vector, 32> Unicorn::GetVectors() const {
     for (size_t i = 0; i < num_vecs; ++i)
         ptrs[i] = &vecs[i];
 
-    CHECKED(uc_reg_read_batch(uc, (int*)vec_ids.data(), (void**)ptrs.data(), num_vecs));
+    CHECKED(uc_reg_read_batch(uc, const_cast<int*>(vec_ids.data()), (void**)ptrs.data(), num_vecs));
 
     return vecs;
 }
@@ -110,7 +110,7 @@ void Unicorn::SetVectors(const std::array<Vector, 32>& value) {
     for (size_t i = 0; i < num_vecs; ++i)
         ptrs[i] = &value[i];
 
-    CHECKED(uc_reg_write_batch(uc, (int*)vec_ids.data(), (void**)ptrs.data(), num_vecs));
+    CHECKED(uc_reg_write_batch(uc, const_cast<int*>(vec_ids.data()), (void**)ptrs.data(), num_vecs));
 }
 
 u32 Unicorn::GetFpcr() const {
@@ -171,7 +171,7 @@ bool Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 start_
     Unicorn* this_ = reinterpret_cast<Unicorn*>(user_data);
 
     const auto generate_page = [&](u64 base_address) {
-        printf("generate_page(%" PRIx64 ")\n", base_address);
+        // printf("generate_page(%" PRIx64 ")\n", base_address);
 
         const u32 permissions = [&]{
             if (base_address < this_->testenv.code_mem.size() * 4)

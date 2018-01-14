@@ -350,8 +350,6 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
 #endif
             FAIL();
         }
-
-        if (run_number % 10 == 0) printf("%zu\r", run_number);
     }
 }
 

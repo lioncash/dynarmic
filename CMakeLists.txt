@@ -9,7 +9,6 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 # Dynarmic project options
-option(DYNARMIC_USE_SYSTEM_BOOST "Use the system boost libraries" ON)
 option(DYNARMIC_USE_LLVM "Support disassembly of jitted x86_64 code using LLVM" OFF)
 option(DYNARMIC_TESTS "Build tests" ${MASTER_PROJECT})
 option(DYNARMIC_TESTS_USE_UNICORN "Enable fuzzing tests against unicorn" OFF)
@@ -127,10 +126,12 @@ if (DYNARMIC_USE_LLVM)
 endif()
 
 if (DYNARMIC_TESTS_USE_UNICORN)
-    find_package(unicorn REQUIRED)
-    add_library(unicorn INTERFACE)
-    target_link_libraries(unicorn INTERFACE "${LIBUNICORN_LIBRARY}")
-    target_include_directories(unicorn INTERFACE "${LIBUNICORN_INCLUDE_DIR}")
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
+    find_package(Unicorn REQUIRED)
+    add_library(Unicorn INTERFACE)
+    target_link_libraries(Unicorn INTERFACE "${LIBUNICORN_LIBRARY}" Threads::Threads)
+    target_include_directories(Unicorn INTERFACE "${LIBUNICORN_INCLUDE_DIR}")
 endif()
 
 # Pull in externals CMakeLists for libs where available

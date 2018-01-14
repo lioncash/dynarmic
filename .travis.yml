@@ -3,7 +3,6 @@ language: cpp
 matrix:
   include:
     - os: linux
-      sudo: required
       dist: trusty
       addons:
         apt:
@@ -12,10 +11,21 @@ matrix:
           packages:
             - gcc-7
             - g++-7
-      install: ./.travis/deps-x86_64-linux.sh
-      script: ./.travis/build-x86_64-linux.sh
+      install: ./.travis/build-x86_64-linux/deps.sh
+      script: ./.travis/build-x86_64-linux/build.sh
+    - os: linux
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-7
+            - g++-7
+      install: ./.travis/test-a64-on-x86_64-linux/deps.sh
+      script: ./.travis/test-a64-on-x86_64-linux/build.sh
     - os: osx
       sudo: false
       osx_image: xcode9.2
-      install: ./.travis/deps-x86_64-macos.sh
-      script: ./.travis/build-x86_64-macos.sh
+      install: ./.travis/build-x86_64-macos/deps.sh
+      script: ./.travis/build-x86_64-macos/build.sh

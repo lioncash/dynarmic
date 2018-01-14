@@ -155,14 +155,12 @@ static void TestInstance(const std::array<u64, 31>& regs, const std::vector<u32>
 }
 
 TEST_CASE("A64: Single random instruction", "[a64]") {
-    for (size_t iteration = 0; iteration < 1000000; ++iteration) {
+    for (size_t iteration = 0; iteration < 10000; ++iteration) {
         std::array<u64, 31> regs;
         std::generate_n(regs.begin(), 31, []{ return RandInt<u64>(0, ~u64(0)); });
         std::vector<u32> instructions;
         instructions.push_back(GenRandomInst(0));
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
-
-        printf("%zu: %08x\n", iteration, instructions[0]);
 
         TestInstance(regs, instructions, pstate);
     }
