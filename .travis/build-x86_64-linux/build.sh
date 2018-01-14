@@ -11,4 +11,4 @@ mkdir build && cd build
 cmake .. -DBoost_INCLUDE_DIRS=${PWD}/../externals/ext-boost -DCMAKE_BUILD_TYPE=Release
 make -j4
 
-ctest -VV -C Release
+./tests/dynarmic_tests --durations yes
