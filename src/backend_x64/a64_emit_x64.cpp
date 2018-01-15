@@ -166,8 +166,8 @@ void A64EmitX64::EmitA64SetW(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     A64::Reg reg = inst->GetArg(0).GetA64RegRef();
     auto addr = qword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)];
-    if (args[1].IsImmediate()) {
-        code->mov(addr, args[1].GetImmediateU32());
+    if (args[1].FitsInImmediateS32()) {
+        code->mov(addr, args[1].GetImmediateS32());
     } else {
         // TODO: zext tracking, xmm variant
         Xbyak::Reg64 to_store = ctx.reg_alloc.UseScratchGpr(args[1]);

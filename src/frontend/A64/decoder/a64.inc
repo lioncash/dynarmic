@@ -15,9 +15,9 @@ INST(EOR_imm,                "EOR (immediate)",                           "z1010
 INST(ANDS_imm,               "ANDS (immediate)",                          "z11100100Nrrrrrrssssssnnnnnddddd")
 
 // Data processing - Immediate - Move Wide
-//INST(MOVN,                   "MOVN",                                      "z00100101ssiiiiiiiiiiiiiiiiddddd")
-//INST(MOVZ,                   "MOVZ",                                      "z10100101ssiiiiiiiiiiiiiiiiddddd")
-//INST(MOVK,                   "MOVK",                                      "z11100101ssiiiiiiiiiiiiiiiiddddd")
+INST(MOVN,                   "MOVN",                                      "z00100101ssiiiiiiiiiiiiiiiiddddd")
+INST(MOVZ,                   "MOVZ",                                      "z10100101ssiiiiiiiiiiiiiiiiddddd")
+INST(MOVK,                   "MOVK",                                      "z11100101ssiiiiiiiiiiiiiiiiddddd")
 
 // Data processing - Immediate - Bitfield
 //INST(SBFM,                   "SBFM",                                      "z00100110Nrrrrrrssssssnnnnnddddd")
