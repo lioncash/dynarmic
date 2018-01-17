@@ -103,7 +103,7 @@ static std::vector<InstructionGenerator> instruction_generators = []{
     return result;
 }();
 
-static u32 GenRandomInst(u64 pc) {
+static u32 GenRandomInst(u64 pc, bool is_last_inst) {
     const A64::LocationDescriptor location{pc, {}};
 
 restart:
@@ -112,7 +112,7 @@ restart:
 
     IR::Block block{location};
     bool should_continue = A64::TranslateSingleInstruction(block, location, instruction);
-    if (!should_continue)
+    if (!should_continue && !is_last_inst)
         goto restart;
     for (const auto& ir_inst : block)
         if (ir_inst.IsMemoryWrite() || ir_inst.GetOpcode() == IR::Opcode::A64ExceptionRaised || ir_inst.GetOpcode() == IR::Opcode::A64CallSupervisor)
@@ -159,7 +159,7 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
         std::array<u64, 31> regs;
         std::generate_n(regs.begin(), 31, []{ return RandInt<u64>(0, ~u64(0)); });
         std::vector<u32> instructions;
-        instructions.push_back(GenRandomInst(0));
+        instructions.push_back(GenRandomInst(0, true));
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
 
         // printf("%08x\n", instructions[0]);
