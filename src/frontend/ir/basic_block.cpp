@@ -129,7 +129,7 @@ static std::string TerminalToString(const Terminal& terminal_variant) {
     }
     case 6: {
         auto terminal = boost::get<IR::Term::If>(terminal_variant);
-        return fmt::format("If{{{}, {}, {}}}", A32::CondToString(terminal.if_), TerminalToString(terminal.then_), TerminalToString(terminal.else_));
+        return fmt::format("If{{{}, {}, {}}}", A64::CondToString(terminal.if_), TerminalToString(terminal.then_), TerminalToString(terminal.else_));
     }
     case 7: {
         auto terminal = boost::get<IR::Term::CheckBit>(terminal_variant);
@@ -149,7 +149,7 @@ std::string DumpBlock(const IR::Block& block) {
 
     ret += fmt::format("Block: location={}\n", block.Location());
     ret += fmt::format("cycles={}", block.CycleCount());
-    ret += fmt::format(", entry_cond={}", A32::CondToString(block.GetCondition(), true));
+    ret += fmt::format(", entry_cond={}", A64::CondToString(block.GetCondition()));
     if (block.GetCondition() != Cond::AL) {
         ret += fmt::format(", cond_fail={}", block.ConditionFailedLocation());
     }

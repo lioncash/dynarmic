@@ -347,10 +347,18 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::PopRSBHint, IR::LocationDescriptor i
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor initial_location) {
-    Xbyak::Label pass = EmitCond(terminal.if_);
-    EmitTerminal(terminal.else_, initial_location);
-    code->L(pass);
-    EmitTerminal(terminal.then_, initial_location);
+    switch (terminal.if_) {
+    case IR::Cond::AL:
+    case IR::Cond::NV:
+        EmitTerminal(terminal.then_, initial_location);
+        break;
+    default:
+        Xbyak::Label pass = EmitCond(terminal.if_);
+        EmitTerminal(terminal.else_, initial_location);
+        code->L(pass);
+        EmitTerminal(terminal.then_, initial_location);
+        break;
+    }
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::CheckBit terminal, IR::LocationDescriptor initial_location) {
