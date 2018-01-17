@@ -7,7 +7,6 @@
 #include <cstring>
 
 #include <catch.hpp>
-#include <unicorn/arm64.h>
 
 #include "frontend/A64/location_descriptor.h"
 #include "frontend/A64/translate/translate.h"
@@ -18,72 +17,6 @@
 #include "unicorn_emu/unicorn.h"
 
 using namespace Dynarmic;
-
-TEST_CASE("A64: Unicorn sanity test", "[a64]") {
-    TestEnv env;
-    env.code_mem[0] = 0x8b020020; // ADD X0, X1, X2
-    env.code_mem[1] = 0x14000000; // B .
-
-    std::array<u64, 31> regs {
-        0, 1, 2, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0
-    };
-
-    Unicorn unicorn{env};
-
-    unicorn.SetRegisters(regs);
-    unicorn.SetPC(0);
-
-    env.ticks_left = 2;
-    unicorn.Run();
-
-    REQUIRE(unicorn.GetRegisters()[0] == 3);
-    REQUIRE(unicorn.GetRegisters()[1] == 1);
-    REQUIRE(unicorn.GetRegisters()[2] == 2);
-    REQUIRE(unicorn.GetPC() == 4);
-}
-
-TEST_CASE("A64: Ensure 0xFFFF'FFFF'FFFF'FFFF is readable", "[a64]") {
-    TestEnv env;
-
-    env.code_mem[0] = 0x385fed99; // LDRB W25, [X12, #0xfffffffffffffffe]!
-    env.code_mem[1] = 0x14000000; // B .
-
-    std::array<u64, 31> regs{};
-    regs[12] = 1;
-
-    Unicorn unicorn{env};
-
-    unicorn.SetRegisters(regs);
-    unicorn.SetPC(0);
-
-    env.ticks_left = 2;
-    unicorn.Run();
-
-    REQUIRE(unicorn.GetPC() == 4);
-}
-
-TEST_CASE("A64: Ensure is able to read across page boundaries", "[a64]") {
-    TestEnv env;
-
-    env.code_mem[0] = 0xb85f93d9; // LDUR W25, [X30, #0xfffffffffffffff9]
-    env.code_mem[1] = 0x14000000; // B .
-
-    std::array<u64, 31> regs{};
-    regs[30] = 4;
-
-    Unicorn unicorn{env};
-
-    unicorn.SetRegisters(regs);
-    unicorn.SetPC(0);
-
-    env.ticks_left = 2;
-    unicorn.Run();
-
-    REQUIRE(unicorn.GetPC() == 4);
-}
 
 static std::vector<InstructionGenerator> instruction_generators = []{
     const std::vector<std::tuple<const char*, const char*>> list {
@@ -121,7 +54,7 @@ restart:
     return instruction;
 }
 
-static void TestInstance(const std::array<u64, 31>& regs, const std::vector<u32>& instructions, u32 pstate) {
+static void RunTestInstance(const std::array<u64, 31>& regs, const std::vector<u32>& instructions, u32 pstate) {
     TestEnv jit_env;
     TestEnv uni_env;
 
@@ -162,8 +95,8 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
         instructions.push_back(GenRandomInst(0, true));
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
 
-        // printf("%08x\n", instructions[0]);
+        INFO("Instruction: " << instructions[0]);
 
-        TestInstance(regs, instructions, pstate);
+        RunTestInstance(regs, instructions, pstate);
     }
 }
