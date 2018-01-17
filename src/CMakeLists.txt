@@ -61,6 +61,7 @@ add_library(dynarmic
     frontend/A64/location_descriptor.h
     frontend/A64/translate/impl/branch.cpp
     frontend/A64/translate/impl/data_processing_addsub.cpp
+    frontend/A64/translate/impl/data_processing_bitfield.cpp
     frontend/A64/translate/impl/data_processing_logical.cpp
     frontend/A64/translate/impl/data_processing_pcrel.cpp
     frontend/A64/translate/impl/exception_generating.cpp

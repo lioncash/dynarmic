@@ -20,9 +20,9 @@ INST(MOVZ,                   "MOVZ",                                      "z1010
 INST(MOVK,                   "MOVK",                                      "z11100101ssiiiiiiiiiiiiiiiiddddd")
 
 // Data processing - Immediate - Bitfield
-//INST(SBFM,                   "SBFM",                                      "z00100110Nrrrrrrssssssnnnnnddddd")
-//INST(BFM,                    "BFM",                                       "z01100110Nrrrrrrssssssnnnnnddddd")
-//INST(UBFM,                   "UBFM",                                      "z10100110Nrrrrrrssssssnnnnnddddd")
+INST(SBFM,                   "SBFM",                                      "z00100110Nrrrrrrssssssnnnnnddddd")
+INST(BFM,                    "BFM",                                       "z01100110Nrrrrrrssssssnnnnnddddd")
+INST(UBFM,                   "UBFM",                                      "z10100110Nrrrrrrssssssnnnnnddddd")
 
 // Data processing - Immediate - Extract
 //INST(EXTR,                   "EXTR",                                      "z00100111N0mmmmmssssssnnnnnddddd")
