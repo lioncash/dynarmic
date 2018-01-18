@@ -73,6 +73,8 @@ static size_t GetBitWidth(IR::Type type) {
         case IR::Type::NZCVFlags:
             return 32; // TODO: Update to 16 when flags optimization is done
     }
+    UNREACHABLE();
+    return 0;
 }
 
 bool HostLocInfo::IsLocked() const {
