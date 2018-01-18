@@ -67,6 +67,8 @@ OPCODE(MostSignificantBit,      T::U1,          T::U32                          
 OPCODE(IsZero32,                T::U1,          T::U32                                          )
 OPCODE(IsZero64,                T::U1,          T::U64                                          )
 OPCODE(TestBit,                 T::U1,          T::U64,         T::U8                           )
+OPCODE(ConditionalSelect32,     T::U32,         T::Cond,        T::U32,         T::U32          )
+OPCODE(ConditionalSelect64,     T::U64,         T::Cond,        T::U64,         T::U64          )
 OPCODE(LogicalShiftLeft32,      T::U32,         T::U32,         T::U8,          T::U1           )
 OPCODE(LogicalShiftLeft64,      T::U64,         T::U64,         T::U8                           )
 OPCODE(LogicalShiftRight32,     T::U32,         T::U32,         T::U8,          T::U1           )

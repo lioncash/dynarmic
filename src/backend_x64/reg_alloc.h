@@ -17,6 +17,7 @@
 #include "backend_x64/hostloc.h"
 #include "backend_x64/oparg.h"
 #include "common/common_types.h"
+#include "frontend/ir/cond.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/value.h"
 
@@ -65,6 +66,7 @@ public:
     u32 GetImmediateU32() const;
     u64 GetImmediateS32() const;
     u64 GetImmediateU64() const;
+    IR::Cond GetImmediateCond() const;
 
     /// Is this value currently in a GPR?
     bool IsInGpr() const;

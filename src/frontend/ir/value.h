@@ -12,6 +12,7 @@
 #include "common/common_types.h"
 #include "frontend/A32/types.h"
 #include "frontend/A64/types.h"
+#include "frontend/ir/cond.h"
 #include "frontend/ir/opcodes.h"
 
 namespace Dynarmic {
@@ -37,6 +38,7 @@ public:
     explicit Value(u32 value);
     explicit Value(u64 value);
     explicit Value(std::array<u8, 8> value);
+    explicit Value(Cond value);
 
     bool IsEmpty() const;
     bool IsImmediate() const;
@@ -53,6 +55,7 @@ public:
     u32 GetU32() const;
     u64 GetU64() const;
     std::array<u8, 8> GetCoprocInfo() const;
+    Cond GetCond() const;
 
 private:
     Type type;
@@ -69,6 +72,7 @@ private:
         u32 imm_u32;
         u64 imm_u64;
         std::array<u8, 8> imm_coproc;
+        Cond imm_cond;
     } inner;
 };
 static_assert(sizeof(Value) <= 2 * sizeof(u64), "IR::Value should be kept small in size");

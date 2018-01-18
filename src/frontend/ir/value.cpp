@@ -55,6 +55,10 @@ Value::Value(std::array<u8, 8> value) : type(Type::CoprocInfo) {
     inner.imm_coproc = value;
 }
 
+Value::Value(Cond value) : type(Type::Cond) {
+    inner.imm_cond = value;
+}
+
 bool Value::IsImmediate() const {
     if (type == Type::Opaque)
         return inner.inst->GetOpcode() == Opcode::Identity ? inner.inst->GetArg(0).IsImmediate() : false;
@@ -141,6 +145,13 @@ std::array<u8, 8> Value::GetCoprocInfo() const {
         return inner.inst->GetArg(0).GetCoprocInfo();
     ASSERT(type == Type::CoprocInfo);
     return inner.imm_coproc;
+}
+
+Cond Value::GetCond() const {
+    if (type == Type::Opaque && inner.inst->GetOpcode() == Opcode::Identity)
+        return inner.inst->GetArg(0).GetCond();
+    ASSERT(type == Type::Cond);
+    return inner.imm_cond;
 }
 
 } // namespace IR

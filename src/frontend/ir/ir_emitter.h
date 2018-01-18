@@ -83,6 +83,9 @@ public:
     U1 IsZero(const U64& value);
     U1 IsZero(const U32U64& value);
     U1 TestBit(const U32U64& value, const U8& bit);
+    U32 ConditionalSelect(Cond cond, const U32& a, const U32& b);
+    U64 ConditionalSelect(Cond cond, const U64& a, const U64& b);
+    U32U64 ConditionalSelect(Cond cond, const U32U64& a, const U32U64& b);
 
     // This pseudo-instruction may only be added to instructions that support it.
     NZCV NZCVFrom(const Value& value);

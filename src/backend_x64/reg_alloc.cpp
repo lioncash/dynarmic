@@ -146,6 +146,11 @@ u64 Argument::GetImmediateU64() const {
     return ImmediateToU64(value);
 }
 
+IR::Cond Argument::GetImmediateCond() const {
+    ASSERT(IsImmediate() && GetType() == IR::Type::Cond);
+    return value.GetCond();
+}
+
 bool Argument::IsInGpr() const {
     if (IsImmediate())
         return false;

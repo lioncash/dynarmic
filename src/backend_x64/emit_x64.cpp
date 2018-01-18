@@ -252,6 +252,87 @@ void EmitX64<JST>::EmitTestBit(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
+static void EmitConditionalSelect(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, int bitsize) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg32 nzcv = ctx.reg_alloc.ScratchGpr({HostLoc::RAX}).cvt32();
+    Xbyak::Reg then_ = ctx.reg_alloc.UseGpr(args[1]).changeBit(bitsize);
+    Xbyak::Reg else_ = ctx.reg_alloc.UseScratchGpr(args[2]).changeBit(bitsize);
+
+    code->mov(nzcv, dword[r15 + offsetof(JST, CPSR_nzcv)]);
+    // TODO: Flag optimization
+    code->shr(nzcv, 28);
+    code->imul(nzcv, nzcv, 0b00010000'10000001);
+    code->and_(nzcv.cvt8(), 1);
+    code->add(nzcv.cvt8(), 0x7F); // restore OF
+    code->sahf(); // restore SF, ZF, CF
+
+    switch (args[0].GetImmediateCond()) {
+    case IR::Cond::EQ: //z
+        code->cmovz(else_, then_);
+        break;
+    case IR::Cond::NE: //!z
+        code->cmovnz(else_, then_);
+        break;
+    case IR::Cond::CS: //c
+        code->cmovc(else_, then_);
+        break;
+    case IR::Cond::CC: //!c
+        code->cmovnc(else_, then_);
+        break;
+    case IR::Cond::MI: //n
+        code->cmovs(else_, then_);
+        break;
+    case IR::Cond::PL: //!n
+        code->cmovns(else_, then_);
+        break;
+    case IR::Cond::VS: //v
+        code->cmovo(else_, then_);
+        break;
+    case IR::Cond::VC: //!v
+        code->cmovno(else_, then_);
+        break;
+    case IR::Cond::HI: //c & !z
+        code->cmc();
+        code->cmova(else_, then_);
+        break;
+    case IR::Cond::LS: //!c | z
+        code->cmc();
+        code->cmovna(else_, then_);
+        break;
+    case IR::Cond::GE: // n == v
+        code->cmovge(else_, then_);
+        break;
+    case IR::Cond::LT: // n != v
+        code->cmovl(else_, then_);
+        break;
+    case IR::Cond::GT: // !z & (n == v)
+        code->cmovg(else_, then_);
+        break;
+    case IR::Cond::LE: // z | (n != v)
+        code->cmovle(else_, then_);
+        break;
+    case IR::Cond::AL:
+    case IR::Cond::NV:
+        code->mov(else_, then_);
+        break;
+    default:
+        ASSERT_MSG(false, "Invalid cond %zu", static_cast<size_t>(args[0].GetImmediateCond()));
+    }
+
+    ctx.reg_alloc.DefineValue(inst, else_);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitConditionalSelect32(EmitContext& ctx, IR::Inst* inst) {
+    EmitConditionalSelect<JST>(code, ctx, inst, 32);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitConditionalSelect64(EmitContext& ctx, IR::Inst* inst) {
+    EmitConditionalSelect<JST>(code, ctx, inst, 64);
+}
+
+template <typename JST>
 void EmitX64<JST>::EmitLogicalShiftLeft32(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 
