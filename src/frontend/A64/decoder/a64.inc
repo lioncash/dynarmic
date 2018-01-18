@@ -331,7 +331,7 @@ INST(SBCS,                   "SBCS",                                      "z1111
 //INST(CCMP_imm,               "CCMP (immediate)",                          "z1111010010iiiiicccc10nnnnn0ffff")
 
 // Data Processing - Register - Conditional select
-//INST(CSEL,                   "CSEL",                                      "z0011010100mmmmmcccc00nnnnnddddd")
+INST(CSEL,                   "CSEL",                                      "z0011010100mmmmmcccc00nnnnnddddd")
 //INST(CSINC,                  "CSINC",                                     "z0011010100mmmmmcccc01nnnnnddddd")
 //INST(CSINV,                  "CSINV",                                     "z1011010100mmmmmcccc00nnnnnddddd")
 //INST(CSNEG,                  "CSNEG",                                     "z1011010100mmmmmcccc01nnnnnddddd")
