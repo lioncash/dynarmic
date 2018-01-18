@@ -360,13 +360,17 @@ void Inst::SetArg(size_t index, Value value) {
 }
 
 void Inst::Invalidate() {
+    ClearArgs();
+    op = Opcode::Void;
+}
+
+void Inst::ClearArgs() {
     for (auto& value : args) {
         if (!value.IsImmediate()) {
             UndoUse(value);
         }
         value = {};
     }
-    op = Opcode::Void;
 }
 
 void Inst::ReplaceUsesWith(Value replacement) {

@@ -32,24 +32,29 @@ public:
     bool IsEmpty() const;
     bool IsLastUse() const;
 
-    bool ContainsValue(const IR::Inst* inst) const;
-
     void ReadLock();
     void WriteLock();
-
-    void AddValue(IR::Inst* inst);
-
     void AddArgReference();
     void EndOfAllocScope();
 
+    bool ContainsValue(const IR::Inst* inst) const;
+    size_t GetMaxBitWidth() const;
+
+    void AddValue(IR::Inst* inst);
+
 private:
-    std::vector<IR::Inst*> values;
+    // Current instruction state
     bool is_being_used = false;
     bool is_scratch = false;
 
+    // Block state
     size_t current_references = 0;
     size_t accumulated_uses = 0;
     size_t total_uses = 0;
+
+    // Value state
+    std::vector<IR::Inst*> values;
+    size_t max_bit_width = 0;
 };
 
 struct Argument {

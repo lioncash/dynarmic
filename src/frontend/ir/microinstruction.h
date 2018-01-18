@@ -105,6 +105,7 @@ public:
     void SetArg(size_t index, Value value);
 
     void Invalidate();
+    void ClearArgs();
 
     void ReplaceUsesWith(Value replacement);
 

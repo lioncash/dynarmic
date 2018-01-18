@@ -48,6 +48,18 @@ inline bool HostLocIsSpill(HostLoc reg) {
     return reg >= HostLoc::FirstSpill;
 }
 
+inline size_t HostLocBitWidth(HostLoc loc) {
+    if (HostLocIsGPR(loc))
+        return 64;
+    if (HostLocIsXMM(loc))
+        return 128;
+    if (HostLocIsSpill(loc))
+        return 64;
+    if (HostLocIsFlag(loc))
+        return 1;
+    UNREACHABLE();
+}
+
 using HostLocList = std::initializer_list<HostLoc>;
 
 // RSP is preserved for function calls
