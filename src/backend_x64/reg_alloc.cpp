@@ -64,11 +64,7 @@ static size_t GetBitWidth(IR::Type type) {
             return 32;
         case IR::Type::U64:
             return 64;
-        case IR::Type::F32:
-            return 32;
-        case IR::Type::F64:
-            return 64;
-        case IR::Type::F128:
+        case IR::Type::U128:
             return 128;
         case IR::Type::NZCVFlags:
             return 32; // TODO: Update to 16 when flags optimization is done

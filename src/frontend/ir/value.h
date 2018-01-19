@@ -97,12 +97,9 @@ using U8 = TypedValue<Type::U8>;
 using U16 = TypedValue<Type::U16>;
 using U32 = TypedValue<Type::U32>;
 using U64 = TypedValue<Type::U64>;
+using U128 = TypedValue<Type::U128>;
 using U32U64 = TypedValue<Type::U32 | Type::U64>;
 using UAny = TypedValue<Type::U8 | Type::U16 | Type::U32 | Type::U64>;
-using F32 = TypedValue<Type::F32>;
-using F64 = TypedValue<Type::F64>;
-using F128 = TypedValue<Type::F128>;
-using F32F64 = TypedValue<Type::F32 | Type::F64>;
 using NZCV = TypedValue<Type::NZCVFlags>;
 
 } // namespace IR

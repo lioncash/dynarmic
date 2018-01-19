@@ -604,144 +604,128 @@ U32 IREmitter::PackedSelect(const U32& ge, const U32& a, const U32& b) {
     return Inst<U32>(Opcode::PackedSelect, ge, a, b);
 }
 
-F32 IREmitter::TransferToFP32(const U32& a) {
-    return Inst<F32>(Opcode::TransferToFP32, a);
+U32 IREmitter::FPAbs32(const U32& a) {
+    return Inst<U32>(Opcode::FPAbs32, a);
 }
 
-F64 IREmitter::TransferToFP64(const U64& a) {
-    return Inst<F64>(Opcode::TransferToFP64, a);
+U64 IREmitter::FPAbs64(const U64& a) {
+    return Inst<U64>(Opcode::FPAbs64, a);
 }
 
-U32 IREmitter::TransferFromFP32(const F32& a) {
-    return Inst<U32>(Opcode::TransferFromFP32, a);
-}
-
-U64 IREmitter::TransferFromFP64(const F64& a) {
-    return Inst<U64>(Opcode::TransferFromFP64, a);
-}
-
-F32 IREmitter::FPAbs32(const F32& a) {
-    return Inst<F32>(Opcode::FPAbs32, a);
-}
-
-F64 IREmitter::FPAbs64(const F64& a) {
-    return Inst<F64>(Opcode::FPAbs64, a);
-}
-
-F32 IREmitter::FPAdd32(const F32& a, const F32& b, bool fpscr_controlled) {
+U32 IREmitter::FPAdd32(const U32& a, const U32& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPAdd32, a, b);
+    return Inst<U32>(Opcode::FPAdd32, a, b);
 }
 
-F64 IREmitter::FPAdd64(const F64& a, const F64& b, bool fpscr_controlled) {
+U64 IREmitter::FPAdd64(const U64& a, const U64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F64>(Opcode::FPAdd64, a, b);
+    return Inst<U64>(Opcode::FPAdd64, a, b);
 }
 
-void IREmitter::FPCompare32(const F32& a, const F32& b, bool exc_on_qnan, bool fpscr_controlled) {
+void IREmitter::FPCompare32(const U32& a, const U32& b, bool exc_on_qnan, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
     Inst(Opcode::FPCompare32, a, b, Imm1(exc_on_qnan));
 }
 
-void IREmitter::FPCompare64(const F64& a, const F64& b, bool exc_on_qnan, bool fpscr_controlled) {
+void IREmitter::FPCompare64(const U64& a, const U64& b, bool exc_on_qnan, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
     Inst(Opcode::FPCompare64, a, b, Imm1(exc_on_qnan));
 }
 
-F32 IREmitter::FPDiv32(const F32& a, const F32& b, bool fpscr_controlled) {
+U32 IREmitter::FPDiv32(const U32& a, const U32& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPDiv32, a, b);
+    return Inst<U32>(Opcode::FPDiv32, a, b);
 }
 
-F64 IREmitter::FPDiv64(const F64& a, const F64& b, bool fpscr_controlled) {
+U64 IREmitter::FPDiv64(const U64& a, const U64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F64>(Opcode::FPDiv64, a, b);
+    return Inst<U64>(Opcode::FPDiv64, a, b);
 }
 
-F32 IREmitter::FPMul32(const F32& a, const F32& b, bool fpscr_controlled) {
+U32 IREmitter::FPMul32(const U32& a, const U32& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPMul32, a, b);
+    return Inst<U32>(Opcode::FPMul32, a, b);
 }
 
-F64 IREmitter::FPMul64(const F64& a, const F64& b, bool fpscr_controlled) {
+U64 IREmitter::FPMul64(const U64& a, const U64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F64>(Opcode::FPMul64, a, b);
+    return Inst<U64>(Opcode::FPMul64, a, b);
 }
 
-F32 IREmitter::FPNeg32(const F32& a) {
-    return Inst<F32>(Opcode::FPNeg32, a);
+U32 IREmitter::FPNeg32(const U32& a) {
+    return Inst<U32>(Opcode::FPNeg32, a);
 }
 
-F64 IREmitter::FPNeg64(const F64& a) {
-    return Inst<F64>(Opcode::FPNeg64, a);
+U64 IREmitter::FPNeg64(const U64& a) {
+    return Inst<U64>(Opcode::FPNeg64, a);
 }
 
-F32 IREmitter::FPSqrt32(const F32& a) {
-    return Inst<F32>(Opcode::FPSqrt32, a);
+U32 IREmitter::FPSqrt32(const U32& a) {
+    return Inst<U32>(Opcode::FPSqrt32, a);
 }
 
-F64 IREmitter::FPSqrt64(const F64& a) {
-    return Inst<F64>(Opcode::FPSqrt64, a);
+U64 IREmitter::FPSqrt64(const U64& a) {
+    return Inst<U64>(Opcode::FPSqrt64, a);
 }
 
-F32 IREmitter::FPSub32(const F32& a, const F32& b, bool fpscr_controlled) {
+U32 IREmitter::FPSub32(const U32& a, const U32& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPSub32, a, b);
+    return Inst<U32>(Opcode::FPSub32, a, b);
 }
 
-F64 IREmitter::FPSub64(const F64& a, const F64& b, bool fpscr_controlled) {
+U64 IREmitter::FPSub64(const U64& a, const U64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F64>(Opcode::FPSub64, a, b);
+    return Inst<U64>(Opcode::FPSub64, a, b);
 }
 
-F32 IREmitter::FPDoubleToSingle(const F64& a, bool fpscr_controlled) {
+U32 IREmitter::FPDoubleToSingle(const U64& a, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPDoubleToSingle, a);
+    return Inst<U32>(Opcode::FPDoubleToSingle, a);
 }
 
-F64 IREmitter::FPSingleToDouble(const F32& a, bool fpscr_controlled) {
+U64 IREmitter::FPSingleToDouble(const U32& a, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F64>(Opcode::FPSingleToDouble, a);
+    return Inst<U64>(Opcode::FPSingleToDouble, a);
 }
 
-F32 IREmitter::FPSingleToS32(const F32& a, bool round_towards_zero, bool fpscr_controlled) {
+U32 IREmitter::FPSingleToS32(const U32& a, bool round_towards_zero, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPSingleToS32, a, Imm1(round_towards_zero));
+    return Inst<U32>(Opcode::FPSingleToS32, a, Imm1(round_towards_zero));
 }
 
-F32 IREmitter::FPSingleToU32(const F32& a, bool round_towards_zero, bool fpscr_controlled) {
+U32 IREmitter::FPSingleToU32(const U32& a, bool round_towards_zero, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPSingleToU32, a, Imm1(round_towards_zero));
+    return Inst<U32>(Opcode::FPSingleToU32, a, Imm1(round_towards_zero));
 }
 
-F32 IREmitter::FPDoubleToS32(const F32& a, bool round_towards_zero, bool fpscr_controlled) {
+U32 IREmitter::FPDoubleToS32(const U32& a, bool round_towards_zero, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPDoubleToS32, a, Imm1(round_towards_zero));
+    return Inst<U32>(Opcode::FPDoubleToS32, a, Imm1(round_towards_zero));
 }
 
-F32 IREmitter::FPDoubleToU32(const F32& a, bool round_towards_zero, bool fpscr_controlled) {
+U32 IREmitter::FPDoubleToU32(const U32& a, bool round_towards_zero, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPDoubleToU32, a, Imm1(round_towards_zero));
+    return Inst<U32>(Opcode::FPDoubleToU32, a, Imm1(round_towards_zero));
 }
 
-F32 IREmitter::FPS32ToSingle(const F32& a, bool round_to_nearest, bool fpscr_controlled) {
+U32 IREmitter::FPS32ToSingle(const U32& a, bool round_to_nearest, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPS32ToSingle, a, Imm1(round_to_nearest));
+    return Inst<U32>(Opcode::FPS32ToSingle, a, Imm1(round_to_nearest));
 }
 
-F32 IREmitter::FPU32ToSingle(const F32& a, bool round_to_nearest, bool fpscr_controlled) {
+U32 IREmitter::FPU32ToSingle(const U32& a, bool round_to_nearest, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F32>(Opcode::FPU32ToSingle, a, Imm1(round_to_nearest));
+    return Inst<U32>(Opcode::FPU32ToSingle, a, Imm1(round_to_nearest));
 }
 
-F64 IREmitter::FPS32ToDouble(const F32& a, bool round_to_nearest, bool fpscr_controlled) {
+U64 IREmitter::FPS32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F64>(Opcode::FPS32ToDouble, a, Imm1(round_to_nearest));
+    return Inst<U64>(Opcode::FPS32ToDouble, a, Imm1(round_to_nearest));
 }
 
-F64 IREmitter::FPU32ToDouble(const F32& a, bool round_to_nearest, bool fpscr_controlled) {
+U64 IREmitter::FPU32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<F64>(Opcode::FPU32ToDouble, a, Imm1(round_to_nearest));
+    return Inst<U64>(Opcode::FPU32ToDouble, a, Imm1(round_to_nearest));
 }
 
 void IREmitter::Breakpoint() {

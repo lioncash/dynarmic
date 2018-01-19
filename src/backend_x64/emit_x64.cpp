@@ -2353,42 +2353,6 @@ static void FPTwoOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitTransferFromFP32(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    ctx.reg_alloc.DefineValue(inst, args[0]);
-}
-
-template <typename JST>
-void EmitX64<JST>::EmitTransferFromFP64(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    ctx.reg_alloc.DefineValue(inst, args[0]);
-}
-
-template <typename JST>
-void EmitX64<JST>::EmitTransferToFP32(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    if (args[0].IsImmediate() && args[0].GetImmediateU32() == 0) {
-        Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-        code->xorps(result, result);
-        ctx.reg_alloc.DefineValue(inst, result);
-    } else {
-        ctx.reg_alloc.DefineValue(inst, args[0]);
-    }
-}
-
-template <typename JST>
-void EmitX64<JST>::EmitTransferToFP64(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    if (args[0].IsImmediate() && args[0].GetImmediateU64() == 0) {
-        Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-        code->xorps(result, result);
-        ctx.reg_alloc.DefineValue(inst, result);
-    } else {
-        ctx.reg_alloc.DefineValue(inst, args[0]);
-    }
-}
-
-template <typename JST>
 void EmitX64<JST>::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);

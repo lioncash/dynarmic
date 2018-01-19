@@ -30,13 +30,13 @@ IR::U32 IREmitter::GetRegister(Reg reg) {
     return Inst<IR::U32>(Opcode::A32GetRegister, IR::Value(reg));
 }
 
-IR::F32F64 IREmitter::GetExtendedRegister(ExtReg reg) {
+IR::U32U64 IREmitter::GetExtendedRegister(ExtReg reg) {
     if (A32::IsSingleExtReg(reg)) {
-        return Inst<IR::F32F64>(Opcode::A32GetExtendedRegister32, IR::Value(reg));
+        return Inst<IR::U32U64>(Opcode::A32GetExtendedRegister32, IR::Value(reg));
     }
 
     if (A32::IsDoubleExtReg(reg)) {
-        return Inst<IR::F32F64>(Opcode::A32GetExtendedRegister64, IR::Value(reg));
+        return Inst<IR::U32U64>(Opcode::A32GetExtendedRegister64, IR::Value(reg));
     }
 
     ASSERT_MSG(false, "Invalid reg.");
@@ -47,7 +47,7 @@ void IREmitter::SetRegister(const Reg reg, const IR::U32& value) {
     Inst(Opcode::A32SetRegister, IR::Value(reg), value);
 }
 
-void IREmitter::SetExtendedRegister(const ExtReg reg, const IR::F32F64& value) {
+void IREmitter::SetExtendedRegister(const ExtReg reg, const IR::U32U64& value) {
     if (A32::IsSingleExtReg(reg)) {
         Inst(Opcode::A32SetExtendedRegister32, IR::Value(reg), value);
     } else if (A32::IsDoubleExtReg(reg)) {

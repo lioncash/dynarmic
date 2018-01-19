@@ -34,9 +34,9 @@ public:
     u32 AlignPC(size_t alignment);
 
     IR::U32 GetRegister(Reg source_reg);
-    IR::F32F64 GetExtendedRegister(ExtReg source_reg);
+    IR::U32U64 GetExtendedRegister(ExtReg source_reg);
     void SetRegister(const Reg dest_reg, const IR::U32& value);
-    void SetExtendedRegister(const ExtReg dest_reg, const IR::F32F64& value);
+    void SetExtendedRegister(const ExtReg dest_reg, const IR::U32U64& value);
 
     void ALUWritePC(const IR::U32& value);
     void BranchWritePC(const IR::U32& value);

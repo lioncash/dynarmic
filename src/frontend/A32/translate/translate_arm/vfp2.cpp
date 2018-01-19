@@ -9,9 +9,6 @@
 namespace Dynarmic {
 namespace A32 {
 
-using F32 = IR::F32;
-using F64 = IR::F64;
-
 static ExtReg ToExtReg(bool sz, size_t base, bool bit) {
     if (sz) {
         return static_cast<ExtReg>(static_cast<size_t>(ExtReg::D0) + base + (bit ? 16 : 0));
@@ -292,13 +289,11 @@ bool ArmTranslatorVisitor::vfp2_VMOV_u32_f64(Cond cond, size_t Vd, Reg t, bool D
         return UnpredictableInstruction();
     // VMOV.32 <Dd[0]>, <Rt>
     if (ConditionPassed(cond)) {
-        auto d_f64 = ir.GetExtendedRegister(d);
-        auto t_u32 = ir.GetRegister(t);
+        auto reg_d = ir.GetExtendedRegister(d);
+        auto reg_t = ir.GetRegister(t);
+        auto result = ir.Pack2x32To1x64(reg_t, ir.MostSignificantWord(reg_d).result);
 
-        auto d_u64 = ir.TransferFromFP64(d_f64);
-        auto result = ir.Pack2x32To1x64(t_u32, ir.MostSignificantWord(d_u64).result);
-
-        ir.SetExtendedRegister(d, ir.TransferToFP64(result));
+        ir.SetExtendedRegister(d, result);
     }
     return true;
 }
@@ -309,8 +304,8 @@ bool ArmTranslatorVisitor::vfp2_VMOV_f64_u32(Cond cond, size_t Vn, Reg t, bool N
         return UnpredictableInstruction();
     // VMOV.32 <Rt>, <Dn[0]>
     if (ConditionPassed(cond)) {
-        auto n_f64 = ir.GetExtendedRegister(n);
-        ir.SetRegister(t, ir.LeastSignificantWord(ir.TransferFromFP64(n_f64)));
+        auto reg_n = ir.GetExtendedRegister(n);
+        ir.SetRegister(t, ir.LeastSignificantWord(reg_n));
     }
     return true;
 }
@@ -321,7 +316,7 @@ bool ArmTranslatorVisitor::vfp2_VMOV_u32_f32(Cond cond, size_t Vn, Reg t, bool N
         return UnpredictableInstruction();
     // VMOV <Sn>, <Rt>
     if (ConditionPassed(cond)) {
-        ir.SetExtendedRegister(n, ir.TransferToFP32(ir.GetRegister(t)));
+        ir.SetExtendedRegister(n, ir.GetRegister(t));
     }
     return true;
 }
@@ -332,7 +327,7 @@ bool ArmTranslatorVisitor::vfp2_VMOV_f32_u32(Cond cond, size_t Vn, Reg t, bool N
         return UnpredictableInstruction();
     // VMOV <Rt>, <Sn>
     if (ConditionPassed(cond)) {
-        ir.SetRegister(t, ir.TransferFromFP32(ir.GetExtendedRegister(n)));
+        ir.SetRegister(t, ir.GetExtendedRegister(n));
     }
     return true;
 }
@@ -343,8 +338,8 @@ bool ArmTranslatorVisitor::vfp2_VMOV_2u32_2f32(Cond cond, Reg t2, Reg t, bool M,
         return UnpredictableInstruction();
     // VMOV <Sm>, <Sm1>, <Rt>, <Rt2>
     if (ConditionPassed(cond)) {
-        ir.SetExtendedRegister(m, ir.TransferToFP32(ir.GetRegister(t)));
-        ir.SetExtendedRegister(m+1, ir.TransferToFP32(ir.GetRegister(t2)));
+        ir.SetExtendedRegister(m, ir.GetRegister(t));
+        ir.SetExtendedRegister(m+1, ir.GetRegister(t2));
     }
     return true;
 }
@@ -357,8 +352,8 @@ bool ArmTranslatorVisitor::vfp2_VMOV_2f32_2u32(Cond cond, Reg t2, Reg t, bool M,
         return UnpredictableInstruction();
     // VMOV <Rt>, <Rt2>, <Sm>, <Sm1>
     if (ConditionPassed(cond)) {
-        ir.SetRegister(t, ir.TransferFromFP32(ir.GetExtendedRegister(m)));
-        ir.SetRegister(t2, ir.TransferFromFP32(ir.GetExtendedRegister(m+1)));
+        ir.SetRegister(t, ir.GetExtendedRegister(m));
+        ir.SetRegister(t2, ir.GetExtendedRegister(m+1));
     }
     return true;
 }
@@ -370,7 +365,7 @@ bool ArmTranslatorVisitor::vfp2_VMOV_2u32_f64(Cond cond, Reg t2, Reg t, bool M, 
     // VMOV<c> <Dm>, <Rt>, <Rt2>
     if (ConditionPassed(cond)) {
         auto value = ir.Pack2x32To1x64(ir.GetRegister(t), ir.GetRegister(t2));
-        ir.SetExtendedRegister(m, ir.TransferToFP64(value));
+        ir.SetExtendedRegister(m, value);
     }
     return true;
 }
@@ -383,7 +378,7 @@ bool ArmTranslatorVisitor::vfp2_VMOV_f64_2u32(Cond cond, Reg t2, Reg t, bool M, 
         return UnpredictableInstruction();
     // VMOV<c> <Rt>, <Rt2>, <Dm>
     if (ConditionPassed(cond)) {
-        auto value = ir.TransferFromFP64(ir.GetExtendedRegister(m));
+        auto value = ir.GetExtendedRegister(m);
         ir.SetRegister(t, ir.LeastSignificantWord(value));
         ir.SetRegister(t2, ir.MostSignificantWord(value).result);
     }
@@ -556,11 +551,9 @@ bool ArmTranslatorVisitor::vfp2_VCMP_zero(Cond cond, bool D, size_t Vd, bool sz,
     if (ConditionPassed(cond)) {
         auto reg_d = ir.GetExtendedRegister(d);
         if (sz) {
-            auto zero = ir.TransferToFP64(ir.Imm64(0));
-            ir.FPCompare64(reg_d, zero, exc_on_qnan, true);
+            ir.FPCompare64(reg_d, ir.Imm64(0), exc_on_qnan, true);
         } else {
-            auto zero = ir.TransferToFP32(ir.Imm32(0));
-            ir.FPCompare32(reg_d, zero, exc_on_qnan, true);
+            ir.FPCompare32(reg_d, ir.Imm32(0), exc_on_qnan, true);
         }
     }
     return true;
@@ -615,10 +608,10 @@ bool ArmTranslatorVisitor::vfp2_VPOP(Cond cond, bool D, size_t Vd, bool sz, Imm8
                 auto hi = ir.ReadMemory32(address);
                 address = ir.Add(address, ir.Imm32(4));
                 if (ir.current_location.EFlag()) std::swap(lo, hi);
-                ir.SetExtendedRegister(d + i, ir.TransferToFP64(ir.Pack2x32To1x64(lo, hi)));
+                ir.SetExtendedRegister(d + i, ir.Pack2x32To1x64(lo, hi));
             } else {
                 auto res = ir.ReadMemory32(address);
-                ir.SetExtendedRegister(d + i, ir.TransferToFP32(res));
+                ir.SetExtendedRegister(d + i, res);
                 address = ir.Add(address, ir.Imm32(4));
             }
         }
@@ -645,16 +638,16 @@ bool ArmTranslatorVisitor::vfp2_VPUSH(Cond cond, bool D, size_t Vd, bool sz, Imm
 
         for (size_t i = 0; i < regs; ++i) {
             if (sz) {
-                const auto d_u64 = ir.TransferFromFP64(ir.GetExtendedRegister(d + i));
-                auto lo = ir.LeastSignificantWord(d_u64);
-                auto hi = ir.MostSignificantWord(d_u64).result;
+                const auto reg_d = ir.GetExtendedRegister(d + i);
+                auto lo = ir.LeastSignificantWord(reg_d);
+                auto hi = ir.MostSignificantWord(reg_d).result;
                 if (ir.current_location.EFlag()) std::swap(lo, hi);
                 ir.WriteMemory32(address, lo);
                 address = ir.Add(address, ir.Imm32(4));
                 ir.WriteMemory32(address, hi);
                 address = ir.Add(address, ir.Imm32(4));
             } else {
-                ir.WriteMemory32(address, ir.TransferFromFP32(ir.GetExtendedRegister(d + i)));
+                ir.WriteMemory32(address, ir.GetExtendedRegister(d + i));
                 address = ir.Add(address, ir.Imm32(4));
             }
         }
@@ -673,9 +666,9 @@ bool ArmTranslatorVisitor::vfp2_VLDR(Cond cond, bool U, bool D, Reg n, size_t Vd
             auto lo = ir.ReadMemory32(address);
             auto hi = ir.ReadMemory32(ir.Add(address, ir.Imm32(4)));
             if (ir.current_location.EFlag()) std::swap(lo, hi);
-            ir.SetExtendedRegister(d, ir.TransferToFP64(ir.Pack2x32To1x64(lo, hi)));
+            ir.SetExtendedRegister(d, ir.Pack2x32To1x64(lo, hi));
         } else {
-            ir.SetExtendedRegister(d, ir.TransferToFP32(ir.ReadMemory32(address)));
+            ir.SetExtendedRegister(d, ir.ReadMemory32(address));
         }
     }
     return true;
@@ -689,14 +682,14 @@ bool ArmTranslatorVisitor::vfp2_VSTR(Cond cond, bool U, bool D, Reg n, size_t Vd
         auto base = n == Reg::PC ? ir.Imm32(ir.AlignPC(4)) : ir.GetRegister(n);
         auto address = U ? ir.Add(base, ir.Imm32(imm32)) : ir.Sub(base, ir.Imm32(imm32));
         if (sz) {
-            auto d_u64 = ir.TransferFromFP64(ir.GetExtendedRegister(d));
-            auto lo = ir.LeastSignificantWord(d_u64);
-            auto hi = ir.MostSignificantWord(d_u64).result;
+            auto reg_d = ir.GetExtendedRegister(d);
+            auto lo = ir.LeastSignificantWord(reg_d);
+            auto hi = ir.MostSignificantWord(reg_d).result;
             if (ir.current_location.EFlag()) std::swap(lo, hi);
             ir.WriteMemory32(address, lo);
             ir.WriteMemory32(ir.Add(address, ir.Imm32(4)), hi);
         } else {
-            ir.WriteMemory32(address, ir.TransferFromFP32(ir.GetExtendedRegister(d)));
+            ir.WriteMemory32(address, ir.GetExtendedRegister(d));
         }
     }
     return true;
@@ -725,7 +718,7 @@ bool ArmTranslatorVisitor::vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool 
         if (w)
             ir.SetRegister(n, u ? ir.Add(address, ir.Imm32(imm32)) : address);
         for (size_t i = 0; i < regs; i++) {
-            auto value = ir.TransferFromFP64(ir.GetExtendedRegister(d + i));
+            auto value = ir.GetExtendedRegister(d + i);
             auto word1 = ir.LeastSignificantWord(value);
             auto word2 = ir.MostSignificantWord(value).result;
             if (ir.current_location.EFlag()) std::swap(word1, word2);
@@ -761,7 +754,7 @@ bool ArmTranslatorVisitor::vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool 
         if (w)
             ir.SetRegister(n, u ? ir.Add(address, ir.Imm32(imm32)) : address);
         for (size_t i = 0; i < regs; i++) {
-            auto word = ir.TransferFromFP32(ir.GetExtendedRegister(d + i));
+            auto word = ir.GetExtendedRegister(d + i);
             ir.WriteMemory32(address, word);
             address = ir.Add(address, ir.Imm32(4));
         }
@@ -797,7 +790,7 @@ bool ArmTranslatorVisitor::vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool 
             auto word2 = ir.ReadMemory32(address);
             address = ir.Add(address, ir.Imm32(4));
             if (ir.current_location.EFlag()) std::swap(word1, word2);
-            ir.SetExtendedRegister(d + i, ir.TransferToFP64(ir.Pack2x32To1x64(word1, word2)));
+            ir.SetExtendedRegister(d + i, ir.Pack2x32To1x64(word1, word2));
         }
     }
     return true;
@@ -828,7 +821,7 @@ bool ArmTranslatorVisitor::vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool 
         for (size_t i = 0; i < regs; i++) {
             auto word = ir.ReadMemory32(address);
             address = ir.Add(address, ir.Imm32(4));
-            ir.SetExtendedRegister(d + i, ir.TransferToFP32(word));
+            ir.SetExtendedRegister(d + i, word);
         }
     }
     return true;
