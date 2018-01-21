@@ -335,7 +335,7 @@ struct TranslatorVisitor final {
     // Data Processing - Register - 1 source
     bool RBIT_int(bool sf, Reg Rn, Reg Rd);
     bool REV16_int(bool sf, Reg Rn, Reg Rd);
-    bool REV(bool sf, Reg Rn, Reg Rd);
+    bool REV(bool sf, bool opc_0, Reg Rn, Reg Rd);
     bool CLZ_int(bool sf, Reg Rn, Reg Rd);
     bool CLS_int(bool sf, Reg Rn, Reg Rd);
     bool REV32_int(Reg Rn, Reg Rd);

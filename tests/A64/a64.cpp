@@ -29,6 +29,62 @@ TEST_CASE("A64: ADD", "[a64]") {
     REQUIRE(jit.GetPC() == 4);
 }
 
+TEST_CASE("A64: REV", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0xdac00c00; // REV X0, X0
+    env.code_mem[1] = 0x5ac00821; // REV W1, W1
+    env.code_mem[2] = 0x14000000; // B .
+
+    jit.SetRegister(0, 0xaabbccddeeff1100);
+    jit.SetRegister(1, 0xaabbccdd);
+    jit.SetPC(0);
+
+    env.ticks_left = 3;
+    jit.Run();
+
+    REQUIRE(jit.GetRegister(0) == 0x11ffeeddccbbaa);
+    REQUIRE(jit.GetRegister(1) == 0xddccbbaa);
+    REQUIRE(jit.GetPC() == 8);
+}
+
+TEST_CASE("A64: REV32", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0xdac00800; // REV32 X0, X0
+    env.code_mem[1] = 0x14000000; // B .
+
+    jit.SetRegister(0, 0xaabbccddeeff1100);
+    jit.SetPC(0);
+
+    env.ticks_left = 2;
+    jit.Run();
+    REQUIRE(jit.GetRegister(0) == 0xddccbbaa0011ffee);
+    REQUIRE(jit.GetPC() == 4);
+}
+
+TEST_CASE("A64: REV16", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0xdac00400; // REV16 X0, X0
+    env.code_mem[1] = 0x5ac00421; // REV16 W1, W1
+    env.code_mem[2] = 0x14000000; // B .
+
+    jit.SetRegister(0, 0xaabbccddeeff1100);
+    jit.SetRegister(1, 0xaabbccdd);
+
+    jit.SetPC(0);
+
+    env.ticks_left = 3;
+    jit.Run();
+    REQUIRE(jit.GetRegister(0) == 0xbbaaddccffee0011);
+    REQUIRE(jit.GetRegister(1) == 0xbbaaddcc);
+    REQUIRE(jit.GetPC() == 8);
+}
+
 TEST_CASE("A64: AND", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};

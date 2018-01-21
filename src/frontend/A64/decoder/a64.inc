@@ -286,11 +286,11 @@ INST(UnallocatedEncoding,    "",                                          "10111
 
 // Data Processing - Register - 1 source
 //INST(RBIT_int,               "RBIT",                                      "z101101011000000000000nnnnnddddd")
-//INST(REV16_int,              "REV16",                                     "z101101011000000000001nnnnnddddd")
-//INST(REV,                    "REV",                                       "z10110101100000000001-nnnnnddddd")
+INST(REV16_int,              "REV16",                                     "z101101011000000000001nnnnnddddd")
+INST(REV,                    "REV",                                       "z10110101100000000001onnnnnddddd")
 //INST(CLZ_int,                "CLZ",                                       "z101101011000000000100nnnnnddddd")
 //INST(CLS_int,                "CLS",                                       "z101101011000000000101nnnnnddddd")
-//INST(REV32_int,              "REV32",                                     "1101101011000000000010nnnnnddddd")
+INST(REV32_int,              "REV32",                                     "1101101011000000000010nnnnnddddd")
 //INST(PACDA,                  "PACDA, PACDZA",                             "110110101100000100Z010nnnnnddddd")
 //INST(PACDB,                  "PACDB, PACDZB",                             "110110101100000100Z011nnnnnddddd")
 //INST(AUTDA,                  "AUTDA, AUTDZA",                             "110110101100000100Z110nnnnnddddd")
