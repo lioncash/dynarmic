@@ -332,9 +332,9 @@ INST(SBCS,                   "SBCS",                                      "z1111
 
 // Data Processing - Register - Conditional select
 INST(CSEL,                   "CSEL",                                      "z0011010100mmmmmcccc00nnnnnddddd")
-//INST(CSINC,                  "CSINC",                                     "z0011010100mmmmmcccc01nnnnnddddd")
-//INST(CSINV,                  "CSINV",                                     "z1011010100mmmmmcccc00nnnnnddddd")
-//INST(CSNEG,                  "CSNEG",                                     "z1011010100mmmmmcccc01nnnnnddddd")
+INST(CSINC,                  "CSINC",                                     "z0011010100mmmmmcccc01nnnnnddddd")
+INST(CSINV,                  "CSINV",                                     "z1011010100mmmmmcccc00nnnnnddddd")
+INST(CSNEG,                  "CSNEG",                                     "z1011010100mmmmmcccc01nnnnnddddd")
 
 // Data Processing - Register - 3 source
 //INST(MADD,                   "MADD",                                      "z0011011000mmmmm0aaaaannnnnddddd")
