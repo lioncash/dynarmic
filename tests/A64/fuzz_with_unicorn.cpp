@@ -17,6 +17,11 @@
 #include "unicorn_emu/unicorn.h"
 
 using namespace Dynarmic;
+using Vector = Dynarmic::A64::Jit::Vector;
+
+static Vector RandomVector() {
+    return {RandInt<u64>(0, ~u64(0)), RandInt<u64>(0, ~u64(0))};
+}
 
 static std::vector<InstructionGenerator> instruction_generators = []{
     const std::vector<std::tuple<const char*, const char*>> list {
@@ -54,7 +59,7 @@ restart:
     return instruction;
 }
 
-static void RunTestInstance(const std::array<u64, 31>& regs, const size_t instructions_offset, const std::vector<u32>& instructions, const u32 pstate) {
+static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Vector, 32>& vecs, const size_t instructions_offset, const std::vector<u32>& instructions, const u32 pstate) {
     TestEnv jit_env;
     TestEnv uni_env;
 
@@ -67,10 +72,12 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const size_t instru
     Unicorn uni{uni_env};
 
     jit.SetRegisters(regs);
+    jit.SetVectors(vecs);
     jit.SetPC(instructions_offset * 4);
     jit.SetSP(0x8000000);
     jit.SetPstate(pstate);
     uni.SetRegisters(regs);
+    uni.SetVectors(vecs);
     uni.SetPC(instructions_offset * 4);
     uni.SetSP(0x8000000);
     uni.SetPstate(pstate);
@@ -91,12 +98,14 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
     for (size_t iteration = 0; iteration < 100000; ++iteration) {
         std::array<u64, 31> regs;
         std::generate_n(regs.begin(), 31, []{ return RandInt<u64>(0, ~u64(0)); });
+        std::array<Vector, 32> vecs;
+        std::generate_n(vecs.begin(), 32, []{ return RandomVector(); });
         std::vector<u32> instructions;
         instructions.push_back(GenRandomInst(0, true));
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
-        RunTestInstance(regs, 100, instructions, pstate);
+        RunTestInstance(regs, vecs, 100, instructions, pstate);
     }
 }
