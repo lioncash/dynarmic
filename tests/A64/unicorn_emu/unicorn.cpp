@@ -149,7 +149,7 @@ void Unicorn::DumpMemoryInformation() {
     CHECKED(uc_free(regions));
 }
 
-void Unicorn::InterruptHook(uc_engine* uc, u32, void* user_data) {
+void Unicorn::InterruptHook(uc_engine* uc, u32 int_number, void* user_data) {
     Unicorn* this_ = reinterpret_cast<Unicorn*>(user_data);
 
     u32 esr;
@@ -163,7 +163,7 @@ void Unicorn::InterruptHook(uc_engine* uc, u32, void* user_data) {
         this_->testenv.CallSVC(iss);
         break;
     default:
-        ASSERT_MSG(false, "Unhandled interrupt");
+        ASSERT_MSG(false, "Unhandled interrupt: int_number: %#x, esr: %#x", int_number, esr);
     }
 }
 
