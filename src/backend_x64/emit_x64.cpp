@@ -2201,6 +2201,11 @@ void EmitX64<JST>::EmitVectorAdd64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
+void EmitX64<JST>::EmitVectorAnd(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pand);
+}
+
+template <typename JST>
 static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;
 

@@ -35,5 +35,18 @@ bool TranslatorVisitor::ADD_vector(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) 
     return true;
 }
 
+bool TranslatorVisitor::AND_asimd(bool Q, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+
+    auto operand1 = V(datasize, Vn);
+    auto operand2 = V(datasize, Vm);
+
+    auto result = ir.VectorAnd(operand1, operand2);
+
+    V(datasize, Vd, result);
+
+    return true;
+}
+
 } // namespace A64
 } // namespace Dynarmic

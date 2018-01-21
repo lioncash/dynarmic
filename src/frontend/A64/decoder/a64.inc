@@ -832,7 +832,7 @@ INST(ADD_vector,             "ADD (vector)",                              "0Q001
 //INST(ADDP_vec,               "ADDP (vector)",                             "0Q001110zz1mmmmm101111nnnnnddddd")
 //INST(FMLAL_vec_1,            "FMLAL, FMLAL2 (vector)",                    "0Q0011100z1mmmmm111011nnnnnddddd")
 //INST(FMLAL_vec_2,            "FMLAL, FMLAL2 (vector)",                    "0Q1011100z1mmmmm110011nnnnnddddd")
-//INST(AND_asimd,              "AND (vector)",                              "0Q001110001mmmmm000111nnnnnddddd")
+INST(AND_asimd,              "AND (vector)",                              "0Q001110001mmmmm000111nnnnnddddd")
 //INST(BIC_asimd_reg,          "BIC (vector, register)",                    "0Q001110011mmmmm000111nnnnnddddd")
 //INST(FMLSL_vec_1,            "FMLSL, FMLSL2 (vector)",                    "0Q0011101z1mmmmm111011nnnnnddddd")
 //INST(FMLSL_vec_2,            "FMLSL, FMLSL2 (vector)",                    "0Q1011101z1mmmmm110011nnnnnddddd")
