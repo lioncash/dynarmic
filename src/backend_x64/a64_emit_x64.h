@@ -6,19 +6,8 @@
 
 #pragma once
 
-#include <unordered_map>
-#include <vector>
-
-#include <boost/icl/interval_map.hpp>
-#include <boost/icl/interval_set.hpp>
-#include <boost/optional.hpp>
-
-#include <xbyak_util.h>
-
 #include "backend_x64/a64_jitstate.h"
 #include "backend_x64/emit_x64.h"
-#include "common/address_range.h"
-#include "dynarmic/A64/a64.h"
 #include "dynarmic/A64/config.h"
 #include "frontend/A64/location_descriptor.h"
 #include "frontend/ir/terminal.h"
