@@ -54,24 +54,24 @@ restart:
     return instruction;
 }
 
-static void RunTestInstance(const std::array<u64, 31>& regs, const std::vector<u32>& instructions, u32 pstate) {
+static void RunTestInstance(const std::array<u64, 31>& regs, const size_t instructions_offset, const std::vector<u32>& instructions, const u32 pstate) {
     TestEnv jit_env;
     TestEnv uni_env;
 
-    std::copy(instructions.begin(), instructions.end(), jit_env.code_mem.begin());
-    std::copy(instructions.begin(), instructions.end(), uni_env.code_mem.begin());
-    jit_env.code_mem[instructions.size()] = 0x14000000; // B .
-    uni_env.code_mem[instructions.size()] = 0x14000000; // B .
+    std::copy(instructions.begin(), instructions.end(), jit_env.code_mem.begin() + instructions_offset);
+    std::copy(instructions.begin(), instructions.end(), uni_env.code_mem.begin() + instructions_offset);
+    jit_env.code_mem[instructions.size() + instructions_offset] = 0x14000000; // B .
+    uni_env.code_mem[instructions.size() + instructions_offset] = 0x14000000; // B .
 
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&jit_env}};
     Unicorn uni{uni_env};
 
     jit.SetRegisters(regs);
-    jit.SetPC(0);
+    jit.SetPC(instructions_offset * 4);
     jit.SetSP(0x8000000);
     jit.SetPstate(pstate);
     uni.SetRegisters(regs);
-    uni.SetPC(0);
+    uni.SetPC(instructions_offset * 4);
     uni.SetSP(0x8000000);
     uni.SetPstate(pstate);
 
@@ -95,8 +95,8 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
         instructions.push_back(GenRandomInst(0, true));
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
 
-        INFO("Instruction: " << instructions[0]);
+        INFO("Instruction: 0x" << std::hex << instructions[0]);
 
-        RunTestInstance(regs, instructions, pstate);
+        RunTestInstance(regs, 100, instructions, pstate);
     }
 }
