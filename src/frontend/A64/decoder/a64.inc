@@ -563,7 +563,7 @@ INST(CSEL,                   "CSEL",                                      "z0011
 //INST(SQRSHL_1,               "SQRSHL",                                    "01011110zz1mmmmm010111nnnnnddddd")
 //INST(SQRSHL_2,               "SQRSHL",                                    "0Q001110zz1mmmmm010111nnnnnddddd")
 //INST(ADD_1,                  "ADD (vector)",                              "01011110zz1mmmmm100001nnnnnddddd")
-//INST(ADD_2,                  "ADD (vector)",                              "0Q001110zz1mmmmm100001nnnnnddddd")
+INST(ADD_vector,             "ADD (vector)",                              "0Q001110zz1mmmmm100001nnnnnddddd")
 //INST(CMTST_1,                "CMTST",                                     "01011110zz1mmmmm100011nnnnnddddd")
 //INST(CMTST_2,                "CMTST",                                     "0Q001110zz1mmmmm100011nnnnnddddd")
 //INST(SQDMULH_vec_1,          "SQDMULH (vector)",                          "01011110zz1mmmmm101101nnnnnddddd")

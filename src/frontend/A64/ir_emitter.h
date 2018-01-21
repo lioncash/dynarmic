@@ -51,9 +51,13 @@ public:
 
     IR::U32 GetW(Reg source_reg);
     IR::U64 GetX(Reg source_reg);
+    IR::U128 GetD(Vec source_vec);
+    IR::U128 GetQ(Vec source_vec);
     IR::U64 GetSP();
     void SetW(Reg dest_reg, const IR::U32& value);
     void SetX(Reg dest_reg, const IR::U64& value);
+    void SetD(Vec dest_vec, const IR::U128& value);
+    void SetQ(Vec dest_vec, const IR::U128& value);
     void SetSP(const IR::U64& value);
     void SetPC(const IR::U64& value);
 };

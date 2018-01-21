@@ -2169,6 +2169,37 @@ void EmitX64<JST>::EmitPackedSelect(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
+static void EmitVectorOperation(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Mmx& mmx, const Xbyak::Operand&)) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+
+    (code->*fn)(xmm_a, xmm_b);
+
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitVectorAdd8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddb);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitVectorAdd16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddw);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitVectorAdd32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddd);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitVectorAdd64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddq);
+}
+
 template <typename JST>
 static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;

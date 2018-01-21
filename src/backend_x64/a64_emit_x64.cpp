@@ -156,6 +156,24 @@ void A64EmitX64::EmitA64GetX(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void A64EmitX64::EmitA64GetD(A64EmitContext& ctx, IR::Inst* inst) {
+    A64::Vec vec = inst->GetArg(0).GetA64VecRef();
+    auto addr = qword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
+
+    Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    code->movq(result, addr);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void A64EmitX64::EmitA64GetQ(A64EmitContext& ctx, IR::Inst* inst) {
+    A64::Vec vec = inst->GetArg(0).GetA64VecRef();
+    auto addr = code->xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
+
+    Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    code->movaps(result, addr);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void A64EmitX64::EmitA64GetSP(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
     code->mov(result, qword[r15 + offsetof(A64JitState, sp)]);
@@ -189,6 +207,25 @@ void A64EmitX64::EmitA64SetX(A64EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg64 to_store = ctx.reg_alloc.UseGpr(args[1]);
         code->mov(addr, to_store);
     }
+}
+
+void A64EmitX64::EmitA64SetD(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    A64::Vec vec = inst->GetArg(0).GetA64VecRef();
+    auto addr = code->xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
+
+    Xbyak::Xmm to_store = ctx.reg_alloc.UseScratchXmm(args[1]);
+    code->movq(to_store, to_store);
+    code->movaps(addr, to_store);
+}
+
+void A64EmitX64::EmitA64SetQ(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    A64::Vec vec = inst->GetArg(0).GetA64VecRef();
+    auto addr = code->xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
+
+    Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
+    code->movaps(addr, to_store);
 }
 
 void A64EmitX64::EmitA64SetSP(A64EmitContext& ctx, IR::Inst* inst) {

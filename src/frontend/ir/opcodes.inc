@@ -40,9 +40,19 @@ A64OPC(GetCFlag,                T::U1,                                          
 A64OPC(SetNZCV,                 T::Void,        T::NZCVFlags                                    )
 A64OPC(GetW,                    T::U32,         T::A64Reg                                       )
 A64OPC(GetX,                    T::U64,         T::A64Reg                                       )
+//A64OPC(GetB,                    T::U128,        T::A64Vec                                       )
+//A64OPC(GetH,                    T::U128,        T::A64Vec                                       )
+//A64OPC(GetS,                    T::U128,        T::A64Vec                                       )
+A64OPC(GetD,                    T::U128,        T::A64Vec                                       )
+A64OPC(GetQ,                    T::U128,        T::A64Vec                                       )
 A64OPC(GetSP,                   T::U64,                                                         )
 A64OPC(SetW,                    T::Void,        T::A64Reg,      T::U32                          )
 A64OPC(SetX,                    T::Void,        T::A64Reg,      T::U64                          )
+//A64OPC(SetB,                    T::Void,        T::A64Vec,      T::U8                           )
+//A64OPC(SetH,                    T::Void,        T::A64Vec,      T::U16                          )
+//A64OPC(SetS,                    T::Void,        T::A64Vec,      T::U32                          )
+A64OPC(SetD,                    T::Void,        T::A64Vec,      T::U128                         )
+A64OPC(SetQ,                    T::Void,        T::A64Vec,      T::U128                         )
 A64OPC(SetSP,                   T::Void,        T::U64                                          )
 A64OPC(SetPC,                   T::Void,        T::U64                                          )
 A64OPC(CallSupervisor,          T::Void,        T::U32                                          )
@@ -148,6 +158,12 @@ OPCODE(PackedSaturatedSubU16,   T::U32,         T::U32,         T::U32          
 OPCODE(PackedSaturatedSubS16,   T::U32,         T::U32,         T::U32                          )
 OPCODE(PackedAbsDiffSumS8,      T::U32,         T::U32,         T::U32                          )
 OPCODE(PackedSelect,            T::U32,         T::U32,         T::U32,         T::U32          )
+
+// Vector instructions
+OPCODE(VectorAdd8,              T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorAdd16,             T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorAdd32,             T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorAdd64,             T::U128,        T::U128,        T::U128                         )
 
 // Floating-point operations
 OPCODE(FPAbs32,                 T::U32,         T::U32                                          )

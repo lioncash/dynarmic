@@ -119,7 +119,31 @@ void TranslatorVisitor::SP(size_t bitsize, IR::U32U64 value) {
         ir.SetSP(value);
         break;
     default:
-        ASSERT_MSG(false, "SP -  : Invalid bitsize");
+        ASSERT_MSG(false, "SP - set : Invalid bitsize");
+    }
+}
+
+IR::U128 TranslatorVisitor::V(size_t bitsize, Vec vec) {
+    switch (bitsize) {
+    case 64:
+        return ir.GetD(vec);
+    case 128:
+        return ir.GetQ(vec);
+    default:
+        ASSERT_MSG(false, "V - get : Invalid bitsize");
+    }
+}
+
+void TranslatorVisitor::V(size_t bitsize, Vec vec, IR::U128 value) {
+    switch (bitsize) {
+    case 64:
+        ir.SetD(vec, value);
+        return;
+    case 128:
+        ir.SetQ(vec, value);
+        return;
+    default:
+        ASSERT_MSG(false, "V - Set : Invalid bitsize");
     }
 }
 

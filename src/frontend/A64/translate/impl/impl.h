@@ -48,6 +48,9 @@ struct TranslatorVisitor final {
     IR::U32U64 SP(size_t bitsize);
     void SP(size_t bitsize, IR::U32U64 value);
 
+    IR::U128 V(size_t bitsize, Vec vec);
+    void V(size_t bitsize, Vec vec, IR::U128 value);
+
     IR::UAny Mem(IR::U64 address, size_t size, AccType acctype);
     void Mem(IR::U64 address, size_t size, AccType acctype, IR::UAny value);
 
@@ -611,7 +614,7 @@ struct TranslatorVisitor final {
     bool SQRSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SQRSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool ADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool ADD_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool ADD_vector(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool CMTST_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool CMTST_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SQDMULH_vec_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);

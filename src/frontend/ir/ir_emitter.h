@@ -177,6 +177,11 @@ public:
     U32 PackedAbsDiffSumS8(const U32& a, const U32& b);
     U32 PackedSelect(const U32& ge, const U32& a, const U32& b);
 
+    U128 VectorAdd8(const U128& a, const U128& b);
+    U128 VectorAdd16(const U128& a, const U128& b);
+    U128 VectorAdd32(const U128& a, const U128& b);
+    U128 VectorAdd64(const U128& a, const U128& b);
+
     U32 FPAbs32(const U32& a);
     U64 FPAbs64(const U64& a);
     U32 FPAdd32(const U32& a, const U32& b, bool fpscr_controlled);

@@ -604,6 +604,22 @@ U32 IREmitter::PackedSelect(const U32& ge, const U32& a, const U32& b) {
     return Inst<U32>(Opcode::PackedSelect, ge, a, b);
 }
 
+U128 IREmitter::VectorAdd8(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorAdd8, a, b);
+}
+
+U128 IREmitter::VectorAdd16(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorAdd16, a, b);
+}
+
+U128 IREmitter::VectorAdd32(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorAdd32, a, b);
+}
+
+U128 IREmitter::VectorAdd64(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorAdd64, a, b);
+}
+
 U32 IREmitter::FPAbs32(const U32& a) {
     return Inst<U32>(Opcode::FPAbs32, a);
 }
