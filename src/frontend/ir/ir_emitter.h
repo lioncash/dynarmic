@@ -139,6 +139,8 @@ public:
     U16 ByteReverseHalf(const U16& a);
     U64 ByteReverseDual(const U64& a);
     U32 CountLeadingZeros(const U32& a);
+    U64 CountLeadingZeros(const U64& a);
+    U32U64 CountLeadingZeros(const U32U64& a);
 
     ResultAndOverflow<U32> SignedSaturatedAdd(const U32& a, const U32& b);
     ResultAndOverflow<U32> SignedSaturatedSub(const U32& a, const U32& b);

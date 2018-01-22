@@ -1303,7 +1303,7 @@ void EmitX64<JST>::EmitByteReverseDual(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template <typename JST>
-void EmitX64<JST>::EmitCountLeadingZeros(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64<JST>::EmitCountLeadingZeros32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (code->DoesCpuSupport(Xbyak::util::Cpu::tLZCNT)) {
         Xbyak::Reg32 source = ctx.reg_alloc.UseGpr(args[0]).cvt32();
@@ -1325,6 +1325,31 @@ void EmitX64<JST>::EmitCountLeadingZeros(EmitContext& ctx, IR::Inst* inst) {
 
         ctx.reg_alloc.DefineValue(inst, result);
     }
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitCountLeadingZeros64(EmitContext& ctx, IR::Inst* inst) {
+   auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+   if (code->DoesCpuSupport(Xbyak::util::Cpu::tLZCNT)) {
+       Xbyak::Reg64 source = ctx.reg_alloc.UseGpr(args[0]).cvt64();
+       Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr().cvt64();
+
+       code->lzcnt(result, source);
+
+       ctx.reg_alloc.DefineValue(inst, result);
+   } else {
+       Xbyak::Reg64 source = ctx.reg_alloc.UseScratchGpr(args[0]).cvt64();
+       Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr().cvt64();
+
+       // The result of a bsr of zero is undefined, but zf is set after it.
+       code->bsr(result, source);
+       code->mov(source.cvt32(), 0xFFFFFFFF);
+       code->cmovz(result.cvt32(), source.cvt32());
+       code->neg(result.cvt32());
+       code->add(result.cvt32(), 63);
+
+       ctx.reg_alloc.DefineValue(inst, result);
+   }
 }
 
 template <typename JST>

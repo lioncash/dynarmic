@@ -427,7 +427,19 @@ U64 IREmitter::ByteReverseDual(const U64& a) {
 }
 
 U32 IREmitter::CountLeadingZeros(const U32& a) {
-    return Inst<U32>(Opcode::CountLeadingZeros, a);
+    return Inst<U32>(Opcode::CountLeadingZeros32, a);
+}
+
+U64 IREmitter::CountLeadingZeros(const U64& a) {
+    return Inst<U64>(Opcode::CountLeadingZeros64, a);
+}
+
+U32U64 IREmitter::CountLeadingZeros(const U32U64& a) {
+    if (a.GetType() == IR::Type::U32) {
+        return Inst<U32>(Opcode::CountLeadingZeros32, a);
+    }
+
+    return Inst<U64>(Opcode::CountLeadingZeros64, a);
 }
 
 ResultAndOverflow<U32> IREmitter::SignedSaturatedAdd(const U32& a, const U32& b) {
