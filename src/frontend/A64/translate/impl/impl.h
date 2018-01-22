@@ -267,12 +267,12 @@ struct TranslatorVisitor final {
     // Loads and stores - Load/Store register (unprivileged)
     bool STTRB(Imm<9> imm9, Reg Rn, Reg Rt);
     bool LDTRB(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDTRSB(Imm<9> imm9, Reg Rn, Reg Rt);
+    bool LDTRSB(Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt);
     bool STTRH(Imm<9> imm9, Reg Rn, Reg Rt);
     bool LDTRH(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDTRSH(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool STTR(Imm<9> imm9, Reg Rn, Reg Rt);
-    bool LDTR(Imm<9> imm9, Reg Rn, Reg Rt);
+    bool LDTRSH(Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt);
+    bool STTR(Imm<2> size, Imm<9> imm9, Reg Rn, Reg Rt);
+    bool LDTR(Imm<2> size, Imm<9> imm9, Reg Rn, Reg Rt);
     bool LDTRSW(Imm<9> imm9, Reg Rn, Reg Rt);
 
     // Loads and stores - Atomic memory options
