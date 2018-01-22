@@ -42,6 +42,7 @@ static bool load_register(TranslatorVisitor& tv, IREmitter& ir, const size_t dat
     address = ir.Add(address, ir.Imm64(offset));
     IR::UAny data = tv.Mem(address, datasize / 8, acctype);
     tv.X(datasize, Rt, tv.ZeroExtend(data, 32));
+    return true;
 }
 
 static bool load_register_signed(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize,
@@ -142,6 +143,7 @@ bool TranslatorVisitor::LDTRSW(Imm<9> imm9, Reg Rn, Reg Rt) {
     address = ir.Add(address, ir.Imm64(offset));
     IR::UAny data = Mem(address, 4, acctype);
     X(32, Rt, SignExtend(data, 64));
+    return true;
 }
 } // namespace A64
 } // namespace Dynarmic
