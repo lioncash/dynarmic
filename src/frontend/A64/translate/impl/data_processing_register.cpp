@@ -9,54 +9,46 @@
 namespace Dynarmic {
 namespace A64 {
 
-bool TranslatorVisitor::REV(bool sf, bool opc_0, Reg Rn, Reg Rd)
-{
+bool TranslatorVisitor::REV(bool sf, bool opc_0, Reg Rn, Reg Rd) {
+    const size_t datasize = sf ? 64 : 32;
+
     if (!sf && opc_0) return UnallocatedEncoding();
 
-    size_t datasize = sf ? 64 : 32;
-
-    IR::U32U64 operand = X(datasize, Rn);
-    IR::U32U64 result;
+    const IR::U32U64 operand = X(datasize, Rn);
 
     if (sf) {
-        result = ir.ByteReverseDual(operand);
+        X(datasize, Rd, ir.ByteReverseDual(operand));
     } else {
-        result = ir.ByteReverseWord(operand);
+        X(datasize, Rd, ir.ByteReverseWord(operand));
     }
-    X(datasize, Rd, result);
     return true;
 }
 
-bool TranslatorVisitor::REV32_int(Reg Rn, Reg Rd)
-{
-    IR::U64 operand = ir.GetX(Rn);
-    IR::U32 lo = ir.ByteReverseWord(ir.LeastSignificantWord(operand));
-    IR::U32 hi = ir.ByteReverseWord(ir.MostSignificantWord(operand).result);
-    IR::U64 result = ir.Pack2x32To1x64(lo, hi);
+bool TranslatorVisitor::REV32_int(Reg Rn, Reg Rd) {
+    const IR::U64 operand = ir.GetX(Rn);
+    const IR::U32 lo = ir.ByteReverseWord(ir.LeastSignificantWord(operand));
+    const IR::U32 hi = ir.ByteReverseWord(ir.MostSignificantWord(operand).result);
+    const IR::U64 result = ir.Pack2x32To1x64(lo, hi);
     X(64, Rd, result);
     return true;
 }
 
-bool TranslatorVisitor::REV16_int(bool sf, Reg Rn, Reg Rd)
-{
-    size_t datasize = sf ? 64 : 32;
-
-    IR::U32U64 operand = X(datasize, Rn);
-    IR::U32U64 result;
-    IR::U32U64 hihalf;
-    IR::U32U64 lohalf;
-
+bool TranslatorVisitor::REV16_int(bool sf, Reg Rn, Reg Rd) {
+    const size_t datasize = sf ? 64 : 32;
 
     if (sf) {
-        hihalf = ir.And(ir.LogicalShiftRight(IR::U64(operand), ir.Imm8(8)), ir.Imm64(0x00FF00FF00FF00FF));
-        lohalf = ir.And(ir.LogicalShiftLeft(IR::U64(operand), ir.Imm8(8)), ir.Imm64(0xFF00FF00FF00FF00));
+        const IR::U64 operand = X(datasize, Rn);
+        const IR::U64 hihalf = ir.And(ir.LogicalShiftRight(operand, ir.Imm8(8)), ir.Imm64(0x00FF00FF00FF00FF));
+        const IR::U64 lohalf = ir.And(ir.LogicalShiftLeft(operand, ir.Imm8(8)), ir.Imm64(0xFF00FF00FF00FF00));
+        const IR::U64 result = ir.Or(hihalf, lohalf);
+        X(datasize, Rd, result);
     } else {
-        hihalf = ir.And(ir.LogicalShiftRight(operand, ir.Imm8(8), ir.Imm1(0)).result, ir.Imm32(0x00FF00FF));
-        lohalf = ir.And(ir.LogicalShiftLeft(operand, ir.Imm8(8), ir.Imm1(0)).result, ir.Imm32(0xFF00FF00));
+        const IR::U32 operand = X(datasize, Rn);
+        const IR::U32 hihalf = ir.And(ir.LogicalShiftRight(operand, ir.Imm8(8)), ir.Imm32(0x00FF00FF));
+        const IR::U32 lohalf = ir.And(ir.LogicalShiftLeft(operand, ir.Imm8(8)), ir.Imm32(0xFF00FF00));
+        const IR::U32 result = ir.Or(hihalf, lohalf);
+        X(datasize, Rd, result);
     }
-
-    result = ir.Or(hihalf, lohalf);
-    X(datasize, Rd, result);
     return true;
 }
 

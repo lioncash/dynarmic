@@ -94,8 +94,11 @@ public:
     ResultAndCarry<U32> LogicalShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in);
     ResultAndCarry<U32> ArithmeticShiftRight(const U32& value_in, const U8& shift_amount, const U1& carry_in);
     ResultAndCarry<U32> RotateRight(const U32& value_in, const U8& shift_amount, const U1& carry_in);
-    U64 LogicalShiftRight(const U64& value_in, const U8& shift_amount);
+    U32 LogicalShiftLeft(const U32& value_in, const U8& shift_amount);
+    U64 LogicalShiftLeft(const U64& value_in, const U8& shift_amount);
     U32U64 LogicalShiftLeft(const U32U64& value_in, const U8& shift_amount);
+    U32 LogicalShiftRight(const U32& value_in, const U8& shift_amount);
+    U64 LogicalShiftRight(const U64& value_in, const U8& shift_amount);
     U32U64 LogicalShiftRight(const U32U64& value_in, const U8& shift_amount);
     U32U64 ArithmeticShiftRight(const U32U64& value_in, const U8& shift_amount);
     U32U64 RotateRight(const U32U64& value_in, const U8& shift_amount);
