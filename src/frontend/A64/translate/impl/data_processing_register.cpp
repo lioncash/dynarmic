@@ -9,6 +9,16 @@
 namespace Dynarmic {
 namespace A64 {
 
+bool TranslatorVisitor::CLZ_int(bool sf, Reg Rn, Reg Rd) {
+    const size_t datasize = sf ? 64 : 32;
+
+    const IR::U32U64 operand = X(datasize, Rn);
+    const IR::U32U64 result = ir.CountLeadingZeros(operand);
+
+    X(datasize, Rd, result);
+    return true;
+}
+
 bool TranslatorVisitor::REV(bool sf, bool opc_0, Reg Rn, Reg Rd) {
     const size_t datasize = sf ? 64 : 32;
 
