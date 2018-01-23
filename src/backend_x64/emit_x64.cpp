@@ -32,40 +32,33 @@ void EmitContext::EraseInstruction(IR::Inst* inst) {
     inst->ClearArgs();
 }
 
-template <typename JST>
-EmitX64<JST>::EmitX64(BlockOfCode* code)
+EmitX64::EmitX64(BlockOfCode* code)
     : code(code) {}
 
-template <typename JST>
-EmitX64<JST>::~EmitX64() {}
+EmitX64::~EmitX64() {}
 
-template <typename JST>
-boost::optional<typename EmitX64<JST>::BlockDescriptor> EmitX64<JST>::GetBasicBlock(IR::LocationDescriptor descriptor) const {
+boost::optional<typename EmitX64::BlockDescriptor> EmitX64::GetBasicBlock(IR::LocationDescriptor descriptor) const {
     auto iter = block_descriptors.find(descriptor);
     if (iter == block_descriptors.end())
         return boost::none;
     return iter->second;
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVoid(EmitContext&, IR::Inst*) {
+void EmitX64::EmitVoid(EmitContext&, IR::Inst*) {
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitBreakpoint(EmitContext&, IR::Inst*) {
+void EmitX64::EmitBreakpoint(EmitContext&, IR::Inst*) {
     code->int3();
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitIdentity(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitIdentity(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (!args[0].IsImmediate()) {
         ctx.reg_alloc.DefineValue(inst, args[0]);
     }
 }
 
-template <typename JST>
-void EmitX64<JST>::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, IR::LocationDescriptor target) {
+void EmitX64::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, IR::LocationDescriptor target) {
     using namespace Xbyak::util;
 
     auto iter = block_descriptors.find(target);
@@ -88,8 +81,7 @@ void EmitX64<JST>::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_r
     code->mov(dword[r15 + code->GetJitStateInfo().offsetof_rsb_ptr], index_reg.cvt32());
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPushRSB(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPushRSB(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[0].IsImmediate());
     u64 unique_hash_of_target = args[0].GetImmediateU64();
@@ -101,23 +93,19 @@ void EmitX64<JST>::EmitPushRSB(EmitContext& ctx, IR::Inst* inst) {
     PushRSBHelper(loc_desc_reg, index_reg, IR::LocationDescriptor{unique_hash_of_target});
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitGetCarryFromOp(EmitContext&, IR::Inst*) {
+void EmitX64::EmitGetCarryFromOp(EmitContext&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitGetOverflowFromOp(EmitContext&, IR::Inst*) {
+void EmitX64::EmitGetOverflowFromOp(EmitContext&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitGetGEFromOp(EmitContext&, IR::Inst*) {
+void EmitX64::EmitGetGEFromOp(EmitContext&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitGetNZCVFromOp(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitGetNZCVFromOp(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const int bitsize = [&]{
@@ -144,14 +132,12 @@ void EmitX64<JST>::EmitGetNZCVFromOp(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, nzcv);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitAddCycles(size_t cycles) {
+void EmitX64::EmitAddCycles(size_t cycles) {
     ASSERT(cycles < std::numeric_limits<u32>::max());
     code->sub(qword[r15 + code->GetJitStateInfo().offsetof_cycles_remaining], static_cast<u32>(cycles));
 }
 
-template <typename JST>
-Xbyak::Label EmitX64<JST>::EmitCond(IR::Cond cond) {
+Xbyak::Label EmitX64::EmitCond(IR::Cond cond) {
     Xbyak::Label label;
 
     const Xbyak::Reg32 cpsr = eax;
@@ -263,8 +249,7 @@ Xbyak::Label EmitX64<JST>::EmitCond(IR::Cond cond) {
     return label;
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitCondPrelude(const IR::Block& block) {
+void EmitX64::EmitCondPrelude(const IR::Block& block) {
     if (block.GetCondition() == IR::Cond::AL) {
         ASSERT(!block.HasConditionFailedLocation());
         return;
@@ -278,8 +263,7 @@ void EmitX64<JST>::EmitCondPrelude(const IR::Block& block) {
     code->L(pass);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor initial_location) {
+void EmitX64::EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor initial_location) {
     Common::VisitVariant<void>(terminal, [this, &initial_location](auto x) {
         using T = std::decay_t<decltype(x)>;
         if constexpr (!std::is_same_v<T, IR::Term::Invalid>) {
@@ -290,8 +274,7 @@ void EmitX64<JST>::EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor in
     });
 }
 
-template <typename JST>
-void EmitX64<JST>::Patch(const IR::LocationDescriptor& desc, CodePtr bb) {
+void EmitX64::Patch(const IR::LocationDescriptor& desc, CodePtr bb) {
     const CodePtr save_code_ptr = code->getCurr();
     const PatchInformation& patch_info = patch_information[desc];
 
@@ -313,31 +296,17 @@ void EmitX64<JST>::Patch(const IR::LocationDescriptor& desc, CodePtr bb) {
     code->SetCodePtr(save_code_ptr);
 }
 
-template <typename JST>
-void EmitX64<JST>::Unpatch(const IR::LocationDescriptor& desc) {
+void EmitX64::Unpatch(const IR::LocationDescriptor& desc) {
     Patch(desc, nullptr);
 }
 
-template <typename JST>
-void EmitX64<JST>::ClearCache() {
-    block_ranges.clear();
+void EmitX64::ClearCache() {
     block_descriptors.clear();
     patch_information.clear();
 }
 
-template <typename JST>
-void EmitX64<JST>::InvalidateCacheRanges(const boost::icl::interval_set<ProgramCounterType>& ranges) {
-    // Remove cached block descriptors and patch information overlapping with the given range.
-    std::unordered_set<IR::LocationDescriptor> erase_locations;
-    for (auto invalidate_interval : ranges) {
-        auto pair = block_ranges.equal_range(invalidate_interval);
-        for (auto it = pair.first; it != pair.second; ++it) {
-            for (const auto &descriptor : it->second) {
-                erase_locations.insert(descriptor);
-            }
-        }
-    }
-    for (const auto &descriptor : erase_locations) {
+void EmitX64::InvalidateBasicBlocks(const std::unordered_set<IR::LocationDescriptor>& locations) {
+    for (const auto &descriptor : locations) {
         auto it = block_descriptors.find(descriptor);
         if (it == block_descriptors.end()) {
             continue;
@@ -346,16 +315,9 @@ void EmitX64<JST>::InvalidateCacheRanges(const boost::icl::interval_set<ProgramC
         if (patch_information.count(descriptor)) {
             Unpatch(descriptor);
         }
-        block_ranges.subtract(std::make_pair(it->second.range, std::set<IR::LocationDescriptor>{descriptor}));
         block_descriptors.erase(it);
     }
 }
 
 } // namespace BackendX64
 } // namespace Dynarmic
-
-#include "backend_x64/a32_jitstate.h"
-#include "backend_x64/a64_jitstate.h"
-
-template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A32JitState>;
-template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A64JitState>;

@@ -18,8 +18,7 @@ namespace BackendX64 {
 
 using namespace Xbyak::util;
 
-template <typename JST>
-void EmitX64<JST>::EmitSignedSaturatedAdd(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitSignedSaturatedAdd(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -45,8 +44,7 @@ void EmitX64<JST>::EmitSignedSaturatedAdd(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitSignedSaturatedSub(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitSignedSaturatedSub(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -72,8 +70,7 @@ void EmitX64<JST>::EmitSignedSaturatedSub(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -103,8 +100,7 @@ void EmitX64<JST>::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -155,9 +151,3 @@ void EmitX64<JST>::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
 
 } // namespace BackendX64
 } // namespace Dynarmic
-
-#include "backend_x64/a32_jitstate.h"
-#include "backend_x64/a64_jitstate.h"
-
-template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A32JitState>;
-template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A64JitState>;

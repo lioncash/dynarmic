@@ -28,33 +28,27 @@ static void EmitVectorOperation(BlockOfCode* code, EmitContext& ctx, IR::Inst* i
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorAdd8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorAdd8(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddb);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorAdd16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorAdd16(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddw);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorAdd32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorAdd32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddd);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorAdd64(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorAdd64(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddq);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorAnd(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorAnd(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pand);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorLowerPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLowerPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -72,8 +66,7 @@ void EmitX64<JST>::EmitVectorLowerPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorLowerPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLowerPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -96,8 +89,7 @@ void EmitX64<JST>::EmitVectorLowerPairedAdd16(EmitContext& ctx, IR::Inst* inst) 
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorLowerPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLowerPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -119,8 +111,7 @@ void EmitX64<JST>::EmitVectorLowerPairedAdd32(EmitContext& ctx, IR::Inst* inst) 
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -141,8 +132,7 @@ void EmitX64<JST>::EmitVectorPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
@@ -172,8 +162,7 @@ void EmitX64<JST>::EmitVectorPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
@@ -201,8 +190,7 @@ void EmitX64<JST>::EmitVectorPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -219,9 +207,3 @@ void EmitX64<JST>::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
 
 } // namespace BackendX64
 } // namespace Dynarmic
-
-#include "backend_x64/a32_jitstate.h"
-#include "backend_x64/a64_jitstate.h"
-
-template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A32JitState>;
-template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A64JitState>;

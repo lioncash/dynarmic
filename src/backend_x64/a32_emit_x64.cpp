@@ -127,11 +127,20 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
     const size_t size = static_cast<size_t>(code->getCurr() - entrypoint);
     const A32::LocationDescriptor end_location{block.EndLocation()};
     const auto range = boost::icl::discrete_interval<u32>::closed(descriptor.PC(), end_location.PC() - 1);
-    A32EmitX64::BlockDescriptor block_desc{entrypoint, size, block.Location(), range};
+    A32EmitX64::BlockDescriptor block_desc{entrypoint, size};
     block_descriptors.emplace(descriptor.UniqueHash(), block_desc);
-    block_ranges.add(std::make_pair(range, std::set<IR::LocationDescriptor>{descriptor}));
+    block_ranges.AddRange(range, descriptor);
 
     return block_desc;
+}
+
+void A32EmitX64::ClearCache() {
+    EmitX64::ClearCache();
+    block_ranges.ClearCache();
+}
+
+void A32EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u32>& ranges) {
+    InvalidateBasicBlocks(block_ranges.InvalidateRanges(ranges));
 }
 
 void A32EmitX64::GenMemoryAccessors() {

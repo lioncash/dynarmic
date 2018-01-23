@@ -7,10 +7,9 @@
 #pragma once
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
-#include <boost/icl/interval_map.hpp>
-#include <boost/icl/interval_set.hpp>
 #include <boost/optional.hpp>
 
 #include <xbyak_util.h>
@@ -44,17 +43,11 @@ struct EmitContext {
     IR::Block& block;
 };
 
-template <typename JitStateType>
 class EmitX64 {
 public:
-    using ProgramCounterType = typename JitStateType::ProgramCounterType;
-
     struct BlockDescriptor {
         CodePtr entrypoint;  // Entrypoint of emitted code
         size_t size;         // Length in bytes of emitted code
-
-        IR::LocationDescriptor start_location;
-        boost::icl::discrete_interval<ProgramCounterType> range;
     };
 
     EmitX64(BlockOfCode* code);
@@ -64,9 +57,10 @@ public:
     boost::optional<BlockDescriptor> GetBasicBlock(IR::LocationDescriptor descriptor) const;
 
     /// Empties the entire cache.
-    void ClearCache();
+    virtual void ClearCache();
 
-    void InvalidateCacheRanges(const boost::icl::interval_set<ProgramCounterType>& ranges);
+    /// Invalidates a selection of basic blocks.
+    void InvalidateBasicBlocks(const std::unordered_set<IR::LocationDescriptor>& locations);
 
 protected:
     // Microinstruction emitters
@@ -111,7 +105,6 @@ protected:
     BlockOfCode* code;
     std::unordered_map<IR::LocationDescriptor, BlockDescriptor> block_descriptors;
     std::unordered_map<IR::LocationDescriptor, PatchInformation> patch_information;
-    boost::icl::interval_map<ProgramCounterType, std::set<IR::LocationDescriptor>> block_ranges;
 };
 
 } // namespace BackendX64

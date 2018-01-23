@@ -9,6 +9,7 @@
 #include <boost/optional.hpp>
 
 #include "backend_x64/a32_jitstate.h"
+#include "backend_x64/block_range_information.h"
 #include "backend_x64/emit_x64.h"
 #include "dynarmic/A32/a32.h"
 #include "dynarmic/A32/callbacks.h"
@@ -28,7 +29,7 @@ struct A32EmitContext final : public EmitContext {
     bool FPSCR_DN() const override;
 };
 
-class A32EmitX64 final : public EmitX64<A32JitState> {
+class A32EmitX64 final : public EmitX64 {
 public:
     A32EmitX64(BlockOfCode* code, A32::UserCallbacks cb, A32::Jit* jit_interface);
     ~A32EmitX64();
@@ -39,9 +40,14 @@ public:
      */
     BlockDescriptor Emit(IR::Block& ir);
 
+    void ClearCache() override;
+
+    void InvalidateCacheRanges(const boost::icl::interval_set<u32>& ranges);
+
 protected:
     const A32::UserCallbacks cb;
     A32::Jit* jit_interface;
+    BlockRangeInformation<u32> block_ranges;
 
     const void* read_memory_8;
     const void* read_memory_16;

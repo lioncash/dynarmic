@@ -17,8 +17,7 @@ namespace BackendX64 {
 
 using namespace Xbyak::util;
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedAddU8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedAddU8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -45,8 +44,7 @@ void EmitX64<JST>::EmitPackedAddU8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedAddS8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedAddS8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -73,8 +71,7 @@ void EmitX64<JST>::EmitPackedAddS8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedAddU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedAddU16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -116,8 +113,7 @@ void EmitX64<JST>::EmitPackedAddU16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedAddS16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedAddS16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -144,8 +140,7 @@ void EmitX64<JST>::EmitPackedAddS16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSubU8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSubU8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -168,8 +163,7 @@ void EmitX64<JST>::EmitPackedSubU8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSubS8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSubS8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -196,8 +190,7 @@ void EmitX64<JST>::EmitPackedSubS8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSubU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSubU16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -236,8 +229,7 @@ void EmitX64<JST>::EmitPackedSubU16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSubS16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSubS16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
@@ -264,8 +256,7 @@ void EmitX64<JST>::EmitPackedSubS16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingAddU8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingAddU8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     if (args[0].IsInXmm() || args[1].IsInXmm()) {
@@ -308,8 +299,7 @@ void EmitX64<JST>::EmitPackedHalvingAddU8(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingAddU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingAddU16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     if (args[0].IsInXmm() || args[1].IsInXmm()) {
@@ -347,8 +337,7 @@ void EmitX64<JST>::EmitPackedHalvingAddU16(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingAddS8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingAddS8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 reg_a = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -377,8 +366,7 @@ void EmitX64<JST>::EmitPackedHalvingAddS8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingAddS16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingAddS16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -399,8 +387,7 @@ void EmitX64<JST>::EmitPackedHalvingAddS16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingSubU8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingSubU8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 minuend = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -430,8 +417,7 @@ void EmitX64<JST>::EmitPackedHalvingSubU8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, minuend);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingSubS8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingSubS8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Reg32 minuend = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
@@ -467,8 +453,7 @@ void EmitX64<JST>::EmitPackedHalvingSubS8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, minuend);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingSubU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingSubU16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm minuend = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -491,8 +476,7 @@ void EmitX64<JST>::EmitPackedHalvingSubU16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, minuend);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingSubS16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingSubS16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm minuend = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -588,43 +572,35 @@ void EmitPackedSubAdd(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, bool 
     ctx.reg_alloc.DefineValue(inst, reg_a_hi);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedAddSubU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedAddSubU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, true, false, false);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedAddSubS16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedAddSubS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, true, true, false);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSubAddU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSubAddU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, false, false, false);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSubAddS16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSubAddS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, false, true, false);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingAddSubU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingAddSubU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, true, false, true);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingAddSubS16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingAddSubS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, true, true, true);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingSubAddU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingSubAddU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, false, false, true);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedHalvingSubAddS16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedHalvingSubAddS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedSubAdd(code, ctx, inst, false, true, true);
 }
 
@@ -639,53 +615,43 @@ static void EmitPackedOperation(BlockOfCode* code, EmitContext& ctx, IR::Inst* i
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSaturatedAddU8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSaturatedAddU8(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddusb);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSaturatedAddS8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSaturatedAddS8(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddsb);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSaturatedSubU8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSaturatedSubU8(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubusb);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSaturatedSubS8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSaturatedSubS8(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubsb);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSaturatedAddU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSaturatedAddU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddusw);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSaturatedAddS16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSaturatedAddS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddsw);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSaturatedSubU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSaturatedSubU16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubusw);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSaturatedSubS16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSaturatedSubS16(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubsw);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedAbsDiffSumS8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedAbsDiffSumS8(EmitContext& ctx, IR::Inst* inst) {
     EmitPackedOperation(code, ctx, inst, &Xbyak::CodeGenerator::psadbw);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitPackedSelect(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitPackedSelect(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     size_t num_args_in_xmm = args[0].IsInXmm() + args[1].IsInXmm() + args[2].IsInXmm();
@@ -726,9 +692,3 @@ void EmitX64<JST>::EmitPackedSelect(EmitContext& ctx, IR::Inst* inst) {
 
 } // namespace BackendX64
 } // namespace Dynarmic
-
-#include "backend_x64/a32_jitstate.h"
-#include "backend_x64/a64_jitstate.h"
-
-template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A32JitState>;
-template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A64JitState>;

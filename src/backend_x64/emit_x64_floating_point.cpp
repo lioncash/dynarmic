@@ -30,7 +30,6 @@ constexpr u64 f64_min_s32 = 0xc1e0000000000000u; // -2147483648 as a double
 constexpr u64 f64_max_s32 = 0x41dfffffffc00000u; // 2147483647 as a double
 constexpr u64 f64_min_u32 = 0x0000000000000000u; // 0 as a double
 
-template <typename JST>
 static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;
 
@@ -47,7 +46,6 @@ static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::R
     code->L(end);
 }
 
-template <typename JST>
 static void DenormalsAreZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
     Xbyak::Label end;
 
@@ -66,7 +64,6 @@ static void DenormalsAreZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::R
     code->L(end);
 }
 
-template <typename JST>
 static void FlushToZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;
 
@@ -80,7 +77,6 @@ static void FlushToZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 
     code->L(end);
 }
 
-template <typename JST>
 static void FlushToZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
     Xbyak::Label end;
 
@@ -123,7 +119,6 @@ static void ZeroIfNaN64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_
     code->pand(xmm_value, xmm_scratch);
 }
 
-template <typename JST>
 static void FPThreeOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -132,12 +127,12 @@ static void FPThreeOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
     Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32<JST>(code, result, gpr_scratch);
-        DenormalsAreZero32<JST>(code, operand, gpr_scratch);
+        DenormalsAreZero32(code, result, gpr_scratch);
+        DenormalsAreZero32(code, operand, gpr_scratch);
     }
     (code->*fn)(result, operand);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero32<JST>(code, result, gpr_scratch);
+        FlushToZero32(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
@@ -146,7 +141,6 @@ static void FPThreeOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
 static void FPThreeOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -155,12 +149,12 @@ static void FPThreeOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64<JST>(code, result, gpr_scratch);
-        DenormalsAreZero64<JST>(code, operand, gpr_scratch);
+        DenormalsAreZero64(code, result, gpr_scratch);
+        DenormalsAreZero64(code, operand, gpr_scratch);
     }
     (code->*fn)(result, operand);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero64<JST>(code, result, gpr_scratch);
+        FlushToZero64(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
@@ -169,7 +163,6 @@ static void FPThreeOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
 static void FPTwoOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -177,12 +170,12 @@ static void FPTwoOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
     Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32<JST>(code, result, gpr_scratch);
+        DenormalsAreZero32(code, result, gpr_scratch);
     }
 
     (code->*fn)(result, result);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero32<JST>(code, result, gpr_scratch);
+        FlushToZero32(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
@@ -191,7 +184,6 @@ static void FPTwoOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
 static void FPTwoOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -199,12 +191,12 @@ static void FPTwoOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64<JST>(code, result, gpr_scratch);
+        DenormalsAreZero64(code, result, gpr_scratch);
     }
 
     (code->*fn)(result, result);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero64<JST>(code, result, gpr_scratch);
+        FlushToZero64(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
@@ -213,8 +205,7 @@ static void FPTwoOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
@@ -223,8 +214,7 @@ void EmitX64<JST>::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPAbs64(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPAbs64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
@@ -233,8 +223,7 @@ void EmitX64<JST>::EmitFPAbs64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPNeg32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPNeg32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
@@ -243,8 +232,7 @@ void EmitX64<JST>::EmitFPNeg32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPNeg64(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPNeg64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
@@ -253,57 +241,46 @@ void EmitX64<JST>::EmitFPNeg64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPAdd32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32<JST>(code, ctx, inst, &Xbyak::CodeGenerator::addss);
+void EmitX64::EmitFPAdd32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::addss);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPAdd64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64<JST>(code, ctx, inst, &Xbyak::CodeGenerator::addsd);
+void EmitX64::EmitFPAdd64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::addsd);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPDiv32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32<JST>(code, ctx, inst, &Xbyak::CodeGenerator::divss);
+void EmitX64::EmitFPDiv32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::divss);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPDiv64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64<JST>(code, ctx, inst, &Xbyak::CodeGenerator::divsd);
+void EmitX64::EmitFPDiv64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::divsd);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32<JST>(code, ctx, inst, &Xbyak::CodeGenerator::mulss);
+void EmitX64::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::mulss);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPMul64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64<JST>(code, ctx, inst, &Xbyak::CodeGenerator::mulsd);
+void EmitX64::EmitFPMul64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::mulsd);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
-    FPTwoOp32<JST>(code, ctx, inst, &Xbyak::CodeGenerator::sqrtss);
+void EmitX64::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
+    FPTwoOp32(code, ctx, inst, &Xbyak::CodeGenerator::sqrtss);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPSqrt64(EmitContext& ctx, IR::Inst* inst) {
-    FPTwoOp64<JST>(code, ctx, inst, &Xbyak::CodeGenerator::sqrtsd);
+void EmitX64::EmitFPSqrt64(EmitContext& ctx, IR::Inst* inst) {
+    FPTwoOp64(code, ctx, inst, &Xbyak::CodeGenerator::sqrtsd);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPSub32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32<JST>(code, ctx, inst, &Xbyak::CodeGenerator::subss);
+void EmitX64::EmitFPSub32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::subss);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPSub64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64<JST>(code, ctx, inst, &Xbyak::CodeGenerator::subsd);
+void EmitX64::EmitFPSub64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::subsd);
 }
 
-template <typename JST>
 static void SetFpscrNzcvFromFlags(BlockOfCode* code, EmitContext& ctx) {
     ctx.reg_alloc.ScratchGpr({HostLoc::RCX}); // shifting requires use of cl
     Xbyak::Reg32 nzcv = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -316,8 +293,7 @@ static void SetFpscrNzcvFromFlags(BlockOfCode* code, EmitContext& ctx) {
     code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_nzcv], nzcv);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm reg_a = ctx.reg_alloc.UseXmm(args[0]);
     Xbyak::Xmm reg_b = ctx.reg_alloc.UseXmm(args[1]);
@@ -329,11 +305,10 @@ void EmitX64<JST>::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
         code->ucomiss(reg_a, reg_b);
     }
 
-    SetFpscrNzcvFromFlags<JST>(code, ctx);
+    SetFpscrNzcvFromFlags(code, ctx);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm reg_a = ctx.reg_alloc.UseXmm(args[0]);
     Xbyak::Xmm reg_b = ctx.reg_alloc.UseXmm(args[1]);
@@ -345,21 +320,20 @@ void EmitX64<JST>::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
         code->ucomisd(reg_a, reg_b);
     }
 
-    SetFpscrNzcvFromFlags<JST>(code, ctx);
+    SetFpscrNzcvFromFlags(code, ctx);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32<JST>(code, result, gpr_scratch.cvt32());
+        DenormalsAreZero32(code, result, gpr_scratch.cvt32());
     }
     code->cvtss2sd(result, result);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero64<JST>(code, result, gpr_scratch);
+        FlushToZero64(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
@@ -368,18 +342,17 @@ void EmitX64<JST>::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64<JST>(code, result, gpr_scratch);
+        DenormalsAreZero64(code, result, gpr_scratch);
     }
     code->cvtsd2ss(result, result);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero32<JST>(code, result, gpr_scratch.cvt32());
+        FlushToZero32(code, result, gpr_scratch.cvt32());
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
@@ -388,8 +361,7 @@ void EmitX64<JST>::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -400,7 +372,7 @@ void EmitX64<JST>::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
     // Conversion to double is lossless, and allows for clamping.
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32<JST>(code, from, to);
+        DenormalsAreZero32(code, from, to);
     }
     code->cvtss2sd(from, from);
     // First time is to set flags
@@ -423,8 +395,7 @@ void EmitX64<JST>::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -440,7 +411,7 @@ void EmitX64<JST>::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
 
     if (!ctx.FPSCR_RoundTowardsZero() && !round_towards_zero) {
         if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero32<JST>(code, from, to);
+            DenormalsAreZero32(code, from, to);
         }
         code->cvtss2sd(from, from);
         ZeroIfNaN64(code, from, xmm_scratch);
@@ -460,7 +431,7 @@ void EmitX64<JST>::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg32 gpr_mask = ctx.reg_alloc.ScratchGpr().cvt32();
 
         if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero32<JST>(code, from, to);
+            DenormalsAreZero32(code, from, to);
         }
         code->cvtss2sd(from, from);
         ZeroIfNaN64(code, from, xmm_scratch);
@@ -486,8 +457,7 @@ void EmitX64<JST>::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -498,7 +468,7 @@ void EmitX64<JST>::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
     // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64<JST>(code, from, gpr_scratch.cvt64());
+        DenormalsAreZero64(code, from, gpr_scratch.cvt64());
     }
     // First time is to set flags
     if (round_towards_zero) {
@@ -520,8 +490,7 @@ void EmitX64<JST>::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -535,7 +504,7 @@ void EmitX64<JST>::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
 
     if (!ctx.FPSCR_RoundTowardsZero() && !round_towards_zero) {
         if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero64<JST>(code, from, gpr_scratch.cvt64());
+            DenormalsAreZero64(code, from, gpr_scratch.cvt64());
         }
         ZeroIfNaN64(code, from, xmm_scratch);
         // Bring into SSE range
@@ -554,7 +523,7 @@ void EmitX64<JST>::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg32 gpr_mask = ctx.reg_alloc.ScratchGpr().cvt32();
 
         if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero64<JST>(code, from, gpr_scratch.cvt64());
+            DenormalsAreZero64(code, from, gpr_scratch.cvt64());
         }
         ZeroIfNaN64(code, from, xmm_scratch);
         // Generate masks if out-of-signed-range
@@ -579,8 +548,7 @@ void EmitX64<JST>::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 from = ctx.reg_alloc.UseGpr(args[0]).cvt32();
     Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
@@ -592,8 +560,7 @@ void EmitX64<JST>::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
     Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
@@ -607,8 +574,7 @@ void EmitX64<JST>::EmitFPU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 from = ctx.reg_alloc.UseGpr(args[0]).cvt32();
     Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
@@ -620,8 +586,7 @@ void EmitX64<JST>::EmitFPS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-template <typename JST>
-void EmitX64<JST>::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
     Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
@@ -637,9 +602,3 @@ void EmitX64<JST>::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
 
 } // namespace BackendX64
 } // namespace Dynarmic
-
-#include "backend_x64/a32_jitstate.h"
-#include "backend_x64/a64_jitstate.h"
-
-template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A32JitState>;
-template class Dynarmic::BackendX64::EmitX64<Dynarmic::BackendX64::A64JitState>;

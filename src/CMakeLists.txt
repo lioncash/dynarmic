@@ -121,6 +121,8 @@ if (ARCHITECTURE_x86_64)
          backend_x64/abi.h
          backend_x64/block_of_code.cpp
          backend_x64/block_of_code.h
+         backend_x64/block_range_information.cpp
+         backend_x64/block_range_information.h
          backend_x64/callback.cpp
          backend_x64/callback.h
          backend_x64/constant_pool.cpp

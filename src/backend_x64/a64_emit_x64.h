@@ -7,6 +7,7 @@
 #pragma once
 
 #include "backend_x64/a64_jitstate.h"
+#include "backend_x64/block_range_information.h"
 #include "backend_x64/emit_x64.h"
 #include "dynarmic/A64/config.h"
 #include "frontend/A64/location_descriptor.h"
@@ -25,7 +26,7 @@ struct A64EmitContext final : public EmitContext {
     bool FPSCR_DN() const override;
 };
 
-class A64EmitX64 final : public EmitX64<A64JitState> {
+class A64EmitX64 final : public EmitX64 {
 public:
     A64EmitX64(BlockOfCode* code, A64::UserConfig conf);
     ~A64EmitX64();
@@ -36,8 +37,13 @@ public:
      */
     BlockDescriptor Emit(IR::Block& ir);
 
+    void ClearCache() override;
+
+    void InvalidateCacheRanges(const boost::icl::interval_set<u64>& ranges);
+
 protected:
     const A64::UserConfig conf;
+    BlockRangeInformation<u64> block_ranges;
 
     // Microinstruction emitters
 #define OPCODE(...)
