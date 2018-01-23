@@ -11,10 +11,6 @@
 namespace Dynarmic {
 namespace IR {
 
-void IREmitter::Unimplemented() {
-
-}
-
 U1 IREmitter::Imm1(bool imm1) {
     return U1(Value(imm1));
 }

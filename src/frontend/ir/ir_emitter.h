@@ -64,8 +64,6 @@ public:
 
     Block& block;
 
-    void Unimplemented();
-
     U1 Imm1(bool value);
     U8 Imm8(u8 value);
     U32 Imm32(u32 value);
