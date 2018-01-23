@@ -115,7 +115,7 @@ static void EmitConditionalSelect(BlockOfCode* code, EmitContext& ctx, IR::Inst*
     Xbyak::Reg then_ = ctx.reg_alloc.UseGpr(args[1]).changeBit(bitsize);
     Xbyak::Reg else_ = ctx.reg_alloc.UseScratchGpr(args[2]).changeBit(bitsize);
 
-    code->mov(nzcv, dword[r15 + offsetof(JST, CPSR_nzcv)]);
+    code->mov(nzcv, dword[r15 + code->GetJitStateInfo().offsetof_CPSR_nzcv]);
     // TODO: Flag optimization
     code->shr(nzcv, 28);
     code->imul(nzcv, nzcv, 0b00010000'10000001);

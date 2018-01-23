@@ -43,7 +43,7 @@ static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::R
     code->cmp(gpr_scratch, u32(0x007FFFFE));
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(JST, FPSCR_IDC)], u32(1 << 7));
+    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_IDC], u32(1 << 7));
     code->L(end);
 }
 
@@ -62,7 +62,7 @@ static void DenormalsAreZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::R
     code->cmp(gpr_scratch, penult_denormal);
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(JST, FPSCR_IDC)], u32(1 << 7));
+    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_IDC], u32(1 << 7));
     code->L(end);
 }
 
@@ -76,7 +76,7 @@ static void FlushToZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 
     code->cmp(gpr_scratch, u32(0x007FFFFE));
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(JST, FPSCR_UFC)], u32(1 << 3));
+    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_UFC], u32(1 << 3));
     code->L(end);
 }
 
@@ -95,7 +95,7 @@ static void FlushToZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg64 
     code->cmp(gpr_scratch, penult_denormal);
     code->ja(end);
     code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + offsetof(JST, FPSCR_UFC)], u32(1 << 3));
+    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_UFC], u32(1 << 3));
     code->L(end);
 }
 
@@ -313,7 +313,7 @@ static void SetFpscrNzcvFromFlags(BlockOfCode* code, EmitContext& ctx) {
     code->rcl(cl, 3);
     code->shl(nzcv, cl);
     code->and_(nzcv, 0xF0000000);
-    code->mov(dword[r15 + offsetof(JST, FPSCR_nzcv)], nzcv);
+    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_nzcv], nzcv);
 }
 
 template <typename JST>

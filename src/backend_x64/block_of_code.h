@@ -104,6 +104,8 @@ public:
 
     bool DoesCpuSupport(Xbyak::util::Cpu::Type type) const;
 
+    JitStateInfo GetJitStateInfo() const { return jsi; }
+
 private:
     RunCodeCallbacks cb;
     JitStateInfo jsi;

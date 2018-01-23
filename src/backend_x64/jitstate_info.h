@@ -20,12 +20,28 @@ struct JitStateInfo {
         , offsetof_cycles_to_run(offsetof(JitStateType, cycles_to_run))
         , offsetof_save_host_MXCSR(offsetof(JitStateType, save_host_MXCSR))
         , offsetof_guest_MXCSR(offsetof(JitStateType, guest_MXCSR))
+        , offsetof_rsb_ptr(offsetof(JitStateType, rsb_ptr))
+        , rsb_ptr_mask(JitStateType::RSBPtrMask)
+        , offsetof_rsb_location_descriptors(offsetof(JitStateType, rsb_location_descriptors))
+        , offsetof_rsb_codeptrs(offsetof(JitStateType, rsb_codeptrs))
+        , offsetof_CPSR_nzcv(offsetof(JitStateType, CPSR_nzcv))
+        , offsetof_FPSCR_nzcv(offsetof(JitStateType, FPSCR_nzcv))
+        , offsetof_FPSCR_IDC(offsetof(JitStateType, FPSCR_IDC))
+        , offsetof_FPSCR_UFC(offsetof(JitStateType, FPSCR_UFC))
     {}
 
     const size_t offsetof_cycles_remaining;
     const size_t offsetof_cycles_to_run;
     const size_t offsetof_save_host_MXCSR;
     const size_t offsetof_guest_MXCSR;
+    const size_t offsetof_rsb_ptr;
+    const size_t rsb_ptr_mask;
+    const size_t offsetof_rsb_location_descriptors;
+    const size_t offsetof_rsb_codeptrs;
+    const size_t offsetof_CPSR_nzcv;
+    const size_t offsetof_FPSCR_nzcv;
+    const size_t offsetof_FPSCR_IDC;
+    const size_t offsetof_FPSCR_UFC;
 };
 
 } // namespace BackendX64

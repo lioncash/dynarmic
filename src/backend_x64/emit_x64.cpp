@@ -73,19 +73,19 @@ void EmitX64<JST>::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_r
                             ? iter->second.entrypoint
                             : code->GetReturnFromRunCodeAddress();
 
-    code->mov(index_reg.cvt32(), dword[r15 + offsetof(JST, rsb_ptr)]);
+    code->mov(index_reg.cvt32(), dword[r15 + code->GetJitStateInfo().offsetof_rsb_ptr]);
 
     code->mov(loc_desc_reg, target.Value());
 
     patch_information[target].mov_rcx.emplace_back(code->getCurr());
     EmitPatchMovRcx(target_code_ptr);
 
-    code->mov(qword[r15 + index_reg * 8 + offsetof(JST, rsb_location_descriptors)], loc_desc_reg);
-    code->mov(qword[r15 + index_reg * 8 + offsetof(JST, rsb_codeptrs)], rcx);
+    code->mov(qword[r15 + index_reg * 8 + code->GetJitStateInfo().offsetof_rsb_location_descriptors], loc_desc_reg);
+    code->mov(qword[r15 + index_reg * 8 + code->GetJitStateInfo().offsetof_rsb_codeptrs], rcx);
 
     code->add(index_reg.cvt32(), 1);
-    code->and_(index_reg.cvt32(), u32(JST::RSBPtrMask));
-    code->mov(dword[r15 + offsetof(JST, rsb_ptr)], index_reg.cvt32());
+    code->and_(index_reg.cvt32(), u32(code->GetJitStateInfo().rsb_ptr_mask));
+    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_rsb_ptr], index_reg.cvt32());
 }
 
 template <typename JST>
@@ -147,7 +147,7 @@ void EmitX64<JST>::EmitGetNZCVFromOp(EmitContext& ctx, IR::Inst* inst) {
 template <typename JST>
 void EmitX64<JST>::EmitAddCycles(size_t cycles) {
     ASSERT(cycles < std::numeric_limits<u32>::max());
-    code->sub(qword[r15 + offsetof(JST, cycles_remaining)], static_cast<u32>(cycles));
+    code->sub(qword[r15 + code->GetJitStateInfo().offsetof_cycles_remaining], static_cast<u32>(cycles));
 }
 
 template <typename JST>
@@ -155,7 +155,7 @@ Xbyak::Label EmitX64<JST>::EmitCond(IR::Cond cond) {
     Xbyak::Label label;
 
     const Xbyak::Reg32 cpsr = eax;
-    code->mov(cpsr, dword[r15 + offsetof(JST, CPSR_nzcv)]);
+    code->mov(cpsr, dword[r15 + code->GetJitStateInfo().offsetof_CPSR_nzcv]);
 
     constexpr size_t n_shift = 31;
     constexpr size_t z_shift = 30;
