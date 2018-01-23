@@ -219,9 +219,9 @@ INST(LDTRB,                  "LDTRB",                                     "00111
 INST(LDTRSB,                 "LDTRSB",                                    "00111000oo0iiiiiiiii10nnnnnttttt")
 INST(STTRH,                  "STTRH",                                     "01111000000iiiiiiiii10nnnnnttttt")
 INST(LDTRH,                  "LDTRH",                                     "01111000010iiiiiiiii10nnnnnttttt")
-INST(LDTRSH,                 "LDTRSH",                                    "011110001-0iiiiiiiii10nnnnnttttt")
-INST(STTR,                   "STTR",                                      "1z111000000iiiiiiiii10nnnnnttttt")
-INST(LDTR,                   "LDTR",                                      "1z111000010iiiiiiiii10nnnnnttttt")
+INST(LDTRSH,                 "LDTRSH",                                    "01111000oo0iiiiiiiii10nnnnnttttt")
+INST(STTR,                   "STTR",                                      "zz111000000iiiiiiiii10nnnnnttttt")
+INST(LDTR,                   "LDTR",                                      "zz111000010iiiiiiiii10nnnnnttttt")
 INST(LDTRSW,                 "LDTRSW",                                    "10111000100iiiiiiiii10nnnnnttttt")
 
 // Loads and stores - Atomic memory options

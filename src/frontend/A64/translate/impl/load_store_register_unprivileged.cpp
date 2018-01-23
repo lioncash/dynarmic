@@ -9,9 +9,9 @@
 namespace Dynarmic {
 namespace A64 {
 
-static bool store_register(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize, Imm<9> imm9,
-                           Reg Rn, Reg Rt) {
-    const u64 offset = imm9.ZeroExtend<u64>();
+static bool StoreRegister(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize,
+                          const Imm<9> imm9, const Reg Rn, const Reg Rt) {
+    const u64 offset = imm9.SignExtend<u64>();
     AccType acctype = AccType::UNPRIV;
     IR::U64 address;
 
@@ -27,9 +27,9 @@ static bool store_register(TranslatorVisitor& tv, IREmitter& ir, const size_t da
     return true;
 }
 
-static bool load_register(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize, Imm<9> imm9,
-                          Reg Rn, Reg Rt) {
-    const u64 offset = imm9.ZeroExtend<u64>();
+static bool LoadRegister(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize,
+                         const Imm<9> imm9, const Reg Rn, const Reg Rt) {
+    const u64 offset = imm9.SignExtend<u64>();
     AccType acctype = AccType::UNPRIV;
     IR::U64 address;
 
@@ -41,27 +41,29 @@ static bool load_register(TranslatorVisitor& tv, IREmitter& ir, const size_t dat
     }
     address = ir.Add(address, ir.Imm64(offset));
     IR::UAny data = tv.Mem(address, datasize / 8, acctype);
-    tv.X(datasize, Rt, tv.ZeroExtend(data, 32));
+    // max is used to zeroextend < 32 to 32, and > 32 to 64
+    const size_t extended_size = std::max<size_t>(32, datasize);
+    tv.X(extended_size, Rt, tv.ZeroExtend(data, extended_size));
     return true;
 }
 
-static bool load_register_signed(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize,
-                                 Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt) {
-    const u64 offset = imm9.ZeroExtend<u64>();
+static bool LoadRegisterSigned(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize,
+                               const Imm<2> opc, const Imm<9> imm9, const Reg Rn, const Reg Rt) {
+    const u64 offset = imm9.SignExtend<u64>();
     AccType acctype = AccType::UNPRIV;
     MemOp memop;
-    bool signed_;
+    bool is_signed;
     size_t regsize;
     if (opc.Bit<1>() == 0) {
         // store or zero-extending load
         memop = opc.Bit<0>() ? MemOp::LOAD : MemOp::STORE;
         regsize = 32;
-        signed_ = false;
+        is_signed = false;
     } else {
         // sign-extending load
         memop = MemOp::LOAD;
         regsize = opc.Bit<0>() ? 32 : 64;
-        signed_ = true;
+        is_signed = true;
     }
 
     IR::U64 address;
@@ -78,11 +80,11 @@ static bool load_register_signed(TranslatorVisitor& tv, IREmitter& ir, const siz
         tv.Mem(address, datasize / 8, acctype, tv.X(datasize, Rt));
         break;
     case MemOp::LOAD: {
-        IR::U8 data = tv.Mem(address, datasize / 8, acctype);
-        if (signed_) {
-            tv.X(datasize, Rt, tv.SignExtend(data, regsize));
+        IR::UAny data = tv.Mem(address, datasize / 8, acctype);
+        if (is_signed) {
+            tv.X(regsize, Rt, tv.SignExtend(data, regsize));
         } else {
-            tv.X(datasize, Rt, tv.ZeroExtend(data, regsize));
+            tv.X(regsize, Rt, tv.ZeroExtend(data, regsize));
         }
         break;
     }
@@ -94,39 +96,39 @@ static bool load_register_signed(TranslatorVisitor& tv, IREmitter& ir, const siz
 }
 
 bool TranslatorVisitor::STTRB(Imm<9> imm9, Reg Rn, Reg Rt) {
-    return store_register(*this, ir, 8, imm9, Rn, Rt);
+    return StoreRegister(*this, ir, 8, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::STTRH(Imm<9> imm9, Reg Rn, Reg Rt) {
-    return store_register(*this, ir, 16, imm9, Rn, Rt);
+    return StoreRegister(*this, ir, 16, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::STTR(Imm<2> size, Imm<9> imm9, Reg Rn, Reg Rt) {
     const size_t scale = size.ZeroExtend<size_t>();
     const size_t datasize = 8 << scale;
-    return store_register(*this, ir, datasize, imm9, Rn, Rt);
+    return StoreRegister(*this, ir, datasize, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTRB(Imm<9> imm9, Reg Rn, Reg Rt) {
-    return load_register(*this, ir, 8, imm9, Rn, Rt);
+    return LoadRegister(*this, ir, 8, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTRH(Imm<9> imm9, Reg Rn, Reg Rt) {
-    return load_register(*this, ir, 16, imm9, Rn, Rt);
+    return LoadRegister(*this, ir, 16, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTR(Imm<2> size, Imm<9> imm9, Reg Rn, Reg Rt) {
     const size_t scale = size.ZeroExtend<size_t>();
     const size_t datasize = 8 << scale;
-    return load_register(*this, ir, datasize, imm9, Rn, Rt);
+    return LoadRegister(*this, ir, datasize, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTRSB(Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt) {
-    return load_register_signed(*this, ir, 8, opc, imm9, Rn, Rt);
+    return LoadRegisterSigned(*this, ir, 8, opc, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTRSH(Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt) {
-    return load_register_signed(*this, ir, 16, opc, imm9, Rn, Rt);
+    return LoadRegisterSigned(*this, ir, 16, opc, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTRSW(Imm<9> imm9, Reg Rn, Reg Rt) {
@@ -136,13 +138,13 @@ bool TranslatorVisitor::LDTRSW(Imm<9> imm9, Reg Rn, Reg Rt) {
 
     if (Rn == Reg::SP) {
         // TODO: Check Stack Alignment
-        address = SP(32);
+        address = SP(64);
     } else {
-        address = X(32, Rn);
+        address = X(64, Rn);
     }
     address = ir.Add(address, ir.Imm64(offset));
     IR::UAny data = Mem(address, 4, acctype);
-    X(32, Rt, SignExtend(data, 64));
+    X(64, Rt, SignExtend(data, 64));
     return true;
 }
 } // namespace A64
