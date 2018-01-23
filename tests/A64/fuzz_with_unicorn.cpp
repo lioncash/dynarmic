@@ -89,6 +89,7 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Ve
     uni.Run();
 
     REQUIRE(uni.GetRegisters() == jit.GetRegisters());
+    REQUIRE(uni.GetVectors() == jit.GetVectors());
     REQUIRE(uni.GetPC() == jit.GetPC());
     REQUIRE(uni.GetSP() == jit.GetSP());
     REQUIRE((uni.GetPstate() & 0xF0000000) == (jit.GetPstate() & 0xF0000000));
