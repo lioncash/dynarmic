@@ -656,6 +656,34 @@ U128 IREmitter::VectorAnd(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorAnd, a, b);
 }
 
+U128 IREmitter::VectorLowerPairedAdd8(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorLowerPairedAdd8, a, b);
+}
+
+U128 IREmitter::VectorLowerPairedAdd16(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorLowerPairedAdd16, a, b);
+}
+
+U128 IREmitter::VectorLowerPairedAdd32(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorLowerPairedAdd32, a, b);
+}
+
+U128 IREmitter::VectorPairedAdd8(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorPairedAdd8, a, b);
+}
+
+U128 IREmitter::VectorPairedAdd16(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorPairedAdd16, a, b);
+}
+
+U128 IREmitter::VectorPairedAdd32(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorPairedAdd32, a, b);
+}
+
+U128 IREmitter::VectorPairedAdd64(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorPairedAdd64, a, b);
+}
+
 U32 IREmitter::FPAbs32(const U32& a) {
     return Inst<U32>(Opcode::FPAbs32, a);
 }

@@ -53,6 +53,170 @@ void EmitX64<JST>::EmitVectorAnd(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pand);
 }
 
+template <typename JST>
+void EmitX64<JST>::EmitVectorLowerPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+    code->punpcklqdq(xmm_a, xmm_b);
+    code->movdqa(tmp, xmm_a);
+    code->psllw(xmm_a, 8);
+    code->paddw(xmm_a, tmp);
+    code->pxor(tmp, tmp);
+    code->psrlw(xmm_a, 8);
+    code->packuswb(xmm_a, tmp);
+
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitVectorLowerPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+    code->punpcklqdq(xmm_a, xmm_b);
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        code->pxor(tmp, tmp);
+        code->phaddw(xmm_a, tmp);
+    } else {
+        code->movdqa(tmp, xmm_a);
+        code->pslld(xmm_a, 16);
+        code->paddd(xmm_a, tmp);
+        code->pxor(tmp, tmp);
+        code->psrad(xmm_a, 16);
+        code->packssdw(xmm_a, tmp); // Note: packusdw is SSE4.1, hence the arithmetic shift above.
+    }
+
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitVectorLowerPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+    code->punpcklqdq(xmm_a, xmm_b);
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        code->pxor(tmp, tmp);
+        code->phaddd(xmm_a, tmp);
+    } else {
+        code->movdqa(tmp, xmm_a);
+        code->psllq(xmm_a, 32);
+        code->paddq(xmm_a, tmp);
+        code->psrlq(xmm_a, 32);
+        code->pshufd(xmm_a, xmm_a, 0b11011000);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitVectorPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+    Xbyak::Xmm d = ctx.reg_alloc.ScratchXmm();
+
+    code->movdqa(c, a);
+    code->movdqa(d, b);
+    code->psllw(a, 8);
+    code->psllw(b, 8);
+    code->paddw(a, c);
+    code->paddw(b, d);
+    code->psrlw(a, 8);
+    code->psrlw(b, 8);
+    code->packuswb(a, b);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitVectorPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
+
+        code->phaddw(a, b);
+
+        ctx.reg_alloc.DefineValue(inst, a);
+    } else {
+        Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+        Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Xmm d = ctx.reg_alloc.ScratchXmm();
+
+        code->movdqa(c, a);
+        code->movdqa(d, b);
+        code->pslld(a, 16);
+        code->pslld(b, 16);
+        code->paddd(a, c);
+        code->paddd(b, d);
+        code->psrad(a, 16);
+        code->psrad(b, 16);
+        code->packssdw(a, b);
+
+        ctx.reg_alloc.DefineValue(inst, a);
+    }
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitVectorPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
+
+        code->phaddd(a, b);
+
+        ctx.reg_alloc.DefineValue(inst, a);
+    } else {
+        Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+        Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Xmm d = ctx.reg_alloc.ScratchXmm();
+
+        code->movdqa(c, a);
+        code->movdqa(d, b);
+        code->psllq(a, 32);
+        code->psllq(b, 32);
+        code->paddq(a, c);
+        code->paddq(b, d);
+        code->shufps(a, b, 0b11011101);
+
+        ctx.reg_alloc.DefineValue(inst, a);
+    }
+}
+
+template <typename JST>
+void EmitX64<JST>::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+
+    code->movdqa(c, a);
+    code->punpcklqdq(a, b);
+    code->punpckhqdq(c, b);
+    code->paddq(a, c);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
 } // namespace BackendX64
 } // namespace Dynarmic
 

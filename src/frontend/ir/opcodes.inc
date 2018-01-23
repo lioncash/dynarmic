@@ -166,6 +166,13 @@ OPCODE(VectorAdd16,             T::U128,        T::U128,        T::U128         
 OPCODE(VectorAdd32,             T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorAdd64,             T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorAnd,               T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorLowerPairedAdd8,   T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorLowerPairedAdd16,  T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorLowerPairedAdd32,  T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorPairedAdd8,        T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorPairedAdd16,       T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorPairedAdd32,       T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorPairedAdd64,       T::U128,        T::U128,        T::U128                         )
 
 // Floating-point operations
 OPCODE(FPAbs32,                 T::U32,         T::U32                                          )
