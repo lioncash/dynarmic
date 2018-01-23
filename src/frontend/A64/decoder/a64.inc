@@ -337,8 +337,8 @@ INST(CSINV,                  "CSINV",                                     "z1011
 INST(CSNEG,                  "CSNEG",                                     "z1011010100mmmmmcccc01nnnnnddddd")
 
 // Data Processing - Register - 3 source
-//INST(MADD,                   "MADD",                                      "z0011011000mmmmm0aaaaannnnnddddd")
-//INST(MSUB,                   "MSUB",                                      "z0011011000mmmmm1aaaaannnnnddddd")
+INST(MADD,                   "MADD",                                      "z0011011000mmmmm0aaaaannnnnddddd")
+INST(MSUB,                   "MSUB",                                      "z0011011000mmmmm1aaaaannnnnddddd")
 //INST(SMADDL,                 "SMADDL",                                    "10011011001mmmmm0aaaaannnnnddddd")
 //INST(SMSUBL,                 "SMSUBL",                                    "10011011001mmmmm1aaaaannnnnddddd")
 //INST(SMULH,                  "SMULH",                                     "10011011010mmmmm011111nnnnnddddd")

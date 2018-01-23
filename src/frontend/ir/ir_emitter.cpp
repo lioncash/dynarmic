@@ -265,6 +265,14 @@ U64 IREmitter::Mul(const U64& a, const U64& b) {
     return Inst<U64>(Opcode::Mul64, a, b);
 }
 
+U32U64 IREmitter::Mul(const U32U64& a, const U32U64& b) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::Mul32, a, b);
+    }
+
+    return Inst<U64>(Opcode::Mul64, a, b);
+}
+
 U32 IREmitter::And(const U32& a, const U32& b) {
     return Inst<U32>(Opcode::And32, a, b);
 }
