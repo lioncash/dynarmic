@@ -35,5 +35,49 @@ bool TranslatorVisitor::MSUB(bool sf, Reg Rm, Reg Ra, Reg Rn, Reg Rd) {
     return true;
 }
 
+bool TranslatorVisitor::SMADDL(Reg Rm, Reg Ra, Reg Rn, Reg Rd) {
+    const IR::U64 a = X(64, Ra);
+    const IR::U64 m = ir.SignExtendToLong(X(32, Rm));
+    const IR::U64 n = ir.SignExtendToLong(X(32, Rn));
+
+    const IR::U64 result = ir.Add(a, ir.Mul(n, m));
+
+    X(64, Rd, result);
+    return true;
+}
+
+bool TranslatorVisitor::SMSUBL(Reg Rm, Reg Ra, Reg Rn, Reg Rd) {
+    const IR::U64 a = X(64, Ra);
+    const IR::U64 m = ir.SignExtendToLong(X(32, Rm));
+    const IR::U64 n = ir.SignExtendToLong(X(32, Rn));
+
+    const IR::U64 result = ir.Sub(a, ir.Mul(n, m));
+
+    X(64, Rd, result);
+    return true;
+}
+
+bool TranslatorVisitor::UMADDL(Reg Rm, Reg Ra, Reg Rn, Reg Rd) {
+    const IR::U64 a = X(64, Ra);
+    const IR::U64 m = ir.ZeroExtendToLong(X(32, Rm));
+    const IR::U64 n = ir.ZeroExtendToLong(X(32, Rn));
+
+    const IR::U64 result = ir.Add(a, ir.Mul(n, m));
+
+    X(64, Rd, result);
+    return true;
+}
+
+bool TranslatorVisitor::UMSUBL(Reg Rm, Reg Ra, Reg Rn, Reg Rd) {
+    const IR::U64 a = X(64, Ra);
+    const IR::U64 m = ir.ZeroExtendToLong(X(32, Rm));
+    const IR::U64 n = ir.ZeroExtendToLong(X(32, Rn));
+
+    const IR::U64 result = ir.Sub(a, ir.Mul(n, m));
+
+    X(64, Rd, result);
+    return true;
+}
+
 } // namespace A64
 } // namespace Dynarmic
