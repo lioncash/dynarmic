@@ -19,6 +19,16 @@ bool TranslatorVisitor::CLZ_int(bool sf, Reg Rn, Reg Rd) {
     return true;
 }
 
+bool TranslatorVisitor::CLS_int(bool sf, Reg Rn, Reg Rd) {
+    const size_t datasize = sf ? 64 : 32;
+
+    const IR::U32U64 operand = X(datasize, Rn);
+    const IR::U32U64 result = ir.Sub(ir.CountLeadingZeros(ir.Eor(operand, ir.ArithmeticShiftRight(operand, ir.Imm8(u8(datasize))))), I(datasize, 1));
+
+    X(datasize, Rd, result);
+    return true;
+}
+
 bool TranslatorVisitor::REV(bool sf, bool opc_0, Reg Rn, Reg Rd) {
     const size_t datasize = sf ? 64 : 32;
 
