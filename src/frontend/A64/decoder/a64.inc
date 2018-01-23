@@ -829,7 +829,7 @@ INST(ADD_vector,             "ADD (vector)",                              "0Q001
 //INST(MUL_vec,                "MUL (vector)",                              "0Q001110zz1mmmmm100111nnnnnddddd")
 //INST(SMAXP,                  "SMAXP",                                     "0Q001110zz1mmmmm101001nnnnnddddd")
 //INST(SMINP,                  "SMINP",                                     "0Q001110zz1mmmmm101011nnnnnddddd")
-//INST(ADDP_vec,               "ADDP (vector)",                             "0Q001110zz1mmmmm101111nnnnnddddd")
+INST(ADDP_vec,               "ADDP (vector)",                             "0Q001110zz1mmmmm101111nnnnnddddd")
 //INST(FMLAL_vec_1,            "FMLAL, FMLAL2 (vector)",                    "0Q0011100z1mmmmm111011nnnnnddddd")
 //INST(FMLAL_vec_2,            "FMLAL, FMLAL2 (vector)",                    "0Q1011100z1mmmmm110011nnnnnddddd")
 INST(AND_asimd,              "AND (vector)",                              "0Q001110001mmmmm000111nnnnnddddd")
