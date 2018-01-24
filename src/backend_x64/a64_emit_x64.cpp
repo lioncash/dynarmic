@@ -402,8 +402,8 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
     code->sub(rsp, ABI_SHADOW_SPACE);
     code->movaps(code->xword[code->ABI_PARAM3], xmm_value);
 
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code, [&](Xbyak::Reg64 return_value, Xbyak::Reg64 vaddr) {
-        ASSERT(return_value == code->ABI_PARAM2 && vaddr == code->ABI_PARAM3);
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value_ptr) {
+        ASSERT(vaddr == code->ABI_PARAM2 && value_ptr == code->ABI_PARAM3);
     });
 
     code->add(rsp, ABI_SHADOW_SPACE);
