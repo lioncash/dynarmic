@@ -6,10 +6,6 @@
 
 #pragma once
 
-#include <initializer_list>
-
-#include <dynarmic/A32/coprocessor_util.h>
-
 #include "common/common_types.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/location_descriptor.h"
