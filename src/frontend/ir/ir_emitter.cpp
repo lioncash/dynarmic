@@ -269,6 +269,38 @@ U32U64 IREmitter::Mul(const U32U64& a, const U32U64& b) {
     return Inst<U64>(Opcode::Mul64, a, b);
 }
 
+U32 IREmitter::UnsignedDiv(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::UnsignedDiv32, a, b);
+}
+
+U64 IREmitter::UnsignedDiv(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::UnsignedDiv64, a, b);
+}
+
+U32U64 IREmitter::UnsignedDiv(const U32U64& a, const U32U64& b) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::UnsignedDiv32, a, b);
+    }
+
+    return Inst<U64>(Opcode::UnsignedDiv64, a, b);
+}
+
+U32 IREmitter::SignedDiv(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::SignedDiv32, a, b);
+}
+
+U64 IREmitter::SignedDiv(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::SignedDiv64, a, b);
+}
+
+U32U64 IREmitter::SignedDiv(const U32U64& a, const U32U64& b) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::SignedDiv32, a, b);
+    }
+
+    return Inst<U64>(Opcode::SignedDiv64, a, b);
+}
+
 U32 IREmitter::And(const U32& a, const U32& b) {
     return Inst<U32>(Opcode::And32, a, b);
 }

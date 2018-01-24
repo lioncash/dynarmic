@@ -878,6 +878,90 @@ void EmitX64::EmitMul64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void EmitX64::EmitUnsignedDiv32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    ctx.reg_alloc.ScratchGpr({HostLoc::RAX});
+    ctx.reg_alloc.ScratchGpr({HostLoc::RDX});
+    Xbyak::Reg32 dividend = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Reg32 divisor = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+
+    Xbyak::Label end;
+
+    code->xor_(eax, eax);
+    code->test(divisor, divisor);
+    code->jz(end);
+    code->mov(eax, dividend);
+    code->xor_(edx, edx);
+    code->div(divisor);
+    code->L(end);
+
+    ctx.reg_alloc.DefineValue(inst, eax);
+}
+
+void EmitX64::EmitUnsignedDiv64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    ctx.reg_alloc.ScratchGpr({HostLoc::RAX});
+    ctx.reg_alloc.ScratchGpr({HostLoc::RDX});
+    Xbyak::Reg64 dividend = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 divisor = ctx.reg_alloc.UseGpr(args[1]);
+
+    Xbyak::Label end;
+
+    code->xor_(eax, eax);
+    code->test(divisor, divisor);
+    code->jz(end);
+    code->mov(rax, dividend);
+    code->xor_(edx, edx);
+    code->div(divisor);
+    code->L(end);
+
+    ctx.reg_alloc.DefineValue(inst, rax);
+}
+
+void EmitX64::EmitSignedDiv32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    ctx.reg_alloc.ScratchGpr({HostLoc::RAX});
+    ctx.reg_alloc.ScratchGpr({HostLoc::RDX});
+    Xbyak::Reg32 dividend = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Reg32 divisor = ctx.reg_alloc.UseGpr(args[1]).cvt32();
+
+    Xbyak::Label end;
+
+    code->xor_(eax, eax);
+    code->test(divisor, divisor);
+    code->jz(end);
+    code->mov(eax, dividend);
+    code->cdq();
+    code->idiv(divisor);
+    code->L(end);
+
+    ctx.reg_alloc.DefineValue(inst, eax);
+}
+
+void EmitX64::EmitSignedDiv64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    ctx.reg_alloc.ScratchGpr({HostLoc::RAX});
+    ctx.reg_alloc.ScratchGpr({HostLoc::RDX});
+    Xbyak::Reg64 dividend = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 divisor = ctx.reg_alloc.UseGpr(args[1]);
+
+    Xbyak::Label end;
+
+    code->xor_(eax, eax);
+    code->test(divisor, divisor);
+    code->jz(end);
+    code->mov(rax, dividend);
+    code->cqo();
+    code->idiv(divisor);
+    code->L(end);
+
+    ctx.reg_alloc.DefineValue(inst, rax);
+}
+
 void EmitX64::EmitAnd32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

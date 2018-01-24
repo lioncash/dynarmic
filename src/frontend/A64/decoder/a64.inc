@@ -274,8 +274,8 @@ INST(LDR_imm_fpsimd_2,       "LDR (immediate, SIMD&FP)",                  "zz111
 //INST(LDRA,                   "LDRAA, LDRAB",                              "11111000MS1iiiiiiiiiW1nnnnnttttt")
 
 // Data Processing - Register - 2 source
-//INST(UDIV,                   "UDIV",                                      "z0011010110mmmmm000010nnnnnddddd")
-//INST(SDIV,                   "SDIV",                                      "z0011010110mmmmm000011nnnnnddddd")
+INST(UDIV,                   "UDIV",                                      "z0011010110mmmmm000010nnnnnddddd")
+INST(SDIV,                   "SDIV",                                      "z0011010110mmmmm000011nnnnnddddd")
 INST(LSLV,                   "LSLV",                                      "z0011010110mmmmm001000nnnnnddddd")
 INST(LSRV,                   "LSRV",                                      "z0011010110mmmmm001001nnnnnddddd")
 INST(ASRV,                   "ASRV",                                      "z0011010110mmmmm001010nnnnnddddd")

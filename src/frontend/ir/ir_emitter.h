@@ -110,6 +110,12 @@ public:
     U32 Mul(const U32& a, const U32& b);
     U64 Mul(const U64& a, const U64& b);
     U32U64 Mul(const U32U64& a, const U32U64& b);
+    U32 UnsignedDiv(const U32& a, const U32& b);
+    U64 UnsignedDiv(const U64& a, const U64& b);
+    U32U64 UnsignedDiv(const U32U64& a, const U32U64& b);
+    U32 SignedDiv(const U32& a, const U32& b);
+    U64 SignedDiv(const U64& a, const U64& b);
+    U32U64 SignedDiv(const U32U64& a, const U32U64& b);
     U32 And(const U32& a, const U32& b);
     U32U64 And(const U32U64& a, const U32U64& b);
     U32 Eor(const U32& a, const U32& b);
