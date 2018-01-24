@@ -99,6 +99,17 @@ inline int HighestSetBit(T value) {
 }
 
 template <typename T>
+inline size_t LowestSetBit(T value) {
+    auto x = static_cast<std::make_unsigned_t<T>>(value);
+    size_t result = 0;
+    while ((x & 1) == 0) {
+        x >>= 1;
+        result++;
+    }
+    return result;
+}
+
+template <typename T>
 inline T Ones(size_t count) {
     ASSERT_MSG(count <= BitSize<T>(), "count larger than bitsize of T");
     if (count == BitSize<T>())
