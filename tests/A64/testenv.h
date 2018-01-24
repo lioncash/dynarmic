@@ -50,6 +50,9 @@ public:
     std::uint64_t MemoryRead64(u64 vaddr) override {
         return u64(MemoryRead32(vaddr)) | u64(MemoryRead32(vaddr + 4)) << 32;
     }
+    Vector MemoryRead128(u64 vaddr) override {
+        return {MemoryRead64(vaddr), MemoryRead64(vaddr + 8)};
+    }
 
     void MemoryWrite8(u64 vaddr, std::uint8_t value) override {
         if (vaddr < code_mem.size() * sizeof(u32)) {
@@ -68,6 +71,10 @@ public:
     void MemoryWrite64(u64 vaddr, std::uint64_t value) override {
         MemoryWrite32(vaddr, static_cast<u32>(value));
         MemoryWrite32(vaddr + 4, static_cast<u32>(value >> 32));
+    }
+    void MemoryWrite128(u64 vaddr, Vector value) override {
+        MemoryWrite64(vaddr, value[0]);
+        MemoryWrite64(vaddr + 4, value[1]);
     }
 
     void InterpreterFallback(u64 pc, size_t num_instructions) override { ASSERT_MSG(false, "InterpreterFallback(%" PRIx64 ", %zu)", pc, num_instructions); }

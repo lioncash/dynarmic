@@ -100,6 +100,7 @@ using U64 = TypedValue<Type::U64>;
 using U128 = TypedValue<Type::U128>;
 using U32U64 = TypedValue<Type::U32 | Type::U64>;
 using UAny = TypedValue<Type::U8 | Type::U16 | Type::U32 | Type::U64>;
+using UAnyU128 = TypedValue<Type::U8 | Type::U16 | Type::U32 | Type::U64 | Type::U128>;
 using NZCV = TypedValue<Type::NZCVFlags>;
 
 } // namespace IR

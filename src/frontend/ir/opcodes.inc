@@ -237,10 +237,12 @@ A64OPC(ReadMemory8,             T::U8,          T::U64                          
 A64OPC(ReadMemory16,            T::U16,         T::U64                                          )
 A64OPC(ReadMemory32,            T::U32,         T::U64                                          )
 A64OPC(ReadMemory64,            T::U64,         T::U64                                          )
+A64OPC(ReadMemory128,           T::U128,        T::U64                                          )
 A64OPC(WriteMemory8,            T::Void,        T::U64,         T::U8                           )
 A64OPC(WriteMemory16,           T::Void,        T::U64,         T::U16                          )
 A64OPC(WriteMemory32,           T::Void,        T::U64,         T::U32                          )
 A64OPC(WriteMemory64,           T::Void,        T::U64,         T::U64                          )
+A64OPC(WriteMemory128,          T::Void,        T::U64,         T::U128                         )
 
 // Coprocessor
 A32OPC(CoprocInternalOperation, T::Void,        T::CoprocInfo                                   )

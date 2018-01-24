@@ -51,8 +51,8 @@ struct TranslatorVisitor final {
     IR::U128 V(size_t bitsize, Vec vec);
     void V(size_t bitsize, Vec vec, IR::U128 value);
 
-    IR::UAny Mem(IR::U64 address, size_t size, AccType acctype);
-    void Mem(IR::U64 address, size_t size, AccType acctype, IR::UAny value);
+    IR::UAnyU128 Mem(IR::U64 address, size_t size, AccType acctype);
+    void Mem(IR::U64 address, size_t size, AccType acctype, IR::UAnyU128 value);
 
     IR::U32U64 SignExtend(IR::UAny value, size_t to_size);
     IR::U32U64 ZeroExtend(IR::UAny value, size_t to_size);

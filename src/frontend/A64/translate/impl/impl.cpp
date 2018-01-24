@@ -147,7 +147,7 @@ void TranslatorVisitor::V(size_t bitsize, Vec vec, IR::U128 value) {
     }
 }
 
-IR::UAny TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acctype*/) {
+IR::UAnyU128 TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acctype*/) {
     switch (bytesize) {
     case 1:
         return ir.ReadMemory8(address);
@@ -157,13 +157,15 @@ IR::UAny TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acct
         return ir.ReadMemory32(address);
     case 8:
         return ir.ReadMemory64(address);
+    case 16:
+        return ir.ReadMemory128(address);
     default:
         ASSERT_MSG(false, "Invalid bytesize parameter %zu", bytesize);
         return {};
     }
 }
 
-void TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acctype*/, IR::UAny value) {
+void TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acctype*/, IR::UAnyU128 value) {
     switch (bytesize) {
     case 1:
         ir.WriteMemory8(address, value);
@@ -176,6 +178,9 @@ void TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acctype*
         return;
     case 8:
         ir.WriteMemory64(address, value);
+        return;
+    case 16:
+        ir.WriteMemory128(address, value);
         return;
     default:
         ASSERT_MSG(false, "Invalid bytesize parameter %zu", bytesize);

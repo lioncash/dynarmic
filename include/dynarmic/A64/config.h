@@ -42,12 +42,14 @@ struct UserCallbacks {
     virtual std::uint16_t MemoryRead16(VAddr vaddr) = 0;
     virtual std::uint32_t MemoryRead32(VAddr vaddr) = 0;
     virtual std::uint64_t MemoryRead64(VAddr vaddr) = 0;
+    virtual Vector MemoryRead128(VAddr vaddr) = 0;
 
     // Writes through these callbacks may not be aligned.
     virtual void MemoryWrite8(VAddr vaddr, std::uint8_t value) = 0;
     virtual void MemoryWrite16(VAddr vaddr, std::uint16_t value) = 0;
     virtual void MemoryWrite32(VAddr vaddr, std::uint32_t value) = 0;
     virtual void MemoryWrite64(VAddr vaddr, std::uint64_t value) = 0;
+    virtual void MemoryWrite128(VAddr vaddr, Vector value) = 0;
 
     // If this callback returns true, the JIT will assume MemoryRead* callbacks will always
     // return the same value at any point in time for this vaddr. The JIT may use this information

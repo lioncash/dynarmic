@@ -58,6 +58,10 @@ IR::U64 IREmitter::ReadMemory64(const IR::U64& vaddr) {
     return Inst<IR::U64>(Opcode::A64ReadMemory64, vaddr);
 }
 
+IR::U128 IREmitter::ReadMemory128(const IR::U64& vaddr) {
+    return Inst<IR::U128>(Opcode::A64ReadMemory128, vaddr);
+}
+
 void IREmitter::WriteMemory8(const IR::U64& vaddr, const IR::U8& value) {
     Inst(Opcode::A64WriteMemory8, vaddr, value);
 }
@@ -72,6 +76,10 @@ void IREmitter::WriteMemory32(const IR::U64& vaddr, const IR::U32& value) {
 
 void IREmitter::WriteMemory64(const IR::U64& vaddr, const IR::U64& value) {
     Inst(Opcode::A64WriteMemory64, vaddr, value);
+}
+
+void IREmitter::WriteMemory128(const IR::U64& vaddr, const IR::U128& value) {
+    Inst(Opcode::A64WriteMemory128, vaddr, value);
 }
 
 IR::U32 IREmitter::GetW(Reg reg) {

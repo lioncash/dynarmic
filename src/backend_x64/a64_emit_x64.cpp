@@ -319,6 +319,25 @@ void A64EmitX64::EmitA64ReadMemory64(A64EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
+void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code, [&](Xbyak::Reg64 vaddr) {
+        ASSERT(vaddr == code->ABI_PARAM2);
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        ctx.reg_alloc.HostCall(nullptr, {}, args[0]);
+    });
+    Xbyak::Xmm result = xmm0;
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code->movq(result, code->ABI_RETURN);
+        code->pinsrq(result, code->ABI_RETURN2, 1);
+    } else {
+        Xbyak::Xmm tmp = xmm1;
+        code->movq(result, code->ABI_RETURN);
+        code->movq(tmp, code->ABI_RETURN2);
+        code->punpcklqdq(result, tmp);
+    }
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void A64EmitX64::EmitA64WriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite8).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value) {
         ASSERT(vaddr == code->ABI_PARAM2 && value == code->ABI_PARAM3);
@@ -348,6 +367,28 @@ void A64EmitX64::EmitA64WriteMemory64(A64EmitContext& ctx, IR::Inst* inst) {
         ASSERT(vaddr == code->ABI_PARAM2 && value == code->ABI_PARAM3);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
+    });
+}
+
+void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value0, Xbyak::Reg64 value1) {
+        ASSERT(vaddr == code->ABI_PARAM2 && value0 == code->ABI_PARAM3 && value1 == code->ABI_PARAM4);
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        ctx.reg_alloc.Use(args[0], ABI_PARAM2);
+        ctx.reg_alloc.ScratchGpr({ABI_PARAM3});
+        ctx.reg_alloc.ScratchGpr({ABI_PARAM4});
+        if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+            Xbyak::Xmm xmm_value = ctx.reg_alloc.UseXmm(args[1]);
+            code->movq(code->ABI_PARAM3, xmm_value);
+            code->pextrq(code->ABI_PARAM4, xmm_value, 1);
+        } else {
+            Xbyak::Xmm xmm_value = ctx.reg_alloc.UseScratchXmm(args[1]);
+            code->movq(code->ABI_PARAM3, xmm_value);
+            code->punpckhqdq(xmm_value, xmm_value);
+            code->movq(code->ABI_PARAM4, xmm_value);
+        }
+        ctx.reg_alloc.EndOfAllocScope();
+        ctx.reg_alloc.HostCall(nullptr);
     });
 }
 
