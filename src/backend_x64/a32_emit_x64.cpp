@@ -75,7 +75,7 @@ A32EmitX64::A32EmitX64(BlockOfCode* code, A32::UserCallbacks cb, A32::Jit* jit_i
     code->PreludeComplete();
 }
 
-A32EmitX64::~A32EmitX64() {}
+A32EmitX64::~A32EmitX64() = default;
 
 A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
     code->align();

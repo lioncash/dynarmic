@@ -57,7 +57,7 @@ A64EmitX64::A64EmitX64(BlockOfCode* code, A64::UserConfig conf)
     code->PreludeComplete();
 }
 
-A64EmitX64::~A64EmitX64() {}
+A64EmitX64::~A64EmitX64() = default;
 
 A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
     code->align();

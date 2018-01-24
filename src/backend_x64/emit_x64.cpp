@@ -35,7 +35,7 @@ void EmitContext::EraseInstruction(IR::Inst* inst) {
 EmitX64::EmitX64(BlockOfCode* code)
     : code(code) {}
 
-EmitX64::~EmitX64() {}
+EmitX64::~EmitX64() = default;
 
 boost::optional<typename EmitX64::BlockDescriptor> EmitX64::GetBasicBlock(IR::LocationDescriptor descriptor) const {
     auto iter = block_descriptors.find(descriptor);

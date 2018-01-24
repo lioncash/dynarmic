@@ -80,7 +80,7 @@ static_assert(sizeof(Value) <= 2 * sizeof(u64), "IR::Value should be kept small 
 template <Type type_>
 class TypedValue final : public Value {
 public:
-    TypedValue() : Value() {}
+    TypedValue() = default;
 
     template <Type other_type, typename = std::enable_if_t<(other_type & type_) != Type::Void>>
     /* implicit */ TypedValue(const TypedValue<other_type>& value) : Value(value) {
