@@ -17,9 +17,9 @@ static bool StoreRegister(TranslatorVisitor& tv, IREmitter& ir, const size_t dat
 
     if (Rn == Reg::SP) {
         // TODO: Check Stack Alignment
-        address = tv.SP(datasize);
+        address = tv.SP(64);
     } else {
-        address = tv.X(datasize, Rn);
+        address = tv.X(64, Rn);
     }
     address = ir.Add(address, ir.Imm64(offset));
     IR::UAny data = tv.X(datasize, Rt);
@@ -35,9 +35,9 @@ static bool LoadRegister(TranslatorVisitor& tv, IREmitter& ir, const size_t data
 
     if (Rn == Reg::SP) {
         // TODO: Check Stack Alignment
-        address = tv.SP(datasize);
+        address = tv.SP(64);
     } else {
-        address = tv.X(datasize, Rn);
+        address = tv.X(64, Rn);
     }
     address = ir.Add(address, ir.Imm64(offset));
     IR::UAny data = tv.Mem(address, datasize / 8, acctype);
@@ -69,9 +69,9 @@ static bool LoadRegisterSigned(TranslatorVisitor& tv, IREmitter& ir, const size_
     IR::U64 address;
     if (Rn == Reg::SP) {
         // TODO: Check Stack Alignment
-        address = tv.SP(datasize);
+        address = tv.SP(64);
     } else {
-        address = tv.X(datasize, Rn);
+        address = tv.X(64, Rn);
     }
     address = ir.Add(address, ir.Imm64(offset));
 
