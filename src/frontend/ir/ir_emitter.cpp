@@ -636,6 +636,23 @@ U32 IREmitter::PackedSelect(const U32& ge, const U32& a, const U32& b) {
     return Inst<U32>(Opcode::PackedSelect, ge, a, b);
 }
 
+UAny IREmitter::VectorGetElement(size_t esize, const U128& a, size_t index) {
+    ASSERT_MSG(esize * index < 128, "Invalid index");
+    switch (esize) {
+    case 8:
+        return Inst<U8>(Opcode::VectorGetElement8, a, Imm8(static_cast<u8>(index)));
+    case 16:
+        return Inst<U16>(Opcode::VectorGetElement16, a, Imm8(static_cast<u8>(index)));
+    case 32:
+        return Inst<U32>(Opcode::VectorGetElement32, a, Imm8(static_cast<u8>(index)));
+    case 64:
+        return Inst<U64>(Opcode::VectorGetElement64, a, Imm8(static_cast<u8>(index)));
+    default:
+        ASSERT_MSG(false, "Unreachable");
+        return {};
+    }
+}
+
 U128 IREmitter::VectorAdd8(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorAdd8, a, b);
 }

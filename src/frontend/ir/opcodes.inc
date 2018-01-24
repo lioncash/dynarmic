@@ -162,6 +162,10 @@ OPCODE(PackedAbsDiffSumS8,      T::U32,         T::U32,         T::U32          
 OPCODE(PackedSelect,            T::U32,         T::U32,         T::U32,         T::U32          )
 
 // Vector instructions
+OPCODE(VectorGetElement8,       T::U8,          T::U128,        T::U8                           )
+OPCODE(VectorGetElement16,      T::U16,         T::U128,        T::U8                           )
+OPCODE(VectorGetElement32,      T::U32,         T::U128,        T::U8                           )
+OPCODE(VectorGetElement64,      T::U64,         T::U128,        T::U8                           )
 OPCODE(VectorAdd8,              T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorAdd16,             T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorAdd32,             T::U128,        T::U128,        T::U128                         )

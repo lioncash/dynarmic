@@ -178,6 +178,7 @@ public:
     U32 PackedAbsDiffSumS8(const U32& a, const U32& b);
     U32 PackedSelect(const U32& ge, const U32& a, const U32& b);
 
+    UAny VectorGetElement(size_t esize, const U128& a, size_t index);
     U128 VectorAdd8(const U128& a, const U128& b);
     U128 VectorAdd16(const U128& a, const U128& b);
     U128 VectorAdd32(const U128& a, const U128& b);
