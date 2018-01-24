@@ -182,6 +182,13 @@ public:
     U128 VectorAdd32(const U128& a, const U128& b);
     U128 VectorAdd64(const U128& a, const U128& b);
     U128 VectorAnd(const U128& a, const U128& b);
+    U128 VectorLowerBroadcast8(const U8& a);
+    U128 VectorLowerBroadcast16(const U16& a);
+    U128 VectorLowerBroadcast32(const U32& a);
+    U128 VectorBroadcast8(const U8& a);
+    U128 VectorBroadcast16(const U16& a);
+    U128 VectorBroadcast32(const U32& a);
+    U128 VectorBroadcast64(const U64& a);
     U128 VectorLowerPairedAdd8(const U128& a, const U128& b);
     U128 VectorLowerPairedAdd16(const U128& a, const U128& b);
     U128 VectorLowerPairedAdd32(const U128& a, const U128& b);

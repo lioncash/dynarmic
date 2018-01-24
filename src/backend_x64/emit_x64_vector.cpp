@@ -205,5 +205,94 @@ void EmitX64::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+void EmitX64::EmitVectorLowerBroadcast8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code->pxor(tmp, tmp);
+        code->pshufb(a, tmp);
+        code->movq(a, a);
+    } else {
+        code->punpcklbw(a, a);
+        code->pshuflw(a, a, 0);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorLowerBroadcast16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    code->pshuflw(a, a, 0);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorLowerBroadcast32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    code->pshuflw(a, a, 0b01000100);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorBroadcast8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code->pxor(tmp, tmp);
+        code->pshufb(a, tmp);
+    } else {
+        code->punpcklbw(a, a);
+        code->pshuflw(a, a, 0);
+        code->punpcklqdq(a, a);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorBroadcast16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    code->pshuflw(a, a, 0);
+    code->punpcklqdq(a, a);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorBroadcast32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    code->pshufd(a, a, 0);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorBroadcast64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    code->punpcklqdq(a, a);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
 } // namespace BackendX64
 } // namespace Dynarmic
