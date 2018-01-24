@@ -559,22 +559,19 @@ void RegAlloc::EmitMove(HostLoc to, HostLoc from) {
     if (HostLocIsXMM(to) && HostLocIsXMM(from)) {
         code->movaps(HostLocToXmm(to), HostLocToXmm(from));
     } else if (HostLocIsGPR(to) && HostLocIsGPR(from)) {
-        ASSERT(bit_width != 128);
-        if (bit_width == 64) {
+        if (bit_width >= 64) {
             code->mov(HostLocToReg64(to), HostLocToReg64(from));
         } else {
             code->mov(HostLocToReg64(to).cvt32(), HostLocToReg64(from).cvt32());
         }
     } else if (HostLocIsXMM(to) && HostLocIsGPR(from)) {
-        ASSERT(bit_width != 128);
-        if (bit_width == 64) {
+        if (bit_width >= 64) {
             code->movq(HostLocToXmm(to), HostLocToReg64(from));
         } else {
             code->movd(HostLocToXmm(to), HostLocToReg64(from).cvt32());
         }
     } else if (HostLocIsGPR(to) && HostLocIsXMM(from)) {
-        ASSERT(bit_width != 128);
-        if (bit_width == 64) {
+        if (bit_width >= 64) {
             code->movq(HostLocToReg64(to), HostLocToXmm(from));
         } else {
             code->movd(HostLocToReg64(to).cvt32(), HostLocToXmm(from));

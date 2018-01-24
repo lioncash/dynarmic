@@ -1090,6 +1090,18 @@ void EmitX64::EmitZeroExtendWordToLong(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void EmitX64::EmitZeroExtendLongToQuad(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    if (args[0].IsInGpr()) {
+        // We let the register allocator automatically zero extend this when necessary
+        ctx.reg_alloc.DefineValue(inst, args[0]);
+    } else {
+        Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        code->movq(result, result);
+        ctx.reg_alloc.DefineValue(inst, result);
+    }
+}
+
 void EmitX64::EmitByteReverseWord(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 result = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();

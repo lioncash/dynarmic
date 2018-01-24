@@ -125,6 +125,7 @@ public:
     U64 SignExtendWordToLong(const U32& a);
     U32 ZeroExtendToWord(const UAny& a);
     U64 ZeroExtendToLong(const UAny& a);
+    U128 ZeroExtendToQuad(const UAny& a);
     U32 ZeroExtendByteToWord(const U8& a);
     U32 ZeroExtendHalfToWord(const U16& a);
     U64 ZeroExtendWordToLong(const U32& a);

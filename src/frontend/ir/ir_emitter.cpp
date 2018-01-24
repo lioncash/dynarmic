@@ -396,6 +396,10 @@ U32 IREmitter::ZeroExtendToWord(const UAny& a) {
     }
 }
 
+U128 IREmitter::ZeroExtendToQuad(const UAny& a) {
+    return Inst<U128>(Opcode::ZeroExtendLongToQuad, ZeroExtendToLong(a));
+}
+
 U64 IREmitter::ZeroExtendWordToLong(const U32& a) {
     return Inst<U64>(Opcode::ZeroExtendWordToLong, a);
 }
