@@ -15,6 +15,8 @@
 #include "common/assert.h"
 #include "common/common_types.h"
 
+using Vector = Dynarmic::A64::Vector;
+
 class TestEnv final : public Dynarmic::A64::UserCallbacks {
 public:
     u64 ticks_left = 0;

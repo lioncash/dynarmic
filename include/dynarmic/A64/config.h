@@ -16,6 +16,9 @@ namespace A64 {
 
 using VAddr = std::uint64_t;
 
+using Vector = std::array<std::uint64_t, 2>;
+static_assert(sizeof(Vector) == sizeof(std::uint64_t) * 2, "Vector must be 128 bits in size");
+
 enum class Exception {
     /// An UndefinedFault occured due to executing instruction with an unallocated encoding
     UnallocatedEncoding,

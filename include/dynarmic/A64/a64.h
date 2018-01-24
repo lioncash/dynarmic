@@ -74,9 +74,6 @@ public:
     /// Modify all general-purpose registers.
     void SetRegisters(const std::array<std::uint64_t, 31>& value);
 
-    using Vector = std::array<std::uint64_t, 2>;
-    static_assert(sizeof(Vector) == sizeof(std::uint64_t) * 2, "Vector must be 128 bits in size");
-
     /// Read floating point and SIMD register.
     Vector GetVector(std::size_t index) const;
     /// Modify floating point and SIMD register.

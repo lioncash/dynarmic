@@ -17,7 +17,6 @@
 #include "unicorn_emu/unicorn.h"
 
 using namespace Dynarmic;
-using Vector = Dynarmic::A64::Jit::Vector;
 
 static Vector RandomVector() {
     return {RandInt<u64>(0, ~u64(0)), RandInt<u64>(0, ~u64(0))};
