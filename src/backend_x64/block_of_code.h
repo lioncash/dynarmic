@@ -97,6 +97,9 @@ public:
     void EnsurePatchLocationSize(CodePtr begin, size_t size);
 
     static const Xbyak::Reg64 ABI_RETURN;
+#ifndef _WIN32
+    static const Xbyak::Reg64 ABI_RETURN2;
+#endif
     static const Xbyak::Reg64 ABI_PARAM1;
     static const Xbyak::Reg64 ABI_PARAM2;
     static const Xbyak::Reg64 ABI_PARAM3;
