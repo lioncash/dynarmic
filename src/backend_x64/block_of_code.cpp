@@ -238,6 +238,7 @@ bool BlockOfCode::DoesCpuSupport(Xbyak::util::Cpu::Type type) const {
 #ifdef DYNARMIC_ENABLE_CPU_FEATURE_DETECTION
     return cpu_info.has(type);
 #else
+    (void)type;
     return false;
 #endif
 }
