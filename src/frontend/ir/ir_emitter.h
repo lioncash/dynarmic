@@ -204,6 +204,7 @@ public:
     U128 VectorPairedAdd16(const U128& a, const U128& b);
     U128 VectorPairedAdd32(const U128& a, const U128& b);
     U128 VectorPairedAdd64(const U128& a, const U128& b);
+    U128 VectorZeroUpper(const U128& a);
 
     U32 FPAbs32(const U32& a);
     U64 FPAbs64(const U64& a);

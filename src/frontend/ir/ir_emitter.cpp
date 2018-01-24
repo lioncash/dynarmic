@@ -761,6 +761,10 @@ U128 IREmitter::VectorPairedAdd64(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorPairedAdd64, a, b);
 }
 
+U128 IREmitter::VectorZeroUpper(const U128& a) {
+    return Inst<U128>(Opcode::VectorZeroUpper, a);
+}
+
 U32 IREmitter::FPAbs32(const U32& a) {
     return Inst<U32>(Opcode::FPAbs32, a);
 }

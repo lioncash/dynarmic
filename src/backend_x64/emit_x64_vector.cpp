@@ -367,5 +367,16 @@ void EmitX64::EmitVectorBroadcast64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+
+void EmitX64::EmitVectorZeroUpper(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    code->movq(a, a); // TODO: !IsLastUse
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
 } // namespace BackendX64
 } // namespace Dynarmic
