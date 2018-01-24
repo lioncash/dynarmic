@@ -235,7 +235,11 @@ void BlockOfCode::EnsurePatchLocationSize(CodePtr begin, size_t size) {
 }
 
 bool BlockOfCode::DoesCpuSupport(Xbyak::util::Cpu::Type type) const {
+#ifdef DYNARMIC_ENABLE_CPU_FEATURE_DETECTION
     return cpu_info.has(type);
+#else
+    return false;
+#endif
 }
 
 } // namespace BackendX64

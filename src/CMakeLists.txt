@@ -167,6 +167,9 @@ target_link_libraries(dynarmic
         xbyak
         $<$<BOOL:DYNARMIC_USE_LLVM>:${llvm_libs}>
 )
+if (DYNARMIC_ENABLE_CPU_FEATURE_DETECTION)
+    target_compile_definitions(dynarmic PRIVATE DYNARMIC_ENABLE_CPU_FEATURE_DETECTION=1)
+endif()
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_compile_definitions(dynarmic PRIVATE FMT_USE_WINDOWS_H=0)
 endif()
