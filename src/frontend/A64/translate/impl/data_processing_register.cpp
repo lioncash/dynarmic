@@ -29,6 +29,47 @@ bool TranslatorVisitor::CLS_int(bool sf, Reg Rn, Reg Rd) {
     return true;
 }
 
+bool TranslatorVisitor::RBIT_int(bool sf, Reg Rn, Reg Rd) {
+    const auto rbit32 = [this](const IR::U32& operand) {
+        // x = (x & 0x55555555) << 1 | ((x >> 1) & 0x55555555);
+        const IR::U32 first_lsl = ir.LogicalShiftLeft(ir.And(operand, ir.Imm32(0x55555555)), ir.Imm8(1));
+        const IR::U32 first_lsr = ir.And(ir.LogicalShiftRight(operand, ir.Imm8(1)), ir.Imm32(0x55555555));
+        const IR::U32 first = ir.Or(first_lsl, first_lsr);
+        
+        // x = (x & 0x33333333) << 2 | ((x >> 2) & 0x33333333);
+        const IR::U32 second_lsl = ir.LogicalShiftLeft(ir.And(first, ir.Imm32(0x33333333)), ir.Imm8(2));
+        const IR::U32 second_lsr = ir.And(ir.LogicalShiftRight(first, ir.Imm8(2)), ir.Imm32(0x33333333));
+        const IR::U32 second = ir.Or(second_lsl, second_lsr);
+        
+        // x = (x & 0x0F0F0F0F) << 4 | ((x >> 4) & 0x0F0F0F0F);
+        const IR::U32 third_lsl = ir.LogicalShiftLeft(ir.And(second, ir.Imm32(0x0F0F0F0F)), ir.Imm8(4));
+        const IR::U32 third_lsr = ir.And(ir.LogicalShiftRight(second, ir.Imm8(4)), ir.Imm32(0x0F0F0F0F));
+        const IR::U32 third = ir.Or(third_lsl, third_lsr);
+        
+        // x = (x << 24) | ((x & 0xFF00) << 8) | ((x >> 8) & 0xFF00) | (x >> 24);
+        const IR::U32 fourth_lsl = ir.Or(ir.LogicalShiftLeft(third, ir.Imm8(24)),
+                                         ir.LogicalShiftLeft(ir.And(third, ir.Imm32(0xFF00)), ir.Imm8(8)));
+        const IR::U32 fourth_lsr = ir.Or(ir.And(ir.LogicalShiftRight(third, ir.Imm8(8)), ir.Imm32(0xFF00)),
+                                         ir.LogicalShiftRight(third, ir.Imm8(24)));
+        return ir.Or(fourth_lsl, fourth_lsr);
+    };
+
+    const size_t datasize = sf ? 64 : 32;
+    const IR::U32U64 operand = X(datasize, Rn);
+
+    if (sf) {
+        const IR::U32 lsw = rbit32(ir.LeastSignificantWord(operand));
+        const IR::U32 msw = rbit32(ir.MostSignificantWord(operand).result);
+        const IR::U64 result = ir.Pack2x32To1x64(msw, lsw);
+
+        X(datasize, Rd, result);
+    } else {
+        X(datasize, Rd, rbit32(operand));
+    }
+
+    return true;
+}
+
 bool TranslatorVisitor::REV(bool sf, bool opc_0, Reg Rn, Reg Rd) {
     const size_t datasize = sf ? 64 : 32;
 

@@ -285,7 +285,7 @@ INST(RORV,                   "RORV",                                      "z0011
 //INST(PACGA,                  "PACGA",                                     "10011010110mmmmm001100nnnnnddddd")
 
 // Data Processing - Register - 1 source
-//INST(RBIT_int,               "RBIT",                                      "z101101011000000000000nnnnnddddd")
+INST(RBIT_int,               "RBIT",                                      "z101101011000000000000nnnnnddddd")
 INST(REV16_int,              "REV16",                                     "z101101011000000000001nnnnnddddd")
 INST(REV,                    "REV",                                       "z10110101100000000001onnnnnddddd")
 INST(CLZ_int,                "CLZ",                                       "z101101011000000000100nnnnnddddd")
