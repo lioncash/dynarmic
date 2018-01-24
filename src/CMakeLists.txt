@@ -94,6 +94,7 @@ add_library(dynarmic
     frontend/ir/microinstruction.h
     frontend/ir/opcodes.cpp
     frontend/ir/opcodes.h
+    frontend/ir/opcodes.inc
     frontend/ir/terminal.h
     frontend/ir/value.cpp
     frontend/ir/value.h
