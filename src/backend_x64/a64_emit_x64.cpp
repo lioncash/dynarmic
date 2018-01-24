@@ -320,6 +320,24 @@ void A64EmitX64::EmitA64ReadMemory64(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
+#ifdef _WIN32
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    static_assert(ABI_SHADOW_SPACE >= 16);
+    ctx.reg_alloc.HostCall(nullptr, {}, {}, args[0]);
+    code->lea(code->ABI_PARAM2, ptr[rsp]);
+    code->sub(rsp, ABI_SHADOW_SPACE);
+
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code, [&](Xbyak::Reg64 return_value, Xbyak::Reg64 vaddr) {
+        ASSERT(return_value == code->ABI_PARAM2 && vaddr == code->ABI_PARAM3);
+    });
+
+    Xbyak::Xmm result = xmm0;
+    code->movups(result, code->xword[code->ABI_RETURN]);
+    code->add(rsp, ABI_SHADOW_SPACE);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+#else
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code, [&](Xbyak::Reg64 vaddr) {
         ASSERT(vaddr == code->ABI_PARAM2);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -336,6 +354,7 @@ void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
         code->punpcklqdq(result, tmp);
     }
     ctx.reg_alloc.DefineValue(inst, result);
+#endif
 }
 
 void A64EmitX64::EmitA64WriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
@@ -371,6 +390,24 @@ void A64EmitX64::EmitA64WriteMemory64(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
+#ifdef _WIN32
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    static_assert(ABI_SHADOW_SPACE >= 16);
+    ctx.reg_alloc.Use(args[0], ABI_PARAM2);
+    Xbyak::Xmm xmm_value = ctx.reg_alloc.UseXmm(args[1]);
+    ctx.reg_alloc.EndOfAllocScope();
+    ctx.reg_alloc.HostCall(nullptr);
+    code->lea(code->ABI_PARAM3, ptr[rsp]);
+    code->sub(rsp, ABI_SHADOW_SPACE);
+    code->movaps(code->xword[code->ABI_PARAM3], xmm_value);
+
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code, [&](Xbyak::Reg64 return_value, Xbyak::Reg64 vaddr) {
+        ASSERT(return_value == code->ABI_PARAM2 && vaddr == code->ABI_PARAM3);
+    });
+
+    code->add(rsp, ABI_SHADOW_SPACE);
+#else
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value0, Xbyak::Reg64 value1) {
         ASSERT(vaddr == code->ABI_PARAM2 && value0 == code->ABI_PARAM3 && value1 == code->ABI_PARAM4);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -390,6 +427,7 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
         ctx.reg_alloc.EndOfAllocScope();
         ctx.reg_alloc.HostCall(nullptr);
     });
+#endif
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor) {
