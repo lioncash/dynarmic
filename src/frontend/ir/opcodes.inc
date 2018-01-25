@@ -167,6 +167,12 @@ OPCODE(PackedSaturatedSubS16,   T::U32,         T::U32,         T::U32          
 OPCODE(PackedAbsDiffSumS8,      T::U32,         T::U32,         T::U32                          )
 OPCODE(PackedSelect,            T::U32,         T::U32,         T::U32,         T::U32          )
 
+// CRC instructions
+OPCODE(CRC32Castagnoli8,        T::U32,         T::U32,         T::U32                          )
+OPCODE(CRC32Castagnoli16,       T::U32,         T::U32,         T::U32                          )
+OPCODE(CRC32Castagnoli32,       T::U32,         T::U32,         T::U32                          )
+OPCODE(CRC32Castagnoli64,       T::U32,         T::U32,         T::U64                          )
+
 // Vector instructions
 OPCODE(VectorGetElement8,       T::U8,          T::U128,        T::U8                           )
 OPCODE(VectorGetElement16,      T::U16,         T::U128,        T::U8                           )

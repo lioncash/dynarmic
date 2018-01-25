@@ -683,6 +683,22 @@ U32 IREmitter::PackedSelect(const U32& ge, const U32& a, const U32& b) {
     return Inst<U32>(Opcode::PackedSelect, ge, a, b);
 }
 
+U32 IREmitter::CRC32Castagnoli8(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::CRC32Castagnoli8, a, b);
+}
+
+U32 IREmitter::CRC32Castagnoli16(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::CRC32Castagnoli16, a, b);
+}
+
+U32 IREmitter::CRC32Castagnoli32(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::CRC32Castagnoli32, a, b);
+}
+
+U32 IREmitter::CRC32Castagnoli64(const U32& a, const U64& b) {
+    return Inst<U32>(Opcode::CRC32Castagnoli64, a, b);
+}
+
 UAny IREmitter::VectorGetElement(size_t esize, const U128& a, size_t index) {
     ASSERT_MSG(esize * index < 128, "Invalid index");
     switch (esize) {

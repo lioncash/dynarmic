@@ -63,6 +63,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/data_processing_addsub.cpp
     frontend/A64/translate/impl/data_processing_bitfield.cpp
     frontend/A64/translate/impl/data_processing_conditional_select.cpp
+    frontend/A64/translate/impl/data_processing_crc32.cpp
     frontend/A64/translate/impl/data_processing_logical.cpp
     frontend/A64/translate/impl/data_processing_multiply.cpp
     frontend/A64/translate/impl/data_processing_pcrel.cpp
@@ -133,6 +134,7 @@ if (ARCHITECTURE_x86_64)
          backend_x64/constant_pool.h
          backend_x64/emit_x64.cpp
          backend_x64/emit_x64.h
+         backend_x64/emit_x64_crc32.cpp
          backend_x64/emit_x64_data_processing.cpp
          backend_x64/emit_x64_floating_point.cpp
          backend_x64/emit_x64_packed.cpp

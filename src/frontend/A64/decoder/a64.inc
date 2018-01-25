@@ -275,7 +275,7 @@ INST(LSRV,                   "LSRV",                                      "z0011
 INST(ASRV,                   "ASRV",                                      "z0011010110mmmmm001010nnnnnddddd")
 INST(RORV,                   "RORV",                                      "z0011010110mmmmm001011nnnnnddddd")
 //INST(CRC32,                  "CRC32B, CRC32H, CRC32W, CRC32X",            "z0011010110mmmmm0100zznnnnnddddd")
-//INST(CRC32C,                 "CRC32CB, CRC32CH, CRC32CW, CRC32CX",        "z0011010110mmmmm0101zznnnnnddddd")
+INST(CRC32C,                 "CRC32CB, CRC32CH, CRC32CW, CRC32CX",        "z0011010110mmmmm0101zznnnnnddddd")
 //INST(PACGA,                  "PACGA",                                     "10011010110mmmmm001100nnnnnddddd")
 
 // Data Processing - Register - 1 source
