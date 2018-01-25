@@ -52,6 +52,7 @@ bool Inst::IsSharedMemoryRead() const {
     case Opcode::A64ReadMemory16:
     case Opcode::A64ReadMemory32:
     case Opcode::A64ReadMemory64:
+    case Opcode::A64ReadMemory128:
         return true;
 
     default:
@@ -69,6 +70,7 @@ bool Inst::IsSharedMemoryWrite() const {
     case Opcode::A64WriteMemory16:
     case Opcode::A64WriteMemory32:
     case Opcode::A64WriteMemory64:
+    case Opcode::A64WriteMemory128:
         return true;
 
     default:
