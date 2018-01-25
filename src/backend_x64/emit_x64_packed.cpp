@@ -194,38 +194,50 @@ void EmitX64::EmitPackedSubU16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto ge_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetGEFromOp);
 
-    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+    if (!ge_inst) {
+        Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
-    if (ge_inst) {
-        if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-            Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
+        code->psubw(xmm_a, xmm_b);
 
-            code->movdqa(xmm_ge, xmm_a);
-            code->pmaxuw(xmm_ge, xmm_b); // Requires SSE 4.1
-            code->pcmpeqw(xmm_ge, xmm_a);
-
-            ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
-            ctx.EraseInstruction(ge_inst);
-        } else {
-            Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
-            Xbyak::Xmm ones = ctx.reg_alloc.ScratchXmm();
-
-            // (a >= b) == !(b > a)
-            code->pcmpeqb(ones, ones);
-            code->paddw(xmm_a, code->MConst(0x80008000));
-            code->paddw(xmm_b, code->MConst(0x80008000));
-            code->movdqa(xmm_ge, xmm_b);
-            code->pcmpgtw(xmm_ge, xmm_a); // *Signed* comparison!
-            code->pxor(xmm_ge, ones);
-
-            ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
-            ctx.EraseInstruction(ge_inst);
-        }
+        ctx.reg_alloc.DefineValue(inst, xmm_a);
+        return;
     }
+
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+        Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
+
+        code->movdqa(xmm_ge, xmm_a);
+        code->pmaxuw(xmm_ge, xmm_b); // Requires SSE 4.1
+        code->pcmpeqw(xmm_ge, xmm_a);
+
+        code->psubw(xmm_a, xmm_b);
+
+        ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
+        ctx.EraseInstruction(ge_inst);
+        ctx.reg_alloc.DefineValue(inst, xmm_a);
+        return;
+    }
+
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Xmm xmm_ge = ctx.reg_alloc.ScratchXmm();
+    Xbyak::Xmm ones = ctx.reg_alloc.ScratchXmm();
+
+    // (a >= b) == !(b > a)
+    code->pcmpeqb(ones, ones);
+    code->paddw(xmm_a, code->MConst(0x80008000));
+    code->paddw(xmm_b, code->MConst(0x80008000));
+    code->movdqa(xmm_ge, xmm_b);
+    code->pcmpgtw(xmm_ge, xmm_a); // *Signed* comparison!
+    code->pxor(xmm_ge, ones);
 
     code->psubw(xmm_a, xmm_b);
 
+    ctx.reg_alloc.DefineValue(ge_inst, xmm_ge);
+    ctx.EraseInstruction(ge_inst);
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
