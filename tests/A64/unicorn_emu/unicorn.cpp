@@ -114,7 +114,7 @@ void Unicorn::SetVectors(const std::array<Vector, 32>& value) {
 }
 
 u32 Unicorn::GetFpcr() const {
-    u64 fpcr;
+    u32 fpcr;
     CHECKED(uc_reg_read(uc, UC_ARM64_REG_FPCR, &fpcr));
     return fpcr;
 }
