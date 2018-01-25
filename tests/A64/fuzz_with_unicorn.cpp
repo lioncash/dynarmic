@@ -52,7 +52,7 @@ restart:
     if (!should_continue && !is_last_inst)
         goto restart;
     for (const auto& ir_inst : block)
-        if (ir_inst.IsMemoryWrite() || ir_inst.GetOpcode() == IR::Opcode::A64ExceptionRaised || ir_inst.GetOpcode() == IR::Opcode::A64CallSupervisor)
+        if (ir_inst.GetOpcode() == IR::Opcode::A64ExceptionRaised || ir_inst.GetOpcode() == IR::Opcode::A64CallSupervisor)
             goto restart;
 
     return instruction;
@@ -87,11 +87,12 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Ve
     uni_env.ticks_left = instructions.size();
     uni.Run();
 
+    REQUIRE(uni.GetPC() == jit.GetPC());
     REQUIRE(uni.GetRegisters() == jit.GetRegisters());
     REQUIRE(uni.GetVectors() == jit.GetVectors());
-    REQUIRE(uni.GetPC() == jit.GetPC());
     REQUIRE(uni.GetSP() == jit.GetSP());
     REQUIRE((uni.GetPstate() & 0xF0000000) == (jit.GetPstate() & 0xF0000000));
+    REQUIRE(uni_env.modified_memory == jit_env.modified_memory);
 }
 
 TEST_CASE("A64: Single random instruction", "[a64]") {

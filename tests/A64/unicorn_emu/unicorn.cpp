@@ -24,6 +24,7 @@ Unicorn::Unicorn(TestEnv& testenv) : testenv(testenv) {
     CHECKED(uc_reg_write(uc, UC_ARM64_REG_CPACR_EL1, &fpv));
     CHECKED(uc_hook_add(uc, &intr_hook, UC_HOOK_INTR, (void*)InterruptHook, this, BEGIN_ADDRESS, END_ADDRESS));
     CHECKED(uc_hook_add(uc, &mem_invalid_hook, UC_HOOK_MEM_INVALID, (void*)UnmappedMemoryHook, this, BEGIN_ADDRESS, END_ADDRESS));
+    CHECKED(uc_hook_add(uc, &mem_write_prot_hook, UC_HOOK_MEM_WRITE, (void*)MemoryWriteHook, this, BEGIN_ADDRESS, END_ADDRESS));
 }
 
 Unicorn::~Unicorn() {
@@ -173,10 +174,10 @@ bool Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 start_
     const auto generate_page = [&](u64 base_address) {
         // printf("generate_page(%" PRIx64 ")\n", base_address);
 
-        const u32 permissions = [&]{
+        const u32 permissions = [&]() -> u32 {
             if (base_address < this_->testenv.code_mem.size() * 4)
                 return UC_PROT_READ | UC_PROT_EXEC;
-            return UC_PROT_READ | UC_PROT_WRITE;
+            return UC_PROT_READ;
         }();
 
         auto page = std::make_unique<Page>();
@@ -206,6 +207,29 @@ bool Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 start_
         generate_page(current_address);
         current_address += 0x1000;
     } while (is_in_range(current_address, start_address_page, end_address) && current_address != start_address_page);
+
+    return true;
+}
+
+bool Unicorn::MemoryWriteHook(uc_engine* /*uc*/, uc_mem_type /*type*/, u64 start_address, int size, u64 value, void* user_data) {
+    Unicorn* this_ = reinterpret_cast<Unicorn*>(user_data);
+
+    switch (size) {
+    case 1:
+        this_->testenv.MemoryWrite8(start_address, static_cast<u8>(value));
+        break;
+    case 2:
+        this_->testenv.MemoryWrite16(start_address, static_cast<u16>(value));
+        break;
+    case 4:
+        this_->testenv.MemoryWrite32(start_address, static_cast<u32>(value));
+        break;
+    case 8:
+        this_->testenv.MemoryWrite64(start_address, value);
+        break;
+    default:
+        UNREACHABLE();
+    }
 
     return true;
 }

@@ -74,7 +74,7 @@ public:
     }
     void MemoryWrite128(u64 vaddr, Vector value) override {
         MemoryWrite64(vaddr, value[0]);
-        MemoryWrite64(vaddr + 4, value[1]);
+        MemoryWrite64(vaddr + 8, value[1]);
     }
 
     void InterpreterFallback(u64 pc, size_t num_instructions) override { ASSERT_MSG(false, "InterpreterFallback(%" PRIx64 ", %zu)", pc, num_instructions); }
