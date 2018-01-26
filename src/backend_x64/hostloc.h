@@ -53,7 +53,7 @@ inline size_t HostLocBitWidth(HostLoc loc) {
     if (HostLocIsXMM(loc))
         return 128;
     if (HostLocIsSpill(loc))
-        return 64;
+        return 128;
     if (HostLocIsFlag(loc))
         return 1;
     UNREACHABLE();
