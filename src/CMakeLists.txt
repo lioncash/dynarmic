@@ -97,6 +97,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/move_wide.cpp
     frontend/A64/translate/impl/simd_aes.cpp
     frontend/A64/translate/impl/simd_copy.cpp
+    frontend/A64/translate/impl/simd_crypto_four_register.cpp
     frontend/A64/translate/impl/simd_modified_immediate.cpp
     frontend/A64/translate/impl/simd_permute.cpp
     frontend/A64/translate/impl/simd_scalar_pairwise.cpp
