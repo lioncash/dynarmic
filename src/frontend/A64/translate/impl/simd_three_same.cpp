@@ -123,8 +123,11 @@ bool TranslatorVisitor::ORN_asimd(bool Q, Vec Vm, Vec Vn, Vec Vd) {
     auto operand1 = V(datasize, Vn);
     auto operand2 = V(datasize, Vm);
 
-    // TODO: This does not zero the upper 64 bits when datasize == 64. This may break future optimization passes.
     auto result = ir.VectorOr(operand1, ir.VectorNot(operand2));
+
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
 
     V(datasize, Vd, result);
 
