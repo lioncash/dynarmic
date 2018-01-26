@@ -1,5 +1,5 @@
 
-    C++用x86(IA-32), x64(AMD64, x86-64) JITアセンブラ Xbyak 5.52
+    C++用x86(IA-32), x64(AMD64, x86-64) JITアセンブラ Xbyak 5.601
 
 -----------------------------------------------------------------------------
 ◎概要
@@ -155,7 +155,7 @@ vcvtpd2dq xmm19, [eax+32]{1to4}         --> vcvtpd2dq(xmm19, yword_b [eax+32]); 
 
 vfpclassps k5{k3}, zword [rax+64], 5    --> vfpclassps(k5|k3, zword [rax+64], 5); // specify m512
 vfpclasspd k5{k3}, [rax+64]{1to2}, 5    --> vfpclasspd(k5|k3, xword_b [rax+64], 5); // broadcast 64-bit to 128-bit
-vfpclassps k5{k3}, [rax+64]{1to4}, 5    --> vfpclassps(k5|k3, xword_b [rax+64], 5); // broadcast 32-bit to 128-bit
+vfpclassps k5{k3}, [rax+64]{1to4}, 5    --> vfpclassps(k5|k3, xword_b [rax+64], 5); // broadcast 64-bit to 256-bit
 
 
 注意
@@ -343,6 +343,9 @@ cybozulibは単体テストでのみ利用されていて、xbyak/ディレク�
 -----------------------------------------------------------------------------
 ◎履歴
 
+2018/01/24 ver 5.601 xword, ywordなどをXbyak::util名前空間に追加
+2018/01/05 ver 5.60 Ice lake系命令対応(319433-030.pdf)
+2017/08/22 ver 5.53 mpxエンコーディングバグ修正, bnd()プレフィクス追加
 2017/08/18 ver 5.52 align修正(thanks to MerryMage)
 2017/08/17 ver 5.51 multi-byte nop追加 align()はそれを使用する(thanks to inolen)
 2017/08/08 ver 5.50 mpx追加(thanks to magurosan)

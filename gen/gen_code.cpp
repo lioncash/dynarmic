@@ -60,7 +60,7 @@ void putX_X_XM(bool omitOnly)
 			{ 0x02, "pblendd", T_0F3A | T_66 | T_W0 | T_YMM, true, true, 2 },
 			{ 0x0B, "roundsd", T_0F3A | T_66 | T_W0, true, true, 3 },
 			{ 0x0A, "roundss", T_0F3A | T_66 | T_W0, true, true, 3 },
-			{ 0x44, "pclmulqdq", T_0F3A | T_66 | T_W0, true, true, 3 },
+			{ 0x44, "pclmulqdq", T_0F3A | T_66 | T_W0 | T_YMM | T_EVEX, true, true, 3 },
 			{ 0x0C, "permilps", T_0F38 | T_66 | T_W0 | T_YMM | T_EVEX | T_EW0 | T_B32, false, false, 2 },
 			{ 0x0D, "permilpd", T_0F38 | T_66 | T_W0 | T_YMM | T_EVEX | T_EW1 | T_B64, false, false, 2 },
 
@@ -202,6 +202,10 @@ void putX_X_XM(bool omitOnly)
 
 			{ 0x14, "unpcklpd", T_0F | T_66 | T_YMM | T_EVEX | T_EW1 | T_B64, false, true, 2 },
 			{ 0x14, "unpcklps", T_0F | T_YMM | T_EVEX | T_EW0 | T_B32, false, true, 2 },
+
+			{ 0xCF, "gf2p8affineinvqb", T_66 | T_0F3A | T_W1 | T_EVEX | T_YMM | T_EW1 | T_SAE_Z | T_B64, true, false, 3 },
+			{ 0xCE, "gf2p8affineqb", T_66 | T_0F3A | T_W1 | T_EVEX | T_YMM | T_EW1 | T_SAE_Z | T_B64, true, false, 3 },
+			{ 0xCF, "gf2p8mulb", T_66 | T_0F38 | T_W0 | T_EVEX | T_YMM | T_EW0 | T_SAE_Z, false, false, 3 },
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 			const Tbl *p = &tbl[i];
@@ -615,6 +619,7 @@ void put()
 	////////////////////////////////////////////////////////////////
 	{
 		const GenericTbl tbl[] = {
+			{ "bnd", 0xf2 }, /* 0xf2 prefix for MPX */
 			{ "cbw", 0x66, 0x98 },
 			{ "cdq", 0x99 },
 			{ "clc", 0xF8 },
@@ -941,11 +946,11 @@ void put()
 		puts("void bndcl(const BoundsReg& bnd, const Operand& op) { db(0xF3); opR_ModM(op, i32e, bnd.getIdx(), 0x0F, 0x1A, NONE, !op.isMEM()); }");
 		puts("void bndcu(const BoundsReg& bnd, const Operand& op) { db(0xF2); opR_ModM(op, i32e, bnd.getIdx(), 0x0F, 0x1A, NONE, !op.isMEM()); }");
 		puts("void bndcn(const BoundsReg& bnd, const Operand& op) { db(0xF2); opR_ModM(op, i32e, bnd.getIdx(), 0x0F, 0x1B, NONE, !op.isMEM()); }");
-		puts("void bndldx(const BoundsReg& bnd, const Address& addr) { opModM(addr, bnd, 0x0F, 0x1A); }");
+		puts("void bndldx(const BoundsReg& bnd, const Address& addr) { opMIB(addr, bnd, 0x0F, 0x1A); }");
 		puts("void bndmk(const BoundsReg& bnd, const Address& addr) { db(0xF3); opModM(addr, bnd, 0x0F, 0x1B); }");
 		puts("void bndmov(const BoundsReg& bnd, const Operand& op) { db(0x66); opModRM(bnd, op, op.isBNDREG(), op.isMEM(), 0x0F, 0x1A); }");
 		puts("void bndmov(const Address& addr, const BoundsReg& bnd) { db(0x66); opModM(addr, bnd, 0x0F, 0x1B); }");
-		puts("void bndstx(const Address& addr, const BoundsReg& bnd) { opModM(addr, bnd, 0x0F, 0x1B); }");
+		puts("void bndstx(const Address& addr, const BoundsReg& bnd) { opMIB(addr, bnd, 0x0F, 0x1B); }");
 	}
 	// misc
 	{
@@ -1257,10 +1262,10 @@ void put()
 			{ 0x7D, "hsubpd", T_0F | T_66 | T_YMM, 3 },
 			{ 0x7D, "hsubps", T_0F | T_F2 | T_YMM, 3 },
 
-			{ 0xDC, "aesenc", T_0F38 | T_66 | T_W0, 3 },
-			{ 0xDD, "aesenclast", T_0F38 | T_66 | T_W0, 3 },
-			{ 0xDE, "aesdec", T_0F38 | T_66 | T_W0, 3 },
-			{ 0xDF, "aesdeclast", T_0F38 | T_66 | T_W0, 3 },
+			{ 0xDC, "aesenc", T_0F38 | T_66 | T_YMM | T_EVEX, 3 },
+			{ 0xDD, "aesenclast", T_0F38 | T_66 | T_YMM | T_EVEX, 3 },
+			{ 0xDE, "aesdec", T_0F38 | T_66 | T_YMM | T_EVEX, 3 },
+			{ 0xDF, "aesdeclast", T_0F38 | T_66 | T_YMM | T_EVEX, 3 },
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 			const Tbl *p = &tbl[i];
