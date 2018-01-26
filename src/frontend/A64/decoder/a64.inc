@@ -184,14 +184,8 @@ INST(PRFM_lit,               "PRFM (literal)",                            "11011
 // Loads and stores - Load/Store register pair
 INST(STP_LDP_gen,            "STP/LDP",                                   "oo10100pwLiiiiiiiuuuuunnnnnttttt")
 INST(UnallocatedEncoding,    "",                                          "--1010000-----------------------")
-INST(UnallocatedEncoding,    "",                                          "-110100--0----------------------")
-INST(UnallocatedEncoding,    "",                                          "1110100-------------------------")
-//INST(STP_fpsimd_1,           "STP (SIMD&FP)",                             "oo10110010iiiiiiiuuuuunnnnnttttt")
-//INST(STP_fpsimd_2,           "STP (SIMD&FP)",                             "oo10110110iiiiiiiuuuuunnnnnttttt")
-//INST(STP_fpsimd_3,           "STP (SIMD&FP)",                             "oo10110100iiiiiiiuuuuunnnnnttttt")
-//INST(LDP_fpsimd_1,           "LDP (SIMD&FP)",                             "oo10110011iiiiiiiuuuuunnnnnttttt")
-//INST(LDP_fpsimd_2,           "LDP (SIMD&FP)",                             "oo10110111iiiiiiiuuuuunnnnnttttt")
-//INST(LDP_fpsimd_3,           "LDP (SIMD&FP)",                             "oo10110101iiiiiiiuuuuunnnnnttttt")
+INST(STP_LDP_fpsimd,         "STP/LDP (SIMD&FP)",                         "oo10110pwLiiiiiiiuuuuunnnnnttttt")
+INST(UnallocatedEncoding,    "",                                          "--1011000-----------------------")
 
 // Loads and stores - Load/Store register (unscaled immediate)
 INST(STURx_LDURx,            "STURx/LDURx",                               "zz111000oo0iiiiiiiii00nnnnnttttt")
