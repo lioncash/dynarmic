@@ -151,7 +151,7 @@ void Unicorn::DumpMemoryInformation() {
 }
 
 void Unicorn::InterruptHook(uc_engine* uc, u32 int_number, void* user_data) {
-    Unicorn* this_ = reinterpret_cast<Unicorn*>(user_data);
+    auto* this_ = static_cast<Unicorn*>(user_data);
 
     u32 esr;
     CHECKED(uc_reg_read(uc, UC_ARM64_REG_ESR, &esr));
@@ -169,7 +169,7 @@ void Unicorn::InterruptHook(uc_engine* uc, u32 int_number, void* user_data) {
 }
 
 bool Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 start_address, int size, u64 /*value*/, void* user_data) {
-    Unicorn* this_ = reinterpret_cast<Unicorn*>(user_data);
+    auto* this_ = static_cast<Unicorn*>(user_data);
 
     const auto generate_page = [&](u64 base_address) {
         // printf("generate_page(%" PRIx64 ")\n", base_address);
@@ -212,7 +212,7 @@ bool Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 start_
 }
 
 bool Unicorn::MemoryWriteHook(uc_engine* /*uc*/, uc_mem_type /*type*/, u64 start_address, int size, u64 value, void* user_data) {
-    Unicorn* this_ = reinterpret_cast<Unicorn*>(user_data);
+    auto* this_ = static_cast<Unicorn*>(user_data);
 
     switch (size) {
     case 1:
