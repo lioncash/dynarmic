@@ -164,7 +164,7 @@ void Unicorn::InterruptHook(uc_engine* uc, u32 int_number, void* user_data) {
         this_->testenv.CallSVC(iss);
         break;
     default:
-        ASSERT_MSG(false, "Unhandled interrupt: int_number: %#x, esr: %#x", int_number, esr);
+        ASSERT_MSG(false, "Unhandled interrupt: int_number: %#x, esr: %#x (ec: %#x, iss: %#x)", int_number, esr, ec, iss);
     }
 }
 
