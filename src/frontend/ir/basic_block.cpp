@@ -21,6 +21,10 @@
 namespace Dynarmic::IR {
 
 void Block::AppendNewInst(Opcode opcode, std::initializer_list<IR::Value> args) {
+    PrependNewInst(end(), opcode, args);
+}
+
+Block::iterator Block::PrependNewInst(iterator insertion_point, Opcode opcode, std::initializer_list<Value> args) {
     IR::Inst* inst = new(instruction_alloc_pool->Alloc()) IR::Inst(opcode);
     ASSERT(args.size() == inst->NumArgs());
 
@@ -29,7 +33,7 @@ void Block::AppendNewInst(Opcode opcode, std::initializer_list<IR::Value> args) 
         index++;
     });
 
-    instructions.push_back(inst);
+    return instructions.insert_before(insertion_point, inst);
 }
 
 LocationDescriptor Block::Location() const {

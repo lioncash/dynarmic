@@ -69,13 +69,24 @@ public:
     const_reverse_iterator crend()   const { return instructions.crend();   }
 
     /**
-     * Appends a new instruction to this basic block,
+     * Appends a new instruction to the end of this basic block,
      * handling any allocations necessary to do so.
      *
      * @param op   Opcode representing the instruction to add.
      * @param args A sequence of Value instances used as arguments for the instruction.
      */
     void AppendNewInst(Opcode op, std::initializer_list<Value> args);
+
+    /**
+     * Prepends a new instruction to this basic block before the insertion point,
+     * handling any allocations necessary to do so.
+     *
+     * @param insertion_point Where to insert the new instruction.
+     * @param op              Opcode representing the instruction to add.
+     * @param args            A sequence of Value instances used as arguments for the instruction.
+     * @returns Iterator to the newly created instruction.
+     */
+    iterator PrependNewInst(iterator insertion_point, Opcode op, std::initializer_list<Value> args);
 
     /// Gets the starting location for this basic block.
     LocationDescriptor Location() const;

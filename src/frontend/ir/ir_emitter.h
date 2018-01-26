@@ -55,7 +55,7 @@ struct ResultAndGE {
  */
 class IREmitter {
 public:
-    explicit IREmitter(Block& block) : block(block) {}
+    explicit IREmitter(Block& block) : block(block), insertion_point(block.end()) {}
 
     Block& block;
 
@@ -247,11 +247,16 @@ public:
 
     void SetTerm(const Terminal& terminal);
 
+    void SetInsertionPoint(IR::Inst* new_insertion_point);
+    void SetInsertionPoint(IR::Block::iterator new_insertion_point);
+
 protected:
+    IR::Block::iterator insertion_point;
+
     template<typename T = Value, typename ...Args>
     T Inst(Opcode op, Args ...args) {
-        block.AppendNewInst(op, {Value(args)...});
-        return T(Value(&block.back()));
+        auto iter = block.PrependNewInst(insertion_point, op, {Value(args)...});
+        return T(Value(&*iter));
     }
 };
 
