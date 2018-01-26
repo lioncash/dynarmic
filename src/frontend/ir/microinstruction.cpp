@@ -150,6 +150,7 @@ bool Inst::ReadsFromCoreRegister() const {
     case Opcode::A32GetExtendedRegister64:
     case Opcode::A64GetW:
     case Opcode::A64GetX:
+    case Opcode::A64GetS:
     case Opcode::A64GetD:
     case Opcode::A64GetQ:
     case Opcode::A64GetSP:
@@ -168,6 +169,7 @@ bool Inst::WritesToCoreRegister() const {
     case Opcode::A32BXWritePC:
     case Opcode::A64SetW:
     case Opcode::A64SetX:
+    case Opcode::A64SetS:
     case Opcode::A64SetD:
     case Opcode::A64SetQ:
     case Opcode::A64SetSP:

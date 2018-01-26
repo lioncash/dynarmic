@@ -164,6 +164,15 @@ void A64EmitX64::EmitA64GetX(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void A64EmitX64::EmitA64GetS(A64EmitContext& ctx, IR::Inst* inst) {
+    A64::Vec vec = inst->GetArg(0).GetA64VecRef();
+    auto addr = qword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
+
+    Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    code->movd(result, addr);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void A64EmitX64::EmitA64GetD(A64EmitContext& ctx, IR::Inst* inst) {
     A64::Vec vec = inst->GetArg(0).GetA64VecRef();
     auto addr = qword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];

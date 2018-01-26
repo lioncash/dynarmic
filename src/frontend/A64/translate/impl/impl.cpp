@@ -124,6 +124,8 @@ void TranslatorVisitor::SP(size_t bitsize, IR::U32U64 value) {
 
 IR::U128 TranslatorVisitor::V(size_t bitsize, Vec vec) {
     switch (bitsize) {
+    case 32:
+        return ir.GetS(vec);
     case 64:
         return ir.GetD(vec);
     case 128:
@@ -135,6 +137,9 @@ IR::U128 TranslatorVisitor::V(size_t bitsize, Vec vec) {
 
 void TranslatorVisitor::V(size_t bitsize, Vec vec, IR::U128 value) {
     switch (bitsize) {
+    case 32:
+        ir.SetS(vec, value);
+        return;
     case 64:
         ir.SetD(vec, value);
         return;

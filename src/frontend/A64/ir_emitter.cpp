@@ -93,6 +93,10 @@ IR::U64 IREmitter::GetX(Reg reg) {
     return Inst<IR::U64>(Opcode::A64GetX, IR::Value(reg));
 }
 
+IR::U128 IREmitter::GetS(Vec vec) {
+    return Inst<IR::U128>(Opcode::A64GetS, IR::Value(vec));
+}
+
 IR::U128 IREmitter::GetD(Vec vec) {
     return Inst<IR::U128>(Opcode::A64GetD, IR::Value(vec));
 }
@@ -115,6 +119,10 @@ void IREmitter::SetX(const Reg reg, const IR::U64& value) {
     if (reg == Reg::ZR)
         return;
     Inst(Opcode::A64SetX, IR::Value(reg), value);
+}
+
+void IREmitter::SetS(const Vec vec, const IR::U128& value) {
+    Inst(Opcode::A64SetS, IR::Value(vec), value);
 }
 
 void IREmitter::SetD(const Vec vec, const IR::U128& value) {
