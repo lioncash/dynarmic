@@ -60,7 +60,13 @@ struct Jit::Impl {
     bool invalidate_entire_cache = false;
 
     void Execute() {
-        block_of_code.RunCode(&jit_state);
+        const u32 new_rsb_ptr = (jit_state.rsb_ptr - 1) & A32JitState::RSBPtrMask;
+        if (jit_state.GetUniqueHash() == jit_state.rsb_location_descriptors[new_rsb_ptr]) {
+            jit_state.rsb_ptr = new_rsb_ptr;
+            block_of_code.RunCodeFrom(&jit_state, reinterpret_cast<CodePtr>(jit_state.rsb_codeptrs[new_rsb_ptr]));
+        } else {
+            block_of_code.RunCode(&jit_state);
+        }
     }
 
     std::string Disassemble(const IR::LocationDescriptor& descriptor) {

@@ -50,7 +50,14 @@ public:
         jit_state.halt_requested = false;
 
         // TODO: Check code alignment
-        block_of_code.RunCode(&jit_state);
+
+        const u32 new_rsb_ptr = (jit_state.rsb_ptr - 1) & A64JitState::RSBPtrMask;
+        if (jit_state.GetUniqueHash() == jit_state.rsb_location_descriptors[new_rsb_ptr]) {
+            jit_state.rsb_ptr = new_rsb_ptr;
+            block_of_code.RunCodeFrom(&jit_state, reinterpret_cast<CodePtr>(jit_state.rsb_codeptrs[new_rsb_ptr]));
+        } else {
+            block_of_code.RunCode(&jit_state);
+        }
 
         PerformRequestedCacheInvalidation();
     }
