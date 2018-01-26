@@ -190,6 +190,9 @@ public:
     U128 VectorAdd32(const U128& a, const U128& b);
     U128 VectorAdd64(const U128& a, const U128& b);
     U128 VectorAnd(const U128& a, const U128& b);
+    U128 VectorOr(const U128& a, const U128& b);
+    U128 VectorEor(const U128& a, const U128& b);
+    U128 VectorNot(const U128& a);
     U128 VectorLowerBroadcast8(const U8& a);
     U128 VectorLowerBroadcast16(const U16& a);
     U128 VectorLowerBroadcast32(const U32& a);

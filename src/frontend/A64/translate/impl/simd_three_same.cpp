@@ -74,5 +74,45 @@ bool TranslatorVisitor::AND_asimd(bool Q, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::ORR_asimd_reg(bool Q, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+
+    auto operand1 = V(datasize, Vn);
+    auto operand2 = V(datasize, Vm);
+
+    auto result = ir.VectorOr(operand1, operand2);
+
+    V(datasize, Vd, result);
+
+    return true;
+}
+
+bool TranslatorVisitor::ORN_asimd(bool Q, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+
+    auto operand1 = V(datasize, Vn);
+    auto operand2 = V(datasize, Vm);
+
+    // TODO: This does not zero the upper 64 bits when datasize == 64. This may break future optimization passes.
+    auto result = ir.VectorOr(operand1, ir.VectorNot(operand2));
+
+    V(datasize, Vd, result);
+
+    return true;
+}
+
+bool TranslatorVisitor::EOR_asimd(bool Q, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+
+    auto operand1 = V(datasize, Vn);
+    auto operand2 = V(datasize, Vm);
+
+    auto result = ir.VectorEor(operand1, operand2);
+
+    V(datasize, Vd, result);
+
+    return true;
+}
+
 } // namespace A64
 } // namespace Dynarmic

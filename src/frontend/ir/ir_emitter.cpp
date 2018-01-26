@@ -705,6 +705,18 @@ U128 IREmitter::VectorAnd(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorAnd, a, b);
 }
 
+U128 IREmitter::VectorOr(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorOr, a, b);
+}
+
+U128 IREmitter::VectorEor(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorEor, a, b);
+}
+
+U128 IREmitter::VectorNot(const U128& a) {
+    return Inst<U128>(Opcode::VectorNot, a);
+}
+
 U128 IREmitter::VectorLowerBroadcast8(const U8& a) {
     return Inst<U128>(Opcode::VectorLowerBroadcast8, a);
 }
