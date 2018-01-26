@@ -175,7 +175,7 @@ void A64EmitX64::EmitA64GetD(A64EmitContext& ctx, IR::Inst* inst) {
 
 void A64EmitX64::EmitA64GetQ(A64EmitContext& ctx, IR::Inst* inst) {
     A64::Vec vec = inst->GetArg(0).GetA64VecRef();
-    auto addr = code->xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
+    auto addr = xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
 
     Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     code->movaps(result, addr);
@@ -217,20 +217,33 @@ void A64EmitX64::EmitA64SetX(A64EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
+void A64EmitX64::EmitA64SetS(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    A64::Vec vec = inst->GetArg(0).GetA64VecRef();
+    auto addr = xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
+
+    Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
+    Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+    // TODO: Optimize
+    code->pxor(tmp, tmp);
+    code->movss(tmp, to_store);
+    code->movaps(addr, tmp);
+}
+
 void A64EmitX64::EmitA64SetD(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     A64::Vec vec = inst->GetArg(0).GetA64VecRef();
-    auto addr = code->xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
+    auto addr = xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
 
     Xbyak::Xmm to_store = ctx.reg_alloc.UseScratchXmm(args[1]);
-    code->movq(to_store, to_store);
+    code->movq(to_store, to_store); // TODO: Remove when able
     code->movaps(addr, to_store);
 }
 
 void A64EmitX64::EmitA64SetQ(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     A64::Vec vec = inst->GetArg(0).GetA64VecRef();
-    auto addr = code->xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
+    auto addr = xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
 
     Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
     code->movaps(addr, to_store);
@@ -332,7 +345,7 @@ void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
     });
 
     Xbyak::Xmm result = xmm0;
-    code->movups(result, code->xword[code->ABI_RETURN]);
+    code->movups(result, xword[code->ABI_RETURN]);
     code->add(rsp, ABI_SHADOW_SPACE);
 
     ctx.reg_alloc.DefineValue(inst, result);
@@ -399,7 +412,7 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.HostCall(nullptr);
     code->lea(code->ABI_PARAM3, ptr[rsp]);
     code->sub(rsp, ABI_SHADOW_SPACE);
-    code->movaps(code->xword[code->ABI_PARAM3], xmm_value);
+    code->movaps(xword[code->ABI_PARAM3], xmm_value);
 
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value_ptr) {
         ASSERT(vaddr == code->ABI_PARAM2 && value_ptr == code->ABI_PARAM3);
