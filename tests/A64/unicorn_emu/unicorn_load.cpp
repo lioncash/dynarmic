@@ -9,8 +9,10 @@
 #include <unicorn/arm64.h>
 #include <unicorn_dynload.h>
 
+#include "common/assert.h"
+
 static struct LoadDll {
-private:
+public:
     LoadDll() {
         ASSERT(uc_dyn_load(NULL, 0));
     }
