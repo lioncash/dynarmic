@@ -19,14 +19,12 @@
 #include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/terminal.h"
 
-namespace Dynarmic {
-
-namespace IR {
+namespace Dynarmic::IR {
 class Block;
 class Inst;
-} // namespace IR
+} // namespace Dynarmic::IR
 
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 class BlockOfCode;
 
@@ -107,5 +105,4 @@ protected:
     std::unordered_map<IR::LocationDescriptor, PatchInformation> patch_information;
 };
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

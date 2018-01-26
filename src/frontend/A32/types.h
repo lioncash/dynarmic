@@ -16,8 +16,7 @@
 #include "common/common_types.h"
 #include "frontend/ir/cond.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 using Cond = IR::Cond;
 
@@ -118,5 +117,4 @@ inline ExtReg operator+(ExtReg reg, size_t number) {
     return new_reg;
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

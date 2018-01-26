@@ -14,8 +14,7 @@
 #include "backend_x64/reg_alloc.h"
 #include "common/assert.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 static u64 ImmediateToU64(const IR::Value& imm) {
     switch (imm.GetType()) {
@@ -641,5 +640,4 @@ void RegAlloc::EmitExchange(HostLoc a, HostLoc b) {
     }
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

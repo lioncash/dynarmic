@@ -12,8 +12,7 @@
 #include "frontend/ir/value.h"
 #include "ir_opt/passes.h"
 
-namespace Dynarmic {
-namespace Optimization {
+namespace Dynarmic::Optimization {
 
 void A32GetSetElimination(IR::Block& block) {
     using Iterator = IR::Block::iterator;
@@ -165,5 +164,4 @@ void A32GetSetElimination(IR::Block& block) {
     }
 }
 
-} // namespace Optimization
-} // namespace Dynarmic
+} // namespace Dynarmic::Optimization

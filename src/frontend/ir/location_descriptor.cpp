@@ -9,13 +9,11 @@
 
 #include "frontend/ir/location_descriptor.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 std::ostream& operator<<(std::ostream& o, const LocationDescriptor& descriptor) {
     o << fmt::format("{{{:016x}}}", descriptor.Value());
     return o;
 }
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

@@ -6,8 +6,7 @@
 
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 static bool StoreRegister(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize,
                           const Imm<9> imm9, const Reg Rn, const Reg Rt) {
@@ -147,5 +146,4 @@ bool TranslatorVisitor::LDTRSW(Imm<9> imm9, Reg Rn, Reg Rt) {
     X(64, Rt, SignExtend(data, 64));
     return true;
 }
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

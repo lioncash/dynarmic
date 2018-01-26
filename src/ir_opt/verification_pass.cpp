@@ -12,8 +12,7 @@
 #include "frontend/ir/microinstruction.h"
 #include "ir_opt/passes.h"
 
-namespace Dynarmic {
-namespace Optimization {
+namespace Dynarmic::Optimization {
 
 void VerificationPass(const IR::Block& block) {
     for (const auto& inst : block) {
@@ -41,5 +40,4 @@ void VerificationPass(const IR::Block& block) {
     }
 }
 
-} // namespace Optimization
-} // namespace Dynarmic
+} // namespace Dynarmic::Optimization

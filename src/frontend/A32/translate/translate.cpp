@@ -8,8 +8,7 @@
 #include "frontend/A32/translate/translate.h"
 #include "frontend/ir/basic_block.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 IR::Block TranslateArm(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code);
 IR::Block TranslateThumb(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code);
@@ -18,5 +17,4 @@ IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory
     return (descriptor.TFlag() ? TranslateThumb : TranslateArm)(descriptor, memory_read_code);
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

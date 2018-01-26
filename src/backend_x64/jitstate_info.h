@@ -10,8 +10,7 @@
 
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 struct JitStateInfo {
     template <typename JitStateType>
@@ -44,5 +43,4 @@ struct JitStateInfo {
     const size_t offsetof_FPSCR_UFC;
 };
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

@@ -14,8 +14,7 @@
 #include "backend_x64/block_of_code.h"
 #include "common/assert.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 #ifdef _WIN32
 const Xbyak::Reg64 BlockOfCode::ABI_RETURN = Xbyak::util::rax;
@@ -243,5 +242,4 @@ bool BlockOfCode::DoesCpuSupport(Xbyak::util::Cpu::Type type) const {
 #endif
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

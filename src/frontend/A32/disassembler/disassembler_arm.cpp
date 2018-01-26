@@ -17,8 +17,7 @@
 #include "frontend/A32/disassembler/disassembler.h"
 #include "frontend/A32/types.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 class DisassemblerVisitor {
 public:
@@ -1079,5 +1078,4 @@ std::string DisassembleArm(u32 instruction) {
     }
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

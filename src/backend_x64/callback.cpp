@@ -7,8 +7,7 @@
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/callback.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 void SimpleCallback::EmitCall(BlockOfCode* code, std::function<void()> l) {
     l();
@@ -54,5 +53,4 @@ void ArgCallback::EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, X
     code->CallFunction(fn);
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

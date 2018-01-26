@@ -8,9 +8,7 @@
 
 #include <boost/variant.hpp>
 
-namespace Dynarmic {
-namespace Common {
-
+namespace Dynarmic::Common {
 namespace detail {
 
 template <typename ReturnT, typename Lambda>
@@ -29,5 +27,4 @@ inline ReturnT VisitVariant(Variant&& variant, Lambda&& lambda) {
     return boost::apply_visitor(detail::VariantVisitor<ReturnT, Lambda>(std::move(lambda)), variant);
 }
 
-} // namespace Common
-} // namespace Dynarmic
+} // namespace Dynarmic::Common

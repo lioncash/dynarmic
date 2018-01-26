@@ -15,8 +15,7 @@
 #include "frontend/A32/types.h"
 #include "frontend/ir/basic_block.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 static bool CondCanContinue(ConditionalState cond_state, const A32::IREmitter& ir) {
     ASSERT_MSG(cond_state != ConditionalState::Break, "Should never happen.");
@@ -157,5 +156,4 @@ IR::ResultAndCarry<IR::U32> ArmTranslatorVisitor::EmitRegShift(IR::U32 value, Sh
     return {};
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

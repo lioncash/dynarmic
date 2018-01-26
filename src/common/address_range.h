@@ -8,8 +8,7 @@
 
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace Common {
+namespace Dynarmic::Common {
 
 struct AddressRange {
     u32 start_address;
@@ -21,5 +20,4 @@ struct AddressRange {
     }
 };
 
-} // namespace Common
-} // namespace Dynarmic
+} // namespace Dynarmic::Common

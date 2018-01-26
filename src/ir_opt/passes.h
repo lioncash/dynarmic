@@ -9,14 +9,11 @@
 #include <dynarmic/A32/callbacks.h>
 #include <dynarmic/A64/config.h>
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 class Block;
 }
-}
 
-namespace Dynarmic {
-namespace Optimization {
+namespace Dynarmic::Optimization {
 
 void A32GetSetElimination(IR::Block& block);
 void A32ConstantMemoryReads(IR::Block& block, const A32::UserCallbacks::Memory& memory_callbacks);
@@ -25,5 +22,4 @@ void ConstantPropagation(IR::Block& block);
 void DeadCodeElimination(IR::Block& block);
 void VerificationPass(const IR::Block& block);
 
-} // namespace Optimization
-} // namespace Dynarmic
+} // namespace Dynarmic::Optimization

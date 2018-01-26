@@ -21,8 +21,7 @@
 #include "frontend/ir/basic_block.h"
 #include "ir_opt/passes.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 using namespace BackendX64;
 
@@ -311,5 +310,4 @@ bool Jit::IsExecuting() const {
     return impl->IsExecuting();
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

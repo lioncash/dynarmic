@@ -15,9 +15,7 @@
 #include "frontend/A32/translate/translate.h"
 #include "frontend/A32/types.h"
 
-namespace Dynarmic {
-namespace A32 {
-
+namespace Dynarmic::A32 {
 namespace {
 
 struct ThumbTranslatorVisitor final {
@@ -915,5 +913,4 @@ IR::Block TranslateThumb(LocationDescriptor descriptor, MemoryReadCodeFuncType m
     return block;
 }
 
-} // namespace A32
-} // namepsace Dynarmic
+} // namepsace Dynarmic::A32

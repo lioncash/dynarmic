@@ -6,8 +6,7 @@
 
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 static IR::U32U64 ReplicateBit(IREmitter& ir, const IR::U32U64& value, u8 bit_position_to_replicate) {
     u8 datasize = value.GetType() == IR::Type::U64 ? 64 : 32;
@@ -77,5 +76,4 @@ bool TranslatorVisitor::UBFM(bool sf, bool N, Imm<6> immr, Imm<6> imms, Reg Rn, 
     return true;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

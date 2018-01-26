@@ -16,8 +16,7 @@
 #include "frontend/ir/ir_emitter.h"
 #include "frontend/ir/value.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 /**
  * Convenience class to construct a basic block of the intermediate representation.
@@ -64,5 +63,4 @@ public:
     void SetPC(const IR::U64& value);
 };
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

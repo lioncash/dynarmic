@@ -9,8 +9,7 @@
 #include "frontend/A32/ir_emitter.h"
 #include "frontend/A32/location_descriptor.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 enum class ConditionalState {
     /// We haven't met any conditional instructions yet.
@@ -384,5 +383,4 @@ struct ArmTranslatorVisitor final {
     bool vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8);
 };
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

@@ -8,8 +8,7 @@
 #include "frontend/ir/ir_emitter.h"
 #include "frontend/ir/opcodes.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 U1 IREmitter::Imm1(bool imm1) {
     return U1(Value(imm1));
@@ -929,5 +928,4 @@ void IREmitter::SetTerm(const Terminal& terminal) {
     block.SetTerminal(terminal);
 }
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

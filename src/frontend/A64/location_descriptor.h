@@ -15,8 +15,7 @@
 #include "frontend/A64/FPCR.h"
 #include "frontend/ir/location_descriptor.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 /**
  * LocationDescriptor describes the location of a basic block.
@@ -76,8 +75,7 @@ private:
  */
 std::ostream& operator<<(std::ostream& o, const LocationDescriptor& descriptor);
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64
 
 namespace std {
 template <>

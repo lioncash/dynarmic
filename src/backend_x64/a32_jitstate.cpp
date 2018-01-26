@@ -11,8 +11,7 @@
 #include "common/common_types.h"
 #include "frontend/A32/location_descriptor.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 /**
  * CPSR Bits
@@ -203,5 +202,4 @@ u64 A32JitState::GetUniqueHash() const {
     return CPSR_et | FPSCR_mode | (static_cast<u64>(Reg[15]) << 32);
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

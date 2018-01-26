@@ -8,9 +8,7 @@
 
 #include <iterator>
 
-namespace Dynarmic {
-namespace Common {
-
+namespace Dynarmic::Common {
 namespace detail {
 
 template<typename T>
@@ -35,5 +33,4 @@ detail::ReverseAdapter<T> Reverse(T&& iterable) {
     return detail::ReverseAdapter<T>{iterable};
 }
 
-} // namespace Common
-} // namespace Dynarmic
+} // namespace Dynarmic::Common

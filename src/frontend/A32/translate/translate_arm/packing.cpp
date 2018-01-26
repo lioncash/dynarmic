@@ -6,8 +6,7 @@
 
 #include "translate_arm.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 bool ArmTranslatorVisitor::arm_PKHBT(Cond cond, Reg n, Reg d, Imm5 imm5, Reg m) {
     if (n == Reg::PC || d == Reg::PC || m == Reg::PC)
@@ -37,5 +36,4 @@ bool ArmTranslatorVisitor::arm_PKHTB(Cond cond, Reg n, Reg d, Imm5 imm5, Reg m) 
     return true;
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

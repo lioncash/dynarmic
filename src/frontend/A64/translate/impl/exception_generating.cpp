@@ -6,8 +6,7 @@
 
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::SVC(Imm<16> imm16) {
     // ir.PushRSB(ir.current_location.AdvancePC(4)); // TODO
@@ -17,5 +16,4 @@ bool TranslatorVisitor::SVC(Imm<16> imm16) {
     return false;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

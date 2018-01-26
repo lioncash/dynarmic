@@ -6,8 +6,7 @@
 
 #include "translate_arm.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 // Parallel Add/Subtract (Modulo arithmetic) instructions
 bool ArmTranslatorVisitor::arm_SADD8(Cond cond, Reg n, Reg d, Reg m) {
@@ -365,5 +364,4 @@ bool ArmTranslatorVisitor::arm_UHSUB16(Cond cond, Reg n, Reg d, Reg m) {
     return true;
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

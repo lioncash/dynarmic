@@ -10,8 +10,7 @@
 #include "backend_x64/constant_pool.h"
 #include "common/assert.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 ConstantPool::ConstantPool(BlockOfCode* code, size_t size) : code(code), pool_size(size) {
     code->int3();
@@ -32,5 +31,4 @@ Xbyak::Address ConstantPool::GetConstant(u64 constant) {
     return code->xword[code->rip + iter->second];
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

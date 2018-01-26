@@ -12,8 +12,7 @@
 #include "backend_x64/block_range_information.h"
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 template <typename ProgramCounterType>
 void BlockRangeInformation<ProgramCounterType>::AddRange(boost::icl::discrete_interval<ProgramCounterType> range, IR::LocationDescriptor location) {
@@ -43,5 +42,4 @@ std::unordered_set<IR::LocationDescriptor> BlockRangeInformation<ProgramCounterT
 template class BlockRangeInformation<u32>;
 template class BlockRangeInformation<u64>;
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

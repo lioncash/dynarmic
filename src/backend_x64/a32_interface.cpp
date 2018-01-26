@@ -29,8 +29,7 @@
 #include "frontend/ir/location_descriptor.h"
 #include "ir_opt/passes.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 using namespace BackendX64;
 
@@ -325,5 +324,4 @@ std::string Jit::Disassemble(const IR::LocationDescriptor& descriptor) {
     return impl->Disassemble(descriptor);
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

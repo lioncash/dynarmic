@@ -12,8 +12,7 @@
 #include "frontend/ir/cond.h"
 #include "frontend/ir/location_descriptor.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 namespace Term {
 
 struct Invalid {};
@@ -117,5 +116,4 @@ struct CheckHalt {
 
 using Term::Terminal;
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

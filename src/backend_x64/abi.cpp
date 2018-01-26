@@ -20,8 +20,7 @@
 #include "common/common_types.h"
 #include "common/iterator_util.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 constexpr size_t GPR_SIZE = 8;
 constexpr size_t XMM_SIZE = 16;
@@ -127,5 +126,4 @@ void ABI_PopCallerSaveRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t
     ABI_PopRegistersAndAdjustStack(code, frame_size, ABI_ALL_CALLER_SAVE);
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

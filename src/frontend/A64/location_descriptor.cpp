@@ -9,13 +9,11 @@
 
 #include "frontend/A64/location_descriptor.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 std::ostream& operator<<(std::ostream& o, const LocationDescriptor& loc) {
     o << fmt::format("{{{}, {}}}", loc.PC(), loc.FPCR().Value());
     return o;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

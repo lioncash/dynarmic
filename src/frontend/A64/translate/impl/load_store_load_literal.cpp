@@ -6,8 +6,7 @@
 
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::LDR_lit_gen(bool opc_0, Imm<19> imm19, Reg Rt) {
     size_t size = opc_0 == 0 ? 4 : 8;
@@ -39,5 +38,4 @@ bool TranslatorVisitor::PRFM_lit(Imm<19> /*imm19*/, Imm<5> /*prfop*/) {
     return true;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

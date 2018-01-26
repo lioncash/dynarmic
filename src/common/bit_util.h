@@ -13,8 +13,7 @@
 
 #include "common/assert.h"
 
-namespace Dynarmic {
-namespace Common {
+namespace Dynarmic::Common {
 
 /// The size of a type in terms of bits
 template<typename T>
@@ -135,5 +134,4 @@ inline T RotateRight(T value, size_t amount) {
     return static_cast<T>((x >> amount) | (x << (BitSize<T>() - amount)));
 }
 
-} // namespace Common
-} // namespace Dynarmic
+} // namespace Dynarmic::Common

@@ -9,8 +9,7 @@
 #include "common/bit_util.h"
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 /**
  * Program Status Register
@@ -221,5 +220,4 @@ inline bool operator!=(PSR lhs, PSR rhs) {
     return !operator==(lhs, rhs);
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

@@ -8,8 +8,7 @@
 #include "frontend/ir/basic_block.h"
 #include "ir_opt/passes.h"
 
-namespace Dynarmic {
-namespace Optimization {
+namespace Dynarmic::Optimization {
 
 void DeadCodeElimination(IR::Block& block) {
     // We iterate over the instructions in reverse order.
@@ -21,5 +20,4 @@ void DeadCodeElimination(IR::Block& block) {
     }
 }
 
-} // namespace Optimization
 } // namespace Dynarmic

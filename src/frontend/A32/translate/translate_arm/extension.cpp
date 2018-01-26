@@ -6,8 +6,7 @@
 
 #include "translate_arm.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 static IR::U32 Rotate(A32::IREmitter& ir, Reg m, SignExtendRotation rotate) {
     const u8 rotate_by = static_cast<u8>(static_cast<size_t>(rotate) * 8);
@@ -181,5 +180,4 @@ bool ArmTranslatorVisitor::arm_UXTH(Cond cond, Reg d, SignExtendRotation rotate,
     return true;
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

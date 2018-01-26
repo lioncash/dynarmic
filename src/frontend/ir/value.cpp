@@ -8,8 +8,7 @@
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/value.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 Value::Value(Inst* value) : type(Type::Opaque) {
     inner.inst = value;
@@ -154,5 +153,4 @@ Cond Value::GetCond() const {
     return inner.imm_cond;
 }
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

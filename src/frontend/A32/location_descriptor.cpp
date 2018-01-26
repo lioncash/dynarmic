@@ -8,8 +8,7 @@
 #include <fmt/format.h>
 #include "frontend/A32/location_descriptor.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 std::ostream& operator<<(std::ostream& o, const LocationDescriptor& loc) {
     o << fmt::format("{{{},{},{},{}}}",
@@ -20,5 +19,4 @@ std::ostream& operator<<(std::ostream& o, const LocationDescriptor& loc) {
     return o;
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

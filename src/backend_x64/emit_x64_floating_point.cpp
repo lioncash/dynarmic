@@ -12,8 +12,7 @@
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/opcodes.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 using namespace Xbyak::util;
 
@@ -600,5 +599,4 @@ void EmitX64::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

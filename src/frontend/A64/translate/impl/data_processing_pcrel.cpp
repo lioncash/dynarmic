@@ -6,8 +6,7 @@
 
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::ADR(Imm<2> immlo, Imm<19> immhi, Reg Rd) {
     u64 imm = concatenate(immhi, immlo).SignExtend<u64>();
@@ -23,5 +22,4 @@ bool TranslatorVisitor::ADRP(Imm<2> immlo, Imm<19> immhi, Reg Rd) {
     return true;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

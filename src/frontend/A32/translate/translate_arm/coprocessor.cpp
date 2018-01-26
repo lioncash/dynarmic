@@ -6,8 +6,7 @@
 
 #include "translate_arm.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 bool ArmTranslatorVisitor::arm_CDP(Cond cond, size_t opc1, CoprocReg CRn, CoprocReg CRd, size_t coproc_no, size_t opc2, CoprocReg CRm) {
     if ((coproc_no & 0b1110) == 0b1010)
@@ -146,5 +145,4 @@ bool ArmTranslatorVisitor::arm_STC(Cond cond, bool p, bool u, bool d, bool w, Re
     return true;
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

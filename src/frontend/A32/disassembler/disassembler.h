@@ -10,11 +10,9 @@
 
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 std::string DisassembleArm(u32 instruction);
 std::string DisassembleThumb16(u16 instruction);
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

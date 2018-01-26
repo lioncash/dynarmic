@@ -10,8 +10,7 @@
 #include "common/bit_util.h"
 #include "frontend/A32/types.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 const char* CondToString(Cond cond, bool explicit_al) {
     constexpr std::array<const char*, 15> cond_strs = {
@@ -78,5 +77,4 @@ std::ostream& operator<<(std::ostream& o, RegList reg_list) {
     return o;
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

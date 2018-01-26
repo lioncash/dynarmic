@@ -11,8 +11,7 @@
 #include "common/common_types.h"
 #include "common/math_util.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 /**
  * Imm represents an immediate value in an AArch64 instruction.
@@ -96,5 +95,4 @@ auto concatenate(Imm<first_bit_size> first, Imm<rest_bit_sizes> ...rest) {
     }
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

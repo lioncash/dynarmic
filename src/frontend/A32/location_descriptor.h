@@ -14,8 +14,7 @@
 #include "frontend/A32/PSR.h"
 #include "frontend/ir/location_descriptor.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 /**
  * LocationDescriptor describes the location of a basic block.
@@ -108,8 +107,7 @@ private:
  */
 std::ostream& operator<<(std::ostream& o, const LocationDescriptor& descriptor);
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32
 
 namespace std {
 template <>

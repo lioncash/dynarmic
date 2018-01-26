@@ -8,8 +8,7 @@
 #include "frontend/A64/ir_emitter.h"
 #include "frontend/ir/opcodes.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 using Opcode = IR::Opcode;
 
@@ -134,5 +133,4 @@ void IREmitter::SetPC(const IR::U64& value) {
     Inst(Opcode::A64SetPC, value);
 }
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

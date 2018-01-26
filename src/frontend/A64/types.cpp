@@ -12,8 +12,7 @@
 #include "common/bit_util.h"
 #include "frontend/A64/types.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 const char* CondToString(Cond cond) {
     constexpr std::array<const char*, 16> cond_strs = {
@@ -42,5 +41,4 @@ std::ostream& operator<<(std::ostream& o, Vec vec) {
     return o;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

@@ -14,8 +14,7 @@
 #include "common/common_types.h"
 #include "frontend/ir/cond.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 using Cond = IR::Cond;
 
@@ -71,5 +70,4 @@ inline Vec operator+(Vec vec, size_t number) {
     return static_cast<Vec>(new_vec);
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

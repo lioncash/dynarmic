@@ -10,8 +10,7 @@
 #include "frontend/A64/translate/translate.h"
 #include "frontend/ir/basic_block.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code) {
     IR::Block block{descriptor};
@@ -57,5 +56,4 @@ bool TranslateSingleInstruction(IR::Block& block, LocationDescriptor descriptor,
     return should_continue;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

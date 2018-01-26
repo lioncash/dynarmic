@@ -6,8 +6,7 @@
 
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::MADD(bool sf, Reg Rm, Reg Ra, Reg Rn, Reg Rd) {
     const size_t datasize = sf ? 64 : 32;
@@ -103,5 +102,4 @@ bool TranslatorVisitor::SDIV(bool sf, Reg Rm, Reg Rn, Reg Rd) {
     return true;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

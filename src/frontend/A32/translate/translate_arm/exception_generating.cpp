@@ -6,8 +6,7 @@
 
 #include "translate_arm.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 bool ArmTranslatorVisitor::arm_BKPT(Cond /*cond*/, Imm12 /*imm12*/, Imm4 /*imm4*/) {
     return InterpretThisInstruction();
@@ -30,5 +29,4 @@ bool ArmTranslatorVisitor::arm_UDF() {
     return InterpretThisInstruction();
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

@@ -8,8 +8,7 @@
 
 #include "common/bit_util.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 bool ArmTranslatorVisitor::arm_CPS() {
     return InterpretThisInstruction();
@@ -76,5 +75,4 @@ bool ArmTranslatorVisitor::arm_SRS() {
     return InterpretThisInstruction();
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

@@ -13,8 +13,7 @@
 #include "frontend/A64/location_descriptor.h"
 #include "frontend/A64/types.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 enum class AccType {
     NORMAL, VEC, STREAM, VECSTREAM, ATOMIC, ORDERED, UNPRIV, IFETCH, PTW, DC, IC, AT,
@@ -1029,5 +1028,4 @@ struct TranslatorVisitor final {
     bool FNMSUB_float(Imm<2> type, Vec Vm, Vec Va, Vec Vn, Vec Vd);
 };
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

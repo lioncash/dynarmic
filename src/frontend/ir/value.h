@@ -15,8 +15,7 @@
 #include "frontend/ir/cond.h"
 #include "frontend/ir/opcodes.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 class Inst;
 
@@ -103,5 +102,4 @@ using UAny = TypedValue<Type::U8 | Type::U16 | Type::U32 | Type::U64>;
 using UAnyU128 = TypedValue<Type::U8 | Type::U16 | Type::U32 | Type::U64 | Type::U128>;
 using NZCV = TypedValue<Type::NZCVFlags>;
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

@@ -18,8 +18,7 @@
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/opcodes.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 void Block::AppendNewInst(Opcode opcode, std::initializer_list<IR::Value> args) {
     IR::Inst* inst = new(instruction_alloc_pool->Alloc()) IR::Inst(opcode);
@@ -223,5 +222,4 @@ std::string DumpBlock(const IR::Block& block) {
     return ret;
 }
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

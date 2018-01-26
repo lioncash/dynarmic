@@ -7,8 +7,7 @@
 #include "backend_x64/a64_jitstate.h"
 #include "frontend/A64/location_descriptor.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 u64 A64JitState::GetUniqueHash() const {
     u64 fpcr_u64 = static_cast<u64>(fpcr & A64::LocationDescriptor::FPCR_MASK) << 37;
@@ -16,5 +15,4 @@ u64 A64JitState::GetUniqueHash() const {
     return pc_u64 | fpcr_u64;
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

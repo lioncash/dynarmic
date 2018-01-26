@@ -16,8 +16,7 @@
 #include "frontend/ir/ir_emitter.h"
 #include "frontend/ir/value.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 /**
  * Convenience class to construct a basic block of the intermediate representation.
@@ -87,5 +86,4 @@ public:
     void CoprocStoreWords(size_t coproc_no, bool two, bool long_transfer, CoprocReg CRd, const IR::U32& address, bool has_option, u8 option);
 };
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

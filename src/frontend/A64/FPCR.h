@@ -11,8 +11,7 @@
 #include "common/bit_util.h"
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 /**
  * Representation of the Floating-Point Control Register.
@@ -108,5 +107,4 @@ inline bool operator!=(FPCR lhs, FPCR rhs) {
     return !operator==(lhs, rhs);
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

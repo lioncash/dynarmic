@@ -6,8 +6,7 @@
 
 #include "translate_arm.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 bool ArmTranslatorVisitor::arm_REV(Cond cond, Reg d, Reg m) {
     // REV<c> <Rd>, <Rm>
@@ -47,5 +46,4 @@ bool ArmTranslatorVisitor::arm_REVSH(Cond cond, Reg d, Reg m) {
     return true;
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

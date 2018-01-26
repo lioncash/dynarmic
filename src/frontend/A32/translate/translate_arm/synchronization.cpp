@@ -6,8 +6,7 @@
 
 #include "translate_arm.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 bool ArmTranslatorVisitor::arm_CLREX() {
     // CLREX
@@ -158,5 +157,4 @@ bool ArmTranslatorVisitor::arm_SWPB(Cond cond, Reg n, Reg t, Reg t2) {
 }
 
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

@@ -16,8 +16,7 @@
 #include "frontend/ir/basic_block.h"
 #include "ir_opt/passes.h"
 
-namespace Dynarmic {
-namespace Optimization {
+namespace Dynarmic::Optimization {
 
 void A64MergeInterpretBlocksPass(IR::Block& block, A64::UserCallbacks* cb) {
     const auto is_interpret_instruction = [cb](A64::LocationDescriptor location) {
@@ -54,5 +53,4 @@ void A64MergeInterpretBlocksPass(IR::Block& block, A64::UserCallbacks* cb) {
     block.CycleCount() += num_instructions - 1;
 }
 
-} // namespace Optimization
-} // namespace Dynarmic
+} // namespace Dynarmic::Optimization

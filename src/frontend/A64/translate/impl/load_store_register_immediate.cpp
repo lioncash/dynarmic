@@ -6,8 +6,7 @@
 
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::load_store_register_immediate(bool wback, bool postindex, size_t scale, u64 offset, Imm<2> size, Imm<2> opc, Reg Rn, Reg Rt) {
     MemOp memop;
@@ -194,5 +193,4 @@ bool TranslatorVisitor::LDR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm1
     return LoadStoreSIMD(*this, ir, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

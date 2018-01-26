@@ -11,8 +11,7 @@
 
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 class LocationDescriptor {
 public:
@@ -34,8 +33,7 @@ private:
 
 std::ostream& operator<<(std::ostream& o, const LocationDescriptor& descriptor);
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::IR
 
 namespace std {
 template <>

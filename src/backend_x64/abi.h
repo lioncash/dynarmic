@@ -9,8 +9,7 @@
 
 #include "backend_x64/hostloc.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 #ifdef _WIN32
 
@@ -115,5 +114,4 @@ void ABI_PopCalleeSaveRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t
 void ABI_PushCallerSaveRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t frame_size = 0);
 void ABI_PopCallerSaveRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t frame_size = 0);
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

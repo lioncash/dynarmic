@@ -10,8 +10,7 @@
 
 #include "common/assert.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 struct OpArg {
     OpArg() : type(Type::Operand), inner_operand() {}
@@ -76,5 +75,4 @@ private:
     };
 };
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

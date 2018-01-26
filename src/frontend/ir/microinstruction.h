@@ -13,8 +13,7 @@
 #include "frontend/ir/opcodes.h"
 #include "frontend/ir/value.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 /**
  * A representation of a microinstruction. A single ARM/Thumb instruction may be
@@ -127,5 +126,4 @@ private:
     Inst* nzcv_inst = nullptr;
 };
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

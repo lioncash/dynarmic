@@ -10,8 +10,7 @@
 #include "frontend/ir/opcodes.h"
 #include "ir_opt/passes.h"
 
-namespace Dynarmic {
-namespace Optimization {
+namespace Dynarmic::Optimization {
 
 void ConstantPropagation(IR::Block& block) {
     for (auto& inst : block) {
@@ -58,5 +57,4 @@ void ConstantPropagation(IR::Block& block) {
     }
 }
 
-} // namespace Optimization
-} // namespace Dynarmic
+} // namespace Dynarmic::Optimization

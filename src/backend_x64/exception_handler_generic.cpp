@@ -6,8 +6,7 @@
 
 #include "backend_x64/block_of_code.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 struct BlockOfCode::ExceptionHandler::Impl final {
 };
@@ -19,5 +18,4 @@ void BlockOfCode::ExceptionHandler::Register(BlockOfCode*) {
     // Do nothing
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

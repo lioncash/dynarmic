@@ -6,8 +6,7 @@
 
 #include "translate_arm.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 bool ArmTranslatorVisitor::arm_ADC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
     // ADC{S}<c> <Rd>, <Rn>, #<imm>
@@ -889,5 +888,4 @@ bool ArmTranslatorVisitor::arm_TST_rsr(Cond cond, Reg n, Reg s, ShiftType shift,
     return true;
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

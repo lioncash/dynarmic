@@ -14,8 +14,7 @@
 #include "common/bit_util.h"
 #include "common/mp.h"
 
-namespace Dynarmic {
-namespace Decoder {
+namespace Dynarmic::Decoder {
 namespace detail {
 
 /**
@@ -163,5 +162,4 @@ public:
 };
 
 } // namespace detail
-} // namespace Decoder
-} // namespace Dynarmic
+} // namespace Dynarmic::Decoder

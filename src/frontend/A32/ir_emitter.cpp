@@ -8,8 +8,7 @@
 #include "frontend/A32/ir_emitter.h"
 #include "frontend/ir/opcodes.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 using Opcode = IR::Opcode;
 
@@ -320,5 +319,4 @@ void IREmitter::CoprocStoreWords(size_t coproc_no, bool two, bool long_transfer,
     Inst(Opcode::A32CoprocStoreWords, IR::Value(coproc_info), address);
 }
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

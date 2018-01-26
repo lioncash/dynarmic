@@ -14,8 +14,7 @@
 #include "frontend/decoder/decoder_detail.h"
 #include "frontend/decoder/matcher.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 template <typename Visitor>
 using Thumb32Matcher = Decoder::Matcher<Visitor, u32>;
@@ -43,5 +42,4 @@ boost::optional<const Thumb32Matcher<V>&> DecodeThumb32(u32 instruction) {
     return iter != table.end() ? boost::optional<const Thumb32Matcher<V>&>(*iter) : boost::none;
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

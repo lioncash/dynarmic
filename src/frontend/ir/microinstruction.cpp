@@ -9,8 +9,7 @@
 #include "common/assert.h"
 #include "frontend/ir/microinstruction.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 bool Inst::IsArithmeticShift() const {
     return op == Opcode::ArithmeticShiftRight32 ||
@@ -444,5 +443,4 @@ void Inst::UndoUse(const Value& value) {
     }
 }
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

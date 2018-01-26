@@ -12,8 +12,7 @@
 
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 class BlockOfCode;
 
@@ -82,5 +81,4 @@ struct A64JitState {
 
 using CodePtr = const void*;
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

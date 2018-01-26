@@ -13,8 +13,7 @@
 
 #include "common/assert.h"
 
-namespace Dynarmic {
-namespace Common {
+namespace Dynarmic::Common {
 
 template <typename T> class IntrusiveList;
 template <typename T> class IntrusiveListIterator;
@@ -374,5 +373,4 @@ void swap(IntrusiveList<T>& lhs, IntrusiveList<T>& rhs) noexcept {
     lhs.swap(rhs);
 }
 
-} // namespace Common
-} // namespace Dynarmic
+} // namespace Dynarmic::Common

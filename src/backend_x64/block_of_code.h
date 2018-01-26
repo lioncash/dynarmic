@@ -18,8 +18,7 @@
 #include "common/common_types.h"
 #include "dynarmic/A32/callbacks.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 using CodePtr = const void*;
 
@@ -147,5 +146,4 @@ private:
     Xbyak::util::Cpu cpu_info;
 };
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

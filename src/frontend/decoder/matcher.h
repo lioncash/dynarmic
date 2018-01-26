@@ -10,8 +10,7 @@
 
 #include "common/assert.h"
 
-namespace Dynarmic {
-namespace Decoder {
+namespace Dynarmic::Decoder {
 
 /**
  * Generic instruction handling construct.
@@ -75,5 +74,4 @@ private:
     handler_function fn;
 };
 
-} // namespace Decoder
-} // namespace Dynarmic
+} // namespace Dynarmic::Decoder

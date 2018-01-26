@@ -17,8 +17,7 @@
 #include "frontend/decoder/decoder_detail.h"
 #include "frontend/decoder/matcher.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 template <typename Visitor>
 using Matcher = Decoder::Matcher<Visitor, u32>;
@@ -49,5 +48,4 @@ boost::optional<const Matcher<Visitor>&> Decode(u32 instruction) {
     return iter != table.end() ? boost::optional<const Matcher<Visitor>&>(*iter) : boost::none;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

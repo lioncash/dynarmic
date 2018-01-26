@@ -10,8 +10,7 @@
 #include "frontend/ir/opcodes.h"
 #include "ir_opt/passes.h"
 
-namespace Dynarmic {
-namespace Optimization {
+namespace Dynarmic::Optimization {
 
 void A32ConstantMemoryReads(IR::Block& block, const A32::UserCallbacks::Memory& memory_callbacks) {
     for (auto& inst : block) {
@@ -73,5 +72,4 @@ void A32ConstantMemoryReads(IR::Block& block, const A32::UserCallbacks::Memory& 
     }
 }
 
-} // namespace Optimization
-} // namespace Dynarmic
+} // namespace Dynarmic::Optimization

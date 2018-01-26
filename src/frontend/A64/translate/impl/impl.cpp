@@ -8,8 +8,7 @@
 #include "frontend/ir/terminal.h"
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::InterpretThisInstruction() {
     ir.SetTerm(IR::Term::Interpret(ir.current_location));
@@ -304,5 +303,4 @@ IR::U32U64 TranslatorVisitor::ExtendReg(size_t bitsize, Reg reg, Imm<3> option, 
     return ir.LogicalShiftLeft(extended, ir.Imm8(shift));
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

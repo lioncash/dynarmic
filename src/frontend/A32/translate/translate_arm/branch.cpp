@@ -8,8 +8,7 @@
 
 #include "translate_arm.h"
 
-namespace Dynarmic {
-namespace A32 {
+namespace Dynarmic::A32 {
 
 bool ArmTranslatorVisitor::arm_B(Cond cond, Imm24 imm24) {
     u32 imm32 = Common::SignExtend<26, u32>(imm24 << 2) + 8;
@@ -77,5 +76,4 @@ bool ArmTranslatorVisitor::arm_BXJ(Cond cond, Reg m) {
     return arm_BX(cond, m);
 }
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

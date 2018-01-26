@@ -21,8 +21,7 @@
 #include "frontend/ir/terminal.h"
 #include "frontend/ir/value.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 enum class Opcode;
 
@@ -147,5 +146,4 @@ private:
 /// Returns a string representation of the contents of block. Intended for debugging.
 std::string DumpBlock(const IR::Block& block);
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

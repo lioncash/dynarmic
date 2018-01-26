@@ -9,8 +9,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace Dynarmic {
-namespace Common {
+namespace Dynarmic::Common {
 
 class Pool {
 public:
@@ -44,5 +43,4 @@ private:
     std::vector<char*> slabs;
 };
 
-} // namespace Common
-} // namespace Dynarmic
+} // namespace Dynarmic::Common

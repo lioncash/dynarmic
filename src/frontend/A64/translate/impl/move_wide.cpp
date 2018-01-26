@@ -6,8 +6,7 @@
 
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::MOVN(bool sf, Imm<2> hw, Imm<16> imm16, Reg Rd) {
     size_t datasize = sf ? 64 : 32;
@@ -53,5 +52,4 @@ bool TranslatorVisitor::MOVK(bool sf, Imm<2> hw, Imm<16> imm16, Reg Rd) {
 }
 
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

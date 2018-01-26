@@ -10,8 +10,7 @@
 #include "common/assert.h"
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 enum class HostLoc {
     // Ordering of the registers is intentional. See also: HostLocToX64.
@@ -113,5 +112,4 @@ Xbyak::Address SpillToOpArg(HostLoc loc) {
     return JitStateType::GetSpillLocationFromIndex(i);
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64

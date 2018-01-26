@@ -6,8 +6,7 @@
 
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 static IR::U8 SanitizeShiftAmount(TranslatorVisitor& tv, IREmitter& ir, size_t datasize,
                                   const IR::U32U64& amount) {
@@ -62,5 +61,4 @@ bool TranslatorVisitor::RORV(bool sf, Reg Rm, Reg Rn, Reg Rd) {
     return true;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

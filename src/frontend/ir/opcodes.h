@@ -8,8 +8,7 @@
 
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 /**
  * The Opcodes of our intermediate representation.
@@ -75,5 +74,4 @@ const char* GetNameOf(Type type);
 /// @returns true if t1 and t2 are compatible types
 bool AreTypesCompatible(Type t1, Type t2);
 
-} // namespace Arm
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

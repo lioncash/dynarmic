@@ -10,8 +10,7 @@
 
 #include "frontend/ir/opcodes.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 // Opcode information
 
@@ -64,5 +63,4 @@ bool AreTypesCompatible(Type t1, Type t2) {
     return t1 == t2 || t1 == Type::Opaque || t2 == Type::Opaque;
 }
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

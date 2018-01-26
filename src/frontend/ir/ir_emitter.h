@@ -19,8 +19,7 @@
 // is a microinstruction of an idealised ARM CPU. The choice of microinstructions is made
 // not based on any existing microarchitecture but on ease of implementation.
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 enum class Opcode;
 
@@ -253,5 +252,4 @@ protected:
     }
 };
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR

@@ -7,13 +7,11 @@
 
 #include "common/common_types.h"
 
-namespace Dynarmic {
-
-namespace IR {
+namespace Dynarmic::IR {
 class Block;
-} // namespace IR
+} // namespace Dynarmic::IR
 
-namespace A32 {
+namespace Dynarmic::A32 {
 
 class LocationDescriptor;
 
@@ -27,5 +25,4 @@ using MemoryReadCodeFuncType = u32 (*)(u32 vaddr);
  */
 IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code);
 
-} // namespace A32
-} // namespace Dynarmic
+} // namespace Dynarmic::A32

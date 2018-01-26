@@ -6,8 +6,7 @@
 
 #include "frontend/A64/translate/impl/impl.h"
 
-namespace Dynarmic {
-namespace A64 {
+namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::CSEL(bool sf, Reg Rm, Cond cond, Reg Rn, Reg Rd) {
     size_t datasize = sf ? 64 : 32;
@@ -58,5 +57,4 @@ bool TranslatorVisitor::CSNEG(bool sf, Reg Rm, Cond cond, Reg Rn, Reg Rd) {
     return true;
 }
 
-} // namespace A64
-} // namespace Dynarmic
+} // namespace Dynarmic::A64

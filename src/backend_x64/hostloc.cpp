@@ -8,8 +8,7 @@
 
 #include "backend_x64/hostloc.h"
 
-namespace Dynarmic {
-namespace BackendX64 {
+namespace Dynarmic::BackendX64 {
 
 Xbyak::Reg64 HostLocToReg64(HostLoc loc) {
     ASSERT(HostLocIsGPR(loc));
@@ -21,5 +20,4 @@ Xbyak::Xmm HostLocToXmm(HostLoc loc) {
     return Xbyak::Xmm(static_cast<int>(loc) - static_cast<int>(HostLoc::XMM0));
 }
 
-} // namespace BackendX64
-} // namespace Dynarmic
+} // namespace Dynarmic::BackendX64
