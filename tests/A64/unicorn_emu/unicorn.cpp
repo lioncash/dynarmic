@@ -35,8 +35,10 @@ Unicorn::~Unicorn() {
 }
 
 void Unicorn::Run() {
-    CHECKED(uc_emu_start(uc, GetPC(), END_ADDRESS, 0, testenv.ticks_left));
-    testenv.ticks_left = 0;
+    while (testenv.ticks_left > 0) {
+        CHECKED(uc_emu_start(uc, GetPC(), END_ADDRESS, 0, 1));
+        testenv.ticks_left--;
+    }
 }
 
 u64 Unicorn::GetSP() const {

@@ -368,3 +368,28 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
         RunTestInstance(regs, vecs, 100, instructions, pstate, fpcr);
     }
 }
+
+TEST_CASE("A64: Small random block", "[a64]") {
+    for (size_t iteration = 0; iteration < 100000; ++iteration) {
+        std::array<u64, 31> regs;
+        std::generate_n(regs.begin(), 31, []{ return RandInt<u64>(0, ~u64(0)); });
+        std::array<Vector, 32> vecs;
+        std::generate_n(vecs.begin(), 32, []{ return RandomVector(); });
+        std::vector<u32> instructions;
+        instructions.push_back(GenRandomInst(0, false));
+        instructions.push_back(GenRandomInst(4, false));
+        instructions.push_back(GenRandomInst(8, false));
+        instructions.push_back(GenRandomInst(12, false));
+        instructions.push_back(GenRandomInst(16, true));
+        u32 pstate = RandInt<u32>(0, 0xF) << 28;
+        u32 fpcr = RandInt<u32>(0, 0x3) << 22; // randomize RMode
+
+        INFO("Instruction 1: 0x" << std::hex << instructions[0]);
+        INFO("Instruction 2: 0x" << std::hex << instructions[1]);
+        INFO("Instruction 3: 0x" << std::hex << instructions[2]);
+        INFO("Instruction 4: 0x" << std::hex << instructions[3]);
+        INFO("Instruction 5: 0x" << std::hex << instructions[4]);
+
+        RunTestInstance(regs, vecs, 100, instructions, pstate, fpcr);
+    }
+}
