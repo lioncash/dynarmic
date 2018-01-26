@@ -114,6 +114,7 @@ bool Inst::ReadsFromCPSR() const {
     case Opcode::A32GetCFlag:
     case Opcode::A32GetVFlag:
     case Opcode::A32GetGEFlags:
+    case Opcode::A64GetCFlag:
     case Opcode::ConditionalSelect32:
     case Opcode::ConditionalSelect64:
         return true;

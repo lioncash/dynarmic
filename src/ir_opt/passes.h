@@ -17,6 +17,7 @@ namespace Dynarmic::Optimization {
 
 void A32GetSetElimination(IR::Block& block);
 void A32ConstantMemoryReads(IR::Block& block, const A32::UserCallbacks::Memory& memory_callbacks);
+void A64GetSetElimination(IR::Block& block);
 void A64MergeInterpretBlocksPass(IR::Block& block, A64::UserCallbacks* cb);
 void ConstantPropagation(IR::Block& block);
 void DeadCodeElimination(IR::Block& block);
