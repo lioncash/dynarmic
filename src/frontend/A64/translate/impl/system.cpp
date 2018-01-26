@@ -17,23 +17,23 @@ bool TranslatorVisitor::NOP() {
 }
 
 bool TranslatorVisitor::YIELD() {
-    return true;
+    return RaiseException(Exception::Yield);
 }
 
 bool TranslatorVisitor::WFE() {
-    return true;
+    return RaiseException(Exception::WaitForEvent);
 }
 
 bool TranslatorVisitor::WFI() {
-    return true;
+    return RaiseException(Exception::WaitForInterrupt);
 }
 
 bool TranslatorVisitor::SEV() {
-    return true;
+    return RaiseException(Exception::SendEvent);
 }
 
 bool TranslatorVisitor::SEVL() {
-    return true;
+    return RaiseException(Exception::SendEventLocal);
 }
 
 bool TranslatorVisitor::CLREX(Imm<4> /*CRm*/) {

@@ -28,6 +28,16 @@ enum class Exception {
     /// This behaviour is up to the user of this library to define.
     /// Note: Constraints on unpredictable behaviour are specified in the ARMv8 ARM.
     UnpredictableInstruction,
+    /// A WFI instruction was executed. You may now enter a low-power state.
+    WaitForInterrupt,
+    /// A WFE instruction was executed. You may now enter a low-power state if the event register is clear.
+    WaitForEvent,
+    /// A SEV instruction was executed. The event register of all PEs should be set.
+    SendEvent,
+    /// A SEV instruction was executed. The event register of the current PE should be set.
+    SendEventLocal,
+    /// A YIELD instruction was executed.
+    Yield,
 };
 
 enum class DataCacheOperation {
