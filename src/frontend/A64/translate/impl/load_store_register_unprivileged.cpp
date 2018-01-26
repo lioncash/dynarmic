@@ -132,7 +132,7 @@ bool TranslatorVisitor::LDTRSH(Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt) {
 }
 
 bool TranslatorVisitor::LDTRSW(Imm<9> imm9, Reg Rn, Reg Rt) {
-    const u64 offset = imm9.ZeroExtend<u64>();
+    const u64 offset = imm9.SignExtend<u64>();
     AccType acctype = AccType::UNPRIV;
     IR::U64 address;
 
