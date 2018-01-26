@@ -587,7 +587,7 @@ INST(ADD_vector,             "ADD (vector)",                              "0Q001
 //INST(SUB_1,                  "SUB (vector)",                              "01111110zz1mmmmm100001nnnnnddddd")
 //INST(SUB_2,                  "SUB (vector)",                              "0Q101110zz1mmmmm100001nnnnnddddd")
 //INST(CMEQ_reg_1,             "CMEQ (register)",                           "01111110zz1mmmmm100011nnnnnddddd")
-//INST(CMEQ_reg_2,             "CMEQ (register)",                           "0Q101110zz1mmmmm100011nnnnnddddd")
+INST(CMEQ_reg_2,             "CMEQ (register)",                           "0Q101110zz1mmmmm100011nnnnnddddd")
 //INST(SQRDMULH_vec_1,         "SQRDMULH (vector)",                         "01111110zz1mmmmm101101nnnnnddddd")
 //INST(SQRDMULH_vec_2,         "SQRDMULH (vector)",                         "0Q101110zz1mmmmm101101nnnnnddddd")
 

@@ -35,6 +35,36 @@ bool TranslatorVisitor::ADD_vector(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) 
     return true;
 }
 
+bool TranslatorVisitor::CMEQ_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11 && !Q) return ReservedValue();
+    const size_t esize = 8 << size.ZeroExtend<size_t>();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+
+    IR::U128 result = [&]{
+        switch (esize) {
+        case 8:
+            return ir.VectorEqual8(operand1, operand2);
+        case 16:
+            return ir.VectorEqual16(operand1, operand2);
+        case 32:
+            return ir.VectorEqual32(operand1, operand2);
+        default:
+            return ir.VectorEqual64(operand1, operand2);
+        }
+    }();
+
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
+
+    V(datasize, Vd, result);
+
+    return true;
+}
+
 bool TranslatorVisitor::ADDP_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11 && !Q) return ReservedValue();
     const size_t esize = 8 << size.ZeroExtend<size_t>();
