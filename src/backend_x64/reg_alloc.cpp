@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <utility>
 
 #include <xbyak.h>
 
@@ -487,8 +488,7 @@ void RegAlloc::Move(HostLoc to, HostLoc from) {
 
     EmitMove(to, from);
 
-    LocInfo(to) = LocInfo(from);
-    LocInfo(from) = {};
+    LocInfo(to) = std::exchange(LocInfo(from), {});
 }
 
 void RegAlloc::CopyToScratch(HostLoc to, HostLoc from) {
