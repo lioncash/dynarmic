@@ -481,6 +481,22 @@ U32U64 IREmitter::CountLeadingZeros(const U32U64& a) {
     return Inst<U64>(Opcode::CountLeadingZeros64, a);
 }
 
+U32 IREmitter::ExtractRegister(const U32& a, const U32& b, const U8& lsb) {
+    return Inst<U32>(Opcode::ExtractRegister32, a, b, lsb);
+}
+
+U64 IREmitter::ExtractRegister(const U64& a, const U64& b, const U8& lsb) {
+    return Inst<U64>(Opcode::ExtractRegister64, a, b, lsb);
+}
+
+U32U64 IREmitter::ExtractRegister(const U32U64& a, const U32U64& b, const U8& lsb) {
+    if (a.GetType() == IR::Type::U32) {
+        return Inst<U32>(Opcode::ExtractRegister32, a, b, lsb);
+    }
+
+    return Inst<U64>(Opcode::ExtractRegister64, a, b, lsb);
+}
+
 ResultAndOverflow<U32> IREmitter::SignedSaturatedAdd(const U32& a, const U32& b) {
     auto result = Inst<U32>(Opcode::SignedSaturatedAdd, a, b);
     auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);

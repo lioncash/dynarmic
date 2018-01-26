@@ -142,6 +142,9 @@ public:
     U32 CountLeadingZeros(const U32& a);
     U64 CountLeadingZeros(const U64& a);
     U32U64 CountLeadingZeros(const U32U64& a);
+    U32 ExtractRegister(const U32& a, const U32& b, const U8& lsb);
+    U64 ExtractRegister(const U64& a, const U64& b, const U8& lsb);
+    U32U64 ExtractRegister(const U32U64& a, const U32U64& b, const U8& lsb);
 
     ResultAndOverflow<U32> SignedSaturatedAdd(const U32& a, const U32& b);
     ResultAndOverflow<U32> SignedSaturatedSub(const U32& a, const U32& b);

@@ -176,6 +176,26 @@ void EmitX64::EmitConditionalSelect64(EmitContext& ctx, IR::Inst* inst) {
     EmitConditionalSelect(code, ctx, inst, 64);
 }
 
+static void EmitExtractRegister(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int bit_size) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg result = ctx.reg_alloc.UseScratchGpr(args[0]).changeBit(bit_size);
+    const Xbyak::Reg operand = ctx.reg_alloc.UseScratchGpr(args[1]).changeBit(bit_size);
+    const u8 lsb = args[2].GetImmediateU8();
+
+    code.shrd(result, operand, lsb);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitExtractRegister32(Dynarmic::BackendX64::EmitContext& ctx, IR::Inst* inst) {
+    EmitExtractRegister(*code, ctx, inst, 32);
+}
+
+void EmitX64::EmitExtractRegister64(Dynarmic::BackendX64::EmitContext& ctx, IR::Inst* inst) {
+    EmitExtractRegister(*code, ctx, inst, 64);
+}
+
 void EmitX64::EmitLogicalShiftLeft32(EmitContext& ctx, IR::Inst* inst) {
     auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
 

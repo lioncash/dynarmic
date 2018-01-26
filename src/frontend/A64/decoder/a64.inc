@@ -25,7 +25,7 @@ INST(BFM,                    "BFM",                                       "z0110
 INST(UBFM,                   "UBFM",                                      "z10100110Nrrrrrrssssssnnnnnddddd")
 
 // Data processing - Immediate - Extract
-//INST(EXTR,                   "EXTR",                                      "z00100111N0mmmmmssssssnnnnnddddd")
+INST(EXTR,                   "EXTR",                                      "z00100111N0mmmmmssssssnnnnnddddd")
 
 // Conditional branch
 INST(B_cond,                 "B.cond",                                    "01010100iiiiiiiiiiiiiiiiiii0cccc")

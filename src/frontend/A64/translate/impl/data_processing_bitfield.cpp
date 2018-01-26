@@ -76,4 +76,23 @@ bool TranslatorVisitor::UBFM(bool sf, bool N, Imm<6> immr, Imm<6> imms, Reg Rn, 
     return true;
 }
 
+bool TranslatorVisitor::EXTR(bool sf, bool N, Reg Rm, Imm<6> imms, Reg Rn, Reg Rd) {
+    if (N != sf) {
+        return UnallocatedEncoding();
+    }
+
+    if (!sf && imms.Bit<5>()) {
+        return ReservedValue();
+    }
+
+    const size_t datasize = sf ? 64 : 32;
+
+    const IR::U32U64 m = X(datasize, Rm);
+    const IR::U32U64 n = X(datasize, Rn);
+    const IR::U32U64 result = ir.ExtractRegister(m, n, ir.Imm8(imms.ZeroExtend<u8>()));
+
+    X(datasize, Rd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64

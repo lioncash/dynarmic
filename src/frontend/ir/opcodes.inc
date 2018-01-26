@@ -122,6 +122,8 @@ OPCODE(ByteReverseHalf,         T::U16,         T::U16                          
 OPCODE(ByteReverseDual,         T::U64,         T::U64                                          )
 OPCODE(CountLeadingZeros32,     T::U32,         T::U32                                          )
 OPCODE(CountLeadingZeros64,     T::U64,         T::U64                                          )
+OPCODE(ExtractRegister32,       T::U32,         T::U32,         T::U32,         T::U8           )
+OPCODE(ExtractRegister64,       T::U64,         T::U64,         T::U64,         T::U8           )
 
 // Saturated instructions
 OPCODE(SignedSaturatedAdd,      T::U32,         T::U32,         T::U32                          )
