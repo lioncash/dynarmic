@@ -1,5 +1,5 @@
 
-Xbyak 5.52 ; JIT assembler for x86(IA32), x64(AMD64, x86-64) by C++
+Xbyak 5.601 ; JIT assembler for x86(IA32), x64(AMD64, x86-64) by C++
 =============
 
 Abstract
@@ -128,7 +128,7 @@ vcvtpd2dq xmm19, [eax+32]{1to4}         --> vcvtpd2dq(xmm19, yword_b [eax+32]); 
 
 vfpclassps k5{k3}, zword [rax+64], 5    --> vfpclassps(k5|k3, zword [rax+64], 5); // specify m512
 vfpclasspd k5{k3}, [rax+64]{1to2}, 5    --> vfpclasspd(k5|k3, xword_b [rax+64], 5); // broadcast 64-bit to 128-bit
-vfpclassps k5{k3}, [rax+64]{1to4}, 5    --> vfpclassps(k5|k3, xword_b [rax+64], 5); // broadcast 32-bit to 128-bit
+vfpclassps k5{k3}, [rax+64]{1to4}, 5    --> vfpclassps(k5|k3, yword_b [rax+64], 5); // broadcast 64-bit to 256-bit
 ```
 Remark
 * k1, ..., k7 are new opmask registers.
@@ -333,6 +333,9 @@ The header files under xbyak/ are independent of cybozulib.
 
 History
 -------------
+* 2018/Jan/24 ver 5.601 add xword, yword, etc. into Xbyak::util namespace
+* 2018/Jan/05 ver 5.60 support AVX-512 for Ice lake(319433-030.pdf)
+* 2017/Aug/22 ver 5.53 fix mpx encoding, add bnd() prefix
 * 2017/Aug/18 ver 5.52 fix align (thanks to MerryMage)
 * 2017/Aug/17 ver 5.51 add multi-byte nop and align() uses it(thanks to inolen)
 * 2017/Aug/08 ver 5.50 add mpx(thanks to magurosan)
