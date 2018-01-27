@@ -80,11 +80,13 @@ bool TranslatorVisitor::BIC_asimd_reg(bool Q, Vec Vm, Vec Vn, Vec Vd) {
     const IR::U128 operand2 = V(datasize, Vm);
 
     IR::U128 result = ir.VectorAnd(operand1, ir.VectorNot(operand2));
+
     if (datasize == 64) {
         result = ir.VectorZeroUpper(result);
     }
 
     V(datasize, Vd, result);
+
     return true;
 }
 
@@ -159,6 +161,51 @@ bool TranslatorVisitor::EOR_asimd(bool Q, Vec Vm, Vec Vn, Vec Vd) {
     V(datasize, Vd, result);
 
     return true;
+}
+
+bool TranslatorVisitor::BIF(bool Q, Vec Vm, Vec Vn, Vec Vd) {
+  const size_t datasize = Q ? 128 : 64;
+
+  auto operand1 = V(datasize, Vd);
+  auto operand4 = V(datasize, Vn);
+  auto operand3 = ir.VectorNot(V(datasize, Vm));
+
+  auto result = ir.VectorEor(operand1,
+                    ir.VectorAnd(ir.VectorEor(operand1, operand4), operand3));
+
+  V(datasize, Vd, result);
+
+  return true;
+}
+
+bool TranslatorVisitor::BIT(bool Q, Vec Vm, Vec Vn, Vec Vd) {
+  const size_t datasize = Q ? 128 : 64;
+
+  auto operand1 = V(datasize, Vd);
+  auto operand4 = V(datasize, Vn);
+  auto operand3 = V(datasize, Vm);
+
+  auto result = ir.VectorEor(operand1,
+                    ir.VectorAnd(ir.VectorEor(operand1, operand4), operand3));
+
+  V(datasize, Vd, result);
+
+  return true;
+}
+
+bool TranslatorVisitor::BSL(bool Q, Vec Vm, Vec Vn, Vec Vd) {
+  const size_t datasize = Q ? 128 : 64;
+
+  auto operand4 = V(datasize, Vn);
+  auto operand1 = V(datasize, Vm);
+  auto operand3 = V(datasize, Vd);
+
+  auto result = ir.VectorEor(operand1,
+                    ir.VectorAnd(ir.VectorEor(operand1, operand4), operand3));
+
+  V(datasize, Vd, result);
+
+  return true;
 }
 
 } // namespace Dynarmic::A64

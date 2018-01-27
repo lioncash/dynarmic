@@ -787,15 +787,15 @@ INST(CMEQ_reg_2,             "CMEQ (register)",                           "0Q101
 //INST(FMAXP_vec_2,            "FMAXP (vector)",                            "0Q1011100z1mmmmm111101nnnnnddddd")
 //INST(FDIV_2,                 "FDIV (vector)",                             "0Q1011100z1mmmmm111111nnnnnddddd")
 INST(EOR_asimd,              "EOR (vector)",                              "0Q101110001mmmmm000111nnnnnddddd")
-//INST(BSL,                    "BSL",                                       "0Q101110011mmmmm000111nnnnnddddd")
+INST(BSL,                    "BSL",                                       "0Q101110011mmmmm000111nnnnnddddd")
 //INST(FMINNMP_vec_2,          "FMINNMP (vector)",                          "0Q1011101z1mmmmm110001nnnnnddddd")
 //INST(FMLSL_vec_2,            "FMLSL, FMLSL2 (vector)",                    "0Q1011101z1mmmmm110011nnnnnddddd")
 //INST(FABD_4,                 "FABD",                                      "0Q1011101z1mmmmm110101nnnnnddddd")
 //INST(FCMGT_reg_4,            "FCMGT (register)",                          "0Q1011101z1mmmmm111001nnnnnddddd")
 //INST(FACGT_4,                "FACGT",                                     "0Q1011101z1mmmmm111011nnnnnddddd")
 //INST(FMINP_vec_2,            "FMINP (vector)",                            "0Q1011101z1mmmmm111101nnnnnddddd")
-//INST(BIT,                    "BIT",                                       "0Q101110101mmmmm000111nnnnnddddd")
-//INST(BIF,                    "BIF",                                       "0Q101110111mmmmm000111nnnnnddddd")
+INST(BIT,                    "BIT",                                       "0Q101110101mmmmm000111nnnnnddddd")
+INST(BIF,                    "BIF",                                       "0Q101110111mmmmm000111nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD modified immediate
 INST(MOVI,                   "MOVI, MVNI, ORR, BIC (vector, immediate)",  "0Qo0111100000abcmmmm01defghddddd")
