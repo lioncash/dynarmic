@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <fmt/ostream.h>
+
 #include <dynarmic/A32/coprocessor.h>
 
 #include "backend_x64/a32_emit_x64.h"
@@ -108,7 +110,7 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
 #undef A64OPC
 
         default:
-            ASSERT_MSG(false, "Invalid opcode %zu", static_cast<size_t>(inst->GetOpcode()));
+            ASSERT_MSG(false, "Invalid opcode: {}", inst->GetOpcode());
             break;
         }
 

@@ -6,7 +6,12 @@
 
 #include <array>
 #include <map>
+#include <ostream>
+#include <string>
 #include <vector>
+
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "frontend/ir/opcodes.h"
 
@@ -48,19 +53,32 @@ Type GetArgTypeOf(Opcode op, size_t arg_index) {
     return OpcodeInfo::opcode_info.at(op).arg_types.at(arg_index);
 }
 
-const char* GetNameOf(Opcode op) {
+std::string GetNameOf(Opcode op) {
+    if (OpcodeInfo::opcode_info.count(op) == 0)
+        return fmt::format("Unknown Opcode {}", static_cast<Opcode>(op));
     return OpcodeInfo::opcode_info.at(op).name;
 }
 
-const char* GetNameOf(Type type) {
-    static const std::array<const char*, 14> names = {
-        "Void", "A32Reg", "A32ExtReg", "A64Reg", "A64Vec", "Opaque", "U1", "U8", "U16", "U32", "U64", "F32", "F64", "CoprocInfo"
+std::string GetNameOf(Type type) {
+    static const std::array<const char*, 16> names = {
+        "Void", "A32Reg", "A32ExtReg", "A64Reg", "A64Vec", "Opaque", "U1", "U8", "U16", "U32", "U64", "F32", "F64", "CoprocInfo", "NZCVFlags", "Cond"
     };
-    return names.at(static_cast<size_t>(type));
+    const size_t index = static_cast<size_t>(type);
+    if (index > names.size())
+        return fmt::format("Unknown Type {}", index);
+    return names.at(index);
 }
 
 bool AreTypesCompatible(Type t1, Type t2) {
     return t1 == t2 || t1 == Type::Opaque || t2 == Type::Opaque;
+}
+
+std::ostream& operator<<(std::ostream& o, Opcode opcode) {
+    return o << GetNameOf(opcode);
+}
+
+std::ostream& operator<<(std::ostream& o, Type type) {
+    return o << GetNameOf(type);
 }
 
 } // namespace Dynarmic::IR

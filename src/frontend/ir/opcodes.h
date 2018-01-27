@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <iosfwd>
+#include <string>
+
 #include "common/common_types.h"
 
 namespace Dynarmic::IR {
@@ -66,12 +69,15 @@ size_t GetNumArgsOf(Opcode op);
 Type GetArgTypeOf(Opcode op, size_t arg_index);
 
 /// Get the name of an opcode.
-const char* GetNameOf(Opcode op);
+std::string GetNameOf(Opcode op);
 
 /// Get the name of a type.
-const char* GetNameOf(Type type);
+std::string GetNameOf(Type type);
 
 /// @returns true if t1 and t2 are compatible types
 bool AreTypesCompatible(Type t1, Type t2);
+
+std::ostream& operator<<(std::ostream& o, Opcode opcode);
+std::ostream& operator<<(std::ostream& o, Type type);
 
 } // namespace Dynarmic::IR

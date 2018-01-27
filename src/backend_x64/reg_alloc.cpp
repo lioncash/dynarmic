@@ -8,6 +8,7 @@
 #include <numeric>
 #include <utility>
 
+#include <fmt/ostream.h>
 #include <xbyak.h>
 
 #include "backend_x64/abi.h"
@@ -49,7 +50,7 @@ static size_t GetBitWidth(IR::Type type) {
         case IR::Type::CoprocInfo:
         case IR::Type::Cond:
         case IR::Type::Void:
-            ASSERT_MSG(false, "Type %zu cannot be represented at runtime", static_cast<size_t>(type));
+            ASSERT_MSG(false, "Type {} cannot be represented at runtime", type);
             return 0;
         case IR::Type::Opaque:
             ASSERT_MSG(false, "Not a concrete type");

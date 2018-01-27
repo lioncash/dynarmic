@@ -164,7 +164,7 @@ IR::UAnyU128 TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*
     case 16:
         return ir.ReadMemory128(address);
     default:
-        ASSERT_MSG(false, "Invalid bytesize parameter %zu", bytesize);
+        ASSERT_MSG(false, "Invalid bytesize parameter {}", bytesize);
         return {};
     }
 }
@@ -187,7 +187,7 @@ void TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acctype*
         ir.WriteMemory128(address, value);
         return;
     default:
-        ASSERT_MSG(false, "Invalid bytesize parameter %zu", bytesize);
+        ASSERT_MSG(false, "Invalid bytesize parameter {}", bytesize);
         return;
     }
 }
@@ -199,7 +199,7 @@ IR::U32U64 TranslatorVisitor::SignExtend(IR::UAny value, size_t to_size) {
     case 64:
         return ir.SignExtendToLong(value);
     default:
-        ASSERT_MSG(false, "Invalid size parameter %zu", to_size);
+        ASSERT_MSG(false, "Invalid size parameter {}", to_size);
         return {};
     }
 }
@@ -211,7 +211,7 @@ IR::U32U64 TranslatorVisitor::ZeroExtend(IR::UAny value, size_t to_size) {
     case 64:
         return ir.ZeroExtendToLong(value);
     default:
-        ASSERT_MSG(false, "Invalid size parameter %zu", to_size);
+        ASSERT_MSG(false, "Invalid size parameter {}", to_size);
         return {};
     }
 }

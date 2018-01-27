@@ -6,6 +6,8 @@
 
 #include <cstdio>
 
+#include <fmt/format.h>
+
 // For asserts we'd like to keep all the junk executed when an assert happens away from the
 // important code in the function. One way of doing this is to put all the relevant code inside a
 // lambda and force the compiler to not inline it. Unfortunately, MSVC seems to have no syntax to
@@ -26,14 +28,14 @@ static void assert_noinline_call(const Fn& fn) {
 
 #define ASSERT(_a_) \
     do if (!(_a_)) { assert_noinline_call([] { \
-        fprintf(stderr, "Assertion Failed!: %s\n", #_a_); \
+        fmt::print(stderr, "Assertion Failed!: {}\n", #_a_); \
     }); } while (false)
 
 #define ASSERT_MSG(_a_, ...) \
     do if (!(_a_)) { assert_noinline_call([&] { \
-        fprintf(stderr, "Assertion Failed!: %s\n", #_a_); \
-        fprintf(stderr, "Message: " __VA_ARGS__); \
-        fprintf(stderr, "\n"); \
+        fmt::print(stderr, "Assertion Failed!: {}\n", #_a_); \
+        fmt::print(stderr, "Message: " __VA_ARGS__); \
+        fmt::print(stderr, "\n"); \
     }); } while (false)
 
 #define UNREACHABLE() ASSERT_MSG(false, "Unreachable code!")

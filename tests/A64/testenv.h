@@ -7,7 +7,6 @@
 #pragma once
 
 #include <array>
-#include <cinttypes>
 #include <map>
 
 #include <dynarmic/A64/a64.h>
@@ -77,11 +76,11 @@ public:
         MemoryWrite64(vaddr + 8, value[1]);
     }
 
-    void InterpreterFallback(u64 pc, size_t num_instructions) override { ASSERT_MSG(false, "InterpreterFallback(%" PRIx64 ", %zu)", pc, num_instructions); }
+    void InterpreterFallback(u64 pc, size_t num_instructions) override { ASSERT_MSG(false, "InterpreterFallback({:016x}, {})", pc, num_instructions); }
 
-    void CallSVC(std::uint32_t swi) override { ASSERT_MSG(false, "CallSVC(%u)", swi); }
+    void CallSVC(std::uint32_t swi) override { ASSERT_MSG(false, "CallSVC({})", swi); }
 
-    void ExceptionRaised(u64 pc, Dynarmic::A64::Exception /*exception*/) override { ASSERT_MSG(false, "ExceptionRaised(%" PRIx64 ")", pc); }
+    void ExceptionRaised(u64 pc, Dynarmic::A64::Exception /*exception*/) override { ASSERT_MSG(false, "ExceptionRaised({:016x})", pc); }
 
     void AddTicks(std::uint64_t ticks) override {
         if (ticks > ticks_left) {

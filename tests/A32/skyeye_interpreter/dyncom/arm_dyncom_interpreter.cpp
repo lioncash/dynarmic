@@ -822,8 +822,8 @@ static unsigned int InterpreterTranslateInstruction(const ARMul_State* cpu, cons
 //        std::string disasm = ARM_Disasm::Disassemble(phys_addr, inst);
 //        LOG_ERROR(Core_ARM11, "Decode failure.\tPC : [0x%x]\tInstruction : %s [%x]", phys_addr, disasm.c_str(), inst);
 //        LOG_ERROR(Core_ARM11, "cpsr=0x%x, cpu->TFlag=%d, r15=0x%x", cpu->Cpsr, cpu->TFlag, cpu->Reg[15]);
-        ASSERT_MSG(false, "Decode failure.\tPC : [0x%x]\tInstruction : %s [%x]", phys_addr, "", inst);
-        ASSERT_MSG(false, "cpsr=0x%x, cpu->TFlag=%d, r15=0x%x", cpu->Cpsr, cpu->TFlag, cpu->Reg[15]);
+        ASSERT_MSG(false, "Decode failure.\tPC : [0x{:x}]\tInstruction : {} [{:x}]", phys_addr, "", inst);
+        ASSERT_MSG(false, "cpsr=0x{:x}, cpu->TFlag={}, r15=0x{:x}", cpu->Cpsr, cpu->TFlag, cpu->Reg[15]);
         CITRA_IGNORE_EXIT(-1);
     }
     inst_base = arm_instruction_trans[idx](inst, idx);
@@ -1960,7 +1960,7 @@ unsigned InterpreterMainLoop(ARMul_State* cpu) {
 
 //            LOG_ERROR(Core_ARM11, "MCRR executed | Coprocessor: %u, CRm %u, opc1: %u, Rt: %u, Rt2: %u",
 //                      inst_cream->cp_num, inst_cream->crm, inst_cream->opcode_1, inst_cream->rt, inst_cream->rt2);
-            ASSERT_MSG(false, "MCRR executed | Coprocessor: %u, CRm %u, opc1: %u, Rt: %u, Rt2: %u",
+            ASSERT_MSG(false, "MCRR executed | Coprocessor: {}, CRm {}, opc1: {}, Rt: {}, Rt2: {}",
                       inst_cream->cp_num, inst_cream->crm, inst_cream->opcode_1, inst_cream->rt, inst_cream->rt2);
         }
 
@@ -2048,7 +2048,7 @@ unsigned InterpreterMainLoop(ARMul_State* cpu) {
 
 //            LOG_ERROR(Core_ARM11, "MRRC executed | Coprocessor: %u, CRm %u, opc1: %u, Rt: %u, Rt2: %u",
 //                      inst_cream->cp_num, inst_cream->crm, inst_cream->opcode_1, inst_cream->rt, inst_cream->rt2);
-              ASSERT_MSG(false, "MRRC executed | Coprocessor: %u, CRm %u, opc1: %u, Rt: %u, Rt2: %u",
+              ASSERT_MSG(false, "MRRC executed | Coprocessor: {}, CRm {}, opc1: {}, Rt: {}, Rt2: {}",
                       inst_cream->cp_num, inst_cream->crm, inst_cream->opcode_1, inst_cream->rt, inst_cream->rt2);
         }
 

@@ -1295,7 +1295,7 @@ u32 vfp_single_cpdo(ARMul_State* state, u32 inst, u32 fpscr)
     if (!fop->fn) {
 //        LOG_CRITICAL(Core_ARM11, "could not find single op %d, inst=0x%x@0x%x", FEXT_TO_IDX(inst), inst, state->Reg[15]);
 //        Crash();
-        ASSERT_MSG(false, "could not find single op %d, inst=0x%x@0x%x", FEXT_TO_IDX(inst), inst, state->Reg[15]);
+        ASSERT_MSG(false, "could not find single op {}, inst=0x{:08x}@0x{:08x}", FEXT_TO_IDX(inst), inst, state->Reg[15]);
         goto invalid;
     }
 

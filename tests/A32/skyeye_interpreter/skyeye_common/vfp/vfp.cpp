@@ -161,7 +161,7 @@ void vfp_raise_exceptions(ARMul_State* state, u32 exceptions, u32 inst, u32 fpsc
     if (exceptions == VFP_EXCEPTION_ERROR) {
 //        LOG_CRITICAL(Core_ARM11, "unhandled bounce %x", inst);
 //        Crash();
-        ASSERT_MSG(false, "unhandled bounce %x", inst);
+        ASSERT_MSG(false, "unhandled bounce {:08x}", inst);
     }
 
     /*

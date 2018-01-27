@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <fmt/ostream.h>
+
 #include "backend_x64/a64_emit_x64.h"
 #include "backend_x64/a64_jitstate.h"
 #include "backend_x64/abi.h"
@@ -89,7 +91,7 @@ A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
 #undef A64OPC
 
         default:
-            ASSERT_MSG(false, "Invalid opcode %zu", static_cast<size_t>(inst->GetOpcode()));
+            ASSERT_MSG(false, "Invalid opcode: {}", inst->GetOpcode());
             break;
         }
 

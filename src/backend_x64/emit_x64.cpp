@@ -241,7 +241,7 @@ Xbyak::Label EmitX64::EmitCond(IR::Cond cond) {
         break;
     }
     default:
-        ASSERT_MSG(false, "Unknown cond %zu", static_cast<size_t>(cond));
+        ASSERT_MSG(false, "Unknown cond {}", static_cast<size_t>(cond));
         break;
     }
 

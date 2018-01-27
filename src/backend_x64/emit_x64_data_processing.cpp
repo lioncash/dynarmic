@@ -162,7 +162,7 @@ static void EmitConditionalSelect(BlockOfCode* code, EmitContext& ctx, IR::Inst*
         code->mov(else_, then_);
         break;
     default:
-        ASSERT_MSG(false, "Invalid cond %zu", static_cast<size_t>(args[0].GetImmediateCond()));
+        ASSERT_MSG(false, "Invalid cond {}", static_cast<size_t>(args[0].GetImmediateCond()));
     }
 
     ctx.reg_alloc.DefineValue(inst, else_);
