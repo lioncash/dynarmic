@@ -488,8 +488,23 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlockFast terminal, IR::Location
     }
 }
 
-void A64EmitX64::EmitTerminalImpl(IR::Term::PopRSBHint, IR::LocationDescriptor initial_location) {
-    EmitTerminalImpl(IR::Term::ReturnToDispatch{}, initial_location);
+void A64EmitX64::EmitTerminalImpl(IR::Term::PopRSBHint, IR::LocationDescriptor) {
+    // This calculation has to match up with A64::LocationDescriptor::UniqueHash
+    // TODO: Optimization is available here based on known state of FPSCR_mode and CPSR_et.
+    code->mov(rcx, qword[r15 + offsetof(A64JitState, pc)]);
+    code->mov(ebx, dword[r15 + offsetof(A64JitState, fpcr)]);
+    code->and_(ebx, A64::LocationDescriptor::FPCR_MASK);
+    code->shl(ebx, 37);
+    code->or_(rbx, rcx);
+
+    code->mov(eax, dword[r15 + offsetof(A64JitState, rsb_ptr)]);
+    code->sub(eax, 1);
+    code->and_(eax, u32(A64JitState::RSBPtrMask));
+    code->mov(dword[r15 + offsetof(A64JitState, rsb_ptr)], eax);
+    code->cmp(rbx, qword[r15 + offsetof(A64JitState, rsb_location_descriptors) + rax * sizeof(u64)]);
+    code->jne(code->GetReturnFromRunCodeAddress());
+    code->mov(rax, qword[r15 + offsetof(A64JitState, rsb_codeptrs) + rax * sizeof(u64)]);
+    code->jmp(rax);
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor initial_location) {
