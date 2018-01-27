@@ -1196,8 +1196,10 @@ void EmitX64::EmitZeroExtendWordToLong(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitZeroExtendLongToQuad(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (args[0].IsInGpr()) {
-        // We let the register allocator automatically zero extend this when necessary
-        ctx.reg_alloc.DefineValue(inst, args[0]);
+        Xbyak::Reg64 source = ctx.reg_alloc.UseGpr(args[0]);
+        Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        code->movq(result, source);
+        ctx.reg_alloc.DefineValue(inst, result);
     } else {
         Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
         code->movq(result, result);
