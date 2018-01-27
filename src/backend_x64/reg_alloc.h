@@ -8,6 +8,7 @@
 
 #include <array>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include <boost/optional.hpp>
@@ -91,7 +92,7 @@ private:
 class RegAlloc final {
 public:
     explicit RegAlloc(BlockOfCode* code, size_t num_spills, std::function<Xbyak::Address(HostLoc)> spill_to_addr)
-        : hostloc_info(NonSpillHostLocCount + num_spills), code(code), spill_to_addr(spill_to_addr) {}
+        : hostloc_info(NonSpillHostLocCount + num_spills), code(code), spill_to_addr(std::move(spill_to_addr)) {}
 
     std::array<Argument, 3> GetArgumentInfo(IR::Inst* inst);
 
