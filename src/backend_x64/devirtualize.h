@@ -30,7 +30,7 @@ struct ThunkBuilder<R(C::*)(Args...), mfp> {
 } // namespace impl
 
 template <typename FunctionType, FunctionType mfp>
-ArgCallback Devirtualize(mp::class_type_t<decltype(mfp)>* this_) {
+ArgCallback Devirtualize(mp::class_type_t<FunctionType>* this_) {
     return ArgCallback{&impl::ThunkBuilder<FunctionType, mfp>::Thunk, reinterpret_cast<u64>(this_)};
 }
 

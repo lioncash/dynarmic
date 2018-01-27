@@ -13,6 +13,7 @@
 #include "backend_x64/a32_jitstate.h"
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
+#include "backend_x64/devirtualize.h"
 #include "backend_x64/emit_x64.h"
 #include "common/address_range.h"
 #include "common/assert.h"
@@ -67,8 +68,8 @@ bool A32EmitContext::FPSCR_DN() const {
     return Location().FPSCR().DN();
 }
 
-A32EmitX64::A32EmitX64(BlockOfCode* code, A32::UserCallbacks cb, A32::Jit* jit_interface)
-    : EmitX64(code), cb(cb), jit_interface(jit_interface)
+A32EmitX64::A32EmitX64(BlockOfCode* code, A32::UserConfig config, A32::Jit* jit_interface)
+    : EmitX64(code), config(config), jit_interface(jit_interface)
 {
     GenMemoryAccessors();
     code->PreludeComplete();
@@ -146,56 +147,56 @@ void A32EmitX64::GenMemoryAccessors() {
     code->align();
     read_memory_8 = code->getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStack(code);
-    code->CallFunction(cb.memory.Read8);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead8).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStack(code);
     code->ret();
 
     code->align();
     read_memory_16 = code->getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStack(code);
-    code->CallFunction(cb.memory.Read16);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead16).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStack(code);
     code->ret();
 
     code->align();
     read_memory_32 = code->getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStack(code);
-    code->CallFunction(cb.memory.Read32);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead32).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStack(code);
     code->ret();
 
     code->align();
     read_memory_64 = code->getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStack(code);
-    code->CallFunction(cb.memory.Read64);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead64).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStack(code);
     code->ret();
 
     code->align();
     write_memory_8 = code->getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStack(code);
-    code->CallFunction(cb.memory.Write8);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite8).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStack(code);
     code->ret();
 
     code->align();
     write_memory_16 = code->getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStack(code);
-    code->CallFunction(cb.memory.Write16);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite16).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStack(code);
     code->ret();
 
     code->align();
     write_memory_32 = code->getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStack(code);
-    code->CallFunction(cb.memory.Write32);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite32).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStack(code);
     code->ret();
 
     code->align();
     write_memory_64 = code->getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStack(code);
-    code->CallFunction(cb.memory.Write64);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite64).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStack(code);
     code->ret();
 }
@@ -568,14 +569,14 @@ void A32EmitX64::EmitA32CallSupervisor(A32EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.HostCall(nullptr);
 
     code->SwitchMxcsrOnExit();
-    code->mov(code->ABI_PARAM1, qword[r15 + offsetof(A32JitState, cycles_to_run)]);
-    code->sub(code->ABI_PARAM1, qword[r15 + offsetof(A32JitState, cycles_remaining)]);
-    code->CallFunction(cb.AddTicks);
+    code->mov(code->ABI_PARAM2, qword[r15 + offsetof(A32JitState, cycles_to_run)]);
+    code->sub(code->ABI_PARAM2, qword[r15 + offsetof(A32JitState, cycles_remaining)]);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::AddTicks).EmitCall(code);
     ctx.reg_alloc.EndOfAllocScope();
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    ctx.reg_alloc.HostCall(nullptr, args[0]);
-    code->CallFunction(cb.CallSVC);
-    code->CallFunction(cb.GetTicksRemaining);
+    ctx.reg_alloc.HostCall(nullptr, {}, args[0]);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::CallSVC).EmitCall(code);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::GetTicksRemaining).EmitCall(code);
     code->mov(qword[r15 + offsetof(A32JitState, cycles_to_run)], code->ABI_RETURN);
     code->mov(qword[r15 + offsetof(A32JitState, cycles_remaining)], code->ABI_RETURN);
     code->SwitchMxcsrOnEntry();
@@ -632,26 +633,27 @@ void A32EmitX64::EmitA32SetExclusive(A32EmitContext& ctx, IR::Inst* inst) {
     code->mov(dword[r15 + offsetof(A32JitState, exclusive_address)], address);
 }
 
-template <typename RawFn>
-static void ReadMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, const A32::UserCallbacks& cb, size_t bit_size, RawFn raw_fn, const CodePtr wrapped_fn) {
+template <typename T, T (A32::UserCallbacks::*raw_fn)(A32::VAddr)>
+static void ReadMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, const A32::UserConfig& config, const CodePtr wrapped_fn) {
+    constexpr size_t bit_size = Common::BitSize<T>();
     auto args = reg_alloc.GetArgumentInfo(inst);
 
-    if (!cb.page_table) {
-        reg_alloc.HostCall(inst, args[0]);
-        code->CallFunction(raw_fn);
+    if (!config.page_table) {
+        reg_alloc.HostCall(inst, {}, args[0]);
+        DEVIRT(config.callbacks, raw_fn).EmitCall(code);
         return;
     }
 
-    reg_alloc.UseScratch(args[0], ABI_PARAM1);
+    reg_alloc.UseScratch(args[0], ABI_PARAM2);
 
     Xbyak::Reg64 result = reg_alloc.ScratchGpr({ABI_RETURN});
-    Xbyak::Reg32 vaddr = code->ABI_PARAM1.cvt32();
+    Xbyak::Reg32 vaddr = code->ABI_PARAM2.cvt32();
     Xbyak::Reg64 page_index = reg_alloc.ScratchGpr();
     Xbyak::Reg64 page_offset = reg_alloc.ScratchGpr();
 
     Xbyak::Label abort, end;
 
-    code->mov(result, reinterpret_cast<u64>(cb.page_table));
+    code->mov(result, reinterpret_cast<u64>(config.page_table));
     code->mov(page_index.cvt32(), vaddr);
     code->shr(page_index.cvt32(), 12);
     code->mov(result, qword[result + page_index * 8]);
@@ -684,28 +686,29 @@ static void ReadMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, c
     reg_alloc.DefineValue(inst, result);
 }
 
-template <typename RawFn>
-static void WriteMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, const A32::UserCallbacks& cb, size_t bit_size, RawFn raw_fn, const CodePtr wrapped_fn) {
+template <typename T, void (A32::UserCallbacks::*raw_fn)(A32::VAddr, T)>
+static void WriteMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, const A32::UserConfig& config, const CodePtr wrapped_fn) {
+    constexpr size_t bit_size = Common::BitSize<T>();
     auto args = reg_alloc.GetArgumentInfo(inst);
 
-    if (!cb.page_table) {
-        reg_alloc.HostCall(nullptr, args[0], args[1]);
-        code->CallFunction(raw_fn);
+    if (!config.page_table) {
+        reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
+        DEVIRT(config.callbacks, raw_fn).EmitCall(code);
         return;
     }
 
     reg_alloc.ScratchGpr({ABI_RETURN});
-    reg_alloc.UseScratch(args[0], ABI_PARAM1);
-    reg_alloc.UseScratch(args[1], ABI_PARAM2);
+    reg_alloc.UseScratch(args[0], ABI_PARAM2);
+    reg_alloc.UseScratch(args[1], ABI_PARAM3);
 
-    Xbyak::Reg32 vaddr = code->ABI_PARAM1.cvt32();
-    Xbyak::Reg64 value = code->ABI_PARAM2;
+    Xbyak::Reg32 vaddr = code->ABI_PARAM2.cvt32();
+    Xbyak::Reg64 value = code->ABI_PARAM3;
     Xbyak::Reg64 page_index = reg_alloc.ScratchGpr();
     Xbyak::Reg64 page_offset = reg_alloc.ScratchGpr();
 
     Xbyak::Label abort, end;
 
-    code->mov(rax, reinterpret_cast<u64>(cb.page_table));
+    code->mov(rax, reinterpret_cast<u64>(config.page_table));
     code->mov(page_index.cvt32(), vaddr);
     code->shr(page_index.cvt32(), 12);
     code->mov(rax, qword[rax + page_index * 8]);
@@ -737,44 +740,44 @@ static void WriteMemory(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, 
 }
 
 void A32EmitX64::EmitA32ReadMemory8(A32EmitContext& ctx, IR::Inst* inst) {
-    ReadMemory(code, ctx.reg_alloc, inst, cb, 8, cb.memory.Read8, read_memory_8);
+    ReadMemory<u8, &A32::UserCallbacks::MemoryRead8>(code, ctx.reg_alloc, inst, config, read_memory_8);
 }
 
 void A32EmitX64::EmitA32ReadMemory16(A32EmitContext& ctx, IR::Inst* inst) {
-    ReadMemory(code, ctx.reg_alloc, inst, cb, 16, cb.memory.Read16, read_memory_16);
+    ReadMemory<u16, &A32::UserCallbacks::MemoryRead16>(code, ctx.reg_alloc, inst, config, read_memory_16);
 }
 
 void A32EmitX64::EmitA32ReadMemory32(A32EmitContext& ctx, IR::Inst* inst) {
-    ReadMemory(code, ctx.reg_alloc, inst, cb, 32, cb.memory.Read32, read_memory_32);
+    ReadMemory<u32, &A32::UserCallbacks::MemoryRead32>(code, ctx.reg_alloc, inst, config, read_memory_32);
 }
 
 void A32EmitX64::EmitA32ReadMemory64(A32EmitContext& ctx, IR::Inst* inst) {
-    ReadMemory(code, ctx.reg_alloc, inst, cb, 64, cb.memory.Read64, read_memory_64);
+    ReadMemory<u64, &A32::UserCallbacks::MemoryRead64>(code, ctx.reg_alloc, inst, config, read_memory_64);
 }
 
 void A32EmitX64::EmitA32WriteMemory8(A32EmitContext& ctx, IR::Inst* inst) {
-    WriteMemory(code, ctx.reg_alloc, inst, cb, 8, cb.memory.Write8, write_memory_8);
+    WriteMemory<u8, &A32::UserCallbacks::MemoryWrite8>(code, ctx.reg_alloc, inst, config, write_memory_8);
 }
 
 void A32EmitX64::EmitA32WriteMemory16(A32EmitContext& ctx, IR::Inst* inst) {
-    WriteMemory(code, ctx.reg_alloc, inst, cb, 16, cb.memory.Write16, write_memory_16);
+    WriteMemory<u16, &A32::UserCallbacks::MemoryWrite16>(code, ctx.reg_alloc, inst, config, write_memory_16);
 }
 
 void A32EmitX64::EmitA32WriteMemory32(A32EmitContext& ctx, IR::Inst* inst) {
-    WriteMemory(code, ctx.reg_alloc, inst, cb, 32, cb.memory.Write32, write_memory_32);
+    WriteMemory<u32, &A32::UserCallbacks::MemoryWrite32>(code, ctx.reg_alloc, inst, config, write_memory_32);
 }
 
 void A32EmitX64::EmitA32WriteMemory64(A32EmitContext& ctx, IR::Inst* inst) {
-    WriteMemory(code, ctx.reg_alloc, inst, cb, 64, cb.memory.Write64, write_memory_64);
+    WriteMemory<u64, &A32::UserCallbacks::MemoryWrite64>(code, ctx.reg_alloc, inst, config, write_memory_64);
 }
 
-template <typename FunctionPointer>
-static void ExclusiveWrite(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, FunctionPointer fn, bool prepend_high_word) {
+template <typename T, void (A32::UserCallbacks::*fn)(A32::VAddr, T)>
+static void ExclusiveWrite(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* inst, const A32::UserConfig& config, bool prepend_high_word) {
     auto args = reg_alloc.GetArgumentInfo(inst);
     if (prepend_high_word) {
-        reg_alloc.HostCall(nullptr, args[0], args[1], args[2]);
+        reg_alloc.HostCall(nullptr, {}, args[0], args[1], args[2]);
     } else {
-        reg_alloc.HostCall(nullptr, args[0], args[1]);
+        reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
     }
     Xbyak::Reg32 passed = reg_alloc.ScratchGpr().cvt32();
     Xbyak::Reg32 tmp = code->ABI_RETURN.cvt32(); // Use one of the unusued HostCall registers.
@@ -784,17 +787,17 @@ static void ExclusiveWrite(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* ins
     code->mov(passed, u32(1));
     code->cmp(code->byte[r15 + offsetof(A32JitState, exclusive_state)], u8(0));
     code->je(end);
-    code->mov(tmp, code->ABI_PARAM1);
+    code->mov(tmp, code->ABI_PARAM2);
     code->xor_(tmp, dword[r15 + offsetof(A32JitState, exclusive_address)]);
     code->test(tmp, A32JitState::RESERVATION_GRANULE_MASK);
     code->jne(end);
     code->mov(code->byte[r15 + offsetof(A32JitState, exclusive_state)], u8(0));
     if (prepend_high_word) {
-        code->mov(code->ABI_PARAM2.cvt32(), code->ABI_PARAM2.cvt32()); // zero extend to 64-bits
-        code->shl(code->ABI_PARAM3, 32);
-        code->or_(code->ABI_PARAM2, code->ABI_PARAM3);
+        code->mov(code->ABI_PARAM3.cvt32(), code->ABI_PARAM3.cvt32()); // zero extend to 64-bits
+        code->shl(code->ABI_PARAM4, 32);
+        code->or_(code->ABI_PARAM3, code->ABI_PARAM4);
     }
-    code->CallFunction(fn);
+    DEVIRT(config.callbacks, fn).EmitCall(code);
     code->xor_(passed, passed);
     code->L(end);
 
@@ -802,19 +805,19 @@ static void ExclusiveWrite(BlockOfCode* code, RegAlloc& reg_alloc, IR::Inst* ins
 }
 
 void A32EmitX64::EmitA32ExclusiveWriteMemory8(A32EmitContext& ctx, IR::Inst* inst) {
-    ExclusiveWrite(code, ctx.reg_alloc, inst, cb.memory.Write8, false);
+    ExclusiveWrite<u8, &A32::UserCallbacks::MemoryWrite8>(code, ctx.reg_alloc, inst, config, false);
 }
 
 void A32EmitX64::EmitA32ExclusiveWriteMemory16(A32EmitContext& ctx, IR::Inst* inst) {
-    ExclusiveWrite(code, ctx.reg_alloc, inst, cb.memory.Write16, false);
+    ExclusiveWrite<u16, &A32::UserCallbacks::MemoryWrite16>(code, ctx.reg_alloc, inst, config, false);
 }
 
 void A32EmitX64::EmitA32ExclusiveWriteMemory32(A32EmitContext& ctx, IR::Inst* inst) {
-    ExclusiveWrite(code, ctx.reg_alloc, inst, cb.memory.Write32, false);
+    ExclusiveWrite<u32, &A32::UserCallbacks::MemoryWrite32>(code, ctx.reg_alloc, inst, config, false);
 }
 
 void A32EmitX64::EmitA32ExclusiveWriteMemory64(A32EmitContext& ctx, IR::Inst* inst) {
-    ExclusiveWrite(code, ctx.reg_alloc, inst, cb.memory.Write64, true);
+    ExclusiveWrite<u64, &A32::UserCallbacks::MemoryWrite64>(code, ctx.reg_alloc, inst, config, true);
 }
 
 static void EmitCoprocessorException() {
@@ -843,7 +846,7 @@ void A32EmitX64::EmitA32CoprocInternalOperation(A32EmitContext& ctx, IR::Inst* i
     A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[5]);
     unsigned opc2 = static_cast<unsigned>(coproc_info[6]);
 
-    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = config.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -869,7 +872,7 @@ void A32EmitX64::EmitA32CoprocSendOneWord(A32EmitContext& ctx, IR::Inst* inst) {
     A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[4]);
     unsigned opc2 = static_cast<unsigned>(coproc_info[5]);
 
-    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = config.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -908,7 +911,7 @@ void A32EmitX64::EmitA32CoprocSendTwoWords(A32EmitContext& ctx, IR::Inst* inst) 
     unsigned opc = static_cast<unsigned>(coproc_info[2]);
     A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[3]);
 
-    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = config.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -951,7 +954,7 @@ void A32EmitX64::EmitA32CoprocGetOneWord(A32EmitContext& ctx, IR::Inst* inst) {
     A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[4]);
     unsigned opc2 = static_cast<unsigned>(coproc_info[5]);
 
-    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = config.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -991,7 +994,7 @@ void A32EmitX64::EmitA32CoprocGetTwoWords(A32EmitContext& ctx, IR::Inst* inst) {
     unsigned opc = coproc_info[2];
     A32::CoprocReg CRm = static_cast<A32::CoprocReg>(coproc_info[3]);
 
-    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = config.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -1039,7 +1042,7 @@ void A32EmitX64::EmitA32CoprocLoadWords(A32EmitContext& ctx, IR::Inst* inst) {
     bool has_option = coproc_info[4] != 0;
     boost::optional<u8> option{has_option, coproc_info[5]};
 
-    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = config.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -1065,7 +1068,7 @@ void A32EmitX64::EmitA32CoprocStoreWords(A32EmitContext& ctx, IR::Inst* inst) {
     bool has_option = coproc_info[4] != 0;
     boost::optional<u8> option{has_option, coproc_info[5]};
 
-    std::shared_ptr<A32::Coprocessor> coproc = cb.coprocessors[coproc_num];
+    std::shared_ptr<A32::Coprocessor> coproc = config.coprocessors[coproc_num];
     if (!coproc) {
         EmitCoprocessorException();
         return;
@@ -1085,12 +1088,11 @@ void A32EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDesc
     ASSERT_MSG(A32::LocationDescriptor{terminal.next}.EFlag() == A32::LocationDescriptor{initial_location}.EFlag(), "Unimplemented");
     ASSERT_MSG(terminal.num_instructions == 1, "Unimplemented");
 
-    code->mov(code->ABI_PARAM1.cvt32(), A32::LocationDescriptor{terminal.next}.PC());
-    code->mov(code->ABI_PARAM2, reinterpret_cast<u64>(jit_interface));
-    code->mov(code->ABI_PARAM3, reinterpret_cast<u64>(cb.user_arg));
-    code->mov(MJitStateReg(A32::Reg::PC), code->ABI_PARAM1.cvt32());
+    code->mov(code->ABI_PARAM2.cvt32(), A32::LocationDescriptor{terminal.next}.PC());
+    code->mov(code->ABI_PARAM3.cvt32(), 1);
+    code->mov(MJitStateReg(A32::Reg::PC), code->ABI_PARAM2.cvt32());
     code->SwitchMxcsrOnExit();
-    code->CallFunction(cb.InterpreterFallback);
+    DEVIRT(config.callbacks, &A32::UserCallbacks::InterpreterFallback).EmitCall(code);
     code->ReturnFromRunCode(true); // TODO: Check cycles
 }
 

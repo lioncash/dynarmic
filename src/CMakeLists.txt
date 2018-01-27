@@ -1,6 +1,6 @@
 add_library(dynarmic
     ../include/dynarmic/A32/a32.h
-    ../include/dynarmic/A32/callbacks.h
+    ../include/dynarmic/A32/config.h
     ../include/dynarmic/A32/coprocessor.h
     ../include/dynarmic/A32/coprocessor_util.h
     ../include/dynarmic/A32/disassembler.h

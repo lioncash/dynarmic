@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <array>
 #include <memory>
 #include <type_traits>
 
@@ -16,7 +17,6 @@
 #include "backend_x64/constant_pool.h"
 #include "backend_x64/jitstate_info.h"
 #include "common/common_types.h"
-#include "dynarmic/A32/callbacks.h"
 
 namespace Dynarmic::BackendX64 {
 

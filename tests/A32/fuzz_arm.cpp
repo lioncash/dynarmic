@@ -28,6 +28,7 @@
 #include "frontend/ir/location_descriptor.h"
 #include "ir_opt/passes.h"
 #include "rand_int.h"
+#include "testenv.h"
 #include "A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
 #include "A32/skyeye_interpreter/skyeye_common/armstate.h"
 
@@ -37,126 +38,10 @@
 
 using Dynarmic::Common::Bits;
 
-struct WriteRecord {
-    size_t size;
-    u32 address;
-    u64 data;
-};
-
-static bool operator==(const WriteRecord& a, const WriteRecord& b) {
-    return std::tie(a.size, a.address, a.data) == std::tie(b.size, b.address, b.data);
-}
-
-static u64 jit_num_ticks = 0;
-static std::array<u32, 3000> code_mem{};
-static std::vector<WriteRecord> write_records;
-
-static u64 GetTicksRemaining();
-static void AddTicks(u64 ticks);
-static bool IsReadOnlyMemory(u32 vaddr);
-static u8 MemoryRead8(u32 vaddr);
-static u16 MemoryRead16(u32 vaddr);
-static u32 MemoryRead32(u32 vaddr);
-static u64 MemoryRead64(u32 vaddr);
-static u32 MemoryReadCode(u32 vaddr);
-static void MemoryWrite8(u32 vaddr, u8 value);
-static void MemoryWrite16(u32 vaddr, u16 value);
-static void MemoryWrite32(u32 vaddr, u32 value);
-static void MemoryWrite64(u32 vaddr, u64 value);
-static void InterpreterFallback(u32 pc, Dynarmic::A32::Jit* jit, void*);
-static Dynarmic::A32::UserCallbacks GetUserCallbacks();
-
-static u64 GetTicksRemaining() {
-    return jit_num_ticks;
-}
-static void AddTicks(u64 ticks) {
-    if (ticks > jit_num_ticks) {
-        jit_num_ticks = 0;
-        return;
-    }
-    jit_num_ticks -= ticks;
-}
-
-static bool IsReadOnlyMemory(u32 vaddr) {
-    return vaddr < code_mem.size();
-}
-static u8 MemoryRead8(u32 vaddr) {
-    return static_cast<u8>(vaddr);
-}
-static u16 MemoryRead16(u32 vaddr) {
-    return static_cast<u16>(vaddr);
-}
-static u32 MemoryRead32(u32 vaddr) {
-    return vaddr;
-}
-static u64 MemoryRead64(u32 vaddr) {
-    return MemoryRead32(vaddr) | (u64(MemoryRead32(vaddr+4)) << 32);
-}
-static u32 MemoryReadCode(u32 vaddr) {
-    if (vaddr < code_mem.size() * sizeof(u32)) {
-        size_t index = vaddr / sizeof(u32);
-        return code_mem[index];
-    }
-    return 0xeafffffe; // b +#0
-}
-
-static void MemoryWrite8(u32 vaddr, u8 value){
-    write_records.push_back({8, vaddr, value});
-}
-static void MemoryWrite16(u32 vaddr, u16 value){
-    write_records.push_back({16, vaddr, value});
-}
-static void MemoryWrite32(u32 vaddr, u32 value){
-    write_records.push_back({32, vaddr, value});
-}
-static void MemoryWrite64(u32 vaddr, u64 value){
-    write_records.push_back({64, vaddr, value});
-}
-
-static void InterpreterFallback(u32 pc, Dynarmic::A32::Jit* jit, void*) {
-    ARMul_State interp_state{USER32MODE};
-    interp_state.user_callbacks = GetUserCallbacks();
-    interp_state.NumInstrsToExecute = 1;
-
-    interp_state.Reg = jit->Regs();
-    interp_state.ExtReg = jit->ExtRegs();
-    interp_state.Cpsr = jit->Cpsr();
-    interp_state.VFP[VFP_FPSCR] = jit->Fpscr();
-    interp_state.Reg[15] = pc;
-
-    InterpreterClearCache();
-    InterpreterMainLoop(&interp_state);
-
-    bool T = Dynarmic::Common::Bit<5>(interp_state.Cpsr);
-    interp_state.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
-
-    jit->Regs() = interp_state.Reg;
-    jit->ExtRegs() = interp_state.ExtReg;
-    jit->SetCpsr(interp_state.Cpsr);
-    jit->SetFpscr(interp_state.VFP[VFP_FPSCR]);
-}
-
-static void Fail() {
-    FAIL();
-}
-
-static Dynarmic::A32::UserCallbacks GetUserCallbacks() {
-    Dynarmic::A32::UserCallbacks user_callbacks{};
-    user_callbacks.InterpreterFallback = &InterpreterFallback;
-    user_callbacks.CallSVC = (void (*)(u32)) &Fail;
-    user_callbacks.memory.IsReadOnlyMemory = &IsReadOnlyMemory;
-    user_callbacks.memory.Read8 = &MemoryRead8;
-    user_callbacks.memory.Read16 = &MemoryRead16;
-    user_callbacks.memory.Read32 = &MemoryRead32;
-    user_callbacks.memory.Read64 = &MemoryRead64;
-    user_callbacks.memory.ReadCode = &MemoryReadCode;
-    user_callbacks.memory.Write8 = &MemoryWrite8;
-    user_callbacks.memory.Write16 = &MemoryWrite16;
-    user_callbacks.memory.Write32 = &MemoryWrite32;
-    user_callbacks.memory.Write64 = &MemoryWrite64;
-    user_callbacks.GetTicksRemaining = &GetTicksRemaining;
-    user_callbacks.AddTicks = &AddTicks;
-    return user_callbacks;
+static Dynarmic::A32::UserConfig GetUserConfig(ArmTestEnv* testenv) {
+    Dynarmic::A32::UserConfig user_config;
+    user_config.callbacks = testenv;
+    return user_config;
 }
 
 namespace {
@@ -210,7 +95,9 @@ private:
 };
 } // namespace
 
-static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Jit& jit, const std::vector<WriteRecord>& interp_write_records, const std::vector<WriteRecord>& jit_write_records) {
+using WriteRecords = std::map<u32, u8>;
+
+static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Jit& jit, const WriteRecords& interp_write_records, const WriteRecords& jit_write_records) {
     return interp.Reg == jit.Regs()
            && interp.ExtReg == jit.ExtRegs()
            && interp.Cpsr == jit.Cpsr()
@@ -219,13 +106,15 @@ static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Ji
 }
 
 void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_execute_count, const size_t run_count, const std::function<u32()> instruction_generator) {
+    ArmTestEnv test_env;
+
     // Prepare memory
-    code_mem.fill(0xEAFFFFFE); // b +#0
+    test_env.code_mem.fill(0xEAFFFFFE); // b +#0
 
     // Prepare test subjects
     ARMul_State interp{USER32MODE};
-    interp.user_callbacks = GetUserCallbacks();
-    Dynarmic::A32::Jit jit{GetUserCallbacks()};
+    interp.user_callbacks = &test_env;
+    Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
 
     for (size_t run_number = 0; run_number < run_count; run_number++) {
         interp.instruction_cache.clear();
@@ -256,26 +145,25 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
         jit.ExtRegs() = initial_extregs;
         jit.SetFpscr(initial_fpscr);
 
-        std::generate_n(code_mem.begin(), instruction_count, instruction_generator);
+        std::generate_n(test_env.code_mem.begin(), instruction_count, instruction_generator);
 
         // Run interpreter
-        write_records.clear();
-        std::vector<WriteRecord> interp_write_records;
+        test_env.modified_memory.clear();
         interp.NumInstrsToExecute = static_cast<unsigned>(instructions_to_execute_count);
         InterpreterMainLoop(&interp);
-        interp_write_records = write_records;
+        WriteRecords interp_write_records = test_env.modified_memory;
         {
             bool T = Dynarmic::Common::Bit<5>(interp.Cpsr);
             interp.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
         }
 
         // Run jit
-        write_records.clear();
-        std::vector<WriteRecord> jit_write_records;
+        test_env.modified_memory.clear();
+        WriteRecords jit_write_records;
         try {
-            jit_num_ticks = instructions_to_execute_count;
+            test_env.ticks_left = instructions_to_execute_count;
             jit.Run();
-            jit_write_records = write_records;
+            jit_write_records = test_env.modified_memory;
         } catch (...) {
             printf("Caught something!\n");
             goto dump_state;
@@ -289,7 +177,7 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
 
             printf("\nInstruction Listing: \n");
             for (size_t i = 0; i < instruction_count; i++) {
-                 printf("%x: %s\n", code_mem[i], Dynarmic::A32::DisassembleArm(code_mem[i]).c_str());
+                 printf("%x: %s\n", test_env.code_mem[i], Dynarmic::A32::DisassembleArm(test_env.code_mem[i]).c_str());
             }
 
             printf("\nInitial Register Listing: \n");
@@ -317,21 +205,21 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
 
             printf("\nInterp Write Records:\n");
             for (auto& record : interp_write_records) {
-                printf("%zu [%x] = %" PRIx64 "\n", record.size, record.address, record.data);
+                printf("[%08x] = %02x\n", record.first, record.second);
             }
 
             printf("\nJIT Write Records:\n");
             for (auto& record : jit_write_records) {
-                printf("%zu [%x] = %" PRIx64 "\n", record.size, record.address, record.data);
+                printf("[%08x] = %02x\n", record.first, record.second);
             }
 
             size_t num_insts = 0;
             while (num_insts < instructions_to_execute_count) {
                 Dynarmic::A32::LocationDescriptor descriptor = {u32(num_insts * 4), Dynarmic::A32::PSR{}, Dynarmic::A32::FPSCR{}};
-                Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, &MemoryReadCode);
+                Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, [&test_env](u32 vaddr) { return test_env.MemoryReadCode(vaddr); });
                 Dynarmic::Optimization::A32GetSetElimination(ir_block);
                 Dynarmic::Optimization::DeadCodeElimination(ir_block);
-                Dynarmic::Optimization::A32ConstantMemoryReads(ir_block, GetUserCallbacks().memory);
+                Dynarmic::Optimization::A32ConstantMemoryReads(ir_block, &test_env);
                 Dynarmic::Optimization::ConstantPropagation(ir_block);
                 Dynarmic::Optimization::DeadCodeElimination(ir_block);
                 Dynarmic::Optimization::VerificationPass(ir_block);
@@ -353,7 +241,7 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
     }
 }
 
-TEST_CASE( "arm: Optimization Failure (Randomized test case)", "[arm]" ) {
+TEST_CASE( "arm: Optimization Failure (Randomized test case)", "[arm][A32]" ) {
     // This was a randomized test-case that was failing.
     //
     // IR produced for location {12, !T, !E} was:
@@ -376,14 +264,15 @@ TEST_CASE( "arm: Optimization Failure (Randomized test case)", "[arm]" ) {
     // Changing the EmitSet*Flag instruction to declare their arguments as UseScratch
     // solved this bug.
 
-    Dynarmic::A32::Jit jit{GetUserCallbacks()};
-    code_mem.fill({});
-    code_mem[0] = 0xe35f0cd9; // cmp pc, #55552
-    code_mem[1] = 0xe11c0474; // tst r12, r4, ror r4
-    code_mem[2] = 0xe1a006a7; // mov r0, r7, lsr #13
-    code_mem[3] = 0xe35107fa; // cmp r1, #0x3E80000
-    code_mem[4] = 0xe2a54c8a; // adc r4, r5, #35328
-    code_mem[5] = 0xeafffffe; // b +#0
+    ArmTestEnv test_env;
+    Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
+    test_env.code_mem.fill({});
+    test_env.code_mem[0] = 0xe35f0cd9; // cmp pc, #55552
+    test_env.code_mem[1] = 0xe11c0474; // tst r12, r4, ror r4
+    test_env.code_mem[2] = 0xe1a006a7; // mov r0, r7, lsr #13
+    test_env.code_mem[3] = 0xe35107fa; // cmp r1, #0x3E80000
+    test_env.code_mem[4] = 0xe2a54c8a; // adc r4, r5, #35328
+    test_env.code_mem[5] = 0xeafffffe; // b +#0
 
     jit.Regs() = {
             0x6973b6bb, 0x267ea626, 0x69debf49, 0x8f976895, 0x4ecd2d0d, 0xcf89b8c7, 0xb6713f85, 0x15e2aa5,
@@ -391,7 +280,7 @@ TEST_CASE( "arm: Optimization Failure (Randomized test case)", "[arm]" ) {
     };
     jit.SetCpsr(0x000001d0); // User-mode
 
-    jit_num_ticks = 6;
+    test_env.ticks_left = 6;
     jit.Run();
 
     REQUIRE( jit.Regs()[0] == 0x00000af1 );
@@ -413,16 +302,17 @@ TEST_CASE( "arm: Optimization Failure (Randomized test case)", "[arm]" ) {
     REQUIRE( jit.Cpsr() == 0x200001d0 );
 }
 
-TEST_CASE( "arm: shsax r11, sp, r9 (Edge-case)", "[arm]" ) {
+TEST_CASE( "arm: shsax r11, sp, r9 (Edge-case)", "[arm][A32]" ) {
     // This was a randomized test-case that was failing.
     //
     // The issue here was one of the words to be subtracted was 0x8000.
     // When the 2s complement was calculated by (~a + 1), it was 0x8000.
 
-    Dynarmic::A32::Jit jit{GetUserCallbacks()};
-    code_mem.fill({});
-    code_mem[0] = 0xe63dbf59; // shsax r11, sp, r9
-    code_mem[1] = 0xeafffffe; // b +#0
+    ArmTestEnv test_env;
+    Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
+    test_env.code_mem.fill({});
+    test_env.code_mem[0] = 0xe63dbf59; // shsax r11, sp, r9
+    test_env.code_mem[1] = 0xeafffffe; // b +#0
 
     jit.Regs() = {
             0x3a3b8b18, 0x96156555, 0xffef039f, 0xafb946f2, 0x2030a69a, 0xafe09b2a, 0x896823c8, 0xabde0ded,
@@ -430,7 +320,7 @@ TEST_CASE( "arm: shsax r11, sp, r9 (Edge-case)", "[arm]" ) {
     };
     jit.SetCpsr(0x000001d0); // User-mode
 
-    jit_num_ticks = 2;
+    test_env.ticks_left = 2;
     jit.Run();
 
     REQUIRE( jit.Regs()[0] == 0x3a3b8b18 );
@@ -452,22 +342,23 @@ TEST_CASE( "arm: shsax r11, sp, r9 (Edge-case)", "[arm]" ) {
     REQUIRE( jit.Cpsr() == 0x000001d0 );
 }
 
-TEST_CASE( "arm: uasx (Edge-case)", "[arm]" ) {
+TEST_CASE( "arm: uasx (Edge-case)", "[arm][A32]" ) {
     // UASX's Rm<31:16> == 0x0000.
     // An implementation that depends on addition overflow to detect
     // if diff >= 0 will fail this testcase.
 
-    Dynarmic::A32::Jit jit{GetUserCallbacks()};
-    code_mem.fill({});
-    code_mem[0] = 0xe6549f35; // uasx r9, r4, r5
-    code_mem[1] = 0xeafffffe; // b +#0
+    ArmTestEnv test_env;
+    Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
+    test_env.code_mem.fill({});
+    test_env.code_mem[0] = 0xe6549f35; // uasx r9, r4, r5
+    test_env.code_mem[1] = 0xeafffffe; // b +#0
 
     jit.Regs()[4] = 0x8ed38f4c;
     jit.Regs()[5] = 0x0000261d;
     jit.Regs()[15] = 0x00000000;
     jit.SetCpsr(0x000001d0); // User-mode
 
-    jit_num_ticks = 2;
+    test_env.ticks_left = 2;
     jit.Run();
 
     REQUIRE( jit.Regs()[4] == 0x8ed38f4c );
@@ -486,10 +377,11 @@ struct VfpTest {
 };
 
 static void RunVfpTests(u32 instr, std::vector<VfpTest> tests) {
-    Dynarmic::A32::Jit jit{GetUserCallbacks()};
-    code_mem.fill({});
-    code_mem[0] = instr;
-    code_mem[1] = 0xeafffffe; // b +#0
+    ArmTestEnv test_env;
+    Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
+    test_env.code_mem.fill({});
+    test_env.code_mem[0] = instr;
+    test_env.code_mem[1] = 0xeafffffe; // b +#0
 
     printf("vfp test 0x%08x\r", instr);
 
@@ -500,7 +392,7 @@ static void RunVfpTests(u32 instr, std::vector<VfpTest> tests) {
         jit.ExtRegs()[6] = test.b;
         jit.SetFpscr(test.initial_fpscr);
 
-        jit_num_ticks = 2;
+        test_env.ticks_left = 2;
         jit.Run();
 
         const auto check = [&test, &jit](bool p) {
@@ -524,21 +416,21 @@ static void RunVfpTests(u32 instr, std::vector<VfpTest> tests) {
     }
 }
 
-TEST_CASE("vfp: vadd", "[vfp]") {
+TEST_CASE("vfp: vadd", "[vfp][A32]") {
     // vadd.f32 s2, s4, s6
     RunVfpTests(0xEE321A03, {
 #include "vfp_vadd_f32.inc"
     });
 }
 
-TEST_CASE("vfp: vsub", "[vfp]") {
+TEST_CASE("vfp: vsub", "[vfp][A32]") {
     // vsub.f32 s2, s4, s6
     RunVfpTests(0xEE321A43, {
 #include "vfp_vsub_f32.inc"
     });
 }
 
-TEST_CASE("VFP: VMOV", "[JitX64][vfp]") {
+TEST_CASE("VFP: VMOV", "[JitX64][vfp][A32]") {
     const auto is_valid = [](u32 instr) -> bool {
         return Bits<0, 6>(instr) != 0b111111
                 && Bits<12, 15>(instr) != 0b1111
@@ -562,7 +454,7 @@ TEST_CASE("VFP: VMOV", "[JitX64][vfp]") {
     });
 }
 
-TEST_CASE("VFP: VMOV (reg), VLDR, VSTR", "[JitX64][vfp]") {
+TEST_CASE("VFP: VMOV (reg), VLDR, VSTR", "[JitX64][vfp][A32]") {
     const std::array<InstructionGenerator, 4> instructions = {{
         InstructionGenerator("1111000100000001000000e000000000"), // SETEND
         InstructionGenerator("cccc11101D110000dddd101z01M0mmmm"), // VMOV (reg)
@@ -575,7 +467,7 @@ TEST_CASE("VFP: VMOV (reg), VLDR, VSTR", "[JitX64][vfp]") {
     });
 }
 
-TEST_CASE("VFP: VCMP", "[JitX64][vfp]") {
+TEST_CASE("VFP: VCMP", "[JitX64][vfp][A32]") {
     const std::array<InstructionGenerator, 2> instructions = {{
         InstructionGenerator("cccc11101D110100dddd101zE1M0mmmm"), // VCMP
         InstructionGenerator("cccc11101D110101dddd101zE1000000"), // VCMP (zero)
@@ -586,7 +478,7 @@ TEST_CASE("VFP: VCMP", "[JitX64][vfp]") {
     });
 }
 
-TEST_CASE("Fuzz ARM data processing instructions", "[JitX64]") {
+TEST_CASE("Fuzz ARM data processing instructions", "[JitX64][A32]") {
     const std::array<InstructionGenerator, 16> imm_instructions = {{
         InstructionGenerator("cccc0010101Snnnnddddrrrrvvvvvvvv"),
         InstructionGenerator("cccc0010100Snnnnddddrrrrvvvvvvvv"),
@@ -709,7 +601,7 @@ TEST_CASE("Fuzz ARM data processing instructions", "[JitX64]") {
     }
 }
 
-TEST_CASE("Fuzz ARM load/store instructions (byte, half-word, word)", "[JitX64]") {
+TEST_CASE("Fuzz ARM load/store instructions (byte, half-word, word)", "[JitX64][A32]") {
     auto EXD_valid = [](u32 inst) -> bool {
         return Bits<0, 3>(inst) % 2 == 0 && Bits<0, 3>(inst) != 14 && Bits<12, 15>(inst) != (Bits<0, 3>(inst) + 1);
     };
@@ -808,7 +700,7 @@ TEST_CASE("Fuzz ARM load/store instructions (byte, half-word, word)", "[JitX64]"
     }
 }
 
-TEST_CASE("Fuzz ARM load/store multiple instructions", "[JitX64]") {
+TEST_CASE("Fuzz ARM load/store multiple instructions", "[JitX64][A32]") {
     const std::array<InstructionGenerator, 2> instructions = {{
         InstructionGenerator("cccc100pu0w1nnnnxxxxxxxxxxxxxxxx"), // LDM
         InstructionGenerator("cccc100pu0w0nnnnxxxxxxxxxxxxxxxx"), // STM
@@ -849,7 +741,7 @@ TEST_CASE("Fuzz ARM load/store multiple instructions", "[JitX64]") {
     FuzzJitArm(1, 1, 10000, instruction_select);
 }
 
-TEST_CASE("Fuzz ARM branch instructions", "[JitX64]") {
+TEST_CASE("Fuzz ARM branch instructions", "[JitX64][A32]") {
     const std::array<InstructionGenerator, 6> instructions = {{
         InstructionGenerator("1111101hvvvvvvvvvvvvvvvvvvvvvvvv"),
         InstructionGenerator("cccc000100101111111111110011mmmm",
@@ -864,7 +756,7 @@ TEST_CASE("Fuzz ARM branch instructions", "[JitX64]") {
     });
 }
 
-TEST_CASE("Fuzz ARM reversal instructions", "[JitX64]") {
+TEST_CASE("Fuzz ARM reversal instructions", "[JitX64][A32]") {
     const auto is_valid = [](u32 instr) -> bool {
         // R15 is UNPREDICTABLE
         return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111;
@@ -883,7 +775,7 @@ TEST_CASE("Fuzz ARM reversal instructions", "[JitX64]") {
     }
 }
 
-TEST_CASE("Fuzz ARM extension instructions", "[JitX64]") {
+TEST_CASE("Fuzz ARM extension instructions", "[JitX64][A32]") {
     const auto is_valid = [](u32 instr) -> bool {
         // R15 as Rd or Rm is UNPREDICTABLE
         return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111;
@@ -920,7 +812,7 @@ TEST_CASE("Fuzz ARM extension instructions", "[JitX64]") {
     }
 }
 
-TEST_CASE("Fuzz ARM multiply instructions", "[JitX64]") {
+TEST_CASE("Fuzz ARM multiply instructions", "[JitX64][A32]") {
     auto validate_d_m_n = [](u32 inst) -> bool {
         return Bits<16, 19>(inst) != 15 &&
                Bits<8, 11>(inst) != 15 &&
@@ -970,7 +862,7 @@ TEST_CASE("Fuzz ARM multiply instructions", "[JitX64]") {
     }
 }
 
-TEST_CASE("Fuzz ARM parallel instructions", "[JitX64][parallel]") {
+TEST_CASE("Fuzz ARM parallel instructions", "[JitX64][parallel][A32]") {
     const auto is_valid = [](u32 instr) -> bool {
         // R15 as Rd, Rn, or Rm is UNPREDICTABLE
         return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111 && Bits<16, 19>(instr) != 0b1111;
@@ -1093,7 +985,7 @@ TEST_CASE("Fuzz ARM parallel instructions", "[JitX64][parallel]") {
     }
 }
 
-TEST_CASE("Fuzz ARM sum of absolute differences", "[JitX64]") {
+TEST_CASE("Fuzz ARM sum of absolute differences", "[JitX64][A32]") {
     auto validate_d_m_n = [](u32 inst) -> bool {
         return Bits<16, 19>(inst) != 15 &&
                Bits<8, 11>(inst) != 15 &&
@@ -1116,10 +1008,11 @@ TEST_CASE("Fuzz ARM sum of absolute differences", "[JitX64]") {
     }
 }
 
-TEST_CASE( "SMUAD", "[JitX64]" ) {
-    Dynarmic::A32::Jit jit{GetUserCallbacks()};
-    code_mem.fill({});
-    code_mem[0] = 0xE700F211; // smuad r0, r1, r2
+TEST_CASE( "SMUAD", "[JitX64][A32]" ) {
+    ArmTestEnv test_env;
+    Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
+    test_env.code_mem.fill({});
+    test_env.code_mem[0] = 0xE700F211; // smuad r0, r1, r2
 
     jit.Regs() = {
             0, // Rd
@@ -1132,7 +1025,7 @@ TEST_CASE( "SMUAD", "[JitX64]" ) {
     };
     jit.SetCpsr(0x000001d0); // User-mode
 
-    jit_num_ticks = 6;
+    test_env.ticks_left = 6;
     jit.Run();
 
     REQUIRE(jit.Regs()[0] == 0x80000000);
@@ -1141,7 +1034,7 @@ TEST_CASE( "SMUAD", "[JitX64]" ) {
     REQUIRE(jit.Cpsr() == 0x080001d0);
 }
 
-TEST_CASE("VFP: VPUSH, VPOP", "[JitX64][vfp]") {
+TEST_CASE("VFP: VPUSH, VPOP", "[JitX64][vfp][A32]") {
     const auto is_valid = [](u32 instr) -> bool {
         auto regs = (instr & 0x100) ? (Bits<0, 7>(instr) >> 1) : Bits<0, 7>(instr);
         auto base = Bits<12, 15>(instr);
@@ -1165,7 +1058,7 @@ TEST_CASE("VFP: VPUSH, VPOP", "[JitX64][vfp]") {
     });
 }
 
-TEST_CASE("Test ARM misc instructions", "[JitX64]") {
+TEST_CASE("Test ARM misc instructions", "[JitX64][A32]") {
     const auto is_clz_valid = [](u32 instr) -> bool {
         // R15 as Rd, or Rm is UNPREDICTABLE
         return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111;
@@ -1180,7 +1073,7 @@ TEST_CASE("Test ARM misc instructions", "[JitX64]") {
     }
 }
 
-TEST_CASE("Test ARM MSR instructions", "[JitX64]") {
+TEST_CASE("Test ARM MSR instructions", "[JitX64][A32]") {
     const auto is_msr_valid = [](u32 instr) -> bool {
         return Bits<18, 19>(instr) != 0;
     };
@@ -1212,7 +1105,7 @@ TEST_CASE("Test ARM MSR instructions", "[JitX64]") {
     }
 }
 
-TEST_CASE("Fuzz ARM saturated add/sub instructions", "[JitX64]") {
+TEST_CASE("Fuzz ARM saturated add/sub instructions", "[JitX64][A32]") {
     auto is_valid = [](u32 inst) -> bool {
         // R15 as Rd, Rn, or Rm is UNPREDICTABLE
         return Bits<16, 19>(inst) != 0b1111 &&
@@ -1234,7 +1127,7 @@ TEST_CASE("Fuzz ARM saturated add/sub instructions", "[JitX64]") {
     }
 }
 
-TEST_CASE("Fuzz ARM saturation instructions", "[JitX64]") {
+TEST_CASE("Fuzz ARM saturation instructions", "[JitX64][A32]") {
     auto is_valid = [](u32 inst) -> bool {
         // R15 as Rd or Rn is UNPREDICTABLE
         return Bits<12, 15>(inst) != 0b1111 &&
@@ -1253,7 +1146,7 @@ TEST_CASE("Fuzz ARM saturation instructions", "[JitX64]") {
     });
 }
 
-TEST_CASE("Fuzz ARM packing instructions", "[JitX64]") {
+TEST_CASE("Fuzz ARM packing instructions", "[JitX64][A32]") {
     auto is_pkh_valid = [](u32 inst) -> bool {
         // R15 as Rd, Rn, or Rm is UNPREDICTABLE
         return Bits<16, 19>(inst) != 0b1111 &&
@@ -1273,18 +1166,19 @@ TEST_CASE("Fuzz ARM packing instructions", "[JitX64]") {
     }
 }
 
-TEST_CASE("arm: Test InvalidateCacheRange", "[arm]") {
-    Dynarmic::A32::Jit jit{GetUserCallbacks()};
-    code_mem.fill({});
-    code_mem[0] = 0xe3a00005; // mov r0, #5
-    code_mem[1] = 0xe3a0100D; // mov r1, #13
-    code_mem[2] = 0xe0812000; // add r2, r1, r0
-    code_mem[3] = 0xeafffffe; // b +#0 (infinite loop)
+TEST_CASE("arm: Test InvalidateCacheRange", "[arm][A32]") {
+    ArmTestEnv test_env;
+    Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
+    test_env.code_mem.fill({});
+    test_env.code_mem[0] = 0xe3a00005; // mov r0, #5
+    test_env.code_mem[1] = 0xe3a0100D; // mov r1, #13
+    test_env.code_mem[2] = 0xe0812000; // add r2, r1, r0
+    test_env.code_mem[3] = 0xeafffffe; // b +#0 (infinite loop)
 
     jit.Regs() = {};
     jit.SetCpsr(0x000001d0); // User-mode
 
-    jit_num_ticks = 4;
+    test_env.ticks_left = 4;
     jit.Run();
 
     REQUIRE(jit.Regs()[0] == 5);
@@ -1294,13 +1188,13 @@ TEST_CASE("arm: Test InvalidateCacheRange", "[arm]") {
     REQUIRE(jit.Cpsr() == 0x000001d0);
 
     // Change the code
-    code_mem[1] = 0xe3a01007; // mov r1, #7
+    test_env.code_mem[1] = 0xe3a01007; // mov r1, #7
     jit.InvalidateCacheRange(/*start_memory_location = */ 4, /* length_in_bytes = */ 4);
 
     // Reset position of PC
     jit.Regs()[15] = 0;
 
-    jit_num_ticks = 4;
+    test_env.ticks_left = 4;
     jit.Run();
 
     REQUIRE(jit.Regs()[0] == 5);

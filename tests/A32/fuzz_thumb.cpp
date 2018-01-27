@@ -26,133 +26,17 @@
 #include "frontend/ir/basic_block.h"
 #include "ir_opt/passes.h"
 #include "rand_int.h"
+#include "testenv.h"
 #include "A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
 #include "A32/skyeye_interpreter/skyeye_common/armstate.h"
 
-struct WriteRecord {
-    size_t size;
-    u32 address;
-    u64 data;
-};
-
-static bool operator==(const WriteRecord& a, const WriteRecord& b) {
-    return std::tie(a.size, a.address, a.data) == std::tie(b.size, b.address, b.data);
+static Dynarmic::A32::UserConfig GetUserConfig(ThumbTestEnv* testenv) {
+    Dynarmic::A32::UserConfig user_config;
+    user_config.callbacks = testenv;
+    return user_config;
 }
 
-static u64 jit_num_ticks = 0;
-static std::array<u16, 3000> code_mem{};
-static std::vector<WriteRecord> write_records;
-
-static u64 GetTicksRemaining();
-static void AddTicks(u64 ticks);
-static bool IsReadOnlyMemory(u32 vaddr);
-static u8 MemoryRead8(u32 vaddr);
-static u16 MemoryRead16(u32 vaddr);
-static u32 MemoryRead32(u32 vaddr);
-static u64 MemoryRead64(u32 vaddr);
-static void MemoryWrite8(u32 vaddr, u8 value);
-static void MemoryWrite16(u32 vaddr, u16 value);
-static void MemoryWrite32(u32 vaddr, u32 value);
-static void MemoryWrite64(u32 vaddr, u64 value);
-static void InterpreterFallback(u32 pc, Dynarmic::A32::Jit* jit, void*);
-static Dynarmic::A32::UserCallbacks GetUserCallbacks();
-
-static u64 GetTicksRemaining() {
-    return jit_num_ticks;
-}
-static void AddTicks(u64 ticks) {
-    if (ticks > jit_num_ticks) {
-        jit_num_ticks = 0;
-        return;
-    }
-    jit_num_ticks -= ticks;
-}
-
-static bool IsReadOnlyMemory(u32 vaddr) {
-    return vaddr < code_mem.size();
-}
-static u8 MemoryRead8(u32 vaddr) {
-    return static_cast<u8>(vaddr);
-}
-static u16 MemoryRead16(u32 vaddr) {
-    return static_cast<u16>(vaddr);
-}
-static u32 MemoryRead32(u32 vaddr) {
-    if (vaddr < code_mem.size() * sizeof(u16)) {
-        size_t index = vaddr / sizeof(u16);
-        if (index + 1 >= code_mem.size())
-            return code_mem[index];
-        return code_mem[index] | (code_mem[index+1] << 16);
-    }
-    return vaddr;
-}
-static u64 MemoryRead64(u32 vaddr) {
-    return vaddr;
-}
-static u32 MemoryReadCode(u32 vaddr) {
-    if (vaddr < code_mem.size() * sizeof(u16)) {
-        size_t index = vaddr / sizeof(u16);
-        if (index + 1 >= code_mem.size())
-            return code_mem[index];
-        return code_mem[index] | (code_mem[index + 1] << 16);
-    }
-    return 0xE7FEE7FE; // b +#0, b +#0
-}
-
-static void MemoryWrite8(u32 vaddr, u8 value){
-    write_records.push_back({8, vaddr, value});
-}
-static void MemoryWrite16(u32 vaddr, u16 value){
-    write_records.push_back({16, vaddr, value});
-}
-static void MemoryWrite32(u32 vaddr, u32 value){
-    write_records.push_back({32, vaddr, value});
-}
-static void MemoryWrite64(u32 vaddr, u64 value){
-    write_records.push_back({64, vaddr, value});
-}
-
-static void InterpreterFallback(u32 pc, Dynarmic::A32::Jit* jit, void*) {
-    ARMul_State interp_state{USER32MODE};
-    interp_state.user_callbacks = GetUserCallbacks();
-    interp_state.NumInstrsToExecute = 1;
-
-    interp_state.Reg = jit->Regs();
-    interp_state.Cpsr = jit->Cpsr();
-    interp_state.Reg[15] = pc;
-
-    InterpreterClearCache();
-    InterpreterMainLoop(&interp_state);
-
-    bool T = Dynarmic::Common::Bit<5>(interp_state.Cpsr);
-    interp_state.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
-
-    jit->Regs() = interp_state.Reg;
-    jit->SetCpsr(interp_state.Cpsr);
-}
-
-static void Fail() {
-    FAIL();
-}
-
-static Dynarmic::A32::UserCallbacks GetUserCallbacks() {
-    Dynarmic::A32::UserCallbacks user_callbacks{};
-    user_callbacks.InterpreterFallback = &InterpreterFallback;
-    user_callbacks.CallSVC = (void (*)(u32)) &Fail;
-    user_callbacks.memory.IsReadOnlyMemory = &IsReadOnlyMemory;
-    user_callbacks.memory.Read8 = &MemoryRead8;
-    user_callbacks.memory.Read16 = &MemoryRead16;
-    user_callbacks.memory.Read32 = &MemoryRead32;
-    user_callbacks.memory.Read64 = &MemoryRead64;
-    user_callbacks.memory.ReadCode = &MemoryReadCode;
-    user_callbacks.memory.Write8 = &MemoryWrite8;
-    user_callbacks.memory.Write16 = &MemoryWrite16;
-    user_callbacks.memory.Write32 = &MemoryWrite32;
-    user_callbacks.memory.Write64 = &MemoryWrite64;
-    user_callbacks.GetTicksRemaining = &GetTicksRemaining;
-    user_callbacks.AddTicks = &AddTicks;
-    return user_callbacks;
-}
+using WriteRecords = std::map<u32, u8>;
 
 struct ThumbInstGen final {
 public:
@@ -193,7 +77,7 @@ private:
     std::function<bool(u16)> is_valid;
 };
 
-static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Jit& jit, const std::vector<WriteRecord>& interp_write_records, const std::vector<WriteRecord>& jit_write_records) {
+static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Jit& jit, WriteRecords& interp_write_records, WriteRecords& jit_write_records) {
     const auto interp_regs = interp.Reg;
     const auto jit_regs = jit.Regs();
 
@@ -202,7 +86,7 @@ static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Ji
             && interp_write_records == jit_write_records;
 }
 
-static void RunInstance(size_t run_number, ARMul_State& interp, Dynarmic::A32::Jit& jit, const std::array<u32, 16>& initial_regs, size_t instruction_count, size_t instructions_to_execute_count) {
+static void RunInstance(size_t run_number, ThumbTestEnv& test_env, ARMul_State& interp, Dynarmic::A32::Jit& jit, const std::array<u32, 16>& initial_regs, size_t instruction_count, size_t instructions_to_execute_count) {
     interp.instruction_cache.clear();
     InterpreterClearCache();
     jit.ClearCache();
@@ -215,20 +99,20 @@ static void RunInstance(size_t run_number, ARMul_State& interp, Dynarmic::A32::J
     jit.Regs() = initial_regs;
 
     // Run interpreter
-    write_records.clear();
+    test_env.modified_memory.clear();
     interp.NumInstrsToExecute = static_cast<unsigned>(instructions_to_execute_count);
     InterpreterMainLoop(&interp);
-    auto interp_write_records = write_records;
+    auto interp_write_records = test_env.modified_memory;
     {
         bool T = Dynarmic::Common::Bit<5>(interp.Cpsr);
         interp.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
     }
 
     // Run jit
-    write_records.clear();
-    jit_num_ticks = instructions_to_execute_count;
+    test_env.modified_memory.clear();
+    test_env.ticks_left = instructions_to_execute_count;
     jit.Run();
-    auto jit_write_records = write_records;
+    auto jit_write_records = test_env.modified_memory;
 
     // Compare
     if (!DoesBehaviorMatch(interp, jit, interp_write_records, jit_write_records)) {
@@ -236,7 +120,7 @@ static void RunInstance(size_t run_number, ARMul_State& interp, Dynarmic::A32::J
 
         printf("\nInstruction Listing: \n");
         for (size_t i = 0; i < instruction_count; i++) {
-            printf("%04x %s\n", code_mem[i], Dynarmic::A32::DisassembleThumb16(code_mem[i]).c_str());
+            printf("%04x %s\n", test_env.code_mem[i], Dynarmic::A32::DisassembleThumb16(test_env.code_mem[i]).c_str());
         }
 
         printf("\nInitial Register Listing: \n");
@@ -253,12 +137,12 @@ static void RunInstance(size_t run_number, ARMul_State& interp, Dynarmic::A32::J
 
         printf("\nInterp Write Records:\n");
         for (auto& record : interp_write_records) {
-            printf("%zu [%x] = %" PRIu64 "\n", record.size, record.address, record.data);
+            printf("[%08x] = %02x\n", record.first, record.second);
         }
 
         printf("\nJIT Write Records:\n");
         for (auto& record : jit_write_records) {
-            printf("%zu [%x] = %" PRIu64 "\n", record.size, record.address, record.data);
+            printf("[%08x] = %02x\n", record.first, record.second);
         }
 
         Dynarmic::A32::PSR cpsr;
@@ -267,10 +151,10 @@ static void RunInstance(size_t run_number, ARMul_State& interp, Dynarmic::A32::J
         size_t num_insts = 0;
         while (num_insts < instructions_to_execute_count) {
             Dynarmic::A32::LocationDescriptor descriptor = {u32(num_insts * 4), cpsr, Dynarmic::A32::FPSCR{}};
-            Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, &MemoryReadCode);
+            Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, [&test_env](u32 vaddr) { return test_env.MemoryReadCode(vaddr); });
             Dynarmic::Optimization::A32GetSetElimination(ir_block);
             Dynarmic::Optimization::DeadCodeElimination(ir_block);
-            Dynarmic::Optimization::A32ConstantMemoryReads(ir_block, GetUserCallbacks().memory);
+            Dynarmic::Optimization::A32ConstantMemoryReads(ir_block, &test_env);
             Dynarmic::Optimization::ConstantPropagation(ir_block);
             Dynarmic::Optimization::DeadCodeElimination(ir_block);
             Dynarmic::Optimization::VerificationPass(ir_block);
@@ -287,22 +171,24 @@ static void RunInstance(size_t run_number, ARMul_State& interp, Dynarmic::A32::J
 }
 
 void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_execute_count, const size_t run_count, const std::function<u16()> instruction_generator) {
+    ThumbTestEnv test_env;
+
     // Prepare memory
-    code_mem.fill(0xE7FE); // b +#0
+    test_env.code_mem.fill(0xE7FE); // b +#0
 
     // Prepare test subjects
     ARMul_State interp{USER32MODE};
-    interp.user_callbacks = GetUserCallbacks();
-    Dynarmic::A32::Jit jit{GetUserCallbacks()};
+    interp.user_callbacks = &test_env;
+    Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
 
     for (size_t run_number = 0; run_number < run_count; run_number++) {
         std::array<u32, 16> initial_regs;
         std::generate_n(initial_regs.begin(), 15, []{ return RandInt<u32>(0, 0xFFFFFFFF); });
         initial_regs[15] = 0;
 
-        std::generate_n(code_mem.begin(), instruction_count, instruction_generator);
+        std::generate_n(test_env.code_mem.begin(), instruction_count, instruction_generator);
 
-        RunInstance(run_number, interp, jit, initial_regs, instruction_count, instructions_to_execute_count);
+        RunInstance(run_number, test_env, interp, jit, initial_regs, instruction_count, instructions_to_execute_count);
     }
 }
 
@@ -388,13 +274,15 @@ TEST_CASE("Fuzz Thumb instructions set 2 (affects PC)", "[JitX64][Thumb]") {
 }
 
 TEST_CASE("Verify fix for off by one error in MemoryRead32 worked", "[Thumb]") {
+    ThumbTestEnv test_env;
+
     // Prepare memory
-    code_mem.fill(0xE7FE); // b +#0
+    test_env.code_mem.fill(0xE7FE); // b +#0
 
     // Prepare test subjects
     ARMul_State interp{USER32MODE};
-    interp.user_callbacks = GetUserCallbacks();
-    Dynarmic::A32::Jit jit{GetUserCallbacks()};
+    interp.user_callbacks = &test_env;
+    Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
 
     std::array<u32, 16> initial_regs {
         0xe90ecd70,
@@ -415,11 +303,11 @@ TEST_CASE("Verify fix for off by one error in MemoryRead32 worked", "[Thumb]") {
         0x00000000,
     };
 
-    code_mem[0] = 0x40B8; // lsls r0, r7, #0
-    code_mem[1] = 0x01CA; // lsls r2, r1, #7
-    code_mem[2] = 0x83A1; // strh r1, [r4, #28]
-    code_mem[3] = 0x708A; // strb r2, [r1, #2]
-    code_mem[4] = 0xBCC4; // pop {r2, r6, r7}
+    test_env.code_mem[0] = 0x40B8; // lsls r0, r7, #0
+    test_env.code_mem[1] = 0x01CA; // lsls r2, r1, #7
+    test_env.code_mem[2] = 0x83A1; // strh r1, [r4, #28]
+    test_env.code_mem[3] = 0x708A; // strb r2, [r1, #2]
+    test_env.code_mem[4] = 0xBCC4; // pop {r2, r6, r7}
 
-    RunInstance(1, interp, jit, initial_regs, 5, 5);
+    RunInstance(1, test_env, interp, jit, initial_regs, 5, 5);
 }

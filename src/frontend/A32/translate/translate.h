@@ -15,7 +15,7 @@ namespace Dynarmic::A32 {
 
 class LocationDescriptor;
 
-using MemoryReadCodeFuncType = u32 (*)(u32 vaddr);
+using MemoryReadCodeFuncType = std::function<u32(u32 vaddr)>;
 
 /**
  * This function translates instructions in memory into our intermediate representation.

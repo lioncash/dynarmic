@@ -12,7 +12,7 @@
 #include "backend_x64/block_range_information.h"
 #include "backend_x64/emit_x64.h"
 #include "dynarmic/A32/a32.h"
-#include "dynarmic/A32/callbacks.h"
+#include "dynarmic/A32/config.h"
 #include "frontend/A32/location_descriptor.h"
 #include "frontend/ir/terminal.h"
 
@@ -30,7 +30,7 @@ struct A32EmitContext final : public EmitContext {
 
 class A32EmitX64 final : public EmitX64 {
 public:
-    A32EmitX64(BlockOfCode* code, A32::UserCallbacks cb, A32::Jit* jit_interface);
+    A32EmitX64(BlockOfCode* code, A32::UserConfig config, A32::Jit* jit_interface);
     ~A32EmitX64() override;
 
     /**
@@ -44,7 +44,7 @@ public:
     void InvalidateCacheRanges(const boost::icl::interval_set<u32>& ranges);
 
 protected:
-    const A32::UserCallbacks cb;
+    const A32::UserConfig config;
     A32::Jit* jit_interface;
     BlockRangeInformation<u32> block_ranges;
 

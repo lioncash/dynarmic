@@ -24,6 +24,7 @@ add_executable(dynarmic_tests
     A32/skyeye_interpreter/skyeye_common/vfp/vfpsingle.cpp
     A32/test_arm_disassembler.cpp
     A32/test_thumb_instructions.cpp
+    A32/testenv.h
     A64/a64.cpp
     A64/inst_gen.cpp
     A64/inst_gen.h

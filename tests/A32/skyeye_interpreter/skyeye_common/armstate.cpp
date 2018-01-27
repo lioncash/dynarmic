@@ -204,14 +204,14 @@ u8 ARMul_State::ReadMemory8(u32 address) const
 {
 //    CheckMemoryBreakpoint(address, GDBStub::BreakpointType::Read);
 
-    return (*user_callbacks.memory.Read8)(address);
+    return user_callbacks->MemoryRead8(address);
 }
 
 u16 ARMul_State::ReadMemory16(u32 address) const
 {
 //    CheckMemoryBreakpoint(address, GDBStub::BreakpointType::Read);
 
-    u16 data = (*user_callbacks.memory.Read16)(address);
+    u16 data = user_callbacks->MemoryRead16(address);
 
     if (InBigEndianMode())
         data = Common::swap16(data);
@@ -223,7 +223,7 @@ u32 ARMul_State::ReadMemory32(u32 address) const
 {
 //    CheckMemoryBreakpoint(address, GDBStub::BreakpointType::Read);
 
-    u32 data = (*user_callbacks.memory.Read32)(address);
+    u32 data = user_callbacks->MemoryRead32(address);
 
     if (InBigEndianMode())
         data = Common::swap32(data);
@@ -235,7 +235,7 @@ u64 ARMul_State::ReadMemory64(u32 address) const
 {
 //    CheckMemoryBreakpoint(address, GDBStub::BreakpointType::Read);
 
-    u64 data = (*user_callbacks.memory.Read64)(address);
+    u64 data = user_callbacks->MemoryRead64(address);
 
     if (InBigEndianMode())
         data = Common::swap64(data);
@@ -247,7 +247,7 @@ void ARMul_State::WriteMemory8(u32 address, u8 data)
 {
 //    CheckMemoryBreakpoint(address, GDBStub::BreakpointType::Write);
 
-    (*user_callbacks.memory.Write8)(address, data);
+    user_callbacks->MemoryWrite8(address, data);
 }
 
 void ARMul_State::WriteMemory16(u32 address, u16 data)
@@ -257,7 +257,7 @@ void ARMul_State::WriteMemory16(u32 address, u16 data)
     if (InBigEndianMode())
         data = Common::swap16(data);
 
-    (*user_callbacks.memory.Write16)(address, data);
+    user_callbacks->MemoryWrite16(address, data);
 }
 
 void ARMul_State::WriteMemory32(u32 address, u32 data)
@@ -267,7 +267,7 @@ void ARMul_State::WriteMemory32(u32 address, u32 data)
     if (InBigEndianMode())
         data = Common::swap32(data);
 
-    (*user_callbacks.memory.Write32)(address, data);
+    user_callbacks->MemoryWrite32(address, data);
 }
 
 void ARMul_State::WriteMemory64(u32 address, u64 data)
@@ -277,7 +277,7 @@ void ARMul_State::WriteMemory64(u32 address, u64 data)
     if (InBigEndianMode())
         data = Common::swap64(data);
 
-    (*user_callbacks.memory.Write64)(address, data);
+    user_callbacks->MemoryWrite64(address, data);
 }
 
 

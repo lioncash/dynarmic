@@ -4,7 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
-#include <dynarmic/A32/callbacks.h>
+#include <dynarmic/A32/config.h>
 
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/opcodes.h"

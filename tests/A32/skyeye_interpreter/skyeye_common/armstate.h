@@ -20,7 +20,7 @@
 #include <array>
 #include <unordered_map>
 
-#include <dynarmic/A32/callbacks.h>
+#include <dynarmic/A32/config.h>
 
 #include "common/common_types.h"
 #include "A32/skyeye_interpreter/skyeye_common/arm_regformat.h"
@@ -252,5 +252,5 @@ public:
     u32 exclusive_tag; // The address for which the local monitor is in exclusive access mode
     bool exclusive_state;
 
-    Dynarmic::A32::UserCallbacks user_callbacks;
+    Dynarmic::A32::UserCallbacks* user_callbacks;
 };

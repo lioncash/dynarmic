@@ -18,6 +18,7 @@
 #include "backend_x64/a32_jitstate.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/callback.h"
+#include "backend_x64/devirtualize.h"
 #include "backend_x64/jitstate_info.h"
 #include "common/assert.h"
 #include "common/common_types.h"
@@ -33,26 +34,26 @@ namespace Dynarmic::A32 {
 
 using namespace BackendX64;
 
-static RunCodeCallbacks GenRunCodeCallbacks(A32::UserCallbacks cb, CodePtr (*LookupBlock)(void* lookup_block_arg), void* arg) {
+static RunCodeCallbacks GenRunCodeCallbacks(A32::UserCallbacks* cb, CodePtr (*LookupBlock)(void* lookup_block_arg), void* arg) {
     return RunCodeCallbacks{
         std::make_unique<ArgCallback>(LookupBlock, reinterpret_cast<u64>(arg)),
-        std::make_unique<SimpleCallback>(cb.AddTicks),
-        std::make_unique<SimpleCallback>(cb.GetTicksRemaining),
+        std::make_unique<ArgCallback>(DEVIRT(cb, &A32::UserCallbacks::AddTicks)),
+        std::make_unique<ArgCallback>(DEVIRT(cb, &A32::UserCallbacks::GetTicksRemaining)),
     };
 }
 
 struct Jit::Impl {
-    Impl(Jit* jit, A32::UserCallbacks callbacks)
-            : block_of_code(GenRunCodeCallbacks(callbacks, &GetCurrentBlock, this), JitStateInfo{jit_state})
-            , emitter(&block_of_code, callbacks, jit)
-            , callbacks(callbacks)
+    Impl(Jit* jit, A32::UserConfig config)
+            : block_of_code(GenRunCodeCallbacks(config.callbacks, &GetCurrentBlock, this), JitStateInfo{jit_state})
+            , emitter(&block_of_code, config, jit)
+            , config(config)
             , jit_interface(jit)
     {}
 
     A32JitState jit_state;
     BlockOfCode block_of_code;
     A32EmitX64 emitter;
-    const A32::UserCallbacks callbacks;
+    const A32::UserConfig config;
 
     // Requests made during execution to invalidate the cache are queued up here.
     size_t invalid_cache_generation = 0;
@@ -164,10 +165,10 @@ private:
             PerformCacheInvalidation();
         }
 
-        IR::Block ir_block = A32::Translate(A32::LocationDescriptor{descriptor}, callbacks.memory.ReadCode);
+        IR::Block ir_block = A32::Translate(A32::LocationDescriptor{descriptor}, [this](u32 vaddr) { return config.callbacks->MemoryReadCode(vaddr); });
         Optimization::A32GetSetElimination(ir_block);
         Optimization::DeadCodeElimination(ir_block);
-        Optimization::A32ConstantMemoryReads(ir_block, callbacks.memory);
+        Optimization::A32ConstantMemoryReads(ir_block, config.callbacks);
         Optimization::ConstantPropagation(ir_block);
         Optimization::DeadCodeElimination(ir_block);
         Optimization::VerificationPass(ir_block);
@@ -175,7 +176,7 @@ private:
     }
 };
 
-Jit::Jit(UserCallbacks callbacks) : impl(std::make_unique<Impl>(this, callbacks)) {}
+Jit::Jit(UserConfig config) : impl(std::make_unique<Impl>(this, config)) {}
 
 Jit::~Jit() {}
 

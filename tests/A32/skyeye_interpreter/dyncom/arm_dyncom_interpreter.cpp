@@ -803,7 +803,7 @@ enum {
 
 static unsigned int InterpreterTranslateInstruction(const ARMul_State* cpu, const u32 phys_addr, ARM_INST_PTR& inst_base) {
     unsigned int inst_size = 4;
-    unsigned int inst = (*cpu->user_callbacks.memory.ReadCode)(phys_addr & 0xFFFFFFFC);
+    unsigned int inst = cpu->user_callbacks->MemoryReadCode(phys_addr & 0xFFFFFFFC);
 
     // If we are in Thumb mode, we'll translate one Thumb instruction to the corresponding ARM instruction
     if (cpu->TFlag) {
@@ -3506,7 +3506,7 @@ unsigned InterpreterMainLoop(ARMul_State* cpu) {
         if (inst_base->cond == ConditionCode::AL || CondPassed(cpu, inst_base->cond)) {
             swi_inst* const inst_cream = (swi_inst*)inst_base->component;
 //            SVC::CallSVC(inst_cream->num & 0xFFFF);
-            (*cpu->user_callbacks.CallSVC)(inst_cream->num & 0xFFFF);
+            cpu->user_callbacks->CallSVC(inst_cream->num & 0xFFFF);
         }
 
         cpu->Reg[15] += cpu->GetInstructionSize();

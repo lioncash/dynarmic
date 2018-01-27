@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 
-#include <dynarmic/A32/callbacks.h>
+#include <dynarmic/A32/config.h>
 
 namespace Dynarmic {
 namespace IR {
@@ -26,7 +26,7 @@ struct Context;
 
 class Jit final {
 public:
-    explicit Jit(UserCallbacks callbacks);
+    explicit Jit(UserConfig conf);
     ~Jit();
 
     /**
