@@ -28,7 +28,7 @@ struct A64EmitContext final : public EmitContext {
 class A64EmitX64 final : public EmitX64 {
 public:
     A64EmitX64(BlockOfCode* code, A64::UserConfig conf);
-    ~A64EmitX64();
+    ~A64EmitX64() override;
 
     /**
      * Emit host machine code for a basic block with intermediate representation `ir`.

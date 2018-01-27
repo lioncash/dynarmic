@@ -31,7 +31,7 @@ struct A32EmitContext final : public EmitContext {
 class A32EmitX64 final : public EmitX64 {
 public:
     A32EmitX64(BlockOfCode* code, A32::UserCallbacks cb, A32::Jit* jit_interface);
-    ~A32EmitX64();
+    ~A32EmitX64() override;
 
     /**
      * Emit host machine code for a basic block with intermediate representation `ir`.

@@ -31,7 +31,7 @@ public:
     template <typename Function>
     SimpleCallback(Function fn) : fn(reinterpret_cast<void(*)()>(fn)) {}
 
-    ~SimpleCallback() = default;
+    ~SimpleCallback() override = default;
 
     void EmitCall(BlockOfCode* code, std::function<void()> l = []{}) override;
     void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64)> l) override;
@@ -47,7 +47,7 @@ public:
     template <typename Function>
     ArgCallback(Function fn, u64 arg) : fn(reinterpret_cast<void(*)()>(fn)), arg(arg) {}
 
-    ~ArgCallback() = default;
+    ~ArgCallback() override = default;
 
     void EmitCall(BlockOfCode* code, std::function<void()> l = []{}) override;
     void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64)> l) override;
