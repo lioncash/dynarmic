@@ -280,6 +280,14 @@ U32U64 IREmitter::Mul(const U32U64& a, const U32U64& b) {
     return Inst<U64>(Opcode::Mul64, a, b);
 }
 
+U64 IREmitter::UnsignedMultiplyHigh(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::UnsignedMultiplyHigh64, a, b);
+}
+
+U64 IREmitter::SignedMultiplyHigh(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::SignedMultiplyHigh64, a, b);
+}
+
 U32 IREmitter::UnsignedDiv(const U32& a, const U32& b) {
     return Inst<U32>(Opcode::UnsignedDiv32, a, b);
 }

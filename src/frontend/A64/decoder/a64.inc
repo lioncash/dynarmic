@@ -299,10 +299,10 @@ INST(MADD,                   "MADD",                                      "z0011
 INST(MSUB,                   "MSUB",                                      "z0011011000mmmmm1aaaaannnnnddddd")
 INST(SMADDL,                 "SMADDL",                                    "10011011001mmmmm0aaaaannnnnddddd")
 INST(SMSUBL,                 "SMSUBL",                                    "10011011001mmmmm1aaaaannnnnddddd")
-//INST(SMULH,                  "SMULH",                                     "10011011010mmmmm011111nnnnnddddd")
+INST(SMULH,                  "SMULH",                                     "10011011010mmmmm011111nnnnnddddd")
 INST(UMADDL,                 "UMADDL",                                    "10011011101mmmmm0aaaaannnnnddddd")
 INST(UMSUBL,                 "UMSUBL",                                    "10011011101mmmmm1aaaaannnnnddddd")
-//INST(UMULH,                  "UMULH",                                     "10011011110mmmmm011111nnnnnddddd")
+INST(UMULH,                  "UMULH",                                     "10011011110mmmmm011111nnnnnddddd")
 
 // Data Processing - FP and SIMD - AES
 INST(AESE,                   "AESE",                                      "0100111000101000010010nnnnnddddd")

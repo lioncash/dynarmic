@@ -98,6 +98,8 @@ OPCODE(Sub32,                   T::U32,         T::U32,         T::U32,         
 OPCODE(Sub64,                   T::U64,         T::U64,         T::U64,         T::U1           )
 OPCODE(Mul32,                   T::U32,         T::U32,         T::U32                          )
 OPCODE(Mul64,                   T::U64,         T::U64,         T::U64                          )
+OPCODE(SignedMultiplyHigh64,    T::U64,         T::U64,         T::U64                          )
+OPCODE(UnsignedMultiplyHigh64,  T::U64,         T::U64,         T::U64                          )
 OPCODE(UnsignedDiv32,           T::U32,         T::U32,         T::U32                          )
 OPCODE(UnsignedDiv64,           T::U64,         T::U64,         T::U64                          )
 OPCODE(SignedDiv32,             T::U32,         T::U32,         T::U32                          )

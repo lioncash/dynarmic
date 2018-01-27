@@ -901,6 +901,28 @@ void EmitX64::EmitMul64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void EmitX64::EmitUnsignedMultiplyHigh64(EmitContext& ctx, IR::Inst* inst) {
+   auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+   ctx.reg_alloc.ScratchGpr({HostLoc::RDX});
+   ctx.reg_alloc.UseScratch(args[0], HostLoc::RAX);
+   OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
+   code.mul(*op_arg);
+
+   ctx.reg_alloc.DefineValue(inst, rdx);
+}
+
+void EmitX64::EmitSignedMultiplyHigh64(EmitContext& ctx, IR::Inst* inst) {
+   auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+   ctx.reg_alloc.ScratchGpr({HostLoc::RDX});
+   ctx.reg_alloc.UseScratch(args[0], HostLoc::RAX);
+   OpArg op_arg = ctx.reg_alloc.UseOpArg(args[1]);
+   code.imul(*op_arg);
+
+   ctx.reg_alloc.DefineValue(inst, rdx);
+}
+
 void EmitX64::EmitUnsignedDiv32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
