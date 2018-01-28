@@ -8,6 +8,7 @@
 
 #include <catch.hpp>
 
+#include "common/scope_exit.h"
 #include "frontend/A64/location_descriptor.h"
 #include "frontend/A64/translate/translate.h"
 #include "frontend/ir/basic_block.h"
@@ -15,6 +16,14 @@
 #include "rand_int.h"
 #include "testenv.h"
 #include "unicorn_emu/unicorn.h"
+
+// Needs to be declaerd before <fmt/ostream.h>
+static std::ostream& operator<<(std::ostream& o, const Dynarmic::A64::Vector& vec) {
+    return o << fmt::format("{:016x}'{:016x}", vec[1], vec[0]);
+}
+
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 using namespace Dynarmic;
 
@@ -73,12 +82,12 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Ve
     jit.SetRegisters(regs);
     jit.SetVectors(vecs);
     jit.SetPC(instructions_offset * 4);
-    jit.SetSP(0x8000000);
+    jit.SetSP(0x08000000);
     jit.SetPstate(pstate);
     uni.SetRegisters(regs);
     uni.SetVectors(vecs);
     uni.SetPC(instructions_offset * 4);
-    uni.SetSP(0x8000000);
+    uni.SetSP(0x08000000);
     uni.SetPstate(pstate);
 
     jit_env.ticks_left = instructions.size();
@@ -86,6 +95,56 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Ve
 
     uni_env.ticks_left = instructions.size();
     uni.Run();
+
+    SCOPE_FAIL {
+        fmt::print("Instruction Listing:\n");
+        for (u32 instruction : instructions)
+            fmt::print("{:08x}\n", instruction);
+        fmt::print("\n");
+
+        fmt::print("Initial register listing:\n");
+        for (size_t i = 0; i < regs.size(); ++i)
+            fmt::print("{:3s}: {:016x}\n", static_cast<A64::Reg>(i), regs[i]);
+        for (size_t i = 0; i < vecs.size(); ++i)
+            fmt::print("{:3s}: {}\n", static_cast<A64::Vec>(i), vecs[i]);
+        fmt::print("sp : 08000000\n");
+        fmt::print("pc : {:016x}\n", instructions_offset * 4);
+        fmt::print("p  : {:08x}\n", pstate);
+        fmt::print("\n");
+
+        fmt::print("Final register listing:\n");
+        fmt::print("     unicorn          dynarmic\n");
+        for (size_t i = 0; i < regs.size(); ++i)
+            fmt::print("{:3s}: {:016x} {:016x} {}\n", static_cast<A64::Reg>(i), uni.GetRegisters()[i], jit.GetRegisters()[i], uni.GetRegisters()[i] != jit.GetRegisters()[i] ? "*" : "");
+        for (size_t i = 0; i < vecs.size(); ++i)
+            fmt::print("{:3s}: {} {} {}\n", static_cast<A64::Vec>(i), uni.GetVectors()[i], jit.GetVectors()[i], uni.GetVectors()[i] != jit.GetVectors()[i] ? "*" : "");
+        fmt::print("sp : {:016x} {:016x} {}\n", uni.GetSP(), jit.GetSP(), uni.GetSP() != jit.GetSP() ? "*" : "");
+        fmt::print("pc : {:016x} {:016x} {}\n", uni.GetPC(), jit.GetPC(), uni.GetPC() != jit.GetPC() ? "*" : "");
+        fmt::print("p  : {:08x} {:08x} {}\n", uni.GetPstate(), jit.GetPstate(), (uni.GetPstate() & 0xF0000000) != (jit.GetPstate() & 0xF0000000) ? "*" : "");
+        fmt::print("\n");
+
+        fmt::print("Modified memory:\n");
+        fmt::print("                 uni dyn\n");
+        auto uni_iter = uni_env.modified_memory.begin();
+        auto jit_iter = jit_env.modified_memory.begin();
+        while (uni_iter != uni_env.modified_memory.end() || jit_iter != jit_env.modified_memory.end()) {
+            if (uni_iter == uni_env.modified_memory.end() || uni_iter->first > jit_iter->first) {
+                fmt::print("{:016x}:    {:02x} *\n", jit_iter->first, jit_iter->second);
+                jit_iter++;
+            } else if (jit_iter == jit_env.modified_memory.end() || jit_iter->first > uni_iter->first) {
+                fmt::print("{:016x}: {:02x}    *\n", uni_iter->first, uni_iter->second);
+                uni_iter++;
+            } else if (uni_iter->first == jit_iter->first) {
+                fmt::print("{:016x}: {:02x} {:02x} {}\n", uni_iter->first, uni_iter->second, jit_iter->second, uni_iter->second != jit_iter->second ? "*" : "");
+                uni_iter++;
+                jit_iter++;
+            }
+        }
+        fmt::print("\n");
+
+        fmt::print("x86_64:\n");
+        fmt::print("{}\n", jit.Disassemble());
+    };
 
     REQUIRE(uni.GetPC() == jit.GetPC());
     REQUIRE(uni.GetRegisters() == jit.GetRegisters());
