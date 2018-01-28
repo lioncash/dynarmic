@@ -173,6 +173,10 @@ OPCODE(CRC32Castagnoli8,        T::U32,         T::U32,         T::U32          
 OPCODE(CRC32Castagnoli16,       T::U32,         T::U32,         T::U32                          )
 OPCODE(CRC32Castagnoli32,       T::U32,         T::U32,         T::U32                          )
 OPCODE(CRC32Castagnoli64,       T::U32,         T::U32,         T::U64                          )
+OPCODE(CRC32ISO8,               T::U32,         T::U32,         T::U32                          )
+OPCODE(CRC32ISO16,              T::U32,         T::U32,         T::U32                          )
+OPCODE(CRC32ISO32,              T::U32,         T::U32,         T::U32                          )
+OPCODE(CRC32ISO64,              T::U32,         T::U32,         T::U64                          )
 
 // Vector instructions
 OPCODE(VectorGetElement8,       T::U8,          T::U128,        T::U8                           )
