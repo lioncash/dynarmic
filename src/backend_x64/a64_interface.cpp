@@ -13,6 +13,7 @@
 #include "backend_x64/a64_jitstate.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/devirtualize.h"
+#include "backend_x64/disassemble_x64.h"
 #include "backend_x64/jitstate_info.h"
 #include "common/assert.h"
 #include "common/scope_exit.h"
@@ -158,6 +159,10 @@ public:
 
     bool IsExecuting() const {
         return is_executing;
+    }
+
+    std::string Disassemble() const {
+        return DisassembleX64(block_of_code.GetCodeBegin(), block_of_code.getCurr());
     }
 
 private:
@@ -316,6 +321,10 @@ void Jit::SetPstate(u32 value) {
 
 bool Jit::IsExecuting() const {
     return impl->IsExecuting();
+}
+
+std::string Jit::Disassemble() const {
+    return impl->Disassemble();
 }
 
 } // namespace Dynarmic::A64

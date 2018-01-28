@@ -19,6 +19,7 @@
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/callback.h"
 #include "backend_x64/devirtualize.h"
+#include "backend_x64/disassemble_x64.h"
 #include "backend_x64/jitstate_info.h"
 #include "common/assert.h"
 #include "common/common_types.h"
@@ -73,38 +74,7 @@ struct Jit::Impl {
     std::string Disassemble(const IR::LocationDescriptor& descriptor) {
         auto block = GetBasicBlock(descriptor);
         std::string result = fmt::format("address: {}\nsize: {} bytes\n", block.entrypoint, block.size);
-
-#ifdef DYNARMIC_USE_LLVM
-        LLVMInitializeX86TargetInfo();
-        LLVMInitializeX86TargetMC();
-        LLVMInitializeX86Disassembler();
-        LLVMDisasmContextRef llvm_ctx = LLVMCreateDisasm("x86_64", nullptr, 0, nullptr, nullptr);
-        LLVMSetDisasmOptions(llvm_ctx, LLVMDisassembler_Option_AsmPrinterVariant);
-
-        const u8* pos = static_cast<const u8*>(block.entrypoint);
-        const u8* end = pos + block.size;
-        size_t remaining = block.size;
-
-        while (pos < end) {
-            char buffer[80];
-            size_t inst_size = LLVMDisasmInstruction(llvm_ctx, const_cast<u8*>(pos), remaining, (u64)pos, buffer, sizeof(buffer));
-            ASSERT(inst_size);
-            for (const u8* i = pos; i < pos + inst_size; i++)
-                result += fmt::format("{:02x} ", *i);
-            for (size_t i = inst_size; i < 10; i++)
-                result += "   ";
-            result += buffer;
-            result += '\n';
-
-            pos += inst_size;
-            remaining -= inst_size;
-        }
-
-        LLVMDisasmDispose(llvm_ctx);
-#else
-        result.append("(recompile with DYNARMIC_USE_LLVM=ON to disassemble the generated x86_64 code)\n");
-#endif
-
+        result += DisassembleX64(block.entrypoint, reinterpret_cast<const char*>(block.entrypoint) + block.size);
         return result;
     }
 

@@ -210,6 +210,10 @@ void BlockOfCode::SwitchToNearCode() {
     SetCodePtr(near_code_ptr);
 }
 
+CodePtr BlockOfCode::GetCodeBegin() const {
+    return near_code_begin;
+}
+
 void* BlockOfCode::AllocateFromCodeSpace(size_t alloc_size) {
     if (size_ + alloc_size >= maxSize_) {
         throw Xbyak::Error(Xbyak::ERR_CODE_IS_TOO_BIG);

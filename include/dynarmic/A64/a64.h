@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 
 #include <dynarmic/A64/config.h>
 
@@ -99,6 +100,12 @@ public:
      * i.e.: We're in a callback.
      */
     bool IsExecuting() const;
+
+    /**
+     * Debugging: Disassemble all of compiled code.
+     * @return A string containing disassembly of all host machine code produced.
+     */
+    std::string Disassemble() const;
 
 private:
     struct Impl;

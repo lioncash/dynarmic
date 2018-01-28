@@ -77,6 +77,8 @@ public:
     void SwitchToFarCode();
     void SwitchToNearCode();
 
+    CodePtr GetCodeBegin() const;
+
     const void* GetReturnFromRunCodeAddress() const {
         return return_from_run_code[0];
     }
