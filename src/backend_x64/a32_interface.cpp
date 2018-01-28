@@ -153,7 +153,7 @@ Jit::~Jit() {}
 void Jit::Run() {
     ASSERT(!is_executing);
     is_executing = true;
-    SCOPE_EXIT({ this->is_executing = false; });
+    SCOPE_EXIT { this->is_executing = false; };
 
     impl->jit_state.halt_requested = false;
 

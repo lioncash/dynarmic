@@ -1,42 +1,81 @@
-// Copyright 2014 Citra Emulator Project
-// Licensed under GPLv2 or any later version
-// Refer to the license.txt file included.
+/* This file is part of the dynarmic project.
+ * Copyright (c) 2018 MerryMage
+ * This software may be used and distributed according to the terms of the GNU
+ * General Public License version 2 or any later version.
+ */
 
 #pragma once
 
+#include <exception>
+#include <type_traits>
 #include <utility>
 
-namespace detail {
-    template <typename Func>
-    struct ScopeExitHelper {
-        explicit ScopeExitHelper(Func&& func) : func(std::move(func)) {}
-        ~ScopeExitHelper() { func(); }
+#include "common/macro_util.h"
 
-        Func func;
-    };
+namespace Dynarmic::detail {
 
-    template <typename Func>
-    ScopeExitHelper<Func> ScopeExit(Func&& func) { return ScopeExitHelper<Func>(std::move(func)); }
+struct ScopeExitTag {};
+struct ScopeFailTag {};
+struct ScopeSuccessTag {};
+
+template <typename Function>
+class ScopeExit final {
+public:
+    explicit ScopeExit(Function&& fn) : function(std::move(fn)) {}
+    ~ScopeExit() noexcept {
+        function();
+    }
+private:
+    Function function;
+};
+
+template <typename Function>
+class ScopeFail final {
+public:
+    explicit ScopeFail(Function&& fn) : function(std::move(fn)), exception_count(std::uncaught_exceptions()) {}
+    ~ScopeFail() noexcept {
+        if (std::uncaught_exceptions() > exception_count) {
+            function();
+        }
+    }
+private:
+    Function function;
+    int exception_count;
+};
+
+template <typename Function>
+class ScopeSuccess final {
+public:
+    explicit ScopeSuccess(Function&& fn) : function(std::move(fn)), exception_count(std::uncaught_exceptions()) {}
+    ~ScopeSuccess() {
+        if (std::uncaught_exceptions() <= exception_count) {
+            function();
+        }
+    }
+private:
+    Function function;
+    int exception_count;
+};
+
+// We use ->* here as it has the highest precedence of the operators we can use.
+
+template <typename Function>
+auto operator->*(ScopeExitTag, Function&& function) {
+    return ScopeExit<std::decay_t<Function>>{std::forward<Function>(function)};
 }
 
-#define CONCAT2(x, y) DO_CONCAT2(x, y)
-#define DO_CONCAT2(x, y) x ## y
+template <typename Function>
+auto operator->*(ScopeFailTag, Function&& function) {
+    return ScopeFail<std::decay_t<Function>>{std::forward<Function>(function)};
+}
 
-/**
- * This macro allows you to conveniently specify a block of code that will run on scope exit. Handy
- * for doing ad-hoc clean-up tasks in a function with multiple returns.
- *
- * Example usage:
- * \code
- * const int saved_val = g_foo;
- * g_foo = 55;
- * SCOPE_EXIT({ g_foo = saved_val; });
- *
- * if (Bar()) {
- *     return 0;
- * } else {
- *     return 20;
- * }
- * \endcode
- */
-#define SCOPE_EXIT(body) auto CONCAT2(scope_exit_helper_, __LINE__) = detail::ScopeExit([&]() body)
+template <typename Function>
+auto operator->*(ScopeSuccessTag, Function&& function) {
+    return ScopeSuccess<std::decay_t<Function>>{std::forward<Function>(function)};
+}
+
+} // namespace Dynarmic::detail
+
+#define SCOPE_EXIT auto ANONYMOUS_VARIABLE(_SCOPE_EXIT_) = ::Dynarmic::detail::ScopeExitTag{} ->* [&]() noexcept
+#define SCOPE_FAIL auto ANONYMOUS_VARIABLE(_SCOPE_FAIL_) = ::Dynarmic::detail::ScopeFailTag{} ->* [&]() noexcept
+#define SCOPE_SUCCESS auto ANONYMOUS_VARIABLE(_SCOPE_FAIL_) = ::Dynarmic::detail::ScopeSuccessTag{} ->* [&]()

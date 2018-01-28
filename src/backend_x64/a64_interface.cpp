@@ -47,7 +47,7 @@ public:
     void Run() {
         ASSERT(!is_executing);
         is_executing = true;
-        SCOPE_EXIT({ this->is_executing = false; });
+        SCOPE_EXIT { this->is_executing = false; };
         jit_state.halt_requested = false;
 
         // TODO: Check code alignment
