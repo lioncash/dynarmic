@@ -6,10 +6,18 @@
 
 #include "translate_arm.h"
 
+#include "dynarmic/A32/config.h"
+
 namespace Dynarmic::A32 {
 
-bool ArmTranslatorVisitor::arm_BKPT(Cond /*cond*/, Imm12 /*imm12*/, Imm4 /*imm4*/) {
-    return InterpretThisInstruction();
+bool ArmTranslatorVisitor::arm_BKPT(Cond cond, Imm12 /*imm12*/, Imm4 /*imm4*/) {
+    if (cond != Cond::AL) {
+        return UnpredictableInstruction();
+    }
+
+    ir.ExceptionRaised(Exception::Breakpoint);
+    ir.SetTerm(IR::Term::CheckHalt{IR::Term::ReturnToDispatch{}});
+    return false;
 }
 
 bool ArmTranslatorVisitor::arm_SVC(Cond cond, Imm24 imm24) {

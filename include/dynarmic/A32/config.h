@@ -24,6 +24,8 @@ enum class Exception {
     /// An unpredictable instruction is to be executed. Implementation-defined behaviour should now happen.
     /// This behaviour is up to the user of this library to define.
     UnpredictableInstruction,
+    /// A BKPT instruction was executed.
+    Breakpoint,
 };
 
 /// These function pointers may be inserted into compiled code.
