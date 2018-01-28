@@ -15,7 +15,7 @@ bool ArmTranslatorVisitor::arm_ADC_imm(Cond cond, bool S, Reg n, Reg d, int rota
         auto result = ir.AddWithCarry(ir.GetRegister(n), ir.Imm32(imm32), ir.GetCFlag());
 
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -37,7 +37,7 @@ bool ArmTranslatorVisitor::arm_ADC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, ir.GetCFlag());
         auto result = ir.AddWithCarry(ir.GetRegister(n), shifted.result, ir.GetCFlag());
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -77,7 +77,7 @@ bool ArmTranslatorVisitor::arm_ADD_imm(Cond cond, bool S, Reg n, Reg d, int rota
         u32 imm32 = ArmExpandImm(rotate, imm8);
         auto result = ir.AddWithCarry(ir.GetRegister(n), ir.Imm32(imm32), ir.Imm1(0));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -98,7 +98,7 @@ bool ArmTranslatorVisitor::arm_ADD_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, ir.GetCFlag());
         auto result = ir.AddWithCarry(ir.GetRegister(n), shifted.result, ir.Imm1(0));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -138,7 +138,7 @@ bool ArmTranslatorVisitor::arm_AND_imm(Cond cond, bool S, Reg n, Reg d, int rota
         auto imm_carry = ArmExpandImm_C(rotate, imm8, ir.GetCFlag());
         auto result = ir.And(ir.GetRegister(n), ir.Imm32(imm_carry.imm32));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -159,7 +159,7 @@ bool ArmTranslatorVisitor::arm_AND_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, carry_in);
         auto result = ir.And(ir.GetRegister(n), shifted.result);
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -197,7 +197,7 @@ bool ArmTranslatorVisitor::arm_BIC_imm(Cond cond, bool S, Reg n, Reg d, int rota
         auto imm_carry = ArmExpandImm_C(rotate, imm8, ir.GetCFlag());
         auto result = ir.And(ir.GetRegister(n), ir.Not(ir.Imm32(imm_carry.imm32)));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -218,7 +218,7 @@ bool ArmTranslatorVisitor::arm_BIC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, carry_in);
         auto result = ir.And(ir.GetRegister(n), ir.Not(shifted.result));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -337,7 +337,7 @@ bool ArmTranslatorVisitor::arm_EOR_imm(Cond cond, bool S, Reg n, Reg d, int rota
         auto imm_carry = ArmExpandImm_C(rotate, imm8, ir.GetCFlag());
         auto result = ir.Eor(ir.GetRegister(n), ir.Imm32(imm_carry.imm32));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -358,7 +358,7 @@ bool ArmTranslatorVisitor::arm_EOR_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, carry_in);
         auto result = ir.Eor(ir.GetRegister(n), shifted.result);
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -396,7 +396,7 @@ bool ArmTranslatorVisitor::arm_MOV_imm(Cond cond, bool S, Reg d, int rotate, Imm
         auto imm_carry = ArmExpandImm_C(rotate, imm8, ir.GetCFlag());
         auto result = ir.Imm32(imm_carry.imm32);
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -417,7 +417,7 @@ bool ArmTranslatorVisitor::arm_MOV_reg(Cond cond, bool S, Reg d, Imm5 imm5, Shif
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, carry_in);
         auto result = shifted.result;
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -455,7 +455,7 @@ bool ArmTranslatorVisitor::arm_MVN_imm(Cond cond, bool S, Reg d, int rotate, Imm
         auto imm_carry = ArmExpandImm_C(rotate, imm8, ir.GetCFlag());
         auto result = ir.Not(ir.Imm32(imm_carry.imm32));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -476,7 +476,7 @@ bool ArmTranslatorVisitor::arm_MVN_reg(Cond cond, bool S, Reg d, Imm5 imm5, Shif
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, carry_in);
         auto result = ir.Not(shifted.result);
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -514,7 +514,7 @@ bool ArmTranslatorVisitor::arm_ORR_imm(Cond cond, bool S, Reg n, Reg d, int rota
         auto imm_carry = ArmExpandImm_C(rotate, imm8, ir.GetCFlag());
         auto result = ir.Or(ir.GetRegister(n), ir.Imm32(imm_carry.imm32));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -535,7 +535,7 @@ bool ArmTranslatorVisitor::arm_ORR_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, carry_in);
         auto result = ir.Or(ir.GetRegister(n), shifted.result);
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -573,7 +573,7 @@ bool ArmTranslatorVisitor::arm_RSB_imm(Cond cond, bool S, Reg n, Reg d, int rota
         u32 imm32 = ArmExpandImm(rotate, imm8);
         auto result = ir.SubWithCarry(ir.Imm32(imm32), ir.GetRegister(n), ir.Imm1(1));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -594,7 +594,7 @@ bool ArmTranslatorVisitor::arm_RSB_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, ir.GetCFlag());
         auto result = ir.SubWithCarry(shifted.result, ir.GetRegister(n), ir.Imm1(1));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -634,7 +634,7 @@ bool ArmTranslatorVisitor::arm_RSC_imm(Cond cond, bool S, Reg n, Reg d, int rota
         u32 imm32 = ArmExpandImm(rotate, imm8);
         auto result = ir.SubWithCarry(ir.Imm32(imm32), ir.GetRegister(n), ir.GetCFlag());
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -655,7 +655,7 @@ bool ArmTranslatorVisitor::arm_RSC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, ir.GetCFlag());
         auto result = ir.SubWithCarry(shifted.result, ir.GetRegister(n), ir.GetCFlag());
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -695,7 +695,7 @@ bool ArmTranslatorVisitor::arm_SBC_imm(Cond cond, bool S, Reg n, Reg d, int rota
         u32 imm32 = ArmExpandImm(rotate, imm8);
         auto result = ir.SubWithCarry(ir.GetRegister(n), ir.Imm32(imm32), ir.GetCFlag());
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -716,7 +716,7 @@ bool ArmTranslatorVisitor::arm_SBC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, ir.GetCFlag());
         auto result = ir.SubWithCarry(ir.GetRegister(n), shifted.result, ir.GetCFlag());
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -756,7 +756,7 @@ bool ArmTranslatorVisitor::arm_SUB_imm(Cond cond, bool S, Reg n, Reg d, int rota
         u32 imm32 = ArmExpandImm(rotate, imm8);
         auto result = ir.SubWithCarry(ir.GetRegister(n), ir.Imm32(imm32), ir.Imm1(1));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
@@ -777,7 +777,7 @@ bool ArmTranslatorVisitor::arm_SUB_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm
         auto shifted = EmitImmShift(ir.GetRegister(m), shift, imm5, ir.GetCFlag());
         auto result = ir.SubWithCarry(ir.GetRegister(n), shifted.result, ir.Imm1(1));
         if (d == Reg::PC) {
-            ASSERT(!S);
+            if (S) return UnpredictableInstruction(); // This is UNPREDICTABLE when in user-mode.
             ir.ALUWritePC(result.result);
             ir.SetTerm(IR::Term::ReturnToDispatch{});
             return false;
