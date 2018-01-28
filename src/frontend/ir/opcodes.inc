@@ -29,6 +29,7 @@ A32OPC(SetGEFlags,              T::Void,        T::U32                          
 A32OPC(SetGEFlagsCompressed,    T::Void,        T::U32                                          )
 A32OPC(BXWritePC,               T::Void,        T::U32                                          )
 A32OPC(CallSupervisor,          T::Void,        T::U32                                          )
+A32OPC(ExceptionRaised,         T::Void,        T::U32,         T::U64                          )
 A32OPC(GetFpscr,                T::U32,                                                         )
 A32OPC(SetFpscr,                T::Void,        T::U32,                                         )
 A32OPC(GetFpscrNZCV,            T::U32,                                                         )

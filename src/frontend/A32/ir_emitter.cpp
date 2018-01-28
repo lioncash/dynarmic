@@ -86,6 +86,10 @@ void IREmitter::CallSupervisor(const IR::U32& value) {
     Inst(Opcode::A32CallSupervisor, value);
 }
 
+void IREmitter::ExceptionRaised(const Exception exception) {
+    Inst(Opcode::A64ExceptionRaised, Imm32(PC()), Imm64(static_cast<u64>(exception)));
+}
+
 IR::U32 IREmitter::GetCpsr() {
     return Inst<IR::U32>(Opcode::A32GetCpsr);
 }

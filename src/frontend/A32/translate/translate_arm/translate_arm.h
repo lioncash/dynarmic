@@ -35,6 +35,7 @@ struct ArmTranslatorVisitor final {
     bool ConditionPassed(Cond cond);
     bool InterpretThisInstruction();
     bool UnpredictableInstruction();
+    bool UndefinedInstruction();
 
     static u32 rotr(u32 x, int shift) {
         shift &= 31;

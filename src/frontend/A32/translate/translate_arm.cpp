@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "common/assert.h"
+#include "dynarmic/A32/config.h"
 #include "frontend/A32/decoder/arm.h"
 #include "frontend/A32/decoder/vfp2.h"
 #include "frontend/A32/location_descriptor.h"
@@ -117,7 +118,14 @@ bool ArmTranslatorVisitor::InterpretThisInstruction() {
 }
 
 bool ArmTranslatorVisitor::UnpredictableInstruction() {
-    ASSERT_MSG(false, "UNPREDICTABLE");
+    ir.ExceptionRaised(Exception::UnpredictableInstruction);
+    ir.SetTerm(IR::Term::CheckHalt{IR::Term::ReturnToDispatch{}});
+    return false;
+}
+
+bool ArmTranslatorVisitor::UndefinedInstruction() {
+    ir.ExceptionRaised(Exception::UndefinedInstruction);
+    ir.SetTerm(IR::Term::CheckHalt{IR::Term::ReturnToDispatch{}});
     return false;
 }
 

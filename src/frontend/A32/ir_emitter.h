@@ -18,6 +18,8 @@
 
 namespace Dynarmic::A32 {
 
+enum class Exception;
+
 /**
  * Convenience class to construct a basic block of the intermediate representation.
  * `block` is the resulting block.
@@ -41,7 +43,9 @@ public:
     void BranchWritePC(const IR::U32& value);
     void BXWritePC(const IR::U32& value);
     void LoadWritePC(const IR::U32& value);
+
     void CallSupervisor(const IR::U32& value);
+    void ExceptionRaised(Exception exception);
 
     IR::U32 GetCpsr();
     void SetCpsr(const IR::U32& value);

@@ -26,7 +26,7 @@ bool ArmTranslatorVisitor::arm_SVC(Cond cond, Imm24 imm24) {
 }
 
 bool ArmTranslatorVisitor::arm_UDF() {
-    return InterpretThisInstruction();
+    return UndefinedInstruction();
 }
 
 } // namespace Dynarmic::A32

@@ -584,6 +584,18 @@ void A32EmitX64::EmitA32CallSupervisor(A32EmitContext& ctx, IR::Inst* inst) {
     code->SwitchMxcsrOnEntry();
 }
 
+void A32EmitX64::EmitA32ExceptionRaised(A32EmitContext& ctx, IR::Inst* inst) {
+    ctx.reg_alloc.HostCall(nullptr);
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ASSERT(args[0].IsImmediate() && args[1].IsImmediate());
+    u32 pc = args[0].GetImmediateU32();
+    u64 exception = args[1].GetImmediateU64();
+    DEVIRT(config.callbacks, &A32::UserCallbacks::ExceptionRaised).EmitCall(code, [&](Xbyak::Reg64 param1, Xbyak::Reg64 param2) {
+        code->mov(param1, pc);
+        code->mov(param2, exception);
+    });
+}
+
 static u32 GetFpscrImpl(A32JitState* jit_state) {
     return jit_state->Fpscr();
 }
