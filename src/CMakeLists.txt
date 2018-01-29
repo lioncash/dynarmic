@@ -8,6 +8,8 @@ add_library(dynarmic
     common/assert.h
     common/bit_util.h
     common/common_types.h
+    common/crc32.cpp
+    common/crc32.h
     common/intrusive_list.h
     common/iterator_util.h
     common/memory_pool.cpp
