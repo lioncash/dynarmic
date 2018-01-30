@@ -715,6 +715,14 @@ U32 IREmitter::CRC32ISO64(const U32& a, const U64& b) {
     return Inst<U32>(Opcode::CRC32ISO64, a, b);
 }
 
+U128 IREmitter::AESInverseMixColumns(const U128 &a) {
+    return Inst<U128>(Opcode::AESInverseMixColumns, a);
+}
+
+U128 IREmitter::AESMixColumns(const U128 &a) {
+    return Inst<U128>(Opcode::AESMixColumns, a);
+}
+
 UAny IREmitter::VectorGetElement(size_t esize, const U128& a, size_t index) {
     ASSERT_MSG(esize * index < 128, "Invalid index");
     switch (esize) {

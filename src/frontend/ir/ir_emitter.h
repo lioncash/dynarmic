@@ -195,6 +195,9 @@ public:
     U32 CRC32ISO32(const U32& a, const U32& b);
     U32 CRC32ISO64(const U32& a, const U64& b);
 
+    U128 AESInverseMixColumns(const U128& a);
+    U128 AESMixColumns(const U128& a);
+
     UAny VectorGetElement(size_t esize, const U128& a, size_t index);
     U128 VectorAdd8(const U128& a, const U128& b);
     U128 VectorAdd16(const U128& a, const U128& b);

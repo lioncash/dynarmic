@@ -5,6 +5,8 @@ add_library(dynarmic
     ../include/dynarmic/A32/coprocessor_util.h
     ../include/dynarmic/A32/disassembler.h
     common/address_range.h
+    common/aes.cpp
+    common/aes.h
     common/assert.h
     common/bit_util.h
     common/common_types.h
@@ -79,6 +81,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/load_store_register_pair.cpp
     frontend/A64/translate/impl/load_store_register_unprivileged.cpp
     frontend/A64/translate/impl/move_wide.cpp
+    frontend/A64/translate/impl/simd_aes.cpp
     frontend/A64/translate/impl/simd_copy.cpp
     frontend/A64/translate/impl/simd_three_same.cpp
     frontend/A64/translate/impl/system.cpp
@@ -139,6 +142,7 @@ if (ARCHITECTURE_x86_64)
          backend_x64/disassemble_x64.h
          backend_x64/emit_x64.cpp
          backend_x64/emit_x64.h
+         backend_x64/emit_x64_aes.cpp
          backend_x64/emit_x64_crc32.cpp
          backend_x64/emit_x64_data_processing.cpp
          backend_x64/emit_x64_floating_point.cpp

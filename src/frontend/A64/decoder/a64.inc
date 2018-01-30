@@ -343,8 +343,8 @@ INST(UMSUBL,                 "UMSUBL",                                    "10011
 // Data Processing - FP and SIMD - AES
 //INST(AESE,                   "AESE",                                      "0100111000101000010010nnnnnddddd")
 //INST(AESD,                   "AESD",                                      "0100111000101000010110nnnnnddddd")
-//INST(AESMC,                  "AESMC",                                     "0100111000101000011010nnnnnddddd")
-//INST(AESIMC,                 "AESIMC",                                    "0100111000101000011110nnnnnddddd")
+INST(AESMC,                  "AESMC",                                     "0100111000101000011010nnnnnddddd")
+INST(AESIMC,                 "AESIMC",                                    "0100111000101000011110nnnnnddddd")
 
 // Data Processing - FP and SIMD - SHA
 //INST(SHA1C,                  "SHA1C",                                     "01011110000mmmmm000000nnnnnddddd")

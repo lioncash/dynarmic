@@ -178,6 +178,10 @@ OPCODE(CRC32ISO16,              T::U32,         T::U32,         T::U32          
 OPCODE(CRC32ISO32,              T::U32,         T::U32,         T::U32                          )
 OPCODE(CRC32ISO64,              T::U32,         T::U32,         T::U64                          )
 
+// AES instructions
+OPCODE(AESInverseMixColumns,    T::U128,        T::U128                                         )
+OPCODE(AESMixColumns,           T::U128,        T::U128                                         )
+
 // Vector instructions
 OPCODE(VectorGetElement8,       T::U8,          T::U128,        T::U8                           )
 OPCODE(VectorGetElement16,      T::U16,         T::U128,        T::U8                           )
