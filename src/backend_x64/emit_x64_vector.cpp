@@ -101,6 +101,104 @@ void EmitX64::EmitVectorGetElement64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, dest);
 }
 
+void EmitX64::EmitVectorSetElement8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ASSERT(args[1].IsImmediate());
+    u8 index = args[1].GetImmediateU8();
+
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Reg8 source_elem = ctx.reg_alloc.UseGpr(args[2]).cvt8();
+
+        code->pinsrb(source_vector, source_elem.cvt32(), index);
+
+        ctx.reg_alloc.DefineValue(inst, source_vector);
+    } else {
+        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Reg32 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]).cvt32();
+        Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
+
+        code->pextrw(tmp, source_vector, index / 2);
+        if (index % 2 == 0) {
+            code->and_(tmp, 0xFF00);
+            code->and_(source_elem, 0x00FF);
+            code->or_(tmp, source_elem);
+        } else {
+            code->and_(tmp, 0x00FF);
+            code->shl(source_elem, 8);
+            code->or_(tmp, source_elem);
+        }
+        code->pinsrw(source_vector, tmp, index / 2);
+
+        ctx.reg_alloc.DefineValue(inst, source_vector);
+    }
+}
+
+void EmitX64::EmitVectorSetElement16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ASSERT(args[1].IsImmediate());
+    u8 index = args[1].GetImmediateU8();
+
+    Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Reg16 source_elem = ctx.reg_alloc.UseGpr(args[2]).cvt16();
+
+    code->pinsrw(source_vector, source_elem.cvt32(), index);
+
+    ctx.reg_alloc.DefineValue(inst, source_vector);
+}
+
+void EmitX64::EmitVectorSetElement32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ASSERT(args[1].IsImmediate());
+    u8 index = args[1].GetImmediateU8();
+
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Reg32 source_elem = ctx.reg_alloc.UseGpr(args[2]).cvt32();
+
+        code->pinsrd(source_vector, source_elem, index);
+
+        ctx.reg_alloc.DefineValue(inst, source_vector);
+    } else {
+        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Reg32 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]).cvt32();
+
+        code->pinsrw(source_vector, source_elem, index * 2);
+        code->shr(source_elem, 16);
+        code->pinsrw(source_vector, source_elem, index * 2 + 1);
+
+        ctx.reg_alloc.DefineValue(inst, source_vector);
+    }
+}
+
+void EmitX64::EmitVectorSetElement64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ASSERT(args[1].IsImmediate());
+    u8 index = args[1].GetImmediateU8();
+
+    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Reg64 source_elem = ctx.reg_alloc.UseGpr(args[2]);
+
+        code->pinsrq(source_vector, source_elem, index);
+
+        ctx.reg_alloc.DefineValue(inst, source_vector);
+    } else {
+        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Reg64 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]);
+
+        code->pinsrw(source_vector, source_elem.cvt32(), index * 4);
+        code->shr(source_elem, 16);
+        code->pinsrw(source_vector, source_elem.cvt32(), index * 4 + 1);
+        code->shr(source_elem, 16);
+        code->pinsrw(source_vector, source_elem.cvt32(), index * 4 + 2);
+        code->shr(source_elem, 16);
+        code->pinsrw(source_vector, source_elem.cvt32(), index * 4 + 3);
+
+        ctx.reg_alloc.DefineValue(inst, source_vector);
+    }
+}
+
 void EmitX64::EmitVectorAdd8(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddb);
 }

@@ -199,6 +199,7 @@ public:
     U128 AESMixColumns(const U128& a);
 
     UAny VectorGetElement(size_t esize, const U128& a, size_t index);
+    U128 VectorSetElement(size_t esize, const U128& a, size_t index, const UAny& elem);
     U128 VectorAdd8(const U128& a, const U128& b);
     U128 VectorAdd16(const U128& a, const U128& b);
     U128 VectorAdd32(const U128& a, const U128& b);

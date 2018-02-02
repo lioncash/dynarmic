@@ -740,6 +740,23 @@ UAny IREmitter::VectorGetElement(size_t esize, const U128& a, size_t index) {
     }
 }
 
+U128 IREmitter::VectorSetElement(size_t esize, const U128& a, size_t index, const IR::UAny& elem) {
+    ASSERT_MSG(esize * index < 128, "Invalid index");
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorSetElement8, a, Imm8(static_cast<u8>(index)), elem);
+    case 16:
+        return Inst<U128>(Opcode::VectorSetElement16, a, Imm8(static_cast<u8>(index)), elem);
+    case 32:
+        return Inst<U128>(Opcode::VectorSetElement32, a, Imm8(static_cast<u8>(index)), elem);
+    case 64:
+        return Inst<U128>(Opcode::VectorSetElement64, a, Imm8(static_cast<u8>(index)), elem);
+    default:
+        ASSERT_MSG(false, "Unreachable");
+        return {};
+    }
+}
+
 U128 IREmitter::VectorAdd8(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorAdd8, a, b);
 }
