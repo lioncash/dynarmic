@@ -98,13 +98,8 @@ bool ArmTranslatorVisitor::vfp2_VADD(Cond cond, bool D, size_t Vn, size_t Vd, bo
         return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
-            if (sz) {
-                auto result = ir.FPAdd64(reg_n, reg_m, true);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPAdd32(reg_n, reg_m, true);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPAdd(reg_n, reg_m, true);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -119,13 +114,8 @@ bool ArmTranslatorVisitor::vfp2_VSUB(Cond cond, bool D, size_t Vn, size_t Vd, bo
         return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
-            if (sz) {
-                auto result = ir.FPSub64(reg_n, reg_m, true);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPSub32(reg_n, reg_m, true);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPSub(reg_n, reg_m, true);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -140,13 +130,8 @@ bool ArmTranslatorVisitor::vfp2_VMUL(Cond cond, bool D, size_t Vn, size_t Vd, bo
         return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
-            if (sz) {
-                auto result = ir.FPMul64(reg_n, reg_m, true);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPMul32(reg_n, reg_m, true);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPMul(reg_n, reg_m, true);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -162,13 +147,8 @@ bool ArmTranslatorVisitor::vfp2_VMLA(Cond cond, bool D, size_t Vn, size_t Vd, bo
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto reg_d = ir.GetExtendedRegister(d);
-            if (sz) {
-                auto result = ir.FPAdd64(reg_d, ir.FPMul64(reg_n, reg_m, true), true);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPAdd32(reg_d, ir.FPMul32(reg_n, reg_m, true), true);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPAdd(reg_d, ir.FPMul(reg_n, reg_m, true), true);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -184,13 +164,8 @@ bool ArmTranslatorVisitor::vfp2_VMLS(Cond cond, bool D, size_t Vn, size_t Vd, bo
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto reg_d = ir.GetExtendedRegister(d);
-            if (sz) {
-                auto result = ir.FPAdd64(reg_d, ir.FPNeg64(ir.FPMul64(reg_n, reg_m, true)), true);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPAdd32(reg_d, ir.FPNeg32(ir.FPMul32(reg_n, reg_m, true)), true);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPAdd(reg_d, ir.FPNeg(ir.FPMul(reg_n, reg_m, true)), true);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -205,13 +180,8 @@ bool ArmTranslatorVisitor::vfp2_VNMUL(Cond cond, bool D, size_t Vn, size_t Vd, b
         return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
-            if (sz) {
-                auto result = ir.FPNeg64(ir.FPMul64(reg_n, reg_m, true));
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPNeg32(ir.FPMul32(reg_n, reg_m, true));
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPNeg(ir.FPMul(reg_n, reg_m, true));
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -227,13 +197,8 @@ bool ArmTranslatorVisitor::vfp2_VNMLA(Cond cond, bool D, size_t Vn, size_t Vd, b
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto reg_d = ir.GetExtendedRegister(d);
-            if (sz) {
-                auto result = ir.FPAdd64(ir.FPNeg64(reg_d), ir.FPNeg64(ir.FPMul64(reg_n, reg_m, true)), true);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPAdd32(ir.FPNeg32(reg_d), ir.FPNeg32(ir.FPMul32(reg_n, reg_m, true)), true);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPAdd(ir.FPNeg(reg_d), ir.FPNeg(ir.FPMul(reg_n, reg_m, true)), true);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -249,13 +214,8 @@ bool ArmTranslatorVisitor::vfp2_VNMLS(Cond cond, bool D, size_t Vn, size_t Vd, b
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto reg_d = ir.GetExtendedRegister(d);
-            if (sz) {
-                auto result = ir.FPAdd64(ir.FPNeg64(reg_d), ir.FPMul64(reg_n, reg_m, true), true);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPAdd32(ir.FPNeg32(reg_d), ir.FPMul32(reg_n, reg_m, true), true);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPAdd(ir.FPNeg(reg_d), ir.FPMul(reg_n, reg_m, true), true);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -270,13 +230,8 @@ bool ArmTranslatorVisitor::vfp2_VDIV(Cond cond, bool D, size_t Vn, size_t Vd, bo
         return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
-            if (sz) {
-                auto result = ir.FPDiv64(reg_n, reg_m, true);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPDiv32(reg_n, reg_m, true);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPDiv(reg_n, reg_m, true);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -403,13 +358,8 @@ bool ArmTranslatorVisitor::vfp2_VABS(Cond cond, bool D, size_t Vd, bool sz, bool
     if (ConditionPassed(cond)) {
         return EmitVfpVectorOperation(sz, d, m, [sz, this](ExtReg d, ExtReg m) {
             auto reg_m = ir.GetExtendedRegister(m);
-            if (sz) {
-                auto result = ir.FPAbs64(reg_m);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPAbs32(reg_m);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPAbs(reg_m);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -422,13 +372,8 @@ bool ArmTranslatorVisitor::vfp2_VNEG(Cond cond, bool D, size_t Vd, bool sz, bool
     if (ConditionPassed(cond)) {
         return EmitVfpVectorOperation(sz, d, m, [sz, this](ExtReg d, ExtReg m) {
             auto reg_m = ir.GetExtendedRegister(m);
-            if (sz) {
-                auto result = ir.FPNeg64(reg_m);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPNeg32(reg_m);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPNeg(reg_m);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -441,13 +386,8 @@ bool ArmTranslatorVisitor::vfp2_VSQRT(Cond cond, bool D, size_t Vd, bool sz, boo
     if (ConditionPassed(cond)) {
         return EmitVfpVectorOperation(sz, d, m, [sz, this](ExtReg d, ExtReg m) {
             auto reg_m = ir.GetExtendedRegister(m);
-            if (sz) {
-                auto result = ir.FPSqrt64(reg_m);
-                ir.SetExtendedRegister(d, result);
-            } else {
-                auto result = ir.FPSqrt32(reg_m);
-                ir.SetExtendedRegister(d, result);
-            }
+            auto result = ir.FPSqrt(reg_m);
+            ir.SetExtendedRegister(d, result);
         });
     }
     return true;
@@ -533,11 +473,7 @@ bool ArmTranslatorVisitor::vfp2_VCMP(Cond cond, bool D, size_t Vd, bool sz, bool
     if (ConditionPassed(cond)) {
         auto reg_d = ir.GetExtendedRegister(d);
         auto reg_m = ir.GetExtendedRegister(m);
-        if (sz) {
-            ir.FPCompare64(reg_d, reg_m, exc_on_qnan, true);
-        } else {
-            ir.FPCompare32(reg_d, reg_m, exc_on_qnan, true);
-        }
+        ir.FPCompare(reg_d, reg_m, exc_on_qnan, true);
     }
     return true;
 }
@@ -550,9 +486,9 @@ bool ArmTranslatorVisitor::vfp2_VCMP_zero(Cond cond, bool D, size_t Vd, bool sz,
     if (ConditionPassed(cond)) {
         auto reg_d = ir.GetExtendedRegister(d);
         if (sz) {
-            ir.FPCompare64(reg_d, ir.Imm64(0), exc_on_qnan, true);
+            ir.FPCompare(reg_d, ir.Imm64(0), exc_on_qnan, true);
         } else {
-            ir.FPCompare32(reg_d, ir.Imm32(0), exc_on_qnan, true);
+            ir.FPCompare(reg_d, ir.Imm32(0), exc_on_qnan, true);
         }
     }
     return true;

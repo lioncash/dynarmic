@@ -869,78 +869,78 @@ U128 IREmitter::VectorZeroUpper(const U128& a) {
     return Inst<U128>(Opcode::VectorZeroUpper, a);
 }
 
-U32 IREmitter::FPAbs32(const U32& a) {
-    return Inst<U32>(Opcode::FPAbs32, a);
+U32U64 IREmitter::FPAbs(const U32U64& a) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPAbs32, a);
+    } else {
+        return Inst<U64>(Opcode::FPAbs64, a);
+    }
 }
 
-U64 IREmitter::FPAbs64(const U64& a) {
-    return Inst<U64>(Opcode::FPAbs64, a);
-}
-
-U32 IREmitter::FPAdd32(const U32& a, const U32& b, bool fpscr_controlled) {
+U32U64 IREmitter::FPAdd(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<U32>(Opcode::FPAdd32, a, b);
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPAdd32, a, b);
+    } else {
+        return Inst<U64>(Opcode::FPAdd64, a, b);
+    }
 }
 
-U64 IREmitter::FPAdd64(const U64& a, const U64& b, bool fpscr_controlled) {
+void IREmitter::FPCompare(const U32U64& a, const U32U64& b, bool exc_on_qnan, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<U64>(Opcode::FPAdd64, a, b);
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        Inst(Opcode::FPCompare32, a, b, Imm1(exc_on_qnan));
+    } else {
+        Inst(Opcode::FPCompare64, a, b, Imm1(exc_on_qnan));
+    }
 }
 
-void IREmitter::FPCompare32(const U32& a, const U32& b, bool exc_on_qnan, bool fpscr_controlled) {
+U32U64 IREmitter::FPDiv(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    Inst(Opcode::FPCompare32, a, b, Imm1(exc_on_qnan));
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPDiv32, a, b);
+    } else {
+        return Inst<U64>(Opcode::FPDiv64, a, b);
+    }
 }
 
-void IREmitter::FPCompare64(const U64& a, const U64& b, bool exc_on_qnan, bool fpscr_controlled) {
+U32U64 IREmitter::FPMul(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    Inst(Opcode::FPCompare64, a, b, Imm1(exc_on_qnan));
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPMul32, a, b);
+    } else {
+        return Inst<U64>(Opcode::FPMul64, a, b);
+    }
 }
 
-U32 IREmitter::FPDiv32(const U32& a, const U32& b, bool fpscr_controlled) {
+U32U64 IREmitter::FPNeg(const U32U64& a) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPNeg32, a);
+    } else {
+        return Inst<U64>(Opcode::FPNeg64, a);
+    }
+}
+
+U32U64 IREmitter::FPSqrt(const U32U64& a) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPSqrt32, a);
+    } else {
+        return Inst<U64>(Opcode::FPSqrt64, a);
+    }
+}
+
+U32U64 IREmitter::FPSub(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
-    return Inst<U32>(Opcode::FPDiv32, a, b);
-}
-
-U64 IREmitter::FPDiv64(const U64& a, const U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
-    return Inst<U64>(Opcode::FPDiv64, a, b);
-}
-
-U32 IREmitter::FPMul32(const U32& a, const U32& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
-    return Inst<U32>(Opcode::FPMul32, a, b);
-}
-
-U64 IREmitter::FPMul64(const U64& a, const U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
-    return Inst<U64>(Opcode::FPMul64, a, b);
-}
-
-U32 IREmitter::FPNeg32(const U32& a) {
-    return Inst<U32>(Opcode::FPNeg32, a);
-}
-
-U64 IREmitter::FPNeg64(const U64& a) {
-    return Inst<U64>(Opcode::FPNeg64, a);
-}
-
-U32 IREmitter::FPSqrt32(const U32& a) {
-    return Inst<U32>(Opcode::FPSqrt32, a);
-}
-
-U64 IREmitter::FPSqrt64(const U64& a) {
-    return Inst<U64>(Opcode::FPSqrt64, a);
-}
-
-U32 IREmitter::FPSub32(const U32& a, const U32& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
-    return Inst<U32>(Opcode::FPSub32, a, b);
-}
-
-U64 IREmitter::FPSub64(const U64& a, const U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
-    return Inst<U64>(Opcode::FPSub64, a, b);
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPSub32, a, b);
+    } else {
+        return Inst<U64>(Opcode::FPSub64, a, b);
+    }
 }
 
 U32 IREmitter::FPDoubleToSingle(const U64& a, bool fpscr_controlled) {
