@@ -151,6 +151,16 @@ void TranslatorVisitor::V(size_t bitsize, Vec vec, IR::U128 value) {
     }
 }
 
+IR::UAny TranslatorVisitor::V_scalar(size_t bitsize, Vec vec) {
+    // TODO: Optimize
+    return ir.VectorGetElement(bitsize, ir.GetQ(vec), 0);
+}
+
+void TranslatorVisitor::V_scalar(size_t /*bitsize*/, Vec vec, IR::UAny value) {
+    // TODO: Optimize
+    ir.SetQ(vec, ir.ZeroExtendToQuad(value));
+}
+
 IR::UAnyU128 TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acctype*/) {
     switch (bytesize) {
     case 1:

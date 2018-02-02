@@ -940,15 +940,15 @@ INST(EOR_asimd,              "EOR (vector)",                              "0Q101
 //INST(FCCMPE_float,           "FCCMPE",                                    "00011110yy1mmmmmcccc01nnnnn1ffff")
 
 // Data Processing - FP and SIMD - Floating point data processing two register
-//INST(FMUL_float,             "FMUL (scalar)",                             "00011110yy1mmmmm000010nnnnnddddd")
-//INST(FDIV_float,             "FDIV (scalar)",                             "00011110yy1mmmmm000110nnnnnddddd")
-//INST(FADD_float,             "FADD (scalar)",                             "00011110yy1mmmmm001010nnnnnddddd")
-//INST(FSUB_float,             "FSUB (scalar)",                             "00011110yy1mmmmm001110nnnnnddddd")
+INST(FMUL_float,             "FMUL (scalar)",                             "00011110yy1mmmmm000010nnnnnddddd")
+INST(FDIV_float,             "FDIV (scalar)",                             "00011110yy1mmmmm000110nnnnnddddd")
+INST(FADD_float,             "FADD (scalar)",                             "00011110yy1mmmmm001010nnnnnddddd")
+INST(FSUB_float,             "FSUB (scalar)",                             "00011110yy1mmmmm001110nnnnnddddd")
 //INST(FMAX_float,             "FMAX (scalar)",                             "00011110yy1mmmmm010010nnnnnddddd")
 //INST(FMIN_float,             "FMIN (scalar)",                             "00011110yy1mmmmm010110nnnnnddddd")
 //INST(FMAXNM_float,           "FMAXNM (scalar)",                           "00011110yy1mmmmm011010nnnnnddddd")
 //INST(FMINNM_float,           "FMINNM (scalar)",                           "00011110yy1mmmmm011110nnnnnddddd")
-//INST(FNMUL_float,            "FNMUL (scalar)",                            "00011110yy1mmmmm100010nnnnnddddd")
+INST(FNMUL_float,            "FNMUL (scalar)",                            "00011110yy1mmmmm100010nnnnnddddd")
 
 // Data Processing - FP and SIMD - Floating point conditional select
 //INST(FCSEL_float,            "FCSEL",                                     "00011110yy1mmmmmcccc11nnnnnddddd")
