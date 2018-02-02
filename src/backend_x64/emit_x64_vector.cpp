@@ -41,7 +41,10 @@ void EmitX64::EmitVectorGetElement8(EmitContext& ctx, IR::Inst* inst) {
         ctx.reg_alloc.DefineValue(inst, dest);
     } else {
         Xbyak::Reg32 dest = ctx.reg_alloc.ScratchGpr().cvt32();
-        code->pextrw(dest, source, index);
+        code->pextrw(dest, source, index / 2);
+        if (index % 2 == 1) {
+            code->shr(dest, 8);
+        }
         ctx.reg_alloc.DefineValue(inst, dest);
     }
 }
