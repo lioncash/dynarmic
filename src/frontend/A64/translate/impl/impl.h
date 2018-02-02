@@ -983,8 +983,8 @@ struct TranslatorVisitor final {
     bool FRINTI_float(Imm<2> type, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - Floating point compare
-    bool FCMP_float(Imm<2> type, Vec Vm, Vec Vn);
-    bool FCMPE_float(Imm<2> type, Vec Vm, Vec Vn);
+    bool FCMP_float(Imm<2> type, Vec Vm, Vec Vn, bool cmp_with_zero);
+    bool FCMPE_float(Imm<2> type, Vec Vm, Vec Vn, bool cmp_with_zero);
 
     // Data Processing - FP and SIMD - Floating point immediate
     bool FMOV_float_imm(Imm<2> type, Imm<8> imm8, Vec Vd);

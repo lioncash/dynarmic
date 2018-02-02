@@ -929,8 +929,8 @@ INST(EOR_asimd,              "EOR (vector)",                              "0Q101
 //INST(FRINTI_float,           "FRINTI (scalar)",                           "00011110yy100111110000nnnnnddddd")
 
 // Data Processing - FP and SIMD - Floating point compare
-//INST(FCMP_float,             "FCMP",                                      "00011110yy1mmmmm001000nnnnn0-000")
-//INST(FCMPE_float,            "FCMPE",                                     "00011110yy1mmmmm001000nnnnn1-000")
+INST(FCMP_float,             "FCMP",                                      "00011110yy1mmmmm001000nnnnn0o000")
+INST(FCMPE_float,            "FCMPE",                                     "00011110yy1mmmmm001000nnnnn1o000")
 
 // Data Processing - FP and SIMD - Floating point immediate
 //INST(FMOV_float_imm,         "FMOV (scalar, immediate)",                  "00011110yy1iiiiiiii10000000ddddd")

@@ -74,6 +74,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/data_processing_register.cpp
     frontend/A64/translate/impl/data_processing_shift.cpp
     frontend/A64/translate/impl/exception_generating.cpp
+    frontend/A64/translate/impl/floating_point_compare.cpp
     frontend/A64/translate/impl/floating_point_data_processing_two_register.cpp
     frontend/A64/translate/impl/impl.cpp
     frontend/A64/translate/impl/impl.h
