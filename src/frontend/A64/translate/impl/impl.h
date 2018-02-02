@@ -152,22 +152,10 @@ struct TranslatorVisitor final {
     bool TBNZ(Imm<1> b5, Imm<5> b40, Imm<14> imm14, Reg Rt);
 
     // Loads and stores - Advanced SIMD Load/Store multiple structures
-    bool ST4_mult_1(bool Q, Imm<2> size, Reg Rn, Reg Rt);
-    bool ST4_mult_2(bool Q, Reg Rm, Imm<2> size, Reg Rn, Reg Rt);
-    bool ST1_mult_1(bool Q, Imm<2> size, Reg Rn, Reg Rt);
-    bool ST1_mult_2(bool Q, Reg Rm, Imm<2> size, Reg Rn, Reg Rt);
-    bool ST3_mult_1(bool Q, Imm<2> size, Reg Rn, Reg Rt);
-    bool ST3_mult_2(bool Q, Reg Rm, Imm<2> size, Reg Rn, Reg Rt);
-    bool ST2_mult_1(bool Q, Imm<2> size, Reg Rn, Reg Rt);
-    bool ST2_mult_2(bool Q, Reg Rm, Imm<2> size, Reg Rn, Reg Rt);
-    bool LD4_mult_1(bool Q, Imm<2> size, Reg Rn, Reg Rt);
-    bool LD4_mult_2(bool Q, Reg Rm, Imm<2> size, Reg Rn, Reg Rt);
-    bool LD1_mult_1(bool Q, Imm<2> size, Reg Rn, Reg Rt);
-    bool LD1_mult_2(bool Q, Reg Rm, Imm<2> size, Reg Rn, Reg Rt);
-    bool LD3_mult_1(bool Q, Imm<2> size, Reg Rn, Reg Rt);
-    bool LD3_mult_2(bool Q, Reg Rm, Imm<2> size, Reg Rn, Reg Rt);
-    bool LD2_mult_1(bool Q, Imm<2> size, Reg Rn, Reg Rt);
-    bool LD2_mult_2(bool Q, Reg Rm, Imm<2> size, Reg Rn, Reg Rt);
+    bool STx_mult_1(bool Q, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt);
+    bool STx_mult_2(bool Q, Reg Rm, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt);
+    bool LDx_mult_1(bool Q, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt);
+    bool LDx_mult_2(bool Q, Reg Rm, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt);
 
     // Loads and stores - Advanced SIMD Load/Store single structures
     bool ST1_sngl_1(bool Q, bool S, Imm<2> size, Reg Rn, Vec Vt);

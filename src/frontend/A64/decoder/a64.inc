@@ -92,22 +92,10 @@ INST(TBZ,                    "TBZ",                                       "b0110
 INST(TBNZ,                   "TBNZ",                                      "b0110111bbbbbiiiiiiiiiiiiiittttt")
 
 // Loads and stores - Advanced SIMD Load/Store multiple structures
-//INST(ST4_mult_1,             "ST4 (multiple structures)",                 "0Q001100000000000000zznnnnnttttt")
-//INST(ST4_mult_2,             "ST4 (multiple structures)",                 "0Q001100100mmmmm0000zznnnnnttttt")
-//INST(ST1_mult_1,             "ST1 (multiple structures)",                 "0Q00110000000000--1-zznnnnnttttt")
-//INST(ST1_mult_2,             "ST1 (multiple structures)",                 "0Q001100100mmmmm--1-zznnnnnttttt")
-//INST(ST3_mult_1,             "ST3 (multiple structures)",                 "0Q001100000000000100zznnnnnttttt")
-//INST(ST3_mult_2,             "ST3 (multiple structures)",                 "0Q001100100mmmmm0100zznnnnnttttt")
-//INST(ST2_mult_1,             "ST2 (multiple structures)",                 "0Q001100000000001000zznnnnnttttt")
-//INST(ST2_mult_2,             "ST2 (multiple structures)",                 "0Q001100100mmmmm1000zznnnnnttttt")
-//INST(LD4_mult_1,             "LD4 (multiple structures)",                 "0Q001100010000000000zznnnnnttttt")
-//INST(LD4_mult_2,             "LD4 (multiple structures)",                 "0Q001100110mmmmm0000zznnnnnttttt")
-//INST(LD1_mult_1,             "LD1 (multiple structures)",                 "0Q00110001000000--1-zznnnnnttttt")
-//INST(LD1_mult_2,             "LD1 (multiple structures)",                 "0Q001100110mmmmm--1-zznnnnnttttt")
-//INST(LD3_mult_1,             "LD3 (multiple structures)",                 "0Q001100010000000100zznnnnnttttt")
-//INST(LD3_mult_2,             "LD3 (multiple structures)",                 "0Q001100110mmmmm0100zznnnnnttttt")
-//INST(LD2_mult_1,             "LD2 (multiple structures)",                 "0Q001100010000001000zznnnnnttttt")
-//INST(LD2_mult_2,             "LD2 (multiple structures)",                 "0Q001100110mmmmm1000zznnnnnttttt")
+INST(STx_mult_1,             "STx (multiple structures)",                 "0Q00110000000000oooozznnnnnttttt")
+INST(STx_mult_2,             "STx (multiple structures)",                 "0Q001100100mmmmmoooozznnnnnttttt")
+INST(LDx_mult_1,             "LDx (multiple structures)",                 "0Q00110001000000oooozznnnnnttttt")
+INST(LDx_mult_2,             "LDx (multiple structures)",                 "0Q001100110mmmmmoooozznnnnnttttt")
 
 // Loads and stores - Advanced SIMD Load/Store single structures
 //INST(ST1_sngl_1,             "ST1 (single structure)",                    "0Q00110100000000--0Szznnnnnttttt")

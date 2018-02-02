@@ -77,6 +77,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/impl.cpp
     frontend/A64/translate/impl/impl.h
     frontend/A64/translate/impl/load_store_load_literal.cpp
+    frontend/A64/translate/impl/load_store_multiple_structures.cpp
     frontend/A64/translate/impl/load_store_register_immediate.cpp
     frontend/A64/translate/impl/load_store_register_pair.cpp
     frontend/A64/translate/impl/load_store_register_unprivileged.cpp
