@@ -193,4 +193,24 @@ bool TranslatorVisitor::LDR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm1
     return LoadStoreSIMD(*this, ir, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
 }
 
+bool TranslatorVisitor::STUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg Rn, Vec Vt) {
+    const bool wback = false;
+    const bool postindex = false;
+    const size_t scale = concatenate(opc_1, size).ZeroExtend<size_t>();
+    if (scale > 4) return UnallocatedEncoding();
+    const u64 offset = imm9.SignExtend<u64>();
+
+    return LoadStoreSIMD(*this, ir, wback, postindex, scale, offset, MemOp::STORE, Rn, Vt);
+}
+
+bool TranslatorVisitor::LDUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg Rn, Vec Vt) {
+    const bool wback = false;
+    const bool postindex = false;
+    const size_t scale = concatenate(opc_1, size).ZeroExtend<size_t>();
+    if (scale > 4) return UnallocatedEncoding();
+    const u64 offset = imm9.SignExtend<u64>();
+
+    return LoadStoreSIMD(*this, ir, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
+}
+
 } // namespace Dynarmic::A64

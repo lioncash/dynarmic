@@ -246,8 +246,8 @@ struct TranslatorVisitor final {
     bool STR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm12, Reg Rn, Vec Vt);
     bool LDR_imm_fpsimd_1(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, bool not_postindex, Reg Rn, Vec Vt);
     bool LDR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm12, Reg Rn, Vec Vt);
-    bool STUR_fpsimd(Imm<2> size, Imm<9> imm9, Reg Rn, Vec Vt);
-    bool LDUR_fpsimd(Imm<2> size, Imm<9> imm9, Reg Rn, Vec Vt);
+    bool STUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg Rn, Vec Vt);
+    bool LDUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg Rn, Vec Vt);
 
     // Loads and stores - Load/Store register (unprivileged)
     bool STTRB(Imm<9> imm9, Reg Rn, Reg Rt);

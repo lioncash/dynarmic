@@ -180,8 +180,8 @@ INST(STURx_LDURx,            "STURx/LDURx",                               "zz111
 INST(UnallocatedEncoding,    "",                                          "111110001-0---------00----------")
 INST(UnallocatedEncoding,    "",                                          "10111000110---------00----------")
 //INST(PRFM_imm,               "PRFM (immediate)",                          "1111100110iiiiiiiiiiiinnnnnttttt")
-//INST(STUR_fpsimd,            "STUR (SIMD&FP)",                            "zz111100-00iiiiiiiii00nnnnnttttt")
-//INST(LDUR_fpsimd,            "LDUR (SIMD&FP)",                            "zz111100-10iiiiiiiii00nnnnnttttt")
+INST(STUR_fpsimd,            "STUR (SIMD&FP)",                            "zz111100o00iiiiiiiii00nnnnnttttt")
+INST(LDUR_fpsimd,            "LDUR (SIMD&FP)",                            "zz111100o10iiiiiiiii00nnnnnttttt")
 
 // Loads and stores - Load/Store register (immediate pre/post-indexed)
 INST(STRx_LDRx_imm_1,        "STRx/LDRx (immediate)",                     "zz111000oo0iiiiiiiiip1nnnnnttttt")
