@@ -73,6 +73,21 @@ bool TranslatorVisitor::UMOV(bool Q, Imm<5> imm5, Vec Vn, Reg Rd) {
     return true;
 }
 
+bool TranslatorVisitor::INS_gen(Imm<5> imm5, Reg Rn, Vec Vd) {
+    const size_t size = Common::LowestSetBit(imm5.ZeroExtend());
+    if (size > 3) return UnallocatedEncoding();
+
+    const size_t index = imm5.ZeroExtend<size_t>() >> (size + 1);
+    const size_t esize = 8 << size;
+    const size_t datasize = 128;
+
+    const IR::UAny element = X(esize, Rn);
+    const IR::U128 result = ir.VectorSetElement(esize, V(datasize, Vd), index, element);
+    V(datasize, Vd, result);
+
+    return true;
+}
+
 bool TranslatorVisitor::INS_elt(Imm<5> imm5, Imm<4> imm4, Vec Vn, Vec Vd) {
     const size_t size = Common::LowestSetBit(imm5.ZeroExtend());
     if (size > 3) return UnallocatedEncoding();
