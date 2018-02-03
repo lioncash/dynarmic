@@ -8,11 +8,21 @@
 
 namespace Dynarmic::A64 {
 
+bool TranslatorVisitor::AESD(Vec Vn, Vec Vd) {
+    const IR::U128 operand1 = ir.GetQ(Vd);
+    const IR::U128 operand2 = ir.GetQ(Vn);
+
+    const IR::U128 result = ir.AESDecryptSingleRound(ir.VectorEor(operand1, operand2));
+
+    ir.SetQ(Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::AESE(Vec Vn, Vec Vd) {
     const IR::U128 operand1 = ir.GetQ(Vd);
     const IR::U128 operand2 = ir.GetQ(Vn);
 
-    const IR::U128 result = ir.AESEncrypt(ir.VectorEor(operand1, operand2));
+    const IR::U128 result = ir.AESEncryptSingleRound(ir.VectorEor(operand1, operand2));
 
     ir.SetQ(Vd, result);
     return true;

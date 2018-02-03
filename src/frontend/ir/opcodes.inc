@@ -181,7 +181,8 @@ OPCODE(CRC32ISO32,              T::U32,         T::U32,         T::U32          
 OPCODE(CRC32ISO64,              T::U32,         T::U32,         T::U64                          )
 
 // AES instructions
-OPCODE(AESEncrypt,              T::U128,        T::U128                                         )
+OPCODE(AESDecryptSingleRound,   T::U128,        T::U128                                         )
+OPCODE(AESEncryptSingleRound,   T::U128,        T::U128                                         )
 OPCODE(AESInverseMixColumns,    T::U128,        T::U128                                         )
 OPCODE(AESMixColumns,           T::U128,        T::U128                                         )
 

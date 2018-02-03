@@ -41,6 +41,12 @@ static void EmitAESFunction(std::array<Argument, 3> args, EmitContext& ctx, Bloc
     ctx.reg_alloc.DefineValue(inst, xmm0);
 }
 
+void EmitX64::EmitAESDecryptSingleRound(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    EmitAESFunction(args, ctx, code, inst, Common::DecryptSingleRound);
+}
+
 void EmitX64::EmitAESEncryptSingleRound(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

@@ -723,8 +723,12 @@ U32 IREmitter::CRC32ISO64(const U32& a, const U64& b) {
     return Inst<U32>(Opcode::CRC32ISO64, a, b);
 }
 
-U128 IREmitter::AESEncrypt(const U128& a) {
-    return Inst<U128>(Opcode::AESEncrypt, a);
+U128 IREmitter::AESDecryptSingleRound(const U128& a) {
+    return Inst<U128>(Opcode::AESDecryptSingleRound, a);
+}
+
+U128 IREmitter::AESEncryptSingleRound(const U128& a) {
+    return Inst<U128>(Opcode::AESEncryptSingleRound, a);
 }
 
 U128 IREmitter::AESInverseMixColumns(const U128& a) {
