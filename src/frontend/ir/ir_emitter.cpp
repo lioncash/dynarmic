@@ -18,6 +18,10 @@ U8 IREmitter::Imm8(u8 imm8) {
     return U8(Value(imm8));
 }
 
+U16 IREmitter::Imm16(u16 imm16) {
+    return U16(Value(imm16));
+}
+
 U32 IREmitter::Imm32(u32 imm32) {
     return U32(Value(imm32));
 }

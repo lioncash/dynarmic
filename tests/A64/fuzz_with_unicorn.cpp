@@ -39,6 +39,7 @@ static std::vector<InstructionGenerator> instruction_generators = []{
     };
 
     std::vector<InstructionGenerator> result;
+
     for (const auto& [fn, bitstring] : list) {
         if (std::strcmp(fn, "UnallocatedEncoding") == 0) {
             InstructionGenerator::AddInvalidInstruction(bitstring);
@@ -46,6 +47,11 @@ static std::vector<InstructionGenerator> instruction_generators = []{
         }
         result.emplace_back(InstructionGenerator{bitstring});
     }
+
+    // Manually added exceptions:
+    // FMOV_float_imm for half-precision floats (QEMU doesn't have half-precision support yet).
+    InstructionGenerator::AddInvalidInstruction("00011110111iiiiiiii10000000ddddd");
+
     return result;
 }();
 

@@ -44,6 +44,12 @@ public:
         return Common::Bit<bit>(value);
     }
 
+    template <size_t begin_bit, size_t end_bit, typename T = u32>
+    T Bits() const {
+        static_assert(Common::BitSize<T>() >= end_bit - begin_bit + 1);
+        return static_cast<T>(Common::Bits<begin_bit, end_bit>(value));
+    }
+
     bool operator==(const Imm<bit_size>& other) const {
         return value == other.value;
     }
