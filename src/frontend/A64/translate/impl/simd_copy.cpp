@@ -36,6 +36,24 @@ bool TranslatorVisitor::DUP_gen(bool Q, Imm<5> imm5, Reg Rn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SMOV(bool Q, Imm<5> imm5, Vec Vn, Reg Rd) {
+    const size_t size = Common::LowestSetBit(imm5.ZeroExtend());
+    if (size == 2 && !Q) return UnallocatedEncoding();
+    if (size > 2) return UnallocatedEncoding();
+
+    const size_t idxdsize = imm5.Bit<4>() ? 128 : 64;
+    const size_t index = imm5.ZeroExtend<size_t>() >> (size + 1);
+    const size_t esize = 8 << size;
+    const size_t datasize = Q ? 64 : 32;
+
+    const IR::U128 operand = V(idxdsize, Vn);
+
+    const IR::UAny elem = ir.VectorGetElement(esize, operand, index);
+    X(datasize, Rd, SignExtend(elem, datasize));
+
+    return true;
+}
+
 bool TranslatorVisitor::UMOV(bool Q, Imm<5> imm5, Vec Vn, Reg Rd) {
     const size_t size = Common::LowestSetBit(imm5.ZeroExtend());
     if (size < 3 && Q) return UnallocatedEncoding();

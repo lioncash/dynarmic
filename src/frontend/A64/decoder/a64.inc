@@ -672,7 +672,7 @@ INST(CMEQ_reg_2,             "CMEQ (register)",                           "0Q101
 
 // Data Processing - FP and SIMD - SIMD Copy
 INST(DUP_gen,                "DUP (general)",                             "0Q001110000iiiii000011nnnnnddddd")
-//INST(SMOV,                   "SMOV",                                      "0Q001110000iiiii001011nnnnnddddd")
+INST(SMOV,                   "SMOV",                                      "0Q001110000iiiii001011nnnnnddddd")
 INST(UMOV,                   "UMOV",                                      "0Q001110000iiiii001111nnnnnddddd")
 //INST(INS_gen,                "INS (general)",                             "01001110000iiiii000111nnnnnddddd")
 //INST(INS_elt,                "INS (element)",                             "01101110000iiiii0iiii1nnnnnddddd")
