@@ -56,4 +56,52 @@ bool TranslatorVisitor::FMOV_float_imm(Imm<2> type, Imm<8> imm8, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FCVT_float(Imm<2> type, Imm<2> opc, Vec Vn, Vec Vd) {
+    if (type == opc) {
+        return UnallocatedEncoding();
+    }
+
+    boost::optional<size_t> srcsize = GetDataSize(type);
+    boost::optional<size_t> dstsize = GetDataSize(opc);
+
+    if (!srcsize || !dstsize) {
+        return UnallocatedEncoding();
+    }
+
+    IR::UAny operand = V_scalar(*srcsize, Vn);
+    IR::UAny result;
+    switch (*srcsize) {
+    case 16:
+        switch (*dstsize) {
+        case 32:
+            return InterpretThisInstruction();
+        case 64:
+            return InterpretThisInstruction();
+        }
+        break;
+    case 32:
+        switch (*dstsize) {
+        case 16:
+            return InterpretThisInstruction();
+        case 64:
+            result = ir.FPSingleToDouble(operand, true);
+            break;
+        }
+        break;
+    case 64:
+    switch (*dstsize) {
+        case 16:
+            return InterpretThisInstruction();
+        case 32:
+            result = ir.FPDoubleToSingle(operand, true);
+            break;
+        }
+        break;
+    }
+
+    V_scalar(*dstsize, Vd, result);
+
+    return true;
+}
+
 } // namespace Dynarmic::A64

@@ -919,7 +919,7 @@ INST(EOR_asimd,              "EOR (vector)",                              "0Q101
 //INST(FABS_float,             "FABS (scalar)",                             "00011110yy100000110000nnnnnddddd")
 //INST(FNEG_float,             "FNEG (scalar)",                             "00011110yy100001010000nnnnnddddd")
 //INST(FSQRT_float,            "FSQRT (scalar)",                            "00011110yy100001110000nnnnnddddd")
-//INST(FCVT_float,             "FCVT",                                      "00011110yy10001oo10000nnnnnddddd")
+INST(FCVT_float,             "FCVT",                                      "00011110yy10001oo10000nnnnnddddd")
 //INST(FRINTN_float,           "FRINTN (scalar)",                           "00011110yy100100010000nnnnnddddd")
 //INST(FRINTP_float,           "FRINTP (scalar)",                           "00011110yy100100110000nnnnnddddd")
 //INST(FRINTM_float,           "FRINTM (scalar)",                           "00011110yy100101010000nnnnnddddd")
