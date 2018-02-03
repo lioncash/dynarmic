@@ -9,48 +9,48 @@
 
 namespace Dynarmic::BackendX64 {
 
-void SimpleCallback::EmitCall(BlockOfCode* code, std::function<void()> l) {
+void SimpleCallback::EmitCall(BlockOfCode& code, std::function<void()> l) {
     l();
-    code->CallFunction(fn);
+    code.CallFunction(fn);
 }
 
-void SimpleCallback::EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64)> l) {
-    l(code->ABI_PARAM1);
-    code->CallFunction(fn);
+void SimpleCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64)> l) {
+    l(code.ABI_PARAM1);
+    code.CallFunction(fn);
 }
 
-void SimpleCallback::EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) {
-    l(code->ABI_PARAM1, code->ABI_PARAM2);
-    code->CallFunction(fn);
+void SimpleCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) {
+    l(code.ABI_PARAM1, code.ABI_PARAM2);
+    code.CallFunction(fn);
 }
 
-void SimpleCallback::EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) {
-    l(code->ABI_PARAM1, code->ABI_PARAM2, code->ABI_PARAM3);
-    code->CallFunction(fn);
+void SimpleCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) {
+    l(code.ABI_PARAM1, code.ABI_PARAM2, code.ABI_PARAM3);
+    code.CallFunction(fn);
 }
 
-void ArgCallback::EmitCall(BlockOfCode* code, std::function<void()> l) {
+void ArgCallback::EmitCall(BlockOfCode& code, std::function<void()> l) {
     l();
-    code->mov(code->ABI_PARAM1, arg);
-    code->CallFunction(fn);
+    code.mov(code.ABI_PARAM1, arg);
+    code.CallFunction(fn);
 }
 
-void ArgCallback::EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64)> l) {
-    l(code->ABI_PARAM2);
-    code->mov(code->ABI_PARAM1, arg);
-    code->CallFunction(fn);
+void ArgCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64)> l) {
+    l(code.ABI_PARAM2);
+    code.mov(code.ABI_PARAM1, arg);
+    code.CallFunction(fn);
 }
 
-void ArgCallback::EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) {
-    l(code->ABI_PARAM2, code->ABI_PARAM3);
-    code->mov(code->ABI_PARAM1, arg);
-    code->CallFunction(fn);
+void ArgCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) {
+    l(code.ABI_PARAM2, code.ABI_PARAM3);
+    code.mov(code.ABI_PARAM1, arg);
+    code.CallFunction(fn);
 }
 
-void ArgCallback::EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) {
-    l(code->ABI_PARAM2, code->ABI_PARAM3, code->ABI_PARAM4);
-    code->mov(code->ABI_PARAM1, arg);
-    code->CallFunction(fn);
+void ArgCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) {
+    l(code.ABI_PARAM2, code.ABI_PARAM3, code.ABI_PARAM4);
+    code.mov(code.ABI_PARAM1, arg);
+    code.CallFunction(fn);
 }
 
 } // namespace Dynarmic::BackendX64

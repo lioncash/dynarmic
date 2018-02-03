@@ -29,96 +29,96 @@ constexpr u64 f64_min_s32 = 0xc1e0000000000000u; // -2147483648 as a double
 constexpr u64 f64_max_s32 = 0x41dfffffffc00000u; // 2147483647 as a double
 constexpr u64 f64_min_u32 = 0x0000000000000000u; // 0 as a double
 
-static void DenormalsAreZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
+static void DenormalsAreZero32(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;
 
     // We need to report back whether we've found a denormal on input.
     // SSE doesn't do this for us when SSE's DAZ is enabled.
 
-    code->movd(gpr_scratch, xmm_value);
-    code->and_(gpr_scratch, u32(0x7FFFFFFF));
-    code->sub(gpr_scratch, u32(1));
-    code->cmp(gpr_scratch, u32(0x007FFFFE));
-    code->ja(end);
-    code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_IDC], u32(1 << 7));
-    code->L(end);
+    code.movd(gpr_scratch, xmm_value);
+    code.and_(gpr_scratch, u32(0x7FFFFFFF));
+    code.sub(gpr_scratch, u32(1));
+    code.cmp(gpr_scratch, u32(0x007FFFFE));
+    code.ja(end);
+    code.pxor(xmm_value, xmm_value);
+    code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_IDC], u32(1 << 7));
+    code.L(end);
 }
 
-static void DenormalsAreZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
+static void DenormalsAreZero64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
     Xbyak::Label end;
 
-    auto mask = code->MConst(f64_non_sign_mask);
+    auto mask = code.MConst(f64_non_sign_mask);
     mask.setBit(64);
-    auto penult_denormal = code->MConst(f64_penultimate_positive_denormal);
+    auto penult_denormal = code.MConst(f64_penultimate_positive_denormal);
     penult_denormal.setBit(64);
 
-    code->movq(gpr_scratch, xmm_value);
-    code->and_(gpr_scratch, mask);
-    code->sub(gpr_scratch, u32(1));
-    code->cmp(gpr_scratch, penult_denormal);
-    code->ja(end);
-    code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_IDC], u32(1 << 7));
-    code->L(end);
+    code.movq(gpr_scratch, xmm_value);
+    code.and_(gpr_scratch, mask);
+    code.sub(gpr_scratch, u32(1));
+    code.cmp(gpr_scratch, penult_denormal);
+    code.ja(end);
+    code.pxor(xmm_value, xmm_value);
+    code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_IDC], u32(1 << 7));
+    code.L(end);
 }
 
-static void FlushToZero32(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
+static void FlushToZero32(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;
 
-    code->movd(gpr_scratch, xmm_value);
-    code->and_(gpr_scratch, u32(0x7FFFFFFF));
-    code->sub(gpr_scratch, u32(1));
-    code->cmp(gpr_scratch, u32(0x007FFFFE));
-    code->ja(end);
-    code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_UFC], u32(1 << 3));
-    code->L(end);
+    code.movd(gpr_scratch, xmm_value);
+    code.and_(gpr_scratch, u32(0x7FFFFFFF));
+    code.sub(gpr_scratch, u32(1));
+    code.cmp(gpr_scratch, u32(0x007FFFFE));
+    code.ja(end);
+    code.pxor(xmm_value, xmm_value);
+    code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_UFC], u32(1 << 3));
+    code.L(end);
 }
 
-static void FlushToZero64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
+static void FlushToZero64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
     Xbyak::Label end;
 
-    auto mask = code->MConst(f64_non_sign_mask);
+    auto mask = code.MConst(f64_non_sign_mask);
     mask.setBit(64);
-    auto penult_denormal = code->MConst(f64_penultimate_positive_denormal);
+    auto penult_denormal = code.MConst(f64_penultimate_positive_denormal);
     penult_denormal.setBit(64);
 
-    code->movq(gpr_scratch, xmm_value);
-    code->and_(gpr_scratch, mask);
-    code->sub(gpr_scratch, u32(1));
-    code->cmp(gpr_scratch, penult_denormal);
-    code->ja(end);
-    code->pxor(xmm_value, xmm_value);
-    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_UFC], u32(1 << 3));
-    code->L(end);
+    code.movq(gpr_scratch, xmm_value);
+    code.and_(gpr_scratch, mask);
+    code.sub(gpr_scratch, u32(1));
+    code.cmp(gpr_scratch, penult_denormal);
+    code.ja(end);
+    code.pxor(xmm_value, xmm_value);
+    code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_UFC], u32(1 << 3));
+    code.L(end);
 }
 
-static void DefaultNaN32(BlockOfCode* code, Xbyak::Xmm xmm_value) {
+static void DefaultNaN32(BlockOfCode& code, Xbyak::Xmm xmm_value) {
     Xbyak::Label end;
 
-    code->ucomiss(xmm_value, xmm_value);
-    code->jnp(end);
-    code->movaps(xmm_value, code->MConst(f32_nan));
-    code->L(end);
+    code.ucomiss(xmm_value, xmm_value);
+    code.jnp(end);
+    code.movaps(xmm_value, code.MConst(f32_nan));
+    code.L(end);
 }
 
-static void DefaultNaN64(BlockOfCode* code, Xbyak::Xmm xmm_value) {
+static void DefaultNaN64(BlockOfCode& code, Xbyak::Xmm xmm_value) {
     Xbyak::Label end;
 
-    code->ucomisd(xmm_value, xmm_value);
-    code->jnp(end);
-    code->movaps(xmm_value, code->MConst(f64_nan));
-    code->L(end);
+    code.ucomisd(xmm_value, xmm_value);
+    code.jnp(end);
+    code.movaps(xmm_value, code.MConst(f64_nan));
+    code.L(end);
 }
 
-static void ZeroIfNaN64(BlockOfCode* code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_scratch) {
-    code->pxor(xmm_scratch, xmm_scratch);
-    code->cmpordsd(xmm_scratch, xmm_value); // true mask when ordered (i.e.: when not an NaN)
-    code->pand(xmm_value, xmm_scratch);
+static void ZeroIfNaN64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_scratch) {
+    code.pxor(xmm_scratch, xmm_scratch);
+    code.cmpordsd(xmm_scratch, xmm_value); // true mask when ordered (i.e.: when not an NaN)
+    code.pand(xmm_value, xmm_scratch);
 }
 
-static void FPThreeOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -129,7 +129,7 @@ static void FPThreeOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
         DenormalsAreZero32(code, result, gpr_scratch);
         DenormalsAreZero32(code, operand, gpr_scratch);
     }
-    (code->*fn)(result, operand);
+    (code.*fn)(result, operand);
     if (ctx.FPSCR_FTZ()) {
         FlushToZero32(code, result, gpr_scratch);
     }
@@ -140,7 +140,7 @@ static void FPThreeOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static void FPThreeOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -151,7 +151,7 @@ static void FPThreeOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
         DenormalsAreZero64(code, result, gpr_scratch);
         DenormalsAreZero64(code, operand, gpr_scratch);
     }
-    (code->*fn)(result, operand);
+    (code.*fn)(result, operand);
     if (ctx.FPSCR_FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
@@ -162,7 +162,7 @@ static void FPThreeOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, voi
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static void FPTwoOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+static void FPTwoOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -172,7 +172,7 @@ static void FPTwoOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
         DenormalsAreZero32(code, result, gpr_scratch);
     }
 
-    (code->*fn)(result, result);
+    (code.*fn)(result, result);
     if (ctx.FPSCR_FTZ()) {
         FlushToZero32(code, result, gpr_scratch);
     }
@@ -183,7 +183,7 @@ static void FPTwoOp32(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static void FPTwoOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+static void FPTwoOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -193,7 +193,7 @@ static void FPTwoOp64(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, void 
         DenormalsAreZero64(code, result, gpr_scratch);
     }
 
-    (code->*fn)(result, result);
+    (code.*fn)(result, result);
     if (ctx.FPSCR_FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
@@ -208,7 +208,7 @@ void EmitX64::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code->pand(result, code->MConst(f32_non_sign_mask));
+    code.pand(result, code.MConst(f32_non_sign_mask));
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -217,7 +217,7 @@ void EmitX64::EmitFPAbs64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code->pand(result, code->MConst(f64_non_sign_mask));
+    code.pand(result, code.MConst(f64_non_sign_mask));
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -226,7 +226,7 @@ void EmitX64::EmitFPNeg32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code->pxor(result, code->MConst(f32_negative_zero));
+    code.pxor(result, code.MConst(f32_negative_zero));
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -235,7 +235,7 @@ void EmitX64::EmitFPNeg64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code->pxor(result, code->MConst(f64_negative_zero));
+    code.pxor(result, code.MConst(f64_negative_zero));
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -280,16 +280,16 @@ void EmitX64::EmitFPSub64(EmitContext& ctx, IR::Inst* inst) {
     FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::subsd);
 }
 
-static void SetFpscrNzcvFromFlags(BlockOfCode* code, EmitContext& ctx) {
+static void SetFpscrNzcvFromFlags(BlockOfCode& code, EmitContext& ctx) {
     ctx.reg_alloc.ScratchGpr({HostLoc::RCX}); // shifting requires use of cl
     Xbyak::Reg32 nzcv = ctx.reg_alloc.ScratchGpr().cvt32();
 
-    code->mov(nzcv, 0x28630000);
-    code->sete(cl);
-    code->rcl(cl, 3);
-    code->shl(nzcv, cl);
-    code->and_(nzcv, 0xF0000000);
-    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_FPSCR_nzcv], nzcv);
+    code.mov(nzcv, 0x28630000);
+    code.sete(cl);
+    code.rcl(cl, 3);
+    code.shl(nzcv, cl);
+    code.and_(nzcv, 0xF0000000);
+    code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_nzcv], nzcv);
 }
 
 void EmitX64::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
@@ -299,9 +299,9 @@ void EmitX64::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
     bool exc_on_qnan = args[2].GetImmediateU1();
 
     if (exc_on_qnan) {
-        code->comiss(reg_a, reg_b);
+        code.comiss(reg_a, reg_b);
     } else {
-        code->ucomiss(reg_a, reg_b);
+        code.ucomiss(reg_a, reg_b);
     }
 
     SetFpscrNzcvFromFlags(code, ctx);
@@ -314,9 +314,9 @@ void EmitX64::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
     bool exc_on_qnan = args[2].GetImmediateU1();
 
     if (exc_on_qnan) {
-        code->comisd(reg_a, reg_b);
+        code.comisd(reg_a, reg_b);
     } else {
-        code->ucomisd(reg_a, reg_b);
+        code.ucomisd(reg_a, reg_b);
     }
 
     SetFpscrNzcvFromFlags(code, ctx);
@@ -330,7 +330,7 @@ void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero32(code, result, gpr_scratch.cvt32());
     }
-    code->cvtss2sd(result, result);
+    code.cvtss2sd(result, result);
     if (ctx.FPSCR_FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
@@ -349,7 +349,7 @@ void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero64(code, result, gpr_scratch);
     }
-    code->cvtsd2ss(result, result);
+    code.cvtsd2ss(result, result);
     if (ctx.FPSCR_FTZ()) {
         FlushToZero32(code, result, gpr_scratch.cvt32());
     }
@@ -373,22 +373,22 @@ void EmitX64::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
     if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero32(code, from, to);
     }
-    code->cvtss2sd(from, from);
+    code.cvtss2sd(from, from);
     // First time is to set flags
     if (round_towards_zero) {
-        code->cvttsd2si(to, from); // 32 bit gpr
+        code.cvttsd2si(to, from); // 32 bit gpr
     } else {
-        code->cvtsd2si(to, from); // 32 bit gpr
+        code.cvtsd2si(to, from); // 32 bit gpr
     }
     // Clamp to output range
     ZeroIfNaN64(code, from, xmm_scratch);
-    code->minsd(from, code->MConst(f64_max_s32));
-    code->maxsd(from, code->MConst(f64_min_s32));
+    code.minsd(from, code.MConst(f64_max_s32));
+    code.maxsd(from, code.MConst(f64_min_s32));
     // Second time is for real
     if (round_towards_zero) {
-        code->cvttsd2si(to, from); // 32 bit gpr
+        code.cvttsd2si(to, from); // 32 bit gpr
     } else {
-        code->cvtsd2si(to, from); // 32 bit gpr
+        code.cvtsd2si(to, from); // 32 bit gpr
     }
 
     ctx.reg_alloc.DefineValue(inst, to);
@@ -412,19 +412,19 @@ void EmitX64::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
         if (ctx.FPSCR_FTZ()) {
             DenormalsAreZero32(code, from, to);
         }
-        code->cvtss2sd(from, from);
+        code.cvtss2sd(from, from);
         ZeroIfNaN64(code, from, xmm_scratch);
         // Bring into SSE range
-        code->addsd(from, code->MConst(f64_min_s32));
+        code.addsd(from, code.MConst(f64_min_s32));
         // First time is to set flags
-        code->cvtsd2si(to, from); // 32 bit gpr
+        code.cvtsd2si(to, from); // 32 bit gpr
         // Clamp to output range
-        code->minsd(from, code->MConst(f64_max_s32));
-        code->maxsd(from, code->MConst(f64_min_s32));
+        code.minsd(from, code.MConst(f64_max_s32));
+        code.maxsd(from, code.MConst(f64_min_s32));
         // Actually convert
-        code->cvtsd2si(to, from); // 32 bit gpr
+        code.cvtsd2si(to, from); // 32 bit gpr
         // Bring back into original range
-        code->add(to, u32(2147483648u));
+        code.add(to, u32(2147483648u));
     } else {
         Xbyak::Xmm xmm_mask = ctx.reg_alloc.ScratchXmm();
         Xbyak::Reg32 gpr_mask = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -432,25 +432,25 @@ void EmitX64::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
         if (ctx.FPSCR_FTZ()) {
             DenormalsAreZero32(code, from, to);
         }
-        code->cvtss2sd(from, from);
+        code.cvtss2sd(from, from);
         ZeroIfNaN64(code, from, xmm_scratch);
         // Generate masks if out-of-signed-range
-        code->movaps(xmm_mask, code->MConst(f64_max_s32));
-        code->cmpltsd(xmm_mask, from);
-        code->movd(gpr_mask, xmm_mask);
-        code->pand(xmm_mask, code->MConst(f64_min_s32));
-        code->and_(gpr_mask, u32(2147483648u));
+        code.movaps(xmm_mask, code.MConst(f64_max_s32));
+        code.cmpltsd(xmm_mask, from);
+        code.movd(gpr_mask, xmm_mask);
+        code.pand(xmm_mask, code.MConst(f64_min_s32));
+        code.and_(gpr_mask, u32(2147483648u));
         // Bring into range if necessary
-        code->addsd(from, xmm_mask);
+        code.addsd(from, xmm_mask);
         // First time is to set flags
-        code->cvttsd2si(to, from); // 32 bit gpr
+        code.cvttsd2si(to, from); // 32 bit gpr
         // Clamp to output range
-        code->minsd(from, code->MConst(f64_max_s32));
-        code->maxsd(from, code->MConst(f64_min_u32));
+        code.minsd(from, code.MConst(f64_max_s32));
+        code.maxsd(from, code.MConst(f64_min_u32));
         // Actually convert
-        code->cvttsd2si(to, from); // 32 bit gpr
+        code.cvttsd2si(to, from); // 32 bit gpr
         // Bring back into original range if necessary
-        code->add(to, gpr_mask);
+        code.add(to, gpr_mask);
     }
 
     ctx.reg_alloc.DefineValue(inst, to);
@@ -471,19 +471,19 @@ void EmitX64::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
     }
     // First time is to set flags
     if (round_towards_zero) {
-        code->cvttsd2si(gpr_scratch, from); // 32 bit gpr
+        code.cvttsd2si(gpr_scratch, from); // 32 bit gpr
     } else {
-        code->cvtsd2si(gpr_scratch, from); // 32 bit gpr
+        code.cvtsd2si(gpr_scratch, from); // 32 bit gpr
     }
     // Clamp to output range
     ZeroIfNaN64(code, from, xmm_scratch);
-    code->minsd(from, code->MConst(f64_max_s32));
-    code->maxsd(from, code->MConst(f64_min_s32));
+    code.minsd(from, code.MConst(f64_max_s32));
+    code.maxsd(from, code.MConst(f64_min_s32));
     // Second time is for real
     if (round_towards_zero) {
-        code->cvttsd2si(to, from); // 32 bit gpr
+        code.cvttsd2si(to, from); // 32 bit gpr
     } else {
-        code->cvtsd2si(to, from); // 32 bit gpr
+        code.cvtsd2si(to, from); // 32 bit gpr
     }
 
     ctx.reg_alloc.DefineValue(inst, to);
@@ -507,16 +507,16 @@ void EmitX64::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
         }
         ZeroIfNaN64(code, from, xmm_scratch);
         // Bring into SSE range
-        code->addsd(from, code->MConst(f64_min_s32));
+        code.addsd(from, code.MConst(f64_min_s32));
         // First time is to set flags
-        code->cvtsd2si(gpr_scratch, from); // 32 bit gpr
+        code.cvtsd2si(gpr_scratch, from); // 32 bit gpr
         // Clamp to output range
-        code->minsd(from, code->MConst(f64_max_s32));
-        code->maxsd(from, code->MConst(f64_min_s32));
+        code.minsd(from, code.MConst(f64_max_s32));
+        code.maxsd(from, code.MConst(f64_min_s32));
         // Actually convert
-        code->cvtsd2si(to, from); // 32 bit gpr
+        code.cvtsd2si(to, from); // 32 bit gpr
         // Bring back into original range
-        code->add(to, u32(2147483648u));
+        code.add(to, u32(2147483648u));
     } else {
         Xbyak::Xmm xmm_mask = ctx.reg_alloc.ScratchXmm();
         Xbyak::Reg32 gpr_mask = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -526,22 +526,22 @@ void EmitX64::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
         }
         ZeroIfNaN64(code, from, xmm_scratch);
         // Generate masks if out-of-signed-range
-        code->movaps(xmm_mask, code->MConst(f64_max_s32));
-        code->cmpltsd(xmm_mask, from);
-        code->movd(gpr_mask, xmm_mask);
-        code->pand(xmm_mask, code->MConst(f64_min_s32));
-        code->and_(gpr_mask, u32(2147483648u));
+        code.movaps(xmm_mask, code.MConst(f64_max_s32));
+        code.cmpltsd(xmm_mask, from);
+        code.movd(gpr_mask, xmm_mask);
+        code.pand(xmm_mask, code.MConst(f64_min_s32));
+        code.and_(gpr_mask, u32(2147483648u));
         // Bring into range if necessary
-        code->addsd(from, xmm_mask);
+        code.addsd(from, xmm_mask);
         // First time is to set flags
-        code->cvttsd2si(gpr_scratch, from); // 32 bit gpr
+        code.cvttsd2si(gpr_scratch, from); // 32 bit gpr
         // Clamp to output range
-        code->minsd(from, code->MConst(f64_max_s32));
-        code->maxsd(from, code->MConst(f64_min_u32));
+        code.minsd(from, code.MConst(f64_max_s32));
+        code.maxsd(from, code.MConst(f64_min_u32));
         // Actually convert
-        code->cvttsd2si(to, from); // 32 bit gpr
+        code.cvttsd2si(to, from); // 32 bit gpr
         // Bring back into original range if necessary
-        code->add(to, gpr_mask);
+        code.add(to, gpr_mask);
     }
 
     ctx.reg_alloc.DefineValue(inst, to);
@@ -554,7 +554,7 @@ void EmitX64::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     bool round_to_nearest = args[1].GetImmediateU1();
     ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
-    code->cvtsi2ss(to, from);
+    code.cvtsi2ss(to, from);
 
     ctx.reg_alloc.DefineValue(inst, to);
 }
@@ -567,8 +567,8 @@ void EmitX64::EmitFPU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
     // We are using a 64-bit GPR register to ensure we don't end up treating the input as signed
-    code->mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
-    code->cvtsi2ss(to, from);
+    code.mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
+    code.cvtsi2ss(to, from);
 
     ctx.reg_alloc.DefineValue(inst, to);
 }
@@ -580,7 +580,7 @@ void EmitX64::EmitFPS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     bool round_to_nearest = args[1].GetImmediateU1();
     ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
-    code->cvtsi2sd(to, from);
+    code.cvtsi2sd(to, from);
 
     ctx.reg_alloc.DefineValue(inst, to);
 }
@@ -593,8 +593,8 @@ void EmitX64::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
     // We are using a 64-bit GPR register to ensure we don't end up treating the input as signed
-    code->mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
-    code->cvtsi2sd(to, from);
+    code.mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
+    code.cvtsi2sd(to, from);
 
     ctx.reg_alloc.DefineValue(inst, to);
 }

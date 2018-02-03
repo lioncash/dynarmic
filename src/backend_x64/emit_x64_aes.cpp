@@ -44,21 +44,21 @@ static void EmitMixColumns(std::array<Argument, 3> args, EmitContext& ctx, Block
 void EmitX64::EmitAESInverseMixColumns(EmitContext& ctx, IR::Inst* inst) {
      auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tAESNI)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAESNI)) {
         const Xbyak::Xmm operand = ctx.reg_alloc.UseXmm(args[0]);
         const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
 
-        code->aesimc(result, operand);
+        code.aesimc(result, operand);
 
         ctx.reg_alloc.DefineValue(inst, result);
     } else {
-        EmitMixColumns(args, ctx, *code, inst, Common::InverseMixColumns);
+        EmitMixColumns(args, ctx, code, inst, Common::InverseMixColumns);
     }
 }
 
 void EmitX64::EmitAESMixColumns(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    EmitMixColumns(args, ctx, *code, inst, Common::MixColumns);
+    EmitMixColumns(args, ctx, code, inst, Common::MixColumns);
 }
 
 } // namespace Dynarmic::BackendX64

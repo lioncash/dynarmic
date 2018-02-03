@@ -52,17 +52,17 @@ bool A64EmitContext::FPSCR_DN() const {
     return Location().FPCR().DN();
 }
 
-A64EmitX64::A64EmitX64(BlockOfCode* code, A64::UserConfig conf)
+A64EmitX64::A64EmitX64(BlockOfCode& code, A64::UserConfig conf)
     : EmitX64(code), conf(conf)
 {
-    code->PreludeComplete();
+    code.PreludeComplete();
 }
 
 A64EmitX64::~A64EmitX64() = default;
 
 A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
-    code->align();
-    const u8* const entrypoint = code->getCurr();
+    code.align();
+    const u8* const entrypoint = code.getCurr();
 
     // Start emitting.
     EmitCondPrelude(block);
@@ -102,12 +102,12 @@ A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
 
     EmitAddCycles(block.CycleCount());
     EmitX64::EmitTerminal(block.GetTerminal(), block.Location());
-    code->int3();
+    code.int3();
 
     const A64::LocationDescriptor descriptor{block.Location()};
     Patch(descriptor, entrypoint);
 
-    const size_t size = static_cast<size_t>(code->getCurr() - entrypoint);
+    const size_t size = static_cast<size_t>(code.getCurr() - entrypoint);
     const A64::LocationDescriptor end_location{block.EndLocation()};
     const auto range = boost::icl::discrete_interval<u64>::closed(descriptor.PC(), end_location.PC() - 1);
     A64EmitX64::BlockDescriptor block_desc{entrypoint, size};
@@ -129,32 +129,32 @@ void A64EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u64>& rang
 void A64EmitX64::EmitA64SetCheckBit(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg8 to_store = ctx.reg_alloc.UseGpr(args[0]).cvt8();
-    code->mov(code->byte[r15 + offsetof(A64JitState, check_bit)], to_store);
+    code.mov(code.byte[r15 + offsetof(A64JitState, check_bit)], to_store);
 }
 
 void A64EmitX64::EmitA64GetCFlag(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
-    code->mov(result, dword[r15 + offsetof(A64JitState, CPSR_nzcv)]);
-    code->shr(result, 29);
-    code->and_(result, 1);
+    code.mov(result, dword[r15 + offsetof(A64JitState, CPSR_nzcv)]);
+    code.shr(result, 29);
+    code.and_(result, 1);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
 void A64EmitX64::EmitA64SetNZCV(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg32 to_store = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
-    code->and_(to_store, 0b11000001'00000001);
-    code->imul(to_store, to_store, 0b00010000'00100001);
-    code->shl(to_store, 16);
-    code->and_(to_store, 0xF0000000);
-    code->mov(dword[r15 + offsetof(A64JitState, CPSR_nzcv)], to_store);
+    code.and_(to_store, 0b11000001'00000001);
+    code.imul(to_store, to_store, 0b00010000'00100001);
+    code.shl(to_store, 16);
+    code.and_(to_store, 0xF0000000);
+    code.mov(dword[r15 + offsetof(A64JitState, CPSR_nzcv)], to_store);
 }
 
 void A64EmitX64::EmitA64GetW(A64EmitContext& ctx, IR::Inst* inst) {
     A64::Reg reg = inst->GetArg(0).GetA64RegRef();
 
     Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
-    code->mov(result, dword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)]);
+    code.mov(result, dword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)]);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -162,7 +162,7 @@ void A64EmitX64::EmitA64GetX(A64EmitContext& ctx, IR::Inst* inst) {
     A64::Reg reg = inst->GetArg(0).GetA64RegRef();
 
     Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
-    code->mov(result, qword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)]);
+    code.mov(result, qword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)]);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -171,7 +171,7 @@ void A64EmitX64::EmitA64GetS(A64EmitContext& ctx, IR::Inst* inst) {
     auto addr = qword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
 
     Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-    code->movd(result, addr);
+    code.movd(result, addr);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -180,7 +180,7 @@ void A64EmitX64::EmitA64GetD(A64EmitContext& ctx, IR::Inst* inst) {
     auto addr = qword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
 
     Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-    code->movq(result, addr);
+    code.movq(result, addr);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -189,13 +189,13 @@ void A64EmitX64::EmitA64GetQ(A64EmitContext& ctx, IR::Inst* inst) {
     auto addr = xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
 
     Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-    code->movaps(result, addr);
+    code.movaps(result, addr);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
 void A64EmitX64::EmitA64GetSP(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
-    code->mov(result, qword[r15 + offsetof(A64JitState, sp)]);
+    code.mov(result, qword[r15 + offsetof(A64JitState, sp)]);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -204,12 +204,12 @@ void A64EmitX64::EmitA64SetW(A64EmitContext& ctx, IR::Inst* inst) {
     A64::Reg reg = inst->GetArg(0).GetA64RegRef();
     auto addr = qword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)];
     if (args[1].FitsInImmediateS32()) {
-        code->mov(addr, args[1].GetImmediateS32());
+        code.mov(addr, args[1].GetImmediateS32());
     } else {
         // TODO: zext tracking, xmm variant
         Xbyak::Reg64 to_store = ctx.reg_alloc.UseScratchGpr(args[1]);
-        code->mov(to_store.cvt32(), to_store.cvt32());
-        code->mov(addr, to_store);
+        code.mov(to_store.cvt32(), to_store.cvt32());
+        code.mov(addr, to_store);
     }
 }
 
@@ -218,13 +218,13 @@ void A64EmitX64::EmitA64SetX(A64EmitContext& ctx, IR::Inst* inst) {
     A64::Reg reg = inst->GetArg(0).GetA64RegRef();
     auto addr = qword[r15 + offsetof(A64JitState, reg) + sizeof(u64) * static_cast<size_t>(reg)];
     if (args[1].FitsInImmediateS32()) {
-        code->mov(addr, args[1].GetImmediateS32());
+        code.mov(addr, args[1].GetImmediateS32());
     } else if (args[1].IsInXmm()) {
         Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
-        code->movq(addr, to_store);
+        code.movq(addr, to_store);
     } else {
         Xbyak::Reg64 to_store = ctx.reg_alloc.UseGpr(args[1]);
-        code->mov(addr, to_store);
+        code.mov(addr, to_store);
     }
 }
 
@@ -236,9 +236,9 @@ void A64EmitX64::EmitA64SetS(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
     Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
     // TODO: Optimize
-    code->pxor(tmp, tmp);
-    code->movss(tmp, to_store);
-    code->movaps(addr, tmp);
+    code.pxor(tmp, tmp);
+    code.movss(tmp, to_store);
+    code.movaps(addr, tmp);
 }
 
 void A64EmitX64::EmitA64SetD(A64EmitContext& ctx, IR::Inst* inst) {
@@ -247,8 +247,8 @@ void A64EmitX64::EmitA64SetD(A64EmitContext& ctx, IR::Inst* inst) {
     auto addr = xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
 
     Xbyak::Xmm to_store = ctx.reg_alloc.UseScratchXmm(args[1]);
-    code->movq(to_store, to_store); // TODO: Remove when able
-    code->movaps(addr, to_store);
+    code.movq(to_store, to_store); // TODO: Remove when able
+    code.movaps(addr, to_store);
 }
 
 void A64EmitX64::EmitA64SetQ(A64EmitContext& ctx, IR::Inst* inst) {
@@ -257,20 +257,20 @@ void A64EmitX64::EmitA64SetQ(A64EmitContext& ctx, IR::Inst* inst) {
     auto addr = xword[r15 + offsetof(A64JitState, vec) + sizeof(u64) * 2 * static_cast<size_t>(vec)];
 
     Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[1]);
-    code->movaps(addr, to_store);
+    code.movaps(addr, to_store);
 }
 
 void A64EmitX64::EmitA64SetSP(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto addr = qword[r15 + offsetof(A64JitState, sp)];
     if (args[0].FitsInImmediateS32()) {
-        code->mov(addr, args[0].GetImmediateS32());
+        code.mov(addr, args[0].GetImmediateS32());
     } else if (args[0].IsInXmm()) {
         Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[0]);
-        code->movq(addr, to_store);
+        code.movq(addr, to_store);
     } else {
         Xbyak::Reg64 to_store = ctx.reg_alloc.UseGpr(args[0]);
-        code->mov(addr, to_store);
+        code.mov(addr, to_store);
     }
 }
 
@@ -278,13 +278,13 @@ void A64EmitX64::EmitA64SetPC(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto addr = qword[r15 + offsetof(A64JitState, pc)];
     if (args[0].FitsInImmediateS32()) {
-        code->mov(addr, args[0].GetImmediateS32());
+        code.mov(addr, args[0].GetImmediateS32());
     } else if (args[0].IsInXmm()) {
         Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(args[0]);
-        code->movq(addr, to_store);
+        code.movq(addr, to_store);
     } else {
         Xbyak::Reg64 to_store = ctx.reg_alloc.UseGpr(args[0]);
-        code->mov(addr, to_store);
+        code.mov(addr, to_store);
     }
 }
 
@@ -294,7 +294,7 @@ void A64EmitX64::EmitA64CallSupervisor(A64EmitContext& ctx, IR::Inst* inst) {
     ASSERT(args[0].IsImmediate());
     u32 imm = args[0].GetImmediateU32();
     DEVIRT(conf.callbacks, &A64::UserCallbacks::CallSVC).EmitCall(code, [&](Xbyak::Reg64 param1) {
-        code->mov(param1.cvt32(), imm);
+        code.mov(param1.cvt32(), imm);
     });
 }
 
@@ -305,14 +305,14 @@ void A64EmitX64::EmitA64ExceptionRaised(A64EmitContext& ctx, IR::Inst* inst) {
     u64 pc = args[0].GetImmediateU64();
     u64 exception = args[1].GetImmediateU64();
     DEVIRT(conf.callbacks, &A64::UserCallbacks::ExceptionRaised).EmitCall(code, [&](Xbyak::Reg64 param1, Xbyak::Reg64 param2) {
-        code->mov(param1, pc);
-        code->mov(param2, exception);
+        code.mov(param1, pc);
+        code.mov(param2, exception);
     });
 }
 
 void A64EmitX64::EmitA64ReadMemory8(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead8).EmitCall(code, [&](Xbyak::Reg64 vaddr) {
-        ASSERT(vaddr == code->ABI_PARAM2);
+        ASSERT(vaddr == code.ABI_PARAM2);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.HostCall(inst, {}, args[0]);
     });
@@ -320,7 +320,7 @@ void A64EmitX64::EmitA64ReadMemory8(A64EmitContext& ctx, IR::Inst* inst) {
 
 void A64EmitX64::EmitA64ReadMemory16(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead16).EmitCall(code, [&](Xbyak::Reg64 vaddr) {
-        ASSERT(vaddr == code->ABI_PARAM2);
+        ASSERT(vaddr == code.ABI_PARAM2);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.HostCall(inst, {}, args[0]);
     });
@@ -328,7 +328,7 @@ void A64EmitX64::EmitA64ReadMemory16(A64EmitContext& ctx, IR::Inst* inst) {
 
 void A64EmitX64::EmitA64ReadMemory32(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead32).EmitCall(code, [&](Xbyak::Reg64 vaddr) {
-        ASSERT(vaddr == code->ABI_PARAM2);
+        ASSERT(vaddr == code.ABI_PARAM2);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.HostCall(inst, {}, args[0]);
     });
@@ -336,7 +336,7 @@ void A64EmitX64::EmitA64ReadMemory32(A64EmitContext& ctx, IR::Inst* inst) {
 
 void A64EmitX64::EmitA64ReadMemory64(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead64).EmitCall(code, [&](Xbyak::Reg64 vaddr) {
-        ASSERT(vaddr == code->ABI_PARAM2);
+        ASSERT(vaddr == code.ABI_PARAM2);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.HostCall(inst, {}, args[0]);
     });
@@ -348,33 +348,33 @@ void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
 
     static_assert(ABI_SHADOW_SPACE >= 16);
     ctx.reg_alloc.HostCall(nullptr, {}, {}, args[0]);
-    code->lea(code->ABI_PARAM2, ptr[rsp]);
-    code->sub(rsp, ABI_SHADOW_SPACE);
+    code.lea(code.ABI_PARAM2, ptr[rsp]);
+    code.sub(rsp, ABI_SHADOW_SPACE);
 
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code, [&](Xbyak::Reg64 return_value, Xbyak::Reg64 vaddr) {
-        ASSERT(return_value == code->ABI_PARAM2 && vaddr == code->ABI_PARAM3);
+        ASSERT(return_value == code.ABI_PARAM2 && vaddr == code.ABI_PARAM3);
     });
 
     Xbyak::Xmm result = xmm0;
-    code->movups(result, xword[code->ABI_RETURN]);
-    code->add(rsp, ABI_SHADOW_SPACE);
+    code.movups(result, xword[code.ABI_RETURN]);
+    code.add(rsp, ABI_SHADOW_SPACE);
 
     ctx.reg_alloc.DefineValue(inst, result);
 #else
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code, [&](Xbyak::Reg64 vaddr) {
-        ASSERT(vaddr == code->ABI_PARAM2);
+        ASSERT(vaddr == code.ABI_PARAM2);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.HostCall(nullptr, {}, args[0]);
     });
     Xbyak::Xmm result = xmm0;
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        code->movq(result, code->ABI_RETURN);
-        code->pinsrq(result, code->ABI_RETURN2, 1);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.movq(result, code.ABI_RETURN);
+        code.pinsrq(result, code.ABI_RETURN2, 1);
     } else {
         Xbyak::Xmm tmp = xmm1;
-        code->movq(result, code->ABI_RETURN);
-        code->movq(tmp, code->ABI_RETURN2);
-        code->punpcklqdq(result, tmp);
+        code.movq(result, code.ABI_RETURN);
+        code.movq(tmp, code.ABI_RETURN2);
+        code.punpcklqdq(result, tmp);
     }
     ctx.reg_alloc.DefineValue(inst, result);
 #endif
@@ -382,7 +382,7 @@ void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
 
 void A64EmitX64::EmitA64WriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite8).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value) {
-        ASSERT(vaddr == code->ABI_PARAM2 && value == code->ABI_PARAM3);
+        ASSERT(vaddr == code.ABI_PARAM2 && value == code.ABI_PARAM3);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
     });
@@ -390,7 +390,7 @@ void A64EmitX64::EmitA64WriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
 
 void A64EmitX64::EmitA64WriteMemory16(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite16).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value) {
-        ASSERT(vaddr == code->ABI_PARAM2 && value == code->ABI_PARAM3);
+        ASSERT(vaddr == code.ABI_PARAM2 && value == code.ABI_PARAM3);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
     });
@@ -398,7 +398,7 @@ void A64EmitX64::EmitA64WriteMemory16(A64EmitContext& ctx, IR::Inst* inst) {
 
 void A64EmitX64::EmitA64WriteMemory32(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite32).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value) {
-        ASSERT(vaddr == code->ABI_PARAM2 && value == code->ABI_PARAM3);
+        ASSERT(vaddr == code.ABI_PARAM2 && value == code.ABI_PARAM3);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
     });
@@ -406,7 +406,7 @@ void A64EmitX64::EmitA64WriteMemory32(A64EmitContext& ctx, IR::Inst* inst) {
 
 void A64EmitX64::EmitA64WriteMemory64(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite64).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value) {
-        ASSERT(vaddr == code->ABI_PARAM2 && value == code->ABI_PARAM3);
+        ASSERT(vaddr == code.ABI_PARAM2 && value == code.ABI_PARAM3);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
     });
@@ -421,31 +421,31 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Xmm xmm_value = ctx.reg_alloc.UseXmm(args[1]);
     ctx.reg_alloc.EndOfAllocScope();
     ctx.reg_alloc.HostCall(nullptr);
-    code->lea(code->ABI_PARAM3, ptr[rsp]);
-    code->sub(rsp, ABI_SHADOW_SPACE);
-    code->movaps(xword[code->ABI_PARAM3], xmm_value);
+    code.lea(code.ABI_PARAM3, ptr[rsp]);
+    code.sub(rsp, ABI_SHADOW_SPACE);
+    code.movaps(xword[code.ABI_PARAM3], xmm_value);
 
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value_ptr) {
-        ASSERT(vaddr == code->ABI_PARAM2 && value_ptr == code->ABI_PARAM3);
+        ASSERT(vaddr == code.ABI_PARAM2 && value_ptr == code.ABI_PARAM3);
     });
 
-    code->add(rsp, ABI_SHADOW_SPACE);
+    code.add(rsp, ABI_SHADOW_SPACE);
 #else
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code, [&](Xbyak::Reg64 vaddr, Xbyak::Reg64 value0, Xbyak::Reg64 value1) {
-        ASSERT(vaddr == code->ABI_PARAM2 && value0 == code->ABI_PARAM3 && value1 == code->ABI_PARAM4);
+        ASSERT(vaddr == code.ABI_PARAM2 && value0 == code.ABI_PARAM3 && value1 == code.ABI_PARAM4);
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         ctx.reg_alloc.Use(args[0], ABI_PARAM2);
         ctx.reg_alloc.ScratchGpr({ABI_PARAM3});
         ctx.reg_alloc.ScratchGpr({ABI_PARAM4});
-        if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
             Xbyak::Xmm xmm_value = ctx.reg_alloc.UseXmm(args[1]);
-            code->movq(code->ABI_PARAM3, xmm_value);
-            code->pextrq(code->ABI_PARAM4, xmm_value, 1);
+            code.movq(code.ABI_PARAM3, xmm_value);
+            code.pextrq(code.ABI_PARAM4, xmm_value, 1);
         } else {
             Xbyak::Xmm xmm_value = ctx.reg_alloc.UseScratchXmm(args[1]);
-            code->movq(code->ABI_PARAM3, xmm_value);
-            code->punpckhqdq(xmm_value, xmm_value);
-            code->movq(code->ABI_PARAM4, xmm_value);
+            code.movq(code.ABI_PARAM3, xmm_value);
+            code.punpckhqdq(xmm_value, xmm_value);
+            code.movq(code.ABI_PARAM4, xmm_value);
         }
         ctx.reg_alloc.EndOfAllocScope();
         ctx.reg_alloc.HostCall(nullptr);
@@ -454,35 +454,35 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor) {
-    code->SwitchMxcsrOnExit();
+    code.SwitchMxcsrOnExit();
     DEVIRT(conf.callbacks, &A64::UserCallbacks::InterpreterFallback).EmitCall(code, [&](Xbyak::Reg64 param1, Xbyak::Reg64 param2) {
-        code->mov(param1, A64::LocationDescriptor{terminal.next}.PC());
-        code->mov(qword[r15 + offsetof(A64JitState, pc)], param1);
-        code->mov(param2.cvt32(), terminal.num_instructions);
+        code.mov(param1, A64::LocationDescriptor{terminal.next}.PC());
+        code.mov(qword[r15 + offsetof(A64JitState, pc)], param1);
+        code.mov(param2.cvt32(), terminal.num_instructions);
     });
-    code->ReturnFromRunCode(true); // TODO: Check cycles
+    code.ReturnFromRunCode(true); // TODO: Check cycles
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::ReturnToDispatch, IR::LocationDescriptor) {
-    code->ReturnFromRunCode();
+    code.ReturnFromRunCode();
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlock terminal, IR::LocationDescriptor) {
-    code->cmp(qword[r15 + offsetof(A64JitState, cycles_remaining)], 0);
+    code.cmp(qword[r15 + offsetof(A64JitState, cycles_remaining)], 0);
 
-    patch_information[terminal.next].jg.emplace_back(code->getCurr());
+    patch_information[terminal.next].jg.emplace_back(code.getCurr());
     if (auto next_bb = GetBasicBlock(terminal.next)) {
         EmitPatchJg(terminal.next, next_bb->entrypoint);
     } else {
         EmitPatchJg(terminal.next);
     }
-    code->mov(rax, A64::LocationDescriptor{terminal.next}.PC());
-    code->mov(qword[r15 + offsetof(A64JitState, pc)], rax);
-    code->ForceReturnFromRunCode();
+    code.mov(rax, A64::LocationDescriptor{terminal.next}.PC());
+    code.mov(qword[r15 + offsetof(A64JitState, pc)], rax);
+    code.ForceReturnFromRunCode();
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlockFast terminal, IR::LocationDescriptor) {
-    patch_information[terminal.next].jmp.emplace_back(code->getCurr());
+    patch_information[terminal.next].jmp.emplace_back(code.getCurr());
     if (auto next_bb = GetBasicBlock(terminal.next)) {
         EmitPatchJmp(terminal.next, next_bb->entrypoint);
     } else {
@@ -493,20 +493,20 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlockFast terminal, IR::Location
 void A64EmitX64::EmitTerminalImpl(IR::Term::PopRSBHint, IR::LocationDescriptor) {
     // This calculation has to match up with A64::LocationDescriptor::UniqueHash
     // TODO: Optimization is available here based on known state of FPSCR_mode and CPSR_et.
-    code->mov(rcx, qword[r15 + offsetof(A64JitState, pc)]);
-    code->mov(ebx, dword[r15 + offsetof(A64JitState, fpcr)]);
-    code->and_(ebx, A64::LocationDescriptor::FPCR_MASK);
-    code->shl(ebx, 37);
-    code->or_(rbx, rcx);
+    code.mov(rcx, qword[r15 + offsetof(A64JitState, pc)]);
+    code.mov(ebx, dword[r15 + offsetof(A64JitState, fpcr)]);
+    code.and_(ebx, A64::LocationDescriptor::FPCR_MASK);
+    code.shl(ebx, 37);
+    code.or_(rbx, rcx);
 
-    code->mov(eax, dword[r15 + offsetof(A64JitState, rsb_ptr)]);
-    code->sub(eax, 1);
-    code->and_(eax, u32(A64JitState::RSBPtrMask));
-    code->mov(dword[r15 + offsetof(A64JitState, rsb_ptr)], eax);
-    code->cmp(rbx, qword[r15 + offsetof(A64JitState, rsb_location_descriptors) + rax * sizeof(u64)]);
-    code->jne(code->GetReturnFromRunCodeAddress());
-    code->mov(rax, qword[r15 + offsetof(A64JitState, rsb_codeptrs) + rax * sizeof(u64)]);
-    code->jmp(rax);
+    code.mov(eax, dword[r15 + offsetof(A64JitState, rsb_ptr)]);
+    code.sub(eax, 1);
+    code.and_(eax, u32(A64JitState::RSBPtrMask));
+    code.mov(dword[r15 + offsetof(A64JitState, rsb_ptr)], eax);
+    code.cmp(rbx, qword[r15 + offsetof(A64JitState, rsb_location_descriptors) + rax * sizeof(u64)]);
+    code.jne(code.GetReturnFromRunCodeAddress());
+    code.mov(rax, qword[r15 + offsetof(A64JitState, rsb_codeptrs) + rax * sizeof(u64)]);
+    code.jmp(rax);
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor initial_location) {
@@ -518,7 +518,7 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor 
     default:
         Xbyak::Label pass = EmitCond(terminal.if_);
         EmitTerminal(terminal.else_, initial_location);
-        code->L(pass);
+        code.L(pass);
         EmitTerminal(terminal.then_, initial_location);
         break;
     }
@@ -526,50 +526,50 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor 
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::CheckBit terminal, IR::LocationDescriptor initial_location) {
     Xbyak::Label fail;
-    code->cmp(code->byte[r15 + offsetof(A64JitState, check_bit)], u8(0));
-    code->jz(fail);
+    code.cmp(code.byte[r15 + offsetof(A64JitState, check_bit)], u8(0));
+    code.jz(fail);
     EmitTerminal(terminal.then_, initial_location);
-    code->L(fail);
+    code.L(fail);
     EmitTerminal(terminal.else_, initial_location);
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::CheckHalt terminal, IR::LocationDescriptor initial_location) {
-    code->cmp(code->byte[r15 + offsetof(A64JitState, halt_requested)], u8(0));
-    code->jne(code->GetForceReturnFromRunCodeAddress());
+    code.cmp(code.byte[r15 + offsetof(A64JitState, halt_requested)], u8(0));
+    code.jne(code.GetForceReturnFromRunCodeAddress());
     EmitTerminal(terminal.else_, initial_location);
 }
 
 void A64EmitX64::EmitPatchJg(const IR::LocationDescriptor& target_desc, CodePtr target_code_ptr) {
-    const CodePtr patch_location = code->getCurr();
+    const CodePtr patch_location = code.getCurr();
     if (target_code_ptr) {
-        code->jg(target_code_ptr);
+        code.jg(target_code_ptr);
     } else {
-        code->mov(rax, A64::LocationDescriptor{target_desc}.PC());
-        code->mov(qword[r15 + offsetof(A64JitState, pc)], rax);
-        code->jg(code->GetReturnFromRunCodeAddress());
+        code.mov(rax, A64::LocationDescriptor{target_desc}.PC());
+        code.mov(qword[r15 + offsetof(A64JitState, pc)], rax);
+        code.jg(code.GetReturnFromRunCodeAddress());
     }
-    code->EnsurePatchLocationSize(patch_location, 30); // TODO: Reduce size
+    code.EnsurePatchLocationSize(patch_location, 30); // TODO: Reduce size
 }
 
 void A64EmitX64::EmitPatchJmp(const IR::LocationDescriptor& target_desc, CodePtr target_code_ptr) {
-    const CodePtr patch_location = code->getCurr();
+    const CodePtr patch_location = code.getCurr();
     if (target_code_ptr) {
-        code->jmp(target_code_ptr);
+        code.jmp(target_code_ptr);
     } else {
-        code->mov(rax, A64::LocationDescriptor{target_desc}.PC());
-        code->mov(qword[r15 + offsetof(A64JitState, pc)], rax);
-        code->jmp(code->GetReturnFromRunCodeAddress());
+        code.mov(rax, A64::LocationDescriptor{target_desc}.PC());
+        code.mov(qword[r15 + offsetof(A64JitState, pc)], rax);
+        code.jmp(code.GetReturnFromRunCodeAddress());
     }
-    code->EnsurePatchLocationSize(patch_location, 30); // TODO: Reduce size
+    code.EnsurePatchLocationSize(patch_location, 30); // TODO: Reduce size
 }
 
 void A64EmitX64::EmitPatchMovRcx(CodePtr target_code_ptr) {
     if (!target_code_ptr) {
-        target_code_ptr = code->GetReturnFromRunCodeAddress();
+        target_code_ptr = code.GetReturnFromRunCodeAddress();
     }
-    const CodePtr patch_location = code->getCurr();
-    code->mov(code->rcx, reinterpret_cast<u64>(target_code_ptr));
-    code->EnsurePatchLocationSize(patch_location, 10);
+    const CodePtr patch_location = code.getCurr();
+    code.mov(code.rcx, reinterpret_cast<u64>(target_code_ptr));
+    code.EnsurePatchLocationSize(patch_location, 10);
 }
 
 } // namespace Dynarmic::BackendX64

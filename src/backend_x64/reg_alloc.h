@@ -91,7 +91,7 @@ private:
 
 class RegAlloc final {
 public:
-    explicit RegAlloc(BlockOfCode* code, size_t num_spills, std::function<Xbyak::Address(HostLoc)> spill_to_addr)
+    explicit RegAlloc(BlockOfCode& code, size_t num_spills, std::function<Xbyak::Address(HostLoc)> spill_to_addr)
         : hostloc_info(NonSpillHostLocCount + num_spills), code(code), spill_to_addr(std::move(spill_to_addr)) {}
 
     std::array<Argument, 3> GetArgumentInfo(IR::Inst* inst);
@@ -144,7 +144,7 @@ private:
     HostLocInfo& LocInfo(HostLoc loc);
     const HostLocInfo& LocInfo(HostLoc loc) const;
 
-    BlockOfCode* code = nullptr;
+    BlockOfCode& code;
     std::function<Xbyak::Address(HostLoc)> spill_to_addr;
     void EmitMove(HostLoc to, HostLoc from);
     void EmitExchange(HostLoc a, HostLoc b);

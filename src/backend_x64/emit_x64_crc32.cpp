@@ -42,35 +42,35 @@ static void EmitCRC32ISO(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, co
 }
 
 void EmitX64::EmitCRC32Castagnoli8(EmitContext& ctx, IR::Inst* inst) {
-    EmitCRC32Castagnoli(*code, ctx, inst, 8);
+    EmitCRC32Castagnoli(code, ctx, inst, 8);
 }
 
 void EmitX64::EmitCRC32Castagnoli16(EmitContext& ctx, IR::Inst* inst) {
-    EmitCRC32Castagnoli(*code, ctx, inst, 16);
+    EmitCRC32Castagnoli(code, ctx, inst, 16);
 }
 
 void EmitX64::EmitCRC32Castagnoli32(EmitContext& ctx, IR::Inst* inst) {
-    EmitCRC32Castagnoli(*code, ctx, inst, 32);
+    EmitCRC32Castagnoli(code, ctx, inst, 32);
 }
 
 void EmitX64::EmitCRC32Castagnoli64(EmitContext& ctx, IR::Inst* inst) {
-    EmitCRC32Castagnoli(*code, ctx, inst, 64);
+    EmitCRC32Castagnoli(code, ctx, inst, 64);
 }
 
 void EmitX64::EmitCRC32ISO8(EmitContext& ctx, IR::Inst* inst) {
-    EmitCRC32ISO(*code, ctx, inst, 8);
+    EmitCRC32ISO(code, ctx, inst, 8);
 }
 
 void EmitX64::EmitCRC32ISO16(EmitContext& ctx, IR::Inst* inst) {
-    EmitCRC32ISO(*code, ctx, inst, 16);
+    EmitCRC32ISO(code, ctx, inst, 16);
 }
 
 void EmitX64::EmitCRC32ISO32(EmitContext& ctx, IR::Inst* inst) {
-    EmitCRC32ISO(*code, ctx, inst, 32);
+    EmitCRC32ISO(code, ctx, inst, 32);
 }
 
 void EmitX64::EmitCRC32ISO64(EmitContext& ctx, IR::Inst* inst) {
-    EmitCRC32ISO(*code, ctx, inst, 64);
+    EmitCRC32ISO(code, ctx, inst, 64);
 }
 
 } // namespace Dynarmic::BackendX64

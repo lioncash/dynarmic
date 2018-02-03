@@ -55,7 +55,7 @@ static FrameInfo CalculateFrameInfo(size_t num_gprs, size_t num_xmms, size_t fra
 }
 
 template<typename RegisterArrayT>
-void ABI_PushRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t frame_size, const RegisterArrayT& regs) {
+void ABI_PushRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size, const RegisterArrayT& regs) {
     using namespace Xbyak::util;
 
     const size_t num_gprs = std::count_if(regs.begin(), regs.end(), HostLocIsGPR);
@@ -65,25 +65,25 @@ void ABI_PushRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t frame_si
 
     for (HostLoc gpr : regs) {
         if (HostLocIsGPR(gpr)) {
-            code->push(HostLocToReg64(gpr));
+            code.push(HostLocToReg64(gpr));
         }
     }
 
     if (frame_info.stack_subtraction != 0) {
-        code->sub(rsp, u32(frame_info.stack_subtraction));
+        code.sub(rsp, u32(frame_info.stack_subtraction));
     }
 
     size_t xmm_offset = frame_info.xmm_offset;
     for (HostLoc xmm : regs) {
         if (HostLocIsXMM(xmm)) {
-            code->movaps(code->xword[rsp + xmm_offset], HostLocToXmm(xmm));
+            code.movaps(code.xword[rsp + xmm_offset], HostLocToXmm(xmm));
             xmm_offset += XMM_SIZE;
         }
     }
 }
 
 template<typename RegisterArrayT>
-void ABI_PopRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t frame_size, const RegisterArrayT& regs) {
+void ABI_PopRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size, const RegisterArrayT& regs) {
     using namespace Xbyak::util;
 
     const size_t num_gprs = std::count_if(regs.begin(), regs.end(), HostLocIsGPR);
@@ -94,35 +94,35 @@ void ABI_PopRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t frame_siz
     size_t xmm_offset = frame_info.xmm_offset;
     for (HostLoc xmm : regs) {
         if (HostLocIsXMM(xmm)) {
-            code->movaps(HostLocToXmm(xmm), code->xword[rsp + xmm_offset]);
+            code.movaps(HostLocToXmm(xmm), code.xword[rsp + xmm_offset]);
             xmm_offset += XMM_SIZE;
         }
     }
 
     if (frame_info.stack_subtraction != 0) {
-        code->add(rsp, u32(frame_info.stack_subtraction));
+        code.add(rsp, u32(frame_info.stack_subtraction));
     }
 
     for (HostLoc gpr : Common::Reverse(regs)) {
         if (HostLocIsGPR(gpr)) {
-            code->pop(HostLocToReg64(gpr));
+            code.pop(HostLocToReg64(gpr));
         }
     }
 }
 
-void ABI_PushCalleeSaveRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t frame_size) {
+void ABI_PushCalleeSaveRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size) {
     ABI_PushRegistersAndAdjustStack(code, frame_size, ABI_ALL_CALLEE_SAVE);
 }
 
-void ABI_PopCalleeSaveRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t frame_size) {
+void ABI_PopCalleeSaveRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size) {
     ABI_PopRegistersAndAdjustStack(code, frame_size, ABI_ALL_CALLEE_SAVE);
 }
 
-void ABI_PushCallerSaveRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t frame_size) {
+void ABI_PushCallerSaveRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size) {
     ABI_PushRegistersAndAdjustStack(code, frame_size, ABI_ALL_CALLER_SAVE);
 }
 
-void ABI_PopCallerSaveRegistersAndAdjustStack(Xbyak::CodeGenerator* code, size_t frame_size) {
+void ABI_PopCallerSaveRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size) {
     ABI_PopRegistersAndAdjustStack(code, frame_size, ABI_ALL_CALLER_SAVE);
 }
 

@@ -22,7 +22,7 @@ class BlockOfCode;
 /// already exists, its memory location is reused.
 class ConstantPool final {
 public:
-    ConstantPool(BlockOfCode* code, size_t size);
+    ConstantPool(BlockOfCode& code, size_t size);
 
     Xbyak::Address GetConstant(u64 constant);
 
@@ -31,7 +31,7 @@ private:
 
     std::map<u64, void*> constant_info;
 
-    BlockOfCode* code;
+    BlockOfCode& code;
     size_t pool_size;
     u8* pool_begin;
     u8* current_pool_ptr;

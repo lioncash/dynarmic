@@ -26,15 +26,15 @@ void EmitX64::EmitSignedSaturatedAdd(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg32 addend = ctx.reg_alloc.UseGpr(args[1]).cvt32();
     Xbyak::Reg32 overflow = ctx.reg_alloc.ScratchGpr().cvt32();
 
-    code->mov(overflow, result);
-    code->shr(overflow, 31);
-    code->add(overflow, 0x7FFFFFFF);
+    code.mov(overflow, result);
+    code.shr(overflow, 31);
+    code.add(overflow, 0x7FFFFFFF);
     // overflow now contains 0x7FFFFFFF if a was positive, or 0x80000000 if a was negative
-    code->add(result, addend);
-    code->cmovo(result, overflow);
+    code.add(result, addend);
+    code.cmovo(result, overflow);
 
     if (overflow_inst) {
-        code->seto(overflow.cvt8());
+        code.seto(overflow.cvt8());
 
         ctx.reg_alloc.DefineValue(overflow_inst, overflow);
         ctx.EraseInstruction(overflow_inst);
@@ -52,15 +52,15 @@ void EmitX64::EmitSignedSaturatedSub(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg32 subend = ctx.reg_alloc.UseGpr(args[1]).cvt32();
     Xbyak::Reg32 overflow = ctx.reg_alloc.ScratchGpr().cvt32();
 
-    code->mov(overflow, result);
-    code->shr(overflow, 31);
-    code->add(overflow, 0x7FFFFFFF);
+    code.mov(overflow, result);
+    code.shr(overflow, 31);
+    code.add(overflow, 0x7FFFFFFF);
     // overflow now contains 0x7FFFFFFF if a was positive, or 0x80000000 if a was negative
-    code->sub(result, subend);
-    code->cmovo(result, overflow);
+    code.sub(result, subend);
+    code.cmovo(result, overflow);
 
     if (overflow_inst) {
-        code->seto(overflow.cvt8());
+        code.seto(overflow.cvt8());
 
         ctx.reg_alloc.DefineValue(overflow_inst, overflow);
         ctx.EraseInstruction(overflow_inst);
@@ -83,14 +83,14 @@ void EmitX64::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg32 overflow = ctx.reg_alloc.ScratchGpr().cvt32();
 
     // Pseudocode: result = clamp(reg_a, 0, saturated_value);
-    code->xor_(overflow, overflow);
-    code->cmp(reg_a, saturated_value);
-    code->mov(result, saturated_value);
-    code->cmovle(result, overflow);
-    code->cmovbe(result, reg_a);
+    code.xor_(overflow, overflow);
+    code.cmp(reg_a, saturated_value);
+    code.mov(result, saturated_value);
+    code.cmovle(result, overflow);
+    code.cmovbe(result, reg_a);
 
     if (overflow_inst) {
-        code->seta(overflow.cvt8());
+        code.seta(overflow.cvt8());
 
         ctx.reg_alloc.DefineValue(overflow_inst, overflow);
         ctx.EraseInstruction(overflow_inst);
@@ -126,20 +126,20 @@ void EmitX64::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
 
     // overflow now contains a value between 0 and mask if it was originally between {negative,positive}_saturated_value.
-    code->lea(overflow, code->ptr[reg_a.cvt64() + negative_saturated_value]);
+    code.lea(overflow, code.ptr[reg_a.cvt64() + negative_saturated_value]);
 
     // Put the appropriate saturated value in result
-    code->cmp(reg_a, positive_saturated_value);
-    code->mov(tmp, positive_saturated_value);
-    code->mov(result, sext_negative_satured_value);
-    code->cmovg(result, tmp);
+    code.cmp(reg_a, positive_saturated_value);
+    code.mov(tmp, positive_saturated_value);
+    code.mov(result, sext_negative_satured_value);
+    code.cmovg(result, tmp);
 
     // Do the saturation
-    code->cmp(overflow, mask);
-    code->cmovbe(result, reg_a);
+    code.cmp(overflow, mask);
+    code.cmovbe(result, reg_a);
 
     if (overflow_inst) {
-        code->seta(overflow.cvt8());
+        code.seta(overflow.cvt8());
 
         ctx.reg_alloc.DefineValue(overflow_inst, overflow);
         ctx.EraseInstruction(overflow_inst);

@@ -32,7 +32,7 @@ void EmitContext::EraseInstruction(IR::Inst* inst) {
     inst->ClearArgs();
 }
 
-EmitX64::EmitX64(BlockOfCode* code)
+EmitX64::EmitX64(BlockOfCode& code)
     : code(code) {}
 
 EmitX64::~EmitX64() = default;
@@ -48,7 +48,7 @@ void EmitX64::EmitVoid(EmitContext&, IR::Inst*) {
 }
 
 void EmitX64::EmitBreakpoint(EmitContext&, IR::Inst*) {
-    code->int3();
+    code.int3();
 }
 
 void EmitX64::EmitIdentity(EmitContext& ctx, IR::Inst* inst) {
@@ -64,21 +64,21 @@ void EmitX64::PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, I
     auto iter = block_descriptors.find(target);
     CodePtr target_code_ptr = iter != block_descriptors.end()
                             ? iter->second.entrypoint
-                            : code->GetReturnFromRunCodeAddress();
+                            : code.GetReturnFromRunCodeAddress();
 
-    code->mov(index_reg.cvt32(), dword[r15 + code->GetJitStateInfo().offsetof_rsb_ptr]);
+    code.mov(index_reg.cvt32(), dword[r15 + code.GetJitStateInfo().offsetof_rsb_ptr]);
 
-    code->mov(loc_desc_reg, target.Value());
+    code.mov(loc_desc_reg, target.Value());
 
-    patch_information[target].mov_rcx.emplace_back(code->getCurr());
+    patch_information[target].mov_rcx.emplace_back(code.getCurr());
     EmitPatchMovRcx(target_code_ptr);
 
-    code->mov(qword[r15 + index_reg * 8 + code->GetJitStateInfo().offsetof_rsb_location_descriptors], loc_desc_reg);
-    code->mov(qword[r15 + index_reg * 8 + code->GetJitStateInfo().offsetof_rsb_codeptrs], rcx);
+    code.mov(qword[r15 + index_reg * 8 + code.GetJitStateInfo().offsetof_rsb_location_descriptors], loc_desc_reg);
+    code.mov(qword[r15 + index_reg * 8 + code.GetJitStateInfo().offsetof_rsb_codeptrs], rcx);
 
-    code->add(index_reg.cvt32(), 1);
-    code->and_(index_reg.cvt32(), u32(code->GetJitStateInfo().rsb_ptr_mask));
-    code->mov(dword[r15 + code->GetJitStateInfo().offsetof_rsb_ptr], index_reg.cvt32());
+    code.add(index_reg.cvt32(), 1);
+    code.and_(index_reg.cvt32(), u32(code.GetJitStateInfo().rsb_ptr_mask));
+    code.mov(dword[r15 + code.GetJitStateInfo().offsetof_rsb_ptr], index_reg.cvt32());
 }
 
 void EmitX64::EmitPushRSB(EmitContext& ctx, IR::Inst* inst) {
@@ -126,9 +126,9 @@ void EmitX64::EmitGetNZCVFromOp(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Reg64 nzcv = ctx.reg_alloc.ScratchGpr({HostLoc::RAX});
     Xbyak::Reg value = ctx.reg_alloc.UseGpr(args[0]).changeBit(bitsize);
-    code->cmp(value, 0);
-    code->lahf();
-    code->seto(code->al);
+    code.cmp(value, 0);
+    code.lahf();
+    code.seto(code.al);
     ctx.reg_alloc.DefineValue(inst, nzcv);
 }
 
@@ -142,28 +142,28 @@ void EmitX64::EmitNZCVFromPackedFlags(EmitContext& ctx, IR::Inst* inst) {
         value |= Common::Bit<30>(args[0].GetImmediateU32()) ? (1 << 14) : 0;
         value |= Common::Bit<29>(args[0].GetImmediateU32()) ? (1 << 8) : 0;
         value |= Common::Bit<28>(args[0].GetImmediateU32()) ? (1 << 0) : 0;
-        code->mov(nzcv, value);
+        code.mov(nzcv, value);
         ctx.reg_alloc.DefineValue(inst, nzcv);
     } else {
         Xbyak::Reg32 nzcv = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
         // TODO: Optimize
-        code->shr(nzcv, 28);
-        code->imul(nzcv, nzcv, 0b00010000'10000001);
-        code->and_(nzcv.cvt8(), 1);
+        code.shr(nzcv, 28);
+        code.imul(nzcv, nzcv, 0b00010000'10000001);
+        code.and_(nzcv.cvt8(), 1);
         ctx.reg_alloc.DefineValue(inst, nzcv);
     }
 }
 
 void EmitX64::EmitAddCycles(size_t cycles) {
     ASSERT(cycles < std::numeric_limits<u32>::max());
-    code->sub(qword[r15 + code->GetJitStateInfo().offsetof_cycles_remaining], static_cast<u32>(cycles));
+    code.sub(qword[r15 + code.GetJitStateInfo().offsetof_cycles_remaining], static_cast<u32>(cycles));
 }
 
 Xbyak::Label EmitX64::EmitCond(IR::Cond cond) {
     Xbyak::Label label;
 
     const Xbyak::Reg32 cpsr = eax;
-    code->mov(cpsr, dword[r15 + code->GetJitStateInfo().offsetof_CPSR_nzcv]);
+    code.mov(cpsr, dword[r15 + code.GetJitStateInfo().offsetof_CPSR_nzcv]);
 
     constexpr size_t n_shift = 31;
     constexpr size_t z_shift = 30;
@@ -176,91 +176,91 @@ Xbyak::Label EmitX64::EmitCond(IR::Cond cond) {
 
     switch (cond) {
     case IR::Cond::EQ: //z
-        code->test(cpsr, z_mask);
-        code->jnz(label);
+        code.test(cpsr, z_mask);
+        code.jnz(label);
         break;
     case IR::Cond::NE: //!z
-        code->test(cpsr, z_mask);
-        code->jz(label);
+        code.test(cpsr, z_mask);
+        code.jz(label);
         break;
     case IR::Cond::CS: //c
-        code->test(cpsr, c_mask);
-        code->jnz(label);
+        code.test(cpsr, c_mask);
+        code.jnz(label);
         break;
     case IR::Cond::CC: //!c
-        code->test(cpsr, c_mask);
-        code->jz(label);
+        code.test(cpsr, c_mask);
+        code.jz(label);
         break;
     case IR::Cond::MI: //n
-        code->test(cpsr, n_mask);
-        code->jnz(label);
+        code.test(cpsr, n_mask);
+        code.jnz(label);
         break;
     case IR::Cond::PL: //!n
-        code->test(cpsr, n_mask);
-        code->jz(label);
+        code.test(cpsr, n_mask);
+        code.jz(label);
         break;
     case IR::Cond::VS: //v
-        code->test(cpsr, v_mask);
-        code->jnz(label);
+        code.test(cpsr, v_mask);
+        code.jnz(label);
         break;
     case IR::Cond::VC: //!v
-        code->test(cpsr, v_mask);
-        code->jz(label);
+        code.test(cpsr, v_mask);
+        code.jz(label);
         break;
     case IR::Cond::HI: { //c & !z
-        code->and_(cpsr, z_mask | c_mask);
-        code->cmp(cpsr, c_mask);
-        code->je(label);
+        code.and_(cpsr, z_mask | c_mask);
+        code.cmp(cpsr, c_mask);
+        code.je(label);
         break;
     }
     case IR::Cond::LS: { //!c | z
-        code->and_(cpsr, z_mask | c_mask);
-        code->cmp(cpsr, c_mask);
-        code->jne(label);
+        code.and_(cpsr, z_mask | c_mask);
+        code.cmp(cpsr, c_mask);
+        code.jne(label);
         break;
     }
     case IR::Cond::GE: { // n == v
-        code->and_(cpsr, n_mask | v_mask);
-        code->jz(label);
-        code->cmp(cpsr, n_mask | v_mask);
-        code->je(label);
+        code.and_(cpsr, n_mask | v_mask);
+        code.jz(label);
+        code.cmp(cpsr, n_mask | v_mask);
+        code.je(label);
         break;
     }
     case IR::Cond::LT: { // n != v
         Xbyak::Label fail;
-        code->and_(cpsr, n_mask | v_mask);
-        code->jz(fail);
-        code->cmp(cpsr, n_mask | v_mask);
-        code->jne(label);
-        code->L(fail);
+        code.and_(cpsr, n_mask | v_mask);
+        code.jz(fail);
+        code.cmp(cpsr, n_mask | v_mask);
+        code.jne(label);
+        code.L(fail);
         break;
     }
     case IR::Cond::GT: { // !z & (n == v)
         const Xbyak::Reg32 tmp1 = ebx;
         const Xbyak::Reg32 tmp2 = esi;
-        code->mov(tmp1, cpsr);
-        code->mov(tmp2, cpsr);
-        code->shr(tmp1, n_shift);
-        code->shr(tmp2, v_shift);
-        code->shr(cpsr, z_shift);
-        code->xor_(tmp1, tmp2);
-        code->or_(tmp1, cpsr);
-        code->test(tmp1, 1);
-        code->jz(label);
+        code.mov(tmp1, cpsr);
+        code.mov(tmp2, cpsr);
+        code.shr(tmp1, n_shift);
+        code.shr(tmp2, v_shift);
+        code.shr(cpsr, z_shift);
+        code.xor_(tmp1, tmp2);
+        code.or_(tmp1, cpsr);
+        code.test(tmp1, 1);
+        code.jz(label);
         break;
     }
     case IR::Cond::LE: { // z | (n != v)
         const Xbyak::Reg32 tmp1 = ebx;
         const Xbyak::Reg32 tmp2 = esi;
-        code->mov(tmp1, cpsr);
-        code->mov(tmp2, cpsr);
-        code->shr(tmp1, n_shift);
-        code->shr(tmp2, v_shift);
-        code->shr(cpsr, z_shift);
-        code->xor_(tmp1, tmp2);
-        code->or_(tmp1, cpsr);
-        code->test(tmp1, 1);
-        code->jnz(label);
+        code.mov(tmp1, cpsr);
+        code.mov(tmp2, cpsr);
+        code.shr(tmp1, n_shift);
+        code.shr(tmp2, v_shift);
+        code.shr(cpsr, z_shift);
+        code.xor_(tmp1, tmp2);
+        code.or_(tmp1, cpsr);
+        code.test(tmp1, 1);
+        code.jnz(label);
         break;
     }
     default:
@@ -282,7 +282,7 @@ void EmitX64::EmitCondPrelude(const IR::Block& block) {
     Xbyak::Label pass = EmitCond(block.GetCondition());
     EmitAddCycles(block.ConditionFailedCycleCount());
     EmitTerminal(IR::Term::LinkBlock{block.ConditionFailedLocation()}, block.Location());
-    code->L(pass);
+    code.L(pass);
 }
 
 void EmitX64::EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor initial_location) {
@@ -297,25 +297,25 @@ void EmitX64::EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor initial
 }
 
 void EmitX64::Patch(const IR::LocationDescriptor& desc, CodePtr bb) {
-    const CodePtr save_code_ptr = code->getCurr();
+    const CodePtr save_code_ptr = code.getCurr();
     const PatchInformation& patch_info = patch_information[desc];
 
     for (CodePtr location : patch_info.jg) {
-        code->SetCodePtr(location);
+        code.SetCodePtr(location);
         EmitPatchJg(desc, bb);
     }
 
     for (CodePtr location : patch_info.jmp) {
-        code->SetCodePtr(location);
+        code.SetCodePtr(location);
         EmitPatchJmp(desc, bb);
     }
 
     for (CodePtr location : patch_info.mov_rcx) {
-        code->SetCodePtr(location);
+        code.SetCodePtr(location);
         EmitPatchMovRcx(bb);
     }
 
-    code->SetCodePtr(save_code_ptr);
+    code.SetCodePtr(save_code_ptr);
 }
 
 void EmitX64::Unpatch(const IR::LocationDescriptor& desc) {

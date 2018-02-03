@@ -17,13 +17,13 @@ namespace Dynarmic::BackendX64 {
 using namespace Xbyak::util;
 
 template <typename Function>
-static void EmitVectorOperation(BlockOfCode* code, EmitContext& ctx, IR::Inst* inst, Function fn) {
+static void EmitVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
-    (code->*fn)(xmm_a, xmm_b);
+    (code.*fn)(xmm_a, xmm_b);
 
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
@@ -35,15 +35,15 @@ void EmitX64::EmitVectorGetElement8(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         Xbyak::Reg32 dest = ctx.reg_alloc.ScratchGpr().cvt32();
-        code->pextrb(dest, source, index);
+        code.pextrb(dest, source, index);
         ctx.reg_alloc.DefineValue(inst, dest);
     } else {
         Xbyak::Reg32 dest = ctx.reg_alloc.ScratchGpr().cvt32();
-        code->pextrw(dest, source, index / 2);
+        code.pextrw(dest, source, index / 2);
         if (index % 2 == 1) {
-            code->shr(dest, 8);
+            code.shr(dest, 8);
         }
         ctx.reg_alloc.DefineValue(inst, dest);
     }
@@ -56,7 +56,7 @@ void EmitX64::EmitVectorGetElement16(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
     Xbyak::Reg32 dest = ctx.reg_alloc.ScratchGpr().cvt32();
-    code->pextrw(dest, source, index);
+    code.pextrw(dest, source, index);
     ctx.reg_alloc.DefineValue(inst, dest);
 }
 
@@ -69,14 +69,14 @@ void EmitX64::EmitVectorGetElement32(EmitContext& ctx, IR::Inst* inst) {
 
     if (index == 0) {
         Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
-        code->movd(dest, source);
-    } else if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.movd(dest, source);
+    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
-        code->pextrd(dest, source, index);
+        code.pextrd(dest, source, index);
     } else {
         Xbyak::Xmm source = ctx.reg_alloc.UseScratchXmm(args[0]);
-        code->pshufd(source, source, index);
-        code->movd(dest, source);
+        code.pshufd(source, source, index);
+        code.movd(dest, source);
     }
 
     ctx.reg_alloc.DefineValue(inst, dest);
@@ -91,14 +91,14 @@ void EmitX64::EmitVectorGetElement64(EmitContext& ctx, IR::Inst* inst) {
 
     if (index == 0) {
         Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
-        code->movq(dest, source);
-    } else if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.movq(dest, source);
+    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
-        code->pextrq(dest, source, 1);
+        code.pextrq(dest, source, 1);
     } else {
         Xbyak::Xmm source = ctx.reg_alloc.UseScratchXmm(args[0]);
-        code->punpckhqdq(source, source);
-        code->movq(dest, source);
+        code.punpckhqdq(source, source);
+        code.movq(dest, source);
     }
 
     ctx.reg_alloc.DefineValue(inst, dest);
@@ -109,11 +109,11 @@ void EmitX64::EmitVectorSetElement8(EmitContext& ctx, IR::Inst* inst) {
     ASSERT(args[1].IsImmediate());
     u8 index = args[1].GetImmediateU8();
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Reg8 source_elem = ctx.reg_alloc.UseGpr(args[2]).cvt8();
 
-        code->pinsrb(source_vector, source_elem.cvt32(), index);
+        code.pinsrb(source_vector, source_elem.cvt32(), index);
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     } else {
@@ -121,17 +121,17 @@ void EmitX64::EmitVectorSetElement8(EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg32 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]).cvt32();
         Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
 
-        code->pextrw(tmp, source_vector, index / 2);
+        code.pextrw(tmp, source_vector, index / 2);
         if (index % 2 == 0) {
-            code->and_(tmp, 0xFF00);
-            code->and_(source_elem, 0x00FF);
-            code->or_(tmp, source_elem);
+            code.and_(tmp, 0xFF00);
+            code.and_(source_elem, 0x00FF);
+            code.or_(tmp, source_elem);
         } else {
-            code->and_(tmp, 0x00FF);
-            code->shl(source_elem, 8);
-            code->or_(tmp, source_elem);
+            code.and_(tmp, 0x00FF);
+            code.shl(source_elem, 8);
+            code.or_(tmp, source_elem);
         }
-        code->pinsrw(source_vector, tmp, index / 2);
+        code.pinsrw(source_vector, tmp, index / 2);
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     }
@@ -145,7 +145,7 @@ void EmitX64::EmitVectorSetElement16(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg16 source_elem = ctx.reg_alloc.UseGpr(args[2]).cvt16();
 
-    code->pinsrw(source_vector, source_elem.cvt32(), index);
+    code.pinsrw(source_vector, source_elem.cvt32(), index);
 
     ctx.reg_alloc.DefineValue(inst, source_vector);
 }
@@ -155,20 +155,20 @@ void EmitX64::EmitVectorSetElement32(EmitContext& ctx, IR::Inst* inst) {
     ASSERT(args[1].IsImmediate());
     u8 index = args[1].GetImmediateU8();
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Reg32 source_elem = ctx.reg_alloc.UseGpr(args[2]).cvt32();
 
-        code->pinsrd(source_vector, source_elem, index);
+        code.pinsrd(source_vector, source_elem, index);
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     } else {
         Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Reg32 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]).cvt32();
 
-        code->pinsrw(source_vector, source_elem, index * 2);
-        code->shr(source_elem, 16);
-        code->pinsrw(source_vector, source_elem, index * 2 + 1);
+        code.pinsrw(source_vector, source_elem, index * 2);
+        code.shr(source_elem, 16);
+        code.pinsrw(source_vector, source_elem, index * 2 + 1);
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     }
@@ -179,24 +179,24 @@ void EmitX64::EmitVectorSetElement64(EmitContext& ctx, IR::Inst* inst) {
     ASSERT(args[1].IsImmediate());
     u8 index = args[1].GetImmediateU8();
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Reg64 source_elem = ctx.reg_alloc.UseGpr(args[2]);
 
-        code->pinsrq(source_vector, source_elem, index);
+        code.pinsrq(source_vector, source_elem, index);
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     } else {
         Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Reg64 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]);
 
-        code->pinsrw(source_vector, source_elem.cvt32(), index * 4);
-        code->shr(source_elem, 16);
-        code->pinsrw(source_vector, source_elem.cvt32(), index * 4 + 1);
-        code->shr(source_elem, 16);
-        code->pinsrw(source_vector, source_elem.cvt32(), index * 4 + 2);
-        code->shr(source_elem, 16);
-        code->pinsrw(source_vector, source_elem.cvt32(), index * 4 + 3);
+        code.pinsrw(source_vector, source_elem.cvt32(), index * 4);
+        code.shr(source_elem, 16);
+        code.pinsrw(source_vector, source_elem.cvt32(), index * 4 + 1);
+        code.shr(source_elem, 16);
+        code.pinsrw(source_vector, source_elem.cvt32(), index * 4 + 2);
+        code.shr(source_elem, 16);
+        code.pinsrw(source_vector, source_elem.cvt32(), index * 4 + 3);
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     }
@@ -227,15 +227,15 @@ void EmitX64::EmitVectorLowerBroadcast8(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
         Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-        code->pxor(tmp, tmp);
-        code->pshufb(a, tmp);
-        code->movq(a, a);
+        code.pxor(tmp, tmp);
+        code.pshufb(a, tmp);
+        code.movq(a, a);
     } else {
-        code->punpcklbw(a, a);
-        code->pshuflw(a, a, 0);
+        code.punpcklbw(a, a);
+        code.pshuflw(a, a, 0);
     }
 
     ctx.reg_alloc.DefineValue(inst, a);
@@ -246,7 +246,7 @@ void EmitX64::EmitVectorLowerBroadcast16(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code->pshuflw(a, a, 0);
+    code.pshuflw(a, a, 0);
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
@@ -256,7 +256,7 @@ void EmitX64::EmitVectorLowerBroadcast32(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code->pshuflw(a, a, 0b01000100);
+    code.pshuflw(a, a, 0b01000100);
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
@@ -266,15 +266,15 @@ void EmitX64::EmitVectorBroadcast8(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
         Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-        code->pxor(tmp, tmp);
-        code->pshufb(a, tmp);
+        code.pxor(tmp, tmp);
+        code.pshufb(a, tmp);
     } else {
-        code->punpcklbw(a, a);
-        code->pshuflw(a, a, 0);
-        code->punpcklqdq(a, a);
+        code.punpcklbw(a, a);
+        code.pshuflw(a, a, 0);
+        code.punpcklqdq(a, a);
     }
 
     ctx.reg_alloc.DefineValue(inst, a);
@@ -285,8 +285,8 @@ void EmitX64::EmitVectorBroadcast16(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code->pshuflw(a, a, 0);
-    code->punpcklqdq(a, a);
+    code.pshuflw(a, a, 0);
+    code.punpcklqdq(a, a);
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
@@ -296,7 +296,7 @@ void EmitX64::EmitVectorBroadcast32(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code->pshufd(a, a, 0);
+    code.pshufd(a, a, 0);
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
@@ -306,7 +306,7 @@ void EmitX64::EmitVectorBroadcast64(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code->punpcklqdq(a, a);
+    code.punpcklqdq(a, a);
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
@@ -325,8 +325,8 @@ void EmitX64::EmitVectorNot(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Xmm xmm_b = ctx.reg_alloc.ScratchXmm();
 
-    code->pcmpeqw(xmm_b, xmm_b);
-    code->pxor(xmm_a, xmm_b);
+    code.pcmpeqw(xmm_b, xmm_b);
+    code.pxor(xmm_a, xmm_b);
 
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
@@ -344,7 +344,7 @@ void EmitX64::EmitVectorEqual32(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorEqual64(EmitContext& ctx, IR::Inst* inst) {
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pcmpeqq);
         return;
     }
@@ -355,9 +355,9 @@ void EmitX64::EmitVectorEqual64(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
     Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-    code->pcmpeqd(xmm_a, xmm_b);
-    code->pshufd(tmp, xmm_a, 0b10110001);
-    code->pand(xmm_a, tmp);
+    code.pcmpeqd(xmm_a, xmm_b);
+    code.pshufd(tmp, xmm_a, 0b10110001);
+    code.pand(xmm_a, tmp);
 
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
@@ -365,14 +365,14 @@ void EmitX64::EmitVectorEqual64(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorEqual128(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
         Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-        code->pcmpeqq(xmm_a, xmm_b);
-        code->pshufd(tmp, xmm_a, 0b01001110);
-        code->pand(xmm_a, tmp);
+        code.pcmpeqq(xmm_a, xmm_b);
+        code.pshufd(tmp, xmm_a, 0b01001110);
+        code.pand(xmm_a, tmp);
 
         ctx.reg_alloc.DefineValue(inst, xmm_a);
     } else {
@@ -380,11 +380,11 @@ void EmitX64::EmitVectorEqual128(EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
         Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-        code->pcmpeqd(xmm_a, xmm_b);
-        code->pshufd(tmp, xmm_a, 0b10110001);
-        code->pand(xmm_a, tmp);
-        code->pshufd(tmp, xmm_a, 0b01001110);
-        code->pand(xmm_a, tmp);
+        code.pcmpeqd(xmm_a, xmm_b);
+        code.pshufd(tmp, xmm_a, 0b10110001);
+        code.pand(xmm_a, tmp);
+        code.pshufd(tmp, xmm_a, 0b01001110);
+        code.pand(xmm_a, tmp);
 
         ctx.reg_alloc.DefineValue(inst, xmm_a);
     }
@@ -397,13 +397,13 @@ void EmitX64::EmitVectorLowerPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
     Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-    code->punpcklqdq(xmm_a, xmm_b);
-    code->movdqa(tmp, xmm_a);
-    code->psllw(xmm_a, 8);
-    code->paddw(xmm_a, tmp);
-    code->pxor(tmp, tmp);
-    code->psrlw(xmm_a, 8);
-    code->packuswb(xmm_a, tmp);
+    code.punpcklqdq(xmm_a, xmm_b);
+    code.movdqa(tmp, xmm_a);
+    code.psllw(xmm_a, 8);
+    code.paddw(xmm_a, tmp);
+    code.pxor(tmp, tmp);
+    code.psrlw(xmm_a, 8);
+    code.packuswb(xmm_a, tmp);
 
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
@@ -415,17 +415,17 @@ void EmitX64::EmitVectorLowerPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
     Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-    code->punpcklqdq(xmm_a, xmm_b);
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
-        code->pxor(tmp, tmp);
-        code->phaddw(xmm_a, tmp);
+    code.punpcklqdq(xmm_a, xmm_b);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        code.pxor(tmp, tmp);
+        code.phaddw(xmm_a, tmp);
     } else {
-        code->movdqa(tmp, xmm_a);
-        code->pslld(xmm_a, 16);
-        code->paddd(xmm_a, tmp);
-        code->pxor(tmp, tmp);
-        code->psrad(xmm_a, 16);
-        code->packssdw(xmm_a, tmp); // Note: packusdw is SSE4.1, hence the arithmetic shift above.
+        code.movdqa(tmp, xmm_a);
+        code.pslld(xmm_a, 16);
+        code.paddd(xmm_a, tmp);
+        code.pxor(tmp, tmp);
+        code.psrad(xmm_a, 16);
+        code.packssdw(xmm_a, tmp); // Note: packusdw is SSE4.1, hence the arithmetic shift above.
     }
 
     ctx.reg_alloc.DefineValue(inst, xmm_a);
@@ -438,16 +438,16 @@ void EmitX64::EmitVectorLowerPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
     Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-    code->punpcklqdq(xmm_a, xmm_b);
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
-        code->pxor(tmp, tmp);
-        code->phaddd(xmm_a, tmp);
+    code.punpcklqdq(xmm_a, xmm_b);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        code.pxor(tmp, tmp);
+        code.phaddd(xmm_a, tmp);
     } else {
-        code->movdqa(tmp, xmm_a);
-        code->psllq(xmm_a, 32);
-        code->paddq(xmm_a, tmp);
-        code->psrlq(xmm_a, 32);
-        code->pshufd(xmm_a, xmm_a, 0b11011000);
+        code.movdqa(tmp, xmm_a);
+        code.psllq(xmm_a, 32);
+        code.paddq(xmm_a, tmp);
+        code.psrlq(xmm_a, 32);
+        code.pshufd(xmm_a, xmm_a, 0b11011000);
     }
 
     ctx.reg_alloc.DefineValue(inst, xmm_a);
@@ -461,15 +461,15 @@ void EmitX64::EmitVectorPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
     Xbyak::Xmm d = ctx.reg_alloc.ScratchXmm();
 
-    code->movdqa(c, a);
-    code->movdqa(d, b);
-    code->psllw(a, 8);
-    code->psllw(b, 8);
-    code->paddw(a, c);
-    code->paddw(b, d);
-    code->psrlw(a, 8);
-    code->psrlw(b, 8);
-    code->packuswb(a, b);
+    code.movdqa(c, a);
+    code.movdqa(d, b);
+    code.psllw(a, 8);
+    code.psllw(b, 8);
+    code.paddw(a, c);
+    code.paddw(b, d);
+    code.psrlw(a, 8);
+    code.psrlw(b, 8);
+    code.packuswb(a, b);
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
@@ -477,11 +477,11 @@ void EmitX64::EmitVectorPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
         Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
 
-        code->phaddw(a, b);
+        code.phaddw(a, b);
 
         ctx.reg_alloc.DefineValue(inst, a);
     } else {
@@ -490,15 +490,15 @@ void EmitX64::EmitVectorPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
         Xbyak::Xmm d = ctx.reg_alloc.ScratchXmm();
 
-        code->movdqa(c, a);
-        code->movdqa(d, b);
-        code->pslld(a, 16);
-        code->pslld(b, 16);
-        code->paddd(a, c);
-        code->paddd(b, d);
-        code->psrad(a, 16);
-        code->psrad(b, 16);
-        code->packssdw(a, b);
+        code.movdqa(c, a);
+        code.movdqa(d, b);
+        code.pslld(a, 16);
+        code.pslld(b, 16);
+        code.paddd(a, c);
+        code.paddd(b, d);
+        code.psrad(a, 16);
+        code.psrad(b, 16);
+        code.packssdw(a, b);
 
         ctx.reg_alloc.DefineValue(inst, a);
     }
@@ -507,11 +507,11 @@ void EmitX64::EmitVectorPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    if (code->DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
         Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
 
-        code->phaddd(a, b);
+        code.phaddd(a, b);
 
         ctx.reg_alloc.DefineValue(inst, a);
     } else {
@@ -520,13 +520,13 @@ void EmitX64::EmitVectorPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
         Xbyak::Xmm d = ctx.reg_alloc.ScratchXmm();
 
-        code->movdqa(c, a);
-        code->movdqa(d, b);
-        code->psllq(a, 32);
-        code->psllq(b, 32);
-        code->paddq(a, c);
-        code->paddq(b, d);
-        code->shufps(a, b, 0b11011101);
+        code.movdqa(c, a);
+        code.movdqa(d, b);
+        code.psllq(a, 32);
+        code.psllq(b, 32);
+        code.paddq(a, c);
+        code.paddq(b, d);
+        code.shufps(a, b, 0b11011101);
 
         ctx.reg_alloc.DefineValue(inst, a);
     }
@@ -539,10 +539,10 @@ void EmitX64::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
     Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
 
-    code->movdqa(c, a);
-    code->punpcklqdq(a, b);
-    code->punpckhqdq(c, b);
-    code->paddq(a, c);
+    code.movdqa(c, a);
+    code.punpcklqdq(a, b);
+    code.punpckhqdq(c, b);
+    code.paddq(a, c);
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
@@ -552,7 +552,7 @@ void EmitX64::EmitVectorZeroUpper(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code->movq(a, a); // TODO: !IsLastUse
+    code.movq(a, a); // TODO: !IsLastUse
 
     ctx.reg_alloc.DefineValue(inst, a);
 }

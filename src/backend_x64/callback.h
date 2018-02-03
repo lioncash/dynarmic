@@ -20,10 +20,10 @@ class Callback {
 public:
     virtual ~Callback() = default;
 
-    virtual void EmitCall(BlockOfCode* code, std::function<void()> fn = []{}) = 0;
-    virtual void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64)> fn) = 0;
-    virtual void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> fn) = 0;
-    virtual void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> fn) = 0;
+    virtual void EmitCall(BlockOfCode& code, std::function<void()> fn = []{}) = 0;
+    virtual void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64)> fn) = 0;
+    virtual void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> fn) = 0;
+    virtual void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> fn) = 0;
 };
 
 class SimpleCallback final : public Callback {
@@ -33,10 +33,10 @@ public:
 
     ~SimpleCallback() override = default;
 
-    void EmitCall(BlockOfCode* code, std::function<void()> l = []{}) override;
-    void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64)> l) override;
-    void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) override;
-    void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) override;
+    void EmitCall(BlockOfCode& code, std::function<void()> l = []{}) override;
+    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64)> l) override;
+    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) override;
+    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) override;
 
 private:
     void (*fn)();
@@ -49,10 +49,10 @@ public:
 
     ~ArgCallback() override = default;
 
-    void EmitCall(BlockOfCode* code, std::function<void()> l = []{}) override;
-    void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64)> l) override;
-    void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) override;
-    void EmitCall(BlockOfCode* code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) override;
+    void EmitCall(BlockOfCode& code, std::function<void()> l = []{}) override;
+    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64)> l) override;
+    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) override;
+    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) override;
 
 private:
     void (*fn)();

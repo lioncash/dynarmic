@@ -12,10 +12,10 @@
 
 namespace Dynarmic::BackendX64 {
 
-ConstantPool::ConstantPool(BlockOfCode* code, size_t size) : code(code), pool_size(size) {
-    code->int3();
-    code->align(align_size);
-    pool_begin = reinterpret_cast<u8*>(code->AllocateFromCodeSpace(size));
+ConstantPool::ConstantPool(BlockOfCode& code, size_t size) : code(code), pool_size(size) {
+    code.int3();
+    code.align(align_size);
+    pool_begin = reinterpret_cast<u8*>(code.AllocateFromCodeSpace(size));
     std::memset(pool_begin, 0, size);
     current_pool_ptr = pool_begin;
 }
@@ -28,7 +28,7 @@ Xbyak::Address ConstantPool::GetConstant(u64 constant) {
         iter = constant_info.emplace(constant, current_pool_ptr).first;
         current_pool_ptr += align_size;
     }
-    return code->xword[code->rip + iter->second];
+    return code.xword[code.rip + iter->second];
 }
 
 } // namespace Dynarmic::BackendX64

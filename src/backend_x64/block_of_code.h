@@ -138,7 +138,7 @@ private:
         ExceptionHandler();
         ~ExceptionHandler();
 
-        void Register(BlockOfCode* code);
+        void Register(BlockOfCode& code);
     private:
         struct Impl;
         std::unique_ptr<Impl> impl;

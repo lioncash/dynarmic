@@ -48,7 +48,7 @@ public:
         size_t size;         // Length in bytes of emitted code
     };
 
-    EmitX64(BlockOfCode* code);
+    EmitX64(BlockOfCode& code);
     virtual ~EmitX64();
 
     /// Looks up an emitted host block in the cache.
@@ -100,7 +100,7 @@ protected:
     virtual void EmitPatchMovRcx(CodePtr target_code_ptr = nullptr) = 0;
 
     // State
-    BlockOfCode* code;
+    BlockOfCode& code;
     std::unordered_map<IR::LocationDescriptor, BlockDescriptor> block_descriptors;
     std::unordered_map<IR::LocationDescriptor, PatchInformation> patch_information;
 };

@@ -39,7 +39,7 @@ public:
     explicit Impl(UserConfig conf)
         : conf(conf) 
         , block_of_code(GenRunCodeCallbacks(conf.callbacks, &GetCurrentBlockThunk, this), JitStateInfo{jit_state})
-        , emitter(&block_of_code, conf)
+        , emitter(block_of_code, conf)
     {}
 
     ~Impl() = default;

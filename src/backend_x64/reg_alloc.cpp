@@ -370,10 +370,10 @@ void RegAlloc::HostCall(IR::Inst* result_def, boost::optional<Argument&> arg0, b
             Xbyak::Reg64 reg = HostLocToReg64(args_hostloc[i]);
             switch (args[i]->GetType()) {
             case IR::Type::U8:
-                code->movzx(reg.cvt32(), reg.cvt8());
+                code.movzx(reg.cvt32(), reg.cvt8());
                 break;
             case IR::Type::U16:
-                code->movzx(reg.cvt32(), reg.cvt16());
+                code.movzx(reg.cvt32(), reg.cvt16());
                 break;
             default:
                 break; // Nothing needs to be done
@@ -459,9 +459,9 @@ HostLoc RegAlloc::LoadImmediate(IR::Value imm, HostLoc host_loc) {
         Xbyak::Reg64 reg = HostLocToReg64(host_loc);
         u64 imm_value = ImmediateToU64(imm);
         if (imm_value == 0)
-            code->xor_(reg.cvt32(), reg.cvt32());
+            code.xor_(reg.cvt32(), reg.cvt32());
         else
-            code->mov(reg, imm_value);
+            code.mov(reg, imm_value);
         return host_loc;
     }
 
@@ -469,9 +469,9 @@ HostLoc RegAlloc::LoadImmediate(IR::Value imm, HostLoc host_loc) {
         Xbyak::Xmm reg = HostLocToXmm(host_loc);
         u64 imm_value = ImmediateToU64(imm);
         if (imm_value == 0)
-            code->pxor(reg, reg);
+            code.pxor(reg, reg);
         else
-            code->movdqa(reg, code->MConst(imm_value)); // TODO: movaps/movapd more appropriate sometimes
+            code.movdqa(reg, code.MConst(imm_value)); // TODO: movaps/movapd more appropriate sometimes
         return host_loc;
     }
 
@@ -557,42 +557,42 @@ void RegAlloc::EmitMove(HostLoc to, HostLoc from) {
     const size_t bit_width = LocInfo(from).GetMaxBitWidth();
 
     if (HostLocIsXMM(to) && HostLocIsXMM(from)) {
-        code->movaps(HostLocToXmm(to), HostLocToXmm(from));
+        code.movaps(HostLocToXmm(to), HostLocToXmm(from));
     } else if (HostLocIsGPR(to) && HostLocIsGPR(from)) {
         ASSERT(bit_width != 128);
         if (bit_width == 64) {
-            code->mov(HostLocToReg64(to), HostLocToReg64(from));
+            code.mov(HostLocToReg64(to), HostLocToReg64(from));
         } else {
-            code->mov(HostLocToReg64(to).cvt32(), HostLocToReg64(from).cvt32());
+            code.mov(HostLocToReg64(to).cvt32(), HostLocToReg64(from).cvt32());
         }
     } else if (HostLocIsXMM(to) && HostLocIsGPR(from)) {
         ASSERT(bit_width != 128);
         if (bit_width == 64) {
-            code->movq(HostLocToXmm(to), HostLocToReg64(from));
+            code.movq(HostLocToXmm(to), HostLocToReg64(from));
         } else {
-            code->movd(HostLocToXmm(to), HostLocToReg64(from).cvt32());
+            code.movd(HostLocToXmm(to), HostLocToReg64(from).cvt32());
         }
     } else if (HostLocIsGPR(to) && HostLocIsXMM(from)) {
         ASSERT(bit_width != 128);
         if (bit_width == 64) {
-            code->movq(HostLocToReg64(to), HostLocToXmm(from));
+            code.movq(HostLocToReg64(to), HostLocToXmm(from));
         } else {
-            code->movd(HostLocToReg64(to).cvt32(), HostLocToXmm(from));
+            code.movd(HostLocToReg64(to).cvt32(), HostLocToXmm(from));
         }
     } else if (HostLocIsXMM(to) && HostLocIsSpill(from)) {
         Xbyak::Address spill_addr = spill_to_addr(from);
         ASSERT(spill_addr.getBit() >= bit_width);
         switch (bit_width) {
         case 128:
-            code->movaps(HostLocToXmm(to), spill_addr);
+            code.movaps(HostLocToXmm(to), spill_addr);
             break;
         case 64:
-            code->movsd(HostLocToXmm(to), spill_addr);
+            code.movsd(HostLocToXmm(to), spill_addr);
             break;
         case 32:
         case 16:
         case 8:
-            code->movss(HostLocToXmm(to), spill_addr);
+            code.movss(HostLocToXmm(to), spill_addr);
             break;
         default:
             UNREACHABLE();
@@ -602,15 +602,15 @@ void RegAlloc::EmitMove(HostLoc to, HostLoc from) {
         ASSERT(spill_addr.getBit() >= bit_width);
         switch (bit_width) {
         case 128:
-            code->movaps(spill_addr, HostLocToXmm(from));
+            code.movaps(spill_addr, HostLocToXmm(from));
             break;
         case 64:
-            code->movsd(spill_addr, HostLocToXmm(from));
+            code.movsd(spill_addr, HostLocToXmm(from));
             break;
         case 32:
         case 16:
         case 8:
-            code->movss(spill_addr, HostLocToXmm(from));
+            code.movss(spill_addr, HostLocToXmm(from));
             break;
         default:
             UNREACHABLE();
@@ -618,16 +618,16 @@ void RegAlloc::EmitMove(HostLoc to, HostLoc from) {
     } else if (HostLocIsGPR(to) && HostLocIsSpill(from)) {
         ASSERT(bit_width != 128);
         if (bit_width == 64) {
-            code->mov(HostLocToReg64(to), spill_to_addr(from));
+            code.mov(HostLocToReg64(to), spill_to_addr(from));
         } else {
-            code->mov(HostLocToReg64(to).cvt32(), spill_to_addr(from));
+            code.mov(HostLocToReg64(to).cvt32(), spill_to_addr(from));
         }
     } else if (HostLocIsSpill(to) && HostLocIsGPR(from)) {
         ASSERT(bit_width != 128);
         if (bit_width == 64) {
-            code->mov(spill_to_addr(to), HostLocToReg64(from));
+            code.mov(spill_to_addr(to), HostLocToReg64(from));
         } else {
-            code->mov(spill_to_addr(to), HostLocToReg64(from).cvt32());
+            code.mov(spill_to_addr(to), HostLocToReg64(from).cvt32());
         }
     } else {
         ASSERT_MSG(false, "Invalid RegAlloc::EmitMove");
@@ -636,7 +636,7 @@ void RegAlloc::EmitMove(HostLoc to, HostLoc from) {
 
 void RegAlloc::EmitExchange(HostLoc a, HostLoc b) {
     if (HostLocIsGPR(a) && HostLocIsGPR(b)) {
-        code->xchg(HostLocToReg64(a), HostLocToReg64(b));
+        code.xchg(HostLocToReg64(a), HostLocToReg64(b));
     } else if (HostLocIsXMM(a) && HostLocIsXMM(b)) {
         ASSERT_MSG(false, "Check your code: Exchanging XMM registers is unnecessary");
     } else {

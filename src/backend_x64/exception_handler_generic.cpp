@@ -14,7 +14,7 @@ struct BlockOfCode::ExceptionHandler::Impl final {
 BlockOfCode::ExceptionHandler::ExceptionHandler() = default;
 BlockOfCode::ExceptionHandler::~ExceptionHandler() = default;
 
-void BlockOfCode::ExceptionHandler::Register(BlockOfCode*) {
+void BlockOfCode::ExceptionHandler::Register(BlockOfCode&) {
     // Do nothing
 }
 

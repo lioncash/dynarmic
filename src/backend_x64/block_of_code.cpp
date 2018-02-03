@@ -38,10 +38,10 @@ BlockOfCode::BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi)
         : Xbyak::CodeGenerator(TOTAL_CODE_SIZE)
         , cb(std::move(cb))
         , jsi(jsi)
-        , constant_pool(this, 256)
+        , constant_pool(*this, 256)
 {
     GenRunCode();
-    exception_handler.Register(this);
+    exception_handler.Register(*this);
 }
 
 void BlockOfCode::PreludeComplete() {
@@ -107,12 +107,12 @@ void BlockOfCode::GenRunCode() {
     align();
     run_code_from = getCurr<RunCodeFromFuncType>();
 
-    ABI_PushCalleeSaveRegistersAndAdjustStack(this);
+    ABI_PushCalleeSaveRegistersAndAdjustStack(*this);
 
     mov(r15, ABI_PARAM1);
     mov(r14, ABI_PARAM2); // save temporarily in non-volatile register
 
-    cb.GetTicksRemaining->EmitCall(this);
+    cb.GetTicksRemaining->EmitCall(*this);
     mov(qword[r15 + jsi.offsetof_cycles_to_run], ABI_RETURN);
     mov(qword[r15 + jsi.offsetof_cycles_remaining], ABI_RETURN);
 
@@ -126,18 +126,18 @@ void BlockOfCode::GenRunCode() {
     // 1. It saves all the registers we as a callee need to save.
     // 2. It aligns the stack so that the code the JIT emits can assume
     //    that the stack is appropriately aligned for CALLs.
-    ABI_PushCalleeSaveRegistersAndAdjustStack(this);
+    ABI_PushCalleeSaveRegistersAndAdjustStack(*this);
 
     mov(r15, ABI_PARAM1);
 
-    cb.GetTicksRemaining->EmitCall(this);
+    cb.GetTicksRemaining->EmitCall(*this);
     mov(qword[r15 + jsi.offsetof_cycles_to_run], ABI_RETURN);
     mov(qword[r15 + jsi.offsetof_cycles_remaining], ABI_RETURN);
 
     L(enter_mxcsr_then_loop);
     SwitchMxcsrOnEntry();
     L(loop);
-    cb.LookupBlock->EmitCall(this);
+    cb.LookupBlock->EmitCall(*this);
 
     jmp(ABI_RETURN);
 
@@ -152,12 +152,12 @@ void BlockOfCode::GenRunCode() {
             SwitchMxcsrOnExit();
         }
 
-        cb.AddTicks->EmitCall(this, [this](Xbyak::Reg64 param1) {
+        cb.AddTicks->EmitCall(*this, [this](Xbyak::Reg64 param1) {
             mov(param1, qword[r15 + jsi.offsetof_cycles_to_run]);
             sub(param1, qword[r15 + jsi.offsetof_cycles_remaining]);
         });
 
-        ABI_PopCalleeSaveRegistersAndAdjustStack(this);
+        ABI_PopCalleeSaveRegistersAndAdjustStack(*this);
         ret();
     };
 
