@@ -197,6 +197,7 @@ public:
     U32 CRC32ISO32(const U32& a, const U32& b);
     U32 CRC32ISO64(const U32& a, const U64& b);
 
+    U128 AESEncrypt(const U128& a);
     U128 AESInverseMixColumns(const U128& a);
     U128 AESMixColumns(const U128& a);
 

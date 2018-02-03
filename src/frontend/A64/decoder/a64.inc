@@ -329,7 +329,7 @@ INST(UMSUBL,                 "UMSUBL",                                    "10011
 //INST(UMULH,                  "UMULH",                                     "10011011110mmmmm011111nnnnnddddd")
 
 // Data Processing - FP and SIMD - AES
-//INST(AESE,                   "AESE",                                      "0100111000101000010010nnnnnddddd")
+INST(AESE,                   "AESE",                                      "0100111000101000010010nnnnnddddd")
 //INST(AESD,                   "AESD",                                      "0100111000101000010110nnnnnddddd")
 INST(AESMC,                  "AESMC",                                     "0100111000101000011010nnnnnddddd")
 INST(AESIMC,                 "AESIMC",                                    "0100111000101000011110nnnnnddddd")

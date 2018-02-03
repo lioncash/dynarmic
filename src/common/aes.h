@@ -13,6 +13,9 @@ namespace Dynarmic::Common {
 
 using AESState = std::array<u8, 16>;
 
+// Assumes the state has already been XORed by the round key.
+void EncryptSingleRound(AESState& out_state, const AESState& state);
+
 void MixColumns(AESState& out_state, const AESState& state);
 void InverseMixColumns(AESState& out_state, const AESState& state);
 

@@ -16,10 +16,10 @@ namespace Dynarmic::BackendX64 {
 
 using namespace Xbyak::util;
     
-using MixColumnsFn = void(Common::AESState&, const Common::AESState&);
+using AESFn = void(Common::AESState&, const Common::AESState&);
 
-static void EmitMixColumns(std::array<Argument, 3> args, EmitContext& ctx, BlockOfCode& code,
-                           IR::Inst* inst, MixColumnsFn fn) {
+static void EmitAESFunction(std::array<Argument, 3> args, EmitContext& ctx, BlockOfCode& code,
+                            IR::Inst* inst, AESFn fn) {
     constexpr u32 stack_space = static_cast<u32>(sizeof(Common::AESState)) * 2;
     const Xbyak::Xmm input = ctx.reg_alloc.UseXmm(args[0]);
     ctx.reg_alloc.EndOfAllocScope();
@@ -41,6 +41,12 @@ static void EmitMixColumns(std::array<Argument, 3> args, EmitContext& ctx, Block
     ctx.reg_alloc.DefineValue(inst, xmm0);
 }
 
+void EmitX64::EmitAESEncryptSingleRound(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    EmitAESFunction(args, ctx, code, inst, Common::EncryptSingleRound);
+}
+
 void EmitX64::EmitAESInverseMixColumns(EmitContext& ctx, IR::Inst* inst) {
      auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -52,13 +58,13 @@ void EmitX64::EmitAESInverseMixColumns(EmitContext& ctx, IR::Inst* inst) {
 
         ctx.reg_alloc.DefineValue(inst, result);
     } else {
-        EmitMixColumns(args, ctx, code, inst, Common::InverseMixColumns);
+        EmitAESFunction(args, ctx, code, inst, Common::InverseMixColumns);
     }
 }
 
 void EmitX64::EmitAESMixColumns(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    EmitMixColumns(args, ctx, code, inst, Common::MixColumns);
+    EmitAESFunction(args, ctx, code, inst, Common::MixColumns);
 }
 
 } // namespace Dynarmic::BackendX64
