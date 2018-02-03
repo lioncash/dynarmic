@@ -84,7 +84,7 @@ const Block::InstructionList& Block::Instructions() const {
     return instructions;
 }
 
-const Terminal& Block::GetTerminal() const {
+Terminal Block::GetTerminal() const {
     return terminal;
 }
 
