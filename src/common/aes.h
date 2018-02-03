@@ -9,15 +9,15 @@
 #include <array>
 #include "common/common_types.h"
 
-namespace Dynarmic::Common {
+namespace Dynarmic::Common::AES {
 
-using AESState = std::array<u8, 16>;
+using State = std::array<u8, 16>;
 
 // Assumes the state has already been XORed by the round key.
-void DecryptSingleRound(AESState& out_state, const AESState& state);
-void EncryptSingleRound(AESState& out_state, const AESState& state);
+void DecryptSingleRound(State& out_state, const State& state);
+void EncryptSingleRound(State& out_state, const State& state);
 
-void MixColumns(AESState& out_state, const AESState& state);
-void InverseMixColumns(AESState& out_state, const AESState& state);
+void MixColumns(State& out_state, const State& state);
+void InverseMixColumns(State& out_state, const State& state);
 
-} // namespace Dynarmic::Common
+} // namespace Dynarmic::Common::AES

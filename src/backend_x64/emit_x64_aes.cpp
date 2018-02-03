@@ -15,19 +15,19 @@
 namespace Dynarmic::BackendX64 {
 
 using namespace Xbyak::util;
-    
-using AESFn = void(Common::AESState&, const Common::AESState&);
+
+using AESFn = void(Common::AES::State&, const Common::AES::State&);
 
 static void EmitAESFunction(std::array<Argument, 3> args, EmitContext& ctx, BlockOfCode& code,
                             IR::Inst* inst, AESFn fn) {
-    constexpr u32 stack_space = static_cast<u32>(sizeof(Common::AESState)) * 2;
+    constexpr u32 stack_space = static_cast<u32>(sizeof(Common::AES::State)) * 2;
     const Xbyak::Xmm input = ctx.reg_alloc.UseXmm(args[0]);
     ctx.reg_alloc.EndOfAllocScope();
 
     ctx.reg_alloc.HostCall(nullptr);
     code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
     code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE]);
-    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + sizeof(Common::AESState)]);
+    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + sizeof(Common::AES::State)]);
 
     code.movaps(xword[code.ABI_PARAM2], input);
 
@@ -44,13 +44,13 @@ static void EmitAESFunction(std::array<Argument, 3> args, EmitContext& ctx, Bloc
 void EmitX64::EmitAESDecryptSingleRound(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    EmitAESFunction(args, ctx, code, inst, Common::DecryptSingleRound);
+    EmitAESFunction(args, ctx, code, inst, Common::AES::DecryptSingleRound);
 }
 
 void EmitX64::EmitAESEncryptSingleRound(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    EmitAESFunction(args, ctx, code, inst, Common::EncryptSingleRound);
+    EmitAESFunction(args, ctx, code, inst, Common::AES::EncryptSingleRound);
 }
 
 void EmitX64::EmitAESInverseMixColumns(EmitContext& ctx, IR::Inst* inst) {
@@ -64,13 +64,13 @@ void EmitX64::EmitAESInverseMixColumns(EmitContext& ctx, IR::Inst* inst) {
 
         ctx.reg_alloc.DefineValue(inst, result);
     } else {
-        EmitAESFunction(args, ctx, code, inst, Common::InverseMixColumns);
+        EmitAESFunction(args, ctx, code, inst, Common::AES::InverseMixColumns);
     }
 }
 
 void EmitX64::EmitAESMixColumns(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    EmitAESFunction(args, ctx, code, inst, Common::MixColumns);
+    EmitAESFunction(args, ctx, code, inst, Common::AES::MixColumns);
 }
 
 } // namespace Dynarmic::BackendX64

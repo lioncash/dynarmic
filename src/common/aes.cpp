@@ -9,7 +9,7 @@
 #include "common/aes.h"
 #include "common/common_types.h"
 
-namespace Dynarmic::Common {
+namespace Dynarmic::Common::AES {
 
 using SubstitutionTable = std::array<u8, 256>;
 
@@ -69,7 +69,7 @@ static constexpr u8 Multiply(u8 x, u8 y) {
             ((y >> 4 & 1) * xtime(xtime(xtime(xtime(x))))));
 }
 
-static void ShiftRows(AESState& out_state, const AESState& state) {
+static void ShiftRows(State& out_state, const State& state) {
     // Move zeroth row over
     out_state[0] = state[0];
     out_state[4] = state[4];
@@ -100,7 +100,7 @@ static void ShiftRows(AESState& out_state, const AESState& state) {
     out_state[7] = temp;
 }
 
-static void InverseShiftRows(AESState& out_state, const AESState& state) {
+static void InverseShiftRows(State& out_state, const State& state) {
     // Move zeroth row over
     out_state[0] = state[0];
     out_state[4] = state[4];
@@ -131,7 +131,7 @@ static void InverseShiftRows(AESState& out_state, const AESState& state) {
     out_state[15] = temp;
 }
 
-static void SubBytes(AESState& state, const SubstitutionTable& table) {
+static void SubBytes(State& state, const SubstitutionTable& table) {
     for (size_t i = 0; i < 4; i++) {
         for (size_t j = 0; j < 4; j++) {
             state[4 * i + j] = table[state[4 * i + j]];
@@ -139,17 +139,17 @@ static void SubBytes(AESState& state, const SubstitutionTable& table) {
     }
 }
 
-void DecryptSingleRound(AESState& out_state, const AESState& state) {
+void DecryptSingleRound(State& out_state, const State& state) {
     InverseShiftRows(out_state, state);
     SubBytes(out_state, inverse_substitution_box);
 }
 
-void EncryptSingleRound(AESState& out_state, const AESState& state) {
+void EncryptSingleRound(State& out_state, const State& state) {
     ShiftRows(out_state, state);
     SubBytes(out_state, substitution_box);
 }
 
-void MixColumns(AESState& out_state, const AESState& state) {
+void MixColumns(State& out_state, const State& state) {
     for (size_t i = 0; i < out_state.size(); i += 4) {
         const u8 a = state[i];
         const u8 b = state[i + 1];
@@ -165,7 +165,7 @@ void MixColumns(AESState& out_state, const AESState& state) {
     }
 }
 
-void InverseMixColumns(AESState& out_state, const AESState& state) {
+void InverseMixColumns(State& out_state, const State& state) {
     for (size_t i = 0; i < out_state.size(); i += 4) {
         const u8 a = state[i];
         const u8 b = state[i + 1];
@@ -179,4 +179,4 @@ void InverseMixColumns(AESState& out_state, const AESState& state) {
     }
 }
 
-} // namespace Dynarmic::Common
+} // namespace Dynarmic::Common::AES
