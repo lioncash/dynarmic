@@ -68,6 +68,8 @@ OPCODE(GetOverflowFromOp,       T::U1,          T::U32                          
 OPCODE(GetGEFromOp,             T::U32,         T::U32                                          )
 OPCODE(GetNZCVFromOp,           T::NZCVFlags,   T::Opaque                                       )
 
+OPCODE(NZCVFromPackedFlags,     T::NZCVFlags,   T::U32                                          )
+
 // Calculations
 OPCODE(Pack2x32To1x64,          T::U64,         T::U32,         T::U32                          )
 OPCODE(LeastSignificantWord,    T::U32,         T::U64                                          )

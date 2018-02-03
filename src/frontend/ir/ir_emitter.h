@@ -81,6 +81,7 @@ public:
     U64 ConditionalSelect(Cond cond, const U64& a, const U64& b);
     U32U64 ConditionalSelect(Cond cond, const U32U64& a, const U32U64& b);
 
+    NZCV NZCVFromPackedFlags(const U32& a);
     // This pseudo-instruction may only be added to instructions that support it.
     NZCV NZCVFrom(const Value& value);
 

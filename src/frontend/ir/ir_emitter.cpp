@@ -107,6 +107,10 @@ U32U64 IREmitter::ConditionalSelect(Cond cond, const U32U64& a, const U32U64& b)
     }
 }
 
+NZCV IREmitter::NZCVFromPackedFlags(const U32& a) {
+    return Inst<NZCV>(Opcode::NZCVFromPackedFlags, a);
+}
+
 NZCV IREmitter::NZCVFrom(const Value& value) {
     return Inst<NZCV>(Opcode::GetNZCVFromOp, value);
 }

@@ -10,6 +10,7 @@
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
 #include "common/assert.h"
+#include "common/bit_util.h"
 #include "common/common_types.h"
 #include "common/variant_util.h"
 #include "frontend/ir/basic_block.h"
@@ -129,6 +130,28 @@ void EmitX64::EmitGetNZCVFromOp(EmitContext& ctx, IR::Inst* inst) {
     code->lahf();
     code->seto(code->al);
     ctx.reg_alloc.DefineValue(inst, nzcv);
+}
+
+void EmitX64::EmitNZCVFromPackedFlags(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    if (args[0].IsImmediate()) {
+        Xbyak::Reg32 nzcv = ctx.reg_alloc.ScratchGpr().cvt32();
+        u32 value = 0;
+        value |= Common::Bit<31>(args[0].GetImmediateU32()) ? (1 << 15) : 0;
+        value |= Common::Bit<30>(args[0].GetImmediateU32()) ? (1 << 14) : 0;
+        value |= Common::Bit<29>(args[0].GetImmediateU32()) ? (1 << 8) : 0;
+        value |= Common::Bit<28>(args[0].GetImmediateU32()) ? (1 << 0) : 0;
+        code->mov(nzcv, value);
+        ctx.reg_alloc.DefineValue(inst, nzcv);
+    } else {
+        Xbyak::Reg32 nzcv = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+        // TODO: Optimize
+        code->shr(nzcv, 28);
+        code->imul(nzcv, nzcv, 0b00010000'10000001);
+        code->and_(nzcv.cvt8(), 1);
+        ctx.reg_alloc.DefineValue(inst, nzcv);
+    }
 }
 
 void EmitX64::EmitAddCycles(size_t cycles) {
