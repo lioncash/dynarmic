@@ -73,4 +73,21 @@ bool TranslatorVisitor::UMOV(bool Q, Imm<5> imm5, Vec Vn, Reg Rd) {
     return true;
 }
 
+bool TranslatorVisitor::INS_elt(Imm<5> imm5, Imm<4> imm4, Vec Vn, Vec Vd) {
+    const size_t size = Common::LowestSetBit(imm5.ZeroExtend());
+    if (size > 3) return UnallocatedEncoding();
+
+    const size_t dst_index = imm5.ZeroExtend<size_t>() >> (size + 1);
+    const size_t src_index = imm4.ZeroExtend<size_t>() >> size;
+    const size_t idxdsize = imm4.Bit<3>() ? 128 : 64;
+    const size_t esize = 8 << size;
+
+    const IR::U128 operand = V(idxdsize, Vn);
+    const IR::UAny elem = ir.VectorGetElement(esize, operand, src_index);
+    const IR::U128 result = ir.VectorSetElement(esize, V(128, Vd), dst_index, elem);
+    V(128, Vd, result);
+
+    return true;
+}
+
 } // namespace Dynarmic::A64
