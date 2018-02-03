@@ -66,6 +66,8 @@ restart:
     bool should_continue = A64::TranslateSingleInstruction(block, location, instruction);
     if (!should_continue && !is_last_inst)
         goto restart;
+    if (!should_continue && boost::get<IR::Term::Interpret>(&block.GetTerminal()))
+        goto restart;
     for (const auto& ir_inst : block)
         if (ir_inst.GetOpcode() == IR::Opcode::A64ExceptionRaised || ir_inst.GetOpcode() == IR::Opcode::A64CallSupervisor)
             goto restart;

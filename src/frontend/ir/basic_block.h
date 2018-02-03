@@ -118,7 +118,7 @@ public:
     const InstructionList& Instructions() const;
 
     /// Gets the terminal instruction for this basic block.
-    Terminal GetTerminal() const;
+    const Terminal& GetTerminal() const;
     /// Sets the terminal instruction for this basic block.
     void SetTerminal(Terminal term);
     /// Replaces the terminal instruction for this basic block.
