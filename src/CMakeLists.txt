@@ -76,6 +76,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/exception_generating.cpp
     frontend/A64/translate/impl/floating_point_compare.cpp
     frontend/A64/translate/impl/floating_point_conversion_integer.cpp
+    frontend/A64/translate/impl/floating_point_conditional_select.cpp
     frontend/A64/translate/impl/floating_point_data_processing_one_register.cpp
     frontend/A64/translate/impl/floating_point_data_processing_two_register.cpp
     frontend/A64/translate/impl/impl.cpp

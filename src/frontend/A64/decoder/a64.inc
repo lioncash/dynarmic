@@ -943,7 +943,7 @@ INST(FSUB_float,             "FSUB (scalar)",                             "00011
 INST(FNMUL_float,            "FNMUL (scalar)",                            "00011110yy1mmmmm100010nnnnnddddd")
 
 // Data Processing - FP and SIMD - Floating point conditional select
-//INST(FCSEL_float,            "FCSEL",                                     "00011110yy1mmmmmcccc11nnnnnddddd")
+INST(FCSEL_float,            "FCSEL",                                     "00011110yy1mmmmmcccc11nnnnnddddd")
 
 // Data Processing - FP and SIMD - Floating point data processing three register
 //INST(FMADD_float,            "FMADD",                                     "00011111yy0mmmmm0aaaaannnnnddddd")
