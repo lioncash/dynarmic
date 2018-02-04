@@ -28,6 +28,7 @@ constexpr u64 f64_penultimate_positive_denormal = 0x000ffffffffffffeu;
 constexpr u64 f64_min_s32 = 0xc1e0000000000000u; // -2147483648 as a double
 constexpr u64 f64_max_s32 = 0x41dfffffffc00000u; // 2147483647 as a double
 constexpr u64 f64_min_u32 = 0x0000000000000000u; // 0 as a double
+constexpr u64 f64_max_u32 = 0x41efffffffe00000u; // 4294967295 as a double
 
 static void DenormalsAreZero32(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;
@@ -397,60 +398,29 @@ void EmitX64::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg64 to = ctx.reg_alloc.ScratchGpr().cvt64();
     Xbyak::Xmm xmm_scratch = ctx.reg_alloc.ScratchXmm();
     bool round_towards_zero = args[1].GetImmediateU1();
 
     // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
     // Conversion to double is lossless, and allows for accurate clamping.
     //
-    // Since SSE2 doesn't provide an unsigned conversion, we shift the range as appropriate.
+    // Since SSE2 doesn't provide an unsigned conversion, we use a 64-bit signed conversion.
     //
-    // FIXME: Inexact exception not correctly signalled with the below code
+    // FIXME: None of the FPSR exception bits are correctly signalled with the below code
 
-    if (!ctx.FPSCR_RoundTowardsZero() && !round_towards_zero) {
-        if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero32(code, from, to);
-        }
-        code.cvtss2sd(from, from);
-        ZeroIfNaN64(code, from, xmm_scratch);
-        // Bring into SSE range
-        code.addsd(from, code.MConst(f64_min_s32));
-        // First time is to set flags
-        code.cvtsd2si(to, from); // 32 bit gpr
-        // Clamp to output range
-        code.minsd(from, code.MConst(f64_max_s32));
-        code.maxsd(from, code.MConst(f64_min_s32));
-        // Actually convert
-        code.cvtsd2si(to, from); // 32 bit gpr
-        // Bring back into original range
-        code.add(to, u32(2147483648u));
+    if (ctx.FPSCR_FTZ()) {
+        DenormalsAreZero64(code, from, to);
+    }
+    code.cvtss2sd(from, from);
+    // Clamp to output range
+    ZeroIfNaN64(code, from, xmm_scratch);
+    code.minsd(from, code.MConst(f64_max_u32));
+    code.maxsd(from, code.MConst(f64_min_u32));
+    if (round_towards_zero) {
+        code.cvttsd2si(to, from); // 64 bit gpr
     } else {
-        Xbyak::Xmm xmm_mask = ctx.reg_alloc.ScratchXmm();
-        Xbyak::Reg32 gpr_mask = ctx.reg_alloc.ScratchGpr().cvt32();
-
-        if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero32(code, from, to);
-        }
-        code.cvtss2sd(from, from);
-        ZeroIfNaN64(code, from, xmm_scratch);
-        // Generate masks if out-of-signed-range
-        code.movaps(xmm_mask, code.MConst(f64_max_s32));
-        code.cmpltsd(xmm_mask, from);
-        code.movd(gpr_mask, xmm_mask);
-        code.pand(xmm_mask, code.MConst(f64_min_s32));
-        code.and_(gpr_mask, u32(2147483648u));
-        // Bring into range if necessary
-        code.addsd(from, xmm_mask);
-        // First time is to set flags
-        code.cvttsd2si(to, from); // 32 bit gpr
-        // Clamp to output range
-        code.minsd(from, code.MConst(f64_max_s32));
-        code.maxsd(from, code.MConst(f64_min_u32));
-        // Actually convert
-        code.cvttsd2si(to, from); // 32 bit gpr
-        // Bring back into original range if necessary
-        code.add(to, gpr_mask);
+        code.cvtsd2si(to, from); // 64 bit gpr
     }
 
     ctx.reg_alloc.DefineValue(inst, to);
@@ -492,56 +462,25 @@ void EmitX64::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg64 to = ctx.reg_alloc.ScratchGpr().cvt64();
     Xbyak::Xmm xmm_scratch = ctx.reg_alloc.ScratchXmm();
-    Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
     bool round_towards_zero = args[1].GetImmediateU1();
 
     // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
     // TODO: Use VCVTPD2UDQ when AVX512VL is available.
-    // FIXME: Inexact exception not correctly signalled with the below code
+    // FIXME: None of the FPSR exception bits are correctly signalled with the below code
 
-    if (!ctx.FPSCR_RoundTowardsZero() && !round_towards_zero) {
-        if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero64(code, from, gpr_scratch.cvt64());
-        }
-        ZeroIfNaN64(code, from, xmm_scratch);
-        // Bring into SSE range
-        code.addsd(from, code.MConst(f64_min_s32));
-        // First time is to set flags
-        code.cvtsd2si(gpr_scratch, from); // 32 bit gpr
-        // Clamp to output range
-        code.minsd(from, code.MConst(f64_max_s32));
-        code.maxsd(from, code.MConst(f64_min_s32));
-        // Actually convert
-        code.cvtsd2si(to, from); // 32 bit gpr
-        // Bring back into original range
-        code.add(to, u32(2147483648u));
+    if (ctx.FPSCR_FTZ()) {
+        DenormalsAreZero64(code, from, to);
+    }
+    // Clamp to output range
+    ZeroIfNaN64(code, from, xmm_scratch);
+    code.minsd(from, code.MConst(f64_max_u32));
+    code.maxsd(from, code.MConst(f64_min_u32));
+    if (round_towards_zero) {
+        code.cvttsd2si(to, from); // 64 bit gpr
     } else {
-        Xbyak::Xmm xmm_mask = ctx.reg_alloc.ScratchXmm();
-        Xbyak::Reg32 gpr_mask = ctx.reg_alloc.ScratchGpr().cvt32();
-
-        if (ctx.FPSCR_FTZ()) {
-            DenormalsAreZero64(code, from, gpr_scratch.cvt64());
-        }
-        ZeroIfNaN64(code, from, xmm_scratch);
-        // Generate masks if out-of-signed-range
-        code.movaps(xmm_mask, code.MConst(f64_max_s32));
-        code.cmpltsd(xmm_mask, from);
-        code.movd(gpr_mask, xmm_mask);
-        code.pand(xmm_mask, code.MConst(f64_min_s32));
-        code.and_(gpr_mask, u32(2147483648u));
-        // Bring into range if necessary
-        code.addsd(from, xmm_mask);
-        // First time is to set flags
-        code.cvttsd2si(gpr_scratch, from); // 32 bit gpr
-        // Clamp to output range
-        code.minsd(from, code.MConst(f64_max_s32));
-        code.maxsd(from, code.MConst(f64_min_u32));
-        // Actually convert
-        code.cvttsd2si(to, from); // 32 bit gpr
-        // Bring back into original range if necessary
-        code.add(to, gpr_mask);
+        code.cvtsd2si(to, from); // 64 bit gpr
     }
 
     ctx.reg_alloc.DefineValue(inst, to);
