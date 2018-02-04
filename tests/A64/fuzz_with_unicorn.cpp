@@ -31,31 +31,31 @@ static Vector RandomVector() {
     return {RandInt<u64>(0, ~u64(0)), RandInt<u64>(0, ~u64(0))};
 }
 
-static std::vector<InstructionGenerator> instruction_generators = []{
-    const std::vector<std::tuple<const char*, const char*>> list {
+static u32 GenRandomInst(u64 pc, bool is_last_inst) {
+    static const std::vector<InstructionGenerator> instruction_generators = []{
+        const std::vector<std::tuple<const char*, const char*>> list {
 #define INST(fn, name, bitstring) {#fn, bitstring},
 #include "frontend/A64/decoder/a64.inc"
 #undef INST
-    };
+        };
 
-    std::vector<InstructionGenerator> result;
+        std::vector<InstructionGenerator> result;
 
-    for (const auto& [fn, bitstring] : list) {
-        if (std::strcmp(fn, "UnallocatedEncoding") == 0) {
-            InstructionGenerator::AddInvalidInstruction(bitstring);
-            continue;
+        for (const auto& [fn, bitstring] : list) {
+            if (std::strcmp(fn, "UnallocatedEncoding") == 0) {
+                InstructionGenerator::AddInvalidInstruction(bitstring);
+                continue;
+            }
+            result.emplace_back(InstructionGenerator{bitstring});
         }
-        result.emplace_back(InstructionGenerator{bitstring});
-    }
 
-    // Manually added exceptions:
-    // FMOV_float_imm for half-precision floats (QEMU doesn't have half-precision support yet).
-    InstructionGenerator::AddInvalidInstruction("00011110111iiiiiiii10000000ddddd");
+        // Manually added exceptions:
+        // FMOV_float_imm for half-precision floats (QEMU doesn't have half-precision support yet).
+        InstructionGenerator::AddInvalidInstruction("00011110111iiiiiiii10000000ddddd");
 
-    return result;
-}();
+        return result;
+    }();
 
-static u32 GenRandomInst(u64 pc, bool is_last_inst) {
     const A64::LocationDescriptor location{pc, {}};
 
 restart:
