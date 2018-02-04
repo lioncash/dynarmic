@@ -299,7 +299,7 @@ INST(SBC,                    "SBC",                                       "z1011
 INST(SBCS,                   "SBCS",                                      "z1111010000mmmmm000000nnnnnddddd")
 
 // Data Processing - Register - Conditional compare
-//INST(CCMN_reg,               "CCMN (register)",                           "z0111010010mmmmmcccc00nnnnn0ffff")
+INST(CCMN_reg,               "CCMN (register)",                           "z0111010010mmmmmcccc00nnnnn0ffff")
 //INST(CCMP_reg,               "CCMP (register)",                           "z1111010010mmmmmcccc00nnnnn0ffff")
 //INST(CCMN_imm,               "CCMN (immediate)",                          "z0111010010iiiiicccc10nnnnn0ffff")
 //INST(CCMP_imm,               "CCMP (immediate)",                          "z1111010010iiiiicccc10nnnnn0ffff")
