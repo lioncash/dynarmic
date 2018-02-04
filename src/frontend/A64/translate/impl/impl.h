@@ -293,18 +293,10 @@ struct TranslatorVisitor final {
     bool LDAPR(Reg Rn, Reg Rt);
 
     // Loads and stores - Load/Store register (register offset)
-    bool STRB_reg(Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
-    bool LDRB_reg(Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
-    bool LDRSB_reg(Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
+    bool STRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
+    bool LDRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
     bool STR_reg_fpsimd(Imm<2> size, Reg Rm, Imm<3> option, bool S, Reg Rn, Vec Vt);
     bool LDR_reg_fpsimd(Imm<2> size, Reg Rm, Imm<3> option, bool S, Reg Rn, Vec Vt);
-    bool STRH_reg(Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
-    bool LDRH_reg(Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
-    bool LDRSH_reg(Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
-    bool STR_reg_gen(Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
-    bool LDR_reg_gen(Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
-    bool LDRSW_reg(Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
-    bool PRFM_reg(Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
 
     // Loads and stores - Load/Store register (pointer authentication)
     bool LDRA(bool M, bool S, Imm<9> imm9, bool W, Reg Rn, Reg Rt);
