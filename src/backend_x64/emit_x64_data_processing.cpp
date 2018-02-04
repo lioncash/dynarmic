@@ -176,6 +176,10 @@ void EmitX64::EmitConditionalSelect64(EmitContext& ctx, IR::Inst* inst) {
     EmitConditionalSelect(code, ctx, inst, 64);
 }
 
+void EmitX64::EmitConditionalSelectNZCV(EmitContext& ctx, IR::Inst* inst) {
+    EmitConditionalSelect(code, ctx, inst, 32);
+}
+
 static void EmitExtractRegister(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int bit_size) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

@@ -98,6 +98,10 @@ U64 IREmitter::ConditionalSelect(Cond cond, const U64& a, const U64& b) {
     return Inst<U64>(Opcode::ConditionalSelect64, Value{cond}, a, b);
 }
 
+NZCV IREmitter::ConditionalSelect(Cond cond, const NZCV& a, const NZCV& b) {
+    return Inst<NZCV>(Opcode::ConditionalSelectNZCV, Value{cond}, a, b);
+}
+
 U32U64 IREmitter::ConditionalSelect(Cond cond, const U32U64& a, const U32U64& b) {
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {

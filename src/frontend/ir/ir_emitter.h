@@ -79,6 +79,7 @@ public:
     U1 TestBit(const U32U64& value, const U8& bit);
     U32 ConditionalSelect(Cond cond, const U32& a, const U32& b);
     U64 ConditionalSelect(Cond cond, const U64& a, const U64& b);
+    NZCV ConditionalSelect(Cond cond, const NZCV& a, const NZCV& b);
     U32U64 ConditionalSelect(Cond cond, const U32U64& a, const U32U64& b);
 
     NZCV NZCVFromPackedFlags(const U32& a);
