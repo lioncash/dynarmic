@@ -22,6 +22,60 @@ static boost::optional<size_t> GetDataSize(Imm<2> type) {
     return boost::none;
 }
 
+bool TranslatorVisitor::SCVTF_float_int(bool sf, Imm<2> type, Reg Rn, Vec Vd) {
+    const size_t intsize = sf ? 64 : 32;
+    const auto fltsize = GetDataSize(type);
+    if (!fltsize || *fltsize == 16) {
+        return UnallocatedEncoding();
+    }
+
+    const IR::U32U64 intval = X(intsize, Rn);
+    IR::U32U64 fltval;
+
+    if (intsize == 32 && *fltsize == 32) {
+        fltval = ir.FPS32ToSingle(intval, false, true);
+    } else if (intsize == 32 && *fltsize == 64) {
+        fltval = ir.FPS32ToDouble(intval, false, true);
+    } else if (intsize == 64 && *fltsize == 32) {
+        return InterpretThisInstruction();
+    } else if (intsize == 64 && *fltsize == 64) {
+        return InterpretThisInstruction();
+    } else {
+        UNREACHABLE();
+    }
+
+    V_scalar(*fltsize, Vd, fltval);
+
+    return true;
+}
+
+bool TranslatorVisitor::UCVTF_float_int(bool sf, Imm<2> type, Reg Rn, Vec Vd) {
+    const size_t intsize = sf ? 64 : 32;
+    const auto fltsize = GetDataSize(type);
+    if (!fltsize || *fltsize == 16) {
+        return UnallocatedEncoding();
+    }
+
+    const IR::U32U64 intval = X(intsize, Rn);
+    IR::U32U64 fltval;
+
+    if (intsize == 32 && *fltsize == 32) {
+        fltval = ir.FPU32ToSingle(intval, false, true);
+    } else if (intsize == 32 && *fltsize == 64) {
+        fltval = ir.FPU32ToDouble(intval, false, true);
+    } else if (intsize == 64 && *fltsize == 32) {
+        return InterpretThisInstruction();
+    } else if (intsize == 64 && *fltsize == 64) {
+        return InterpretThisInstruction();
+    } else {
+        UNREACHABLE();
+    }
+
+    V_scalar(*fltsize, Vd, fltval);
+
+    return true;
+}
+
 bool TranslatorVisitor::FCVTZS_float_int(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
     const size_t intsize = sf ? 64 : 32;
     const auto fltsize = GetDataSize(type);

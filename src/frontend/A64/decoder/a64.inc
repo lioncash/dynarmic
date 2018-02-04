@@ -893,8 +893,8 @@ INST(EOR_asimd,              "EOR (vector)",                              "0Q101
 // Data Processing - FP and SIMD - Conversion between floating point and integer
 //INST(FCVTNS_float,           "FCVTNS (scalar)",                           "z0011110yy100000000000nnnnnddddd")
 //INST(FCVTNU_float,           "FCVTNU (scalar)",                           "z0011110yy100001000000nnnnnddddd")
-//INST(SCVTF_float_int,        "SCVTF (scalar, integer)",                   "z0011110yy100010000000nnnnnddddd")
-//INST(UCVTF_float_int,        "UCVTF (scalar, integer)",                   "z0011110yy100011000000nnnnnddddd")
+INST(SCVTF_float_int,        "SCVTF (scalar, integer)",                   "z0011110yy100010000000nnnnnddddd")
+INST(UCVTF_float_int,        "UCVTF (scalar, integer)",                   "z0011110yy100011000000nnnnnddddd")
 //INST(FCVTAS_float,           "FCVTAS (scalar)",                           "z0011110yy100100000000nnnnnddddd")
 //INST(FCVTAU_float,           "FCVTAU (scalar)",                           "z0011110yy100101000000nnnnnddddd")
 //INST(FMOV_float_gen,         "FMOV (general)",                            "z0011110yy10-11-000000nnnnnddddd")
