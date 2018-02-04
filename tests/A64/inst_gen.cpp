@@ -36,5 +36,3 @@ u32 InstructionGenerator::Generate() const {
     } while (IsInvalidInstruction(inst));
     return inst;
 }
-
-std::vector<InstructionGenerator> InstructionGenerator::invalid_instructions;

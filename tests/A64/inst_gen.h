@@ -30,7 +30,7 @@ public:
     }
 
 private:
-    static std::vector<InstructionGenerator> invalid_instructions;
+    static inline std::vector<InstructionGenerator> invalid_instructions;
 
     u32 bits = 0;
     u32 mask = 0;
