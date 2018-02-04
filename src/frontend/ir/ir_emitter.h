@@ -245,8 +245,8 @@ public:
     U64 FPSingleToDouble(const U32& a, bool fpscr_controlled);
     U32 FPSingleToS32(const U32& a, bool round_towards_zero, bool fpscr_controlled);
     U32 FPSingleToU32(const U32& a, bool round_towards_zero, bool fpscr_controlled);
-    U32 FPDoubleToS32(const U32& a, bool round_towards_zero, bool fpscr_controlled);
-    U32 FPDoubleToU32(const U32& a, bool round_towards_zero, bool fpscr_controlled);
+    U32 FPDoubleToS32(const U64& a, bool round_towards_zero, bool fpscr_controlled);
+    U32 FPDoubleToU32(const U64& a, bool round_towards_zero, bool fpscr_controlled);
     U32 FPS32ToSingle(const U32& a, bool round_to_nearest, bool fpscr_controlled);
     U32 FPU32ToSingle(const U32& a, bool round_to_nearest, bool fpscr_controlled);
     U64 FPS32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_controlled);

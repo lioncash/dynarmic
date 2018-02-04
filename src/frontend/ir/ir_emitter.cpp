@@ -979,12 +979,12 @@ U32 IREmitter::FPSingleToU32(const U32& a, bool round_towards_zero, bool fpscr_c
     return Inst<U32>(Opcode::FPSingleToU32, a, Imm1(round_towards_zero));
 }
 
-U32 IREmitter::FPDoubleToS32(const U32& a, bool round_towards_zero, bool fpscr_controlled) {
+U32 IREmitter::FPDoubleToS32(const U64& a, bool round_towards_zero, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
     return Inst<U32>(Opcode::FPDoubleToS32, a, Imm1(round_towards_zero));
 }
 
-U32 IREmitter::FPDoubleToU32(const U32& a, bool round_towards_zero, bool fpscr_controlled) {
+U32 IREmitter::FPDoubleToU32(const U64& a, bool round_towards_zero, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
     return Inst<U32>(Opcode::FPDoubleToU32, a, Imm1(round_towards_zero));
 }

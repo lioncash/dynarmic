@@ -902,8 +902,8 @@ INST(EOR_asimd,              "EOR (vector)",                              "0Q101
 //INST(FCVTPU_float,           "FCVTPU (scalar)",                           "z0011110yy101001000000nnnnnddddd")
 //INST(FCVTMS_float,           "FCVTMS (scalar)",                           "z0011110yy110000000000nnnnnddddd")
 //INST(FCVTMU_float,           "FCVTMU (scalar)",                           "z0011110yy110001000000nnnnnddddd")
-//INST(FCVTZS_float_int,       "FCVTZS (scalar, integer)",                  "z0011110yy111000000000nnnnnddddd")
-//INST(FCVTZU_float_int,       "FCVTZU (scalar, integer)",                  "z0011110yy111001000000nnnnnddddd")
+INST(FCVTZS_float_int,       "FCVTZS (scalar, integer)",                  "z0011110yy111000000000nnnnnddddd")
+INST(FCVTZU_float_int,       "FCVTZU (scalar, integer)",                  "z0011110yy111001000000nnnnnddddd")
 //INST(FJCVTZS,                "FJCVTZS",                                   "0001111001111110000000nnnnnddddd")
 
 // Data Processing - FP and SIMD - Floating point data processing
