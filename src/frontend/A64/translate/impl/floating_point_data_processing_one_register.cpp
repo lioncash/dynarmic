@@ -22,6 +22,18 @@ static boost::optional<size_t> GetDataSize(Imm<2> type) {
     return boost::none;
 }
 
+bool TranslatorVisitor::FABS_float(Imm<2> type, Vec Vn, Vec Vd) {
+    boost::optional<size_t> datasize = GetDataSize(type);
+    if (!datasize || *datasize == 16) {
+        return UnallocatedEncoding();
+    }
+
+    const IR::U32U64 operand = V_scalar(*datasize, Vn);
+    const IR::U32U64 result = ir.FPAbs(operand);
+    V_scalar(*datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FMOV_float_imm(Imm<2> type, Imm<8> imm8, Vec Vd) {
     boost::optional<size_t> datasize = GetDataSize(type);
     if (!datasize) {
