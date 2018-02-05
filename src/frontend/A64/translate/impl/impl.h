@@ -53,6 +53,9 @@ struct TranslatorVisitor final {
     IR::UAny V_scalar(size_t bitsize, Vec vec);
     void V_scalar(size_t bitsize, Vec vec, IR::UAny value);
 
+    IR::UAny Vpart(size_t bitsize, Vec vec, size_t part);
+    void Vpart(size_t bitsize, Vec vec, size_t part, IR::UAny value);
+
     IR::UAnyU128 Mem(IR::U64 address, size_t size, AccType acctype);
     void Mem(IR::U64 address, size_t size, AccType acctype, IR::UAnyU128 value);
 

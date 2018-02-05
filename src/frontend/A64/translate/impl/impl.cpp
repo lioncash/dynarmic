@@ -161,6 +161,27 @@ void TranslatorVisitor::V_scalar(size_t /*bitsize*/, Vec vec, IR::UAny value) {
     ir.SetQ(vec, ir.ZeroExtendToQuad(value));
 }
 
+IR::UAny TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part) {
+    ASSERT(part == 0 || part == 1);
+    if (part == 0) {
+        ASSERT(bitsize == 8 || bitsize == 16 || bitsize == 32 || bitsize == 64);
+    } else {
+        ASSERT(bitsize == 64);
+    }
+    return ir.VectorGetElement(bitsize, V(128, vec), part);
+}
+
+void TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part, IR::UAny value) {
+    ASSERT(part == 0 || part == 1);
+    if (part == 0) {
+        ASSERT(bitsize == 8 || bitsize == 16 || bitsize == 32 || bitsize == 64);
+        V(128, vec, ir.ZeroExtendToQuad(value));
+    } else {
+        ASSERT(bitsize == 64);
+        V(128, vec, ir.VectorSetElement(64, V(128, vec), 1, value));
+    }
+}
+
 IR::UAnyU128 TranslatorVisitor::Mem(IR::U64 address, size_t bytesize, AccType /*acctype*/) {
     switch (bytesize) {
     case 1:
