@@ -30,10 +30,8 @@ struct A64JitState {
     u64 sp;
     u64 pc;
 
-    union {
-        u32 CPSR_nzcv = 0;
-        u32 FPSCR_nzcv;
-    };
+    u32 CPSR_nzcv = 0;
+
     u32 GetPstate() const {
         return CPSR_nzcv;
     }
