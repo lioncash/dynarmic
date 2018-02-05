@@ -38,4 +38,20 @@ bool TranslatorVisitor::FCCMP_float(Imm<2> type, Vec Vm, Cond cond, Vec Vn, Imm<
     return true;
 }
 
+bool TranslatorVisitor::FCCMPE_float(Imm<2> type, Vec Vm, Cond cond, Vec Vn, Imm<4> nzcv) {
+    const auto datasize = GetDataSize(type);
+    if (!datasize || *datasize == 16) {
+        return UnallocatedEncoding();
+    }
+    const u32 flags = nzcv.ZeroExtend<u32>() << 28;
+
+    const IR::U32U64 operand1 = V_scalar(*datasize, Vn);
+    const IR::U32U64 operand2 = V_scalar(*datasize, Vm);
+
+    const IR::NZCV then_flags = ir.FPCompare(operand1, operand2, true, true);
+    const IR::NZCV else_flags = ir.NZCVFromPackedFlags(ir.Imm32(flags));
+    ir.SetNZCV(ir.ConditionalSelect(cond, then_flags, else_flags));
+    return true;
+}
+
 } // namespace Dynarmic::A64

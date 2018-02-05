@@ -913,7 +913,7 @@ INST(FMOV_float_imm,         "FMOV (scalar, immediate)",                  "00011
 
 // Data Processing - FP and SIMD - Floating point conditional compare
 INST(FCCMP_float,            "FCCMP",                                     "00011110yy1mmmmmcccc01nnnnn0ffff")
-//INST(FCCMPE_float,           "FCCMPE",                                    "00011110yy1mmmmmcccc01nnnnn1ffff")
+INST(FCCMPE_float,           "FCCMPE",                                    "00011110yy1mmmmmcccc01nnnnn1ffff")
 
 // Data Processing - FP and SIMD - Floating point data processing two register
 INST(FMUL_float,             "FMUL (scalar)",                             "00011110yy1mmmmm000010nnnnnddddd")
