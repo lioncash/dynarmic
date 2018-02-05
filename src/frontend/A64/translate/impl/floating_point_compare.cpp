@@ -37,7 +37,8 @@ bool TranslatorVisitor::FCMP_float(Imm<2> type, Vec Vm, Vec Vn, bool cmp_with_ze
         operand2 = V_scalar(*datasize, Vm);
     }
 
-    ir.FPCompare(operand1, operand2, false, true);
+    auto nzcv = ir.FPCompare(operand1, operand2, false, true);
+    ir.SetNZCV(nzcv);
     return true;
 }
 
@@ -55,7 +56,8 @@ bool TranslatorVisitor::FCMPE_float(Imm<2> type, Vec Vm, Vec Vn, bool cmp_with_z
         operand2 = V_scalar(*datasize, Vm);
     }
 
-    ir.FPCompare(operand1, operand2, true, true);
+    auto nzcv = ir.FPCompare(operand1, operand2, true, true);
+    ir.SetNZCV(nzcv);
     return true;
 }
 

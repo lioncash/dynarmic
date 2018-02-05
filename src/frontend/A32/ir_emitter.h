@@ -64,7 +64,7 @@ public:
     IR::U32 GetFpscr();
     void SetFpscr(const IR::U32& new_fpscr);
     IR::U32 GetFpscrNZCV();
-    void SetFpscrNZCV(const IR::U32& new_fpscr_nzcv);
+    void SetFpscrNZCV(const IR::NZCV& new_fpscr_nzcv);
 
     void ClearExclusive();
     void SetExclusive(const IR::U32& vaddr, size_t byte_size);

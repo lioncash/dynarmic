@@ -473,7 +473,8 @@ bool ArmTranslatorVisitor::vfp2_VCMP(Cond cond, bool D, size_t Vd, bool sz, bool
     if (ConditionPassed(cond)) {
         auto reg_d = ir.GetExtendedRegister(d);
         auto reg_m = ir.GetExtendedRegister(m);
-        ir.FPCompare(reg_d, reg_m, exc_on_qnan, true);
+        auto nzcv = ir.FPCompare(reg_d, reg_m, exc_on_qnan, true);
+        ir.SetFpscrNZCV(nzcv);
     }
     return true;
 }
@@ -486,9 +487,11 @@ bool ArmTranslatorVisitor::vfp2_VCMP_zero(Cond cond, bool D, size_t Vd, bool sz,
     if (ConditionPassed(cond)) {
         auto reg_d = ir.GetExtendedRegister(d);
         if (sz) {
-            ir.FPCompare(reg_d, ir.Imm64(0), exc_on_qnan, true);
+            auto nzcv = ir.FPCompare(reg_d, ir.Imm64(0), exc_on_qnan, true);
+            ir.SetFpscrNZCV(nzcv);
         } else {
-            ir.FPCompare(reg_d, ir.Imm32(0), exc_on_qnan, true);
+            auto nzcv = ir.FPCompare(reg_d, ir.Imm32(0), exc_on_qnan, true);
+            ir.SetFpscrNZCV(nzcv);
         }
     }
     return true;

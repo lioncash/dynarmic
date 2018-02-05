@@ -24,7 +24,6 @@ struct JitStateInfo {
         , offsetof_rsb_location_descriptors(offsetof(JitStateType, rsb_location_descriptors))
         , offsetof_rsb_codeptrs(offsetof(JitStateType, rsb_codeptrs))
         , offsetof_CPSR_nzcv(offsetof(JitStateType, CPSR_nzcv))
-        , offsetof_FPSCR_nzcv(offsetof(JitStateType, FPSCR_nzcv))
         , offsetof_FPSCR_IDC(offsetof(JitStateType, FPSCR_IDC))
         , offsetof_FPSCR_UFC(offsetof(JitStateType, FPSCR_UFC))
     {}
@@ -38,7 +37,6 @@ struct JitStateInfo {
     const size_t offsetof_rsb_location_descriptors;
     const size_t offsetof_rsb_codeptrs;
     const size_t offsetof_CPSR_nzcv;
-    const size_t offsetof_FPSCR_nzcv;
     const size_t offsetof_FPSCR_IDC;
     const size_t offsetof_FPSCR_UFC;
 };

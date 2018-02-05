@@ -907,13 +907,13 @@ U32U64 IREmitter::FPAdd(const U32U64& a, const U32U64& b, bool fpscr_controlled)
     }
 }
 
-void IREmitter::FPCompare(const U32U64& a, const U32U64& b, bool exc_on_qnan, bool fpscr_controlled) {
+NZCV IREmitter::FPCompare(const U32U64& a, const U32U64& b, bool exc_on_qnan, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
-        Inst(Opcode::FPCompare32, a, b, Imm1(exc_on_qnan));
+        return Inst<NZCV>(Opcode::FPCompare32, a, b, Imm1(exc_on_qnan));
     } else {
-        Inst(Opcode::FPCompare64, a, b, Imm1(exc_on_qnan));
+        return Inst<NZCV>(Opcode::FPCompare64, a, b, Imm1(exc_on_qnan));
     }
 }
 

@@ -629,7 +629,12 @@ void A32EmitX64::EmitA32GetFpscrNZCV(A32EmitContext& ctx, IR::Inst* inst) {
 
 void A32EmitX64::EmitA32SetFpscrNZCV(A32EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 value = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Reg32 value = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+
+    code.and_(value, 0b11000001'00000001);
+    code.imul(value, value, 0b00010000'00100001);
+    code.shl(value, 16);
+    code.and_(value, 0xF0000000);
 
     code.mov(dword[r15 + offsetof(A32JitState, FPSCR_nzcv)], value);
 }

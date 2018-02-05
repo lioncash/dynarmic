@@ -281,16 +281,31 @@ void EmitX64::EmitFPSub64(EmitContext& ctx, IR::Inst* inst) {
     FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::subsd);
 }
 
-static void SetFpscrNzcvFromFlags(BlockOfCode& code, EmitContext& ctx) {
+static Xbyak::Reg64 SetFpscrNzcvFromFlags(BlockOfCode& code, EmitContext& ctx) {
     ctx.reg_alloc.ScratchGpr({HostLoc::RCX}); // shifting requires use of cl
-    Xbyak::Reg32 nzcv = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg64 nzcv = ctx.reg_alloc.ScratchGpr();
 
-    code.mov(nzcv, 0x28630000);
+    //               x64 flags    ARM flags
+    //               ZF  PF  CF     NZCV
+    // Unordered      1   1   1     0011
+    // Greater than   0   0   0     0010
+    // Less than      0   0   1     1000
+    // Equal          1   0   0     0110
+    //
+    // Thus we can take use ZF:CF as an index into an array like so:
+    //  x64      ARM      ARM as x64
+    // ZF:CF     NZCV     NZ-----C-------V
+    //   0       0010     0000000100000000 = 0x0100
+    //   1       1000     1000000000000000 = 0x8000
+    //   2       0110     0100000100000000 = 0x4100
+    //   3       0011     0000000100000001 = 0x0101
+
+    code.mov(nzcv, 0x0101'4100'8000'0100);
     code.sete(cl);
-    code.rcl(cl, 3);
-    code.shl(nzcv, cl);
-    code.and_(nzcv, 0xF0000000);
-    code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_nzcv], nzcv);
+    code.rcl(cl, 5); // cl = ZF:CF:0000
+    code.shr(nzcv, cl);
+
+    return nzcv;
 }
 
 void EmitX64::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
@@ -305,7 +320,8 @@ void EmitX64::EmitFPCompare32(EmitContext& ctx, IR::Inst* inst) {
         code.ucomiss(reg_a, reg_b);
     }
 
-    SetFpscrNzcvFromFlags(code, ctx);
+    Xbyak::Reg64 nzcv = SetFpscrNzcvFromFlags(code, ctx);
+    ctx.reg_alloc.DefineValue(inst, nzcv);
 }
 
 void EmitX64::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
@@ -320,7 +336,8 @@ void EmitX64::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
         code.ucomisd(reg_a, reg_b);
     }
 
-    SetFpscrNzcvFromFlags(code, ctx);
+    Xbyak::Reg64 nzcv = SetFpscrNzcvFromFlags(code, ctx);
+    ctx.reg_alloc.DefineValue(inst, nzcv);
 }
 
 void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {

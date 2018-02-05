@@ -154,7 +154,7 @@ IR::U32 IREmitter::GetFpscrNZCV() {
     return Inst<IR::U32>(Opcode::A32GetFpscrNZCV);
 }
 
-void IREmitter::SetFpscrNZCV(const IR::U32& new_fpscr_nzcv) {
+void IREmitter::SetFpscrNZCV(const IR::NZCV& new_fpscr_nzcv) {
     Inst(Opcode::A32SetFpscrNZCV, new_fpscr_nzcv);
 }
 

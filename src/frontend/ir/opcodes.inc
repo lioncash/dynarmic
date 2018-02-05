@@ -33,7 +33,7 @@ A32OPC(ExceptionRaised,         T::Void,        T::U32,         T::U64          
 A32OPC(GetFpscr,                T::U32,                                                         )
 A32OPC(SetFpscr,                T::Void,        T::U32,                                         )
 A32OPC(GetFpscrNZCV,            T::U32,                                                         )
-A32OPC(SetFpscrNZCV,            T::Void,        T::U32,                                         )
+A32OPC(SetFpscrNZCV,            T::Void,        T::NZCVFlags                                    )
 
 // A64 Context getters/setters
 A64OPC(SetCheckBit,             T::Void,        T::U1                                           )
@@ -230,8 +230,8 @@ OPCODE(FPAbs32,                 T::U32,         T::U32                          
 OPCODE(FPAbs64,                 T::U64,         T::U64                                          )
 OPCODE(FPAdd32,                 T::U32,         T::U32,         T::U32                          )
 OPCODE(FPAdd64,                 T::U64,         T::U64,         T::U64                          )
-OPCODE(FPCompare32,             T::Void,        T::U32,         T::U32,         T::U1           )
-OPCODE(FPCompare64,             T::Void,        T::U64,         T::U64,         T::U1           )
+OPCODE(FPCompare32,             T::NZCVFlags,   T::U32,         T::U32,         T::U1           )
+OPCODE(FPCompare64,             T::NZCVFlags,   T::U64,         T::U64,         T::U1           )
 OPCODE(FPDiv32,                 T::U32,         T::U32,         T::U32                          )
 OPCODE(FPDiv64,                 T::U64,         T::U64,         T::U64                          )
 OPCODE(FPMul32,                 T::U32,         T::U32,         T::U32                          )
