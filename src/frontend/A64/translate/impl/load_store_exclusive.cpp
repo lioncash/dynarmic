@@ -47,10 +47,24 @@ static bool OrderedSharedDecodeAndOperation(TranslatorVisitor& tv, size_t size, 
     return true;
 }
 
+bool TranslatorVisitor::STLLR(Imm<2> sz, Reg Rn, Reg Rt) {
+    const size_t size = sz.ZeroExtend<size_t>();
+    const bool L = 0;
+    const bool o0 = 0;
+    return OrderedSharedDecodeAndOperation(*this, size, L, o0, Rn, Rt);
+}
+
 bool TranslatorVisitor::STLR(Imm<2> sz, Reg Rn, Reg Rt) {
     const size_t size = sz.ZeroExtend<size_t>();
     const bool L = 0;
     const bool o0 = 1;
+    return OrderedSharedDecodeAndOperation(*this, size, L, o0, Rn, Rt);
+}
+
+bool TranslatorVisitor::LDLAR(Imm<2> sz, Reg Rn, Reg Rt) {
+    const size_t size = sz.ZeroExtend<size_t>();
+    const bool L = 1;
+    const bool o0 = 0;
     return OrderedSharedDecodeAndOperation(*this, size, L, o0, Rn, Rt);
 }
 

@@ -132,9 +132,9 @@ INST(LDx_mult_2,             "LDx (multiple structures)",                 "0Q001
 //INST(LDAXRB,                 "LDAXRB",                                    "zz00100001011111111111nnnnnttttt")
 //INST(LDXP,                   "LDXP",                                      "1z001000011111110uuuuunnnnnttttt")
 //INST(LDAXP,                  "LDAXP",                                     "1z001000011111111uuuuunnnnnttttt")
-//INST(STLLR,                  "STLLRB, STLLRH, STLLR",                     "zz00100010011111011111nnnnnttttt")
+INST(STLLR,                  "STLLRB, STLLRH, STLLR",                     "zz00100010011111011111nnnnnttttt")
 INST(STLR,                   "STLRB, STLRH, STLR",                        "zz00100010011111111111nnnnnttttt")
-//INST(LDLAR,                  "LDLARB, LDLARH, LDLAR",                     "zz00100011011111011111nnnnnttttt")
+INST(LDLAR,                  "LDLARB, LDLARH, LDLAR",                     "zz00100011011111011111nnnnnttttt")
 INST(LDAR,                   "LDARB, LDARH, LDAR",                        "zz00100011011111111111nnnnnttttt")
 //INST(CASP,                   "CASP, CASPA, CASPAL, CASPL",                "0z0010000L1sssssp11111nnnnnttttt") // ARMv8.1
 //INST(CASB,                   "CASB, CASAB, CASALB, CASLB",                "000010001L1sssssp11111nnnnnttttt") // ARMv8.1

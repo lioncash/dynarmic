@@ -4,7 +4,10 @@
  * General Public License version 2 or any later version.
  */
 
+#include <algorithm>
 #include <cstring>
+#include <string>
+#include <vector>
 
 #include <catch.hpp>
 
@@ -41,8 +44,18 @@ static u32 GenRandomInst(u64 pc, bool is_last_inst) {
 
         std::vector<InstructionGenerator> result;
 
+        // List of instructions not to test
+        const std::vector<std::string> do_not_test {
+            // Unallocated encodings are invalid.
+            "UnallocatedEncoding",
+            // Unimplemented in QEMU
+            "STLLR",
+            // Unimplemented in QEMU
+            "LDLAR",
+        };
+
         for (const auto& [fn, bitstring] : list) {
-            if (std::strcmp(fn, "UnallocatedEncoding") == 0) {
+            if (std::find(do_not_test.begin(), do_not_test.end(), fn) != do_not_test.end()) {
                 InstructionGenerator::AddInvalidInstruction(bitstring);
                 continue;
             }
