@@ -938,7 +938,7 @@ struct TranslatorVisitor final {
     bool UCVTF_float_int(bool sf, Imm<2> type, Reg Rn, Vec Vd);
     bool FCVTAS_float(bool sf, Imm<2> type, Vec Vn, Reg Rd);
     bool FCVTAU_float(bool sf, Imm<2> type, Vec Vn, Reg Rd);
-    bool FMOV_float_gen(bool sf, Imm<2> type, Vec Vn, Vec Vd);
+    bool FMOV_float_gen(bool sf, Imm<2> type, Imm<1> rmode_0, Imm<1> opc_0, size_t n, size_t d);
     bool FCVTPS_float(bool sf, Imm<2> type, Vec Vn, Reg Rd);
     bool FCVTPU_float(bool sf, Imm<2> type, Vec Vn, Reg Rd);
     bool FCVTMS_float(bool sf, Imm<2> type, Vec Vn, Reg Rd);
