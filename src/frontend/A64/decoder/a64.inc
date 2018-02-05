@@ -891,7 +891,7 @@ INST(FCVTZU_float_int,       "FCVTZU (scalar, integer)",                  "z0011
 //INST(FJCVTZS,                "FJCVTZS",                                   "0001111001111110000000nnnnnddddd")
 
 // Data Processing - FP and SIMD - Floating point data processing
-//INST(FMOV_float,             "FMOV (register)",                           "00011110yy100000010000nnnnnddddd")
+INST(FMOV_float,             "FMOV (register)",                           "00011110yy100000010000nnnnnddddd")
 INST(FABS_float,             "FABS (scalar)",                             "00011110yy100000110000nnnnnddddd")
 INST(FNEG_float,             "FNEG (scalar)",                             "00011110yy100001010000nnnnnddddd")
 //INST(FSQRT_float,            "FSQRT (scalar)",                            "00011110yy100001110000nnnnnddddd")
