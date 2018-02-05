@@ -82,6 +82,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/floating_point_data_processing_two_register.cpp
     frontend/A64/translate/impl/impl.cpp
     frontend/A64/translate/impl/impl.h
+    frontend/A64/translate/impl/load_store_exclusive.cpp
     frontend/A64/translate/impl/load_store_load_literal.cpp
     frontend/A64/translate/impl/load_store_multiple_structures.cpp
     frontend/A64/translate/impl/load_store_register_immediate.cpp

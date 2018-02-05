@@ -16,7 +16,7 @@
 namespace Dynarmic::A64 {
 
 enum class AccType {
-    NORMAL, VEC, STREAM, VECSTREAM, ATOMIC, ORDERED, UNPRIV, IFETCH, PTW, DC, IC, AT,
+    NORMAL, VEC, STREAM, VECSTREAM, ATOMIC, ORDERED, ORDEREDRW, LIMITEDORDERED, UNPRIV, IFETCH, PTW, DC, IC, DCZVA, AT,
 };
 
 enum class MemOp {
@@ -187,38 +187,22 @@ struct TranslatorVisitor final {
     bool LD4R_2(bool Q, Reg Rm, Imm<2> size, Reg Rn, Vec Vt);
 
     // Loads and stores - Load/Store Exclusive
-    bool STXRB(Reg Rs, Reg Rn, Reg Rt);
-    bool STLXRB(Reg Rs, Reg Rn, Reg Rt);
+    bool STXR(Imm<2> size, Reg Rs, Reg Rn, Reg Rt);
+    bool STLXR(Imm<2> size, Reg Rs, Reg Rn, Reg Rt);
+    bool STXP(Imm<1> size, Reg Rs, Reg Rt2, Reg Rn, Reg Rt);
+    bool STLXP(Imm<1> size, Reg Rs, Reg Rt2, Reg Rn, Reg Rt);
+    bool LDXR(Imm<2> size, Reg Rn, Reg Rt);
+    bool LDAXRB(Imm<2> size, Reg Rn, Reg Rt);
+    bool LDXP(Imm<1> size, Reg Rt2, Reg Rn, Reg Rt);
+    bool LDAXP(Imm<1> size, Reg Rt2, Reg Rn, Reg Rt);
+    bool STLLR(Imm<2> size, Reg Rn, Reg Rt);
+    bool STLR(Imm<2> size, Reg Rn, Reg Rt);
+    bool LDLAR(Imm<2> size, Reg Rn, Reg Rt);
+    bool LDAR(Imm<2> size, Reg Rn, Reg Rt);
     bool CASP(bool sz, bool L, Reg Rs, bool o0, Reg Rn, Reg Rt);
-    bool LDXRB(Reg Rn, Reg Rt);
-    bool LDAXRB(Reg Rn, Reg Rt);
-    bool STLLRB(Reg Rn, Reg Rt);
-    bool STLRB(Reg Rn, Reg Rt);
     bool CASB(bool L, Reg Rs, bool o0, Reg Rn, Reg Rt);
-    bool LDLARB(Reg Rn, Reg Rt);
-    bool LDARB(Reg Rn, Reg Rt);
-    bool STXRH(Reg Rs, Reg Rn, Reg Rt);
-    bool STLXRH(Reg Rs, Reg Rn, Reg Rt);
-    bool LDXRH(Reg Rn, Reg Rt);
-    bool LDAXRH(Reg Rn, Reg Rt);
-    bool STLLRH(Reg Rn, Reg Rt);
-    bool STLRH(Reg Rn, Reg Rt);
     bool CASH(bool L, Reg Rs, bool o0, Reg Rn, Reg Rt);
-    bool LDLARH(Reg Rn, Reg Rt);
-    bool LDARH(Reg Rn, Reg Rt);
-    bool STXR(Reg Rs, Reg Rn, Reg Rt);
-    bool STLXR(Reg Rs, Reg Rn, Reg Rt);
-    bool STXP(bool sz, Reg Rs, Reg Rt2, Reg Rn, Reg Rt);
-    bool STLXP(bool sz, Reg Rs, Reg Rt2, Reg Rn, Reg Rt);
-    bool LDXR(Reg Rn, Reg Rt);
-    bool LDAXR(Reg Rn, Reg Rt);
-    bool LDXP(bool sz, Reg Rt2, Reg Rn, Reg Rt);
-    bool LDAXP(bool sz, Reg Rt2, Reg Rn, Reg Rt);
-    bool STLLR(Reg Rn, Reg Rt);
-    bool STLR(Reg Rn, Reg Rt);
-    bool CAS(bool L, Reg Rs, bool o0, Reg Rn, Reg Rt);
-    bool LDLAR(Reg Rn, Reg Rt);
-    bool LDAR(Reg Rn, Reg Rt);
+    bool CAS(bool sz, bool L, Reg Rs, bool o0, Reg Rn, Reg Rt);
 
     // Loads and stores - Load register (literal)
     bool LDR_lit_gen(bool opc_0, Imm<19> imm19, Reg Rt);
