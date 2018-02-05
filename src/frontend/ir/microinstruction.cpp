@@ -117,6 +117,7 @@ bool Inst::ReadsFromCPSR() const {
     case Opcode::A64GetCFlag:
     case Opcode::ConditionalSelect32:
     case Opcode::ConditionalSelect64:
+    case Opcode::ConditionalSelectNZCV:
         return true;
 
     default:
