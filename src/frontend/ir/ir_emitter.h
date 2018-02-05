@@ -227,6 +227,10 @@ public:
     U128 VectorEqual32(const U128& a, const U128& b);
     U128 VectorEqual64(const U128& a, const U128& b);
     U128 VectorEqual128(const U128& a, const U128& b);
+    U128 VectorInterleaveLower8(const U128& a, const U128& b);
+    U128 VectorInterleaveLower16(const U128& a, const U128& b);
+    U128 VectorInterleaveLower32(const U128& a, const U128& b);
+    U128 VectorInterleaveLower64(const U128& a, const U128& b);
     U128 VectorLowerPairedAdd8(const U128& a, const U128& b);
     U128 VectorLowerPairedAdd16(const U128& a, const U128& b);
     U128 VectorLowerPairedAdd32(const U128& a, const U128& b);

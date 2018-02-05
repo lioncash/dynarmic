@@ -865,6 +865,22 @@ U128 IREmitter::VectorEqual128(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorEqual128, a, b);
 }
 
+U128 IREmitter::VectorInterleaveLower8(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorInterleaveLower8, a, b);
+}
+
+U128 IREmitter::VectorInterleaveLower16(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorInterleaveLower16, a, b);
+}
+
+U128 IREmitter::VectorInterleaveLower32(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorInterleaveLower32, a, b);
+}
+
+U128 IREmitter::VectorInterleaveLower64(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorInterleaveLower64, a, b);
+}
+
 U128 IREmitter::VectorLowerPairedAdd8(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorLowerPairedAdd8, a, b);
 }
