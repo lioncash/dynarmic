@@ -34,6 +34,21 @@ bool TranslatorVisitor::ADD_vector(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) 
     return true;
 }
 
+bool TranslatorVisitor::BIC_asimd_reg(bool Q, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+
+    IR::U128 result = ir.VectorAnd(operand1, ir.VectorNot(operand2));
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::CMEQ_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11 && !Q) return ReservedValue();
     const size_t esize = 8 << size.ZeroExtend<size_t>();
