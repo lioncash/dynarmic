@@ -798,12 +798,8 @@ INST(EOR_asimd,              "EOR (vector)",                              "0Q101
 //INST(BIF,                    "BIF",                                       "0Q101110111mmmmm000111nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD modified immediate
-//INST(MOVI,                   "MOVI",                                      "0Qo0111100000abcmmmm01defghddddd")
-//INST(ORR_asimd_imm,          "ORR (vector, immediate)",                   "0Q00111100000abc---101defghddddd")
-//INST(FMOV_1,                 "FMOV (vector, immediate)",                  "0Q00111100000abc111111defghddddd")
-//INST(FMOV_2,                 "FMOV (vector, immediate)",                  "0Qo0111100000abc111101defghddddd")
-//INST(MVNI,                   "MVNI",                                      "0Q10111100000abcmmmm01defghddddd")
-//INST(BIC_imm,                "BIC (vector, immediate)",                   "0Q10111100000abc---101defghddddd")
+INST(MOVI,                   "MOVI, MVNI, ORR, BIC (vector, immediate)",  "0Qo0111100000abcmmmm01defghddddd")
+//INST(FMOV_2,                 "FMOV (vector, immediate)",                  "0Q00111100000abc111111defghddddd")
 
 // Data Processing - FP and SIMD - SIMD Shfit by immediate
 //INST(SHRN,                   "SHRN, SHRN2",                               "0Q0011110IIIIiii100001nnnnnddddd")
