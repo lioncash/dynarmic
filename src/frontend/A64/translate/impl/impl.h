@@ -40,6 +40,7 @@ struct TranslatorVisitor final {
     };
 
     boost::optional<BitMasks> DecodeBitMasks(bool N, Imm<6> immr, Imm<6> imms, bool immediate);
+    u64 AdvSIMDExpandImm(bool op, Imm<4> cmode, Imm<8> imm8);
 
     IR::U32U64 I(size_t bitsize, u64 value);
     IR::UAny X(size_t bitsize, Reg reg);
