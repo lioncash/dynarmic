@@ -505,7 +505,7 @@ INST(ADD_1,                  "ADD (vector)",                              "01011
 //INST(UQSHL_reg_1,            "UQSHL (register)",                          "01111110zz1mmmmm010011nnnnnddddd")
 //INST(URSHL_1,                "URSHL",                                     "01111110zz1mmmmm010101nnnnnddddd")
 //INST(UQRSHL_1,               "UQRSHL",                                    "01111110zz1mmmmm010111nnnnnddddd")
-//INST(SUB_1,                  "SUB (vector)",                              "01111110zz1mmmmm100001nnnnnddddd")
+INST(SUB_1,                  "SUB (vector)",                              "01111110zz1mmmmm100001nnnnnddddd")
 //INST(CMEQ_reg_1,             "CMEQ (register)",                           "01111110zz1mmmmm100011nnnnnddddd")
 //INST(SQRDMULH_vec_1,         "SQRDMULH (vector)",                         "01111110zz1mmmmm101101nnnnnddddd")
 
