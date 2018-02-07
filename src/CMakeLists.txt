@@ -9,6 +9,7 @@ add_library(dynarmic
     common/aes.h
     common/assert.h
     common/bit_util.h
+    common/cast_util.h
     common/common_types.h
     common/crc32.cpp
     common/crc32.h
