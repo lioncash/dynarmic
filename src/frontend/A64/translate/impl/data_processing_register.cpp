@@ -112,4 +112,28 @@ bool TranslatorVisitor::REV16_int(bool sf, Reg Rn, Reg Rd) {
     return true;
 }
 
+bool TranslatorVisitor::UDIV(bool sf, Reg Rm, Reg Rn, Reg Rd) {
+    const size_t datasize = sf ? 64 : 32;
+
+    const IR::U32U64 m = X(datasize, Rm);
+    const IR::U32U64 n = X(datasize, Rn);
+
+    const IR::U32U64 result = ir.UnsignedDiv(n,m);
+
+    X(datasize, Rd, result);
+    return true;
+}
+
+bool TranslatorVisitor::SDIV(bool sf, Reg Rm, Reg Rn, Reg Rd) {
+    const size_t datasize = sf ? 64 : 32;
+
+    const IR::U32U64 m = X(datasize, Rm);
+    const IR::U32U64 n = X(datasize, Rn);
+
+    const IR::U32U64 result = ir.SignedDiv(n,m);
+
+    X(datasize, Rd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64
