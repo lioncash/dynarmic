@@ -19,6 +19,7 @@
 
 #include "common/bit_util.h"
 #include "common/common_types.h"
+#include "common/scope_exit.h"
 #include "frontend/A32/disassembler/disassembler.h"
 #include "frontend/A32/FPSCR.h"
 #include "frontend/A32/location_descriptor.h"
@@ -147,34 +148,9 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
 
         std::generate_n(test_env.code_mem.begin(), instruction_count, instruction_generator);
 
-        // Run interpreter
-        test_env.modified_memory.clear();
-        interp.NumInstrsToExecute = static_cast<unsigned>(instructions_to_execute_count);
-        InterpreterMainLoop(&interp);
-        WriteRecords interp_write_records = test_env.modified_memory;
-        {
-            bool T = Dynarmic::Common::Bit<5>(interp.Cpsr);
-            interp.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
-        }
+        WriteRecords interp_write_records, jit_write_records;
 
-        // Run jit
-        test_env.modified_memory.clear();
-        WriteRecords jit_write_records;
-        try {
-            test_env.ticks_left = instructions_to_execute_count;
-            jit.Run();
-            jit_write_records = test_env.modified_memory;
-        } catch (...) {
-            printf("Caught something!\n");
-            goto dump_state;
-        }
-
-        // Compare
-        if (!DoesBehaviorMatch(interp, jit, interp_write_records, jit_write_records)) {
-            printf("Failed at execution number %zu\n", run_number);
-
-        dump_state:
-
+        SCOPE_FAIL {
             printf("\nInstruction Listing: \n");
             for (size_t i = 0; i < instruction_count; i++) {
                  printf("%x: %s\n", test_env.code_mem[i], Dynarmic::A32::DisassembleArm(test_env.code_mem[i]).c_str());
@@ -229,15 +205,25 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
             }
 
             fflush(stdout);
+        };
 
-#ifdef _MSC_VER
-            __debugbreak();
-#endif
-#ifdef __unix__
-            raise(SIGTRAP);
-#endif
-            FAIL();
+        // Run interpreter
+        test_env.modified_memory.clear();
+        interp.NumInstrsToExecute = static_cast<unsigned>(instructions_to_execute_count);
+        InterpreterMainLoop(&interp);
+        interp_write_records = test_env.modified_memory;
+        {
+            bool T = Dynarmic::Common::Bit<5>(interp.Cpsr);
+            interp.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
         }
+
+        // Run jit
+        test_env.modified_memory.clear();
+        test_env.ticks_left = instructions_to_execute_count;
+        jit.Run();
+        jit_write_records = test_env.modified_memory;
+
+        REQUIRE(DoesBehaviorMatch(interp, jit, interp_write_records, jit_write_records));
     }
 }
 
