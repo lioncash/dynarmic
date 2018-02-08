@@ -305,7 +305,7 @@ std::vector<ArmMatcher<V>> GetArmDecodeTable() {
         INST(&V::arm_MSR_imm,     "MSR (imm)",           "cccc00110010mm001111rrrrvvvvvvvv"), // v3
         INST(&V::arm_MSR_reg,     "MSR (reg)",           "cccc00010010mm00111100000000nnnn"), // v3
         INST(&V::arm_RFE,         "RFE",                 "1111100--0-1----0000101000000000"), // v6
-        INST(&V::arm_SRS,         "SRS",                 "0000011--0-00000000000000001----"), // v6
+        INST(&V::arm_SRS,         "SRS",                 "1111100--1-0110100000101000-----"), // v6
 
 #undef INST
 
