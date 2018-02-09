@@ -67,6 +67,8 @@ ArgCallback DevirtualizeItanium(mp::class_type_t<FunctionType>* this_) {
 
 #if defined(__APPLE__) || defined(linux) || defined(__linux) || defined(__linux__)
 #define DEVIRT(this_, mfp) Dynarmic::BackendX64::DevirtualizeItanium<decltype(mfp), mfp>(this_)
+#elif defined(__MINGW64__)
+#define DEVIRT(this_, mfp) Dynarmic::BackendX64::DevirtualizeItanium<decltype(mfp), mfp>(this_)
 #elif defined(_WIN32)
 #define DEVIRT(this_, mfp) Dynarmic::BackendX64::DevirtualizeWindows<decltype(mfp), mfp>(this_)
 #else
