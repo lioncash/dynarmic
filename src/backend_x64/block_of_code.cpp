@@ -152,9 +152,9 @@ void BlockOfCode::GenRunCode() {
             SwitchMxcsrOnExit();
         }
 
-        cb.AddTicks->EmitCall(*this, [this](Xbyak::Reg64 param1) {
-            mov(param1, qword[r15 + jsi.offsetof_cycles_to_run]);
-            sub(param1, qword[r15 + jsi.offsetof_cycles_remaining]);
+        cb.AddTicks->EmitCall(*this, [this](RegList param) {
+            mov(param[0], qword[r15 + jsi.offsetof_cycles_to_run]);
+            sub(param[0], qword[r15 + jsi.offsetof_cycles_remaining]);
         });
 
         ABI_PopCalleeSaveRegistersAndAdjustStack(*this);

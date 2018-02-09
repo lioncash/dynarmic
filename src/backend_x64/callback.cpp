@@ -9,47 +9,30 @@
 
 namespace Dynarmic::BackendX64 {
 
-void SimpleCallback::EmitCall(BlockOfCode& code, std::function<void()> l) {
-    l();
+void SimpleCallback::EmitCall(BlockOfCode& code, std::function<void(RegList)> l) {
+    l({code.ABI_PARAM1, code.ABI_PARAM2, code.ABI_PARAM3, code.ABI_PARAM4});
     code.CallFunction(fn);
 }
 
-void SimpleCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64)> l) {
-    l(code.ABI_PARAM1);
+void SimpleCallback::EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> l) {
+    l(code.ABI_PARAM1, {code.ABI_PARAM2, code.ABI_PARAM3, code.ABI_PARAM4});
     code.CallFunction(fn);
 }
 
-void SimpleCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) {
-    l(code.ABI_PARAM1, code.ABI_PARAM2);
-    code.CallFunction(fn);
-}
-
-void SimpleCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) {
-    l(code.ABI_PARAM1, code.ABI_PARAM2, code.ABI_PARAM3);
-    code.CallFunction(fn);
-}
-
-void ArgCallback::EmitCall(BlockOfCode& code, std::function<void()> l) {
-    l();
+void ArgCallback::EmitCall(BlockOfCode& code, std::function<void(RegList)> l) {
+    l({code.ABI_PARAM2, code.ABI_PARAM3, code.ABI_PARAM4});
     code.mov(code.ABI_PARAM1, arg);
     code.CallFunction(fn);
 }
 
-void ArgCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64)> l) {
-    l(code.ABI_PARAM2);
+void ArgCallback::EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> l) {
+#if defined(WIN32) && !defined(__MINGW64__)
+    l(code.ABI_PARAM2, {code.ABI_PARAM3, code.ABI_PARAM4});
     code.mov(code.ABI_PARAM1, arg);
-    code.CallFunction(fn);
-}
-
-void ArgCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) {
-    l(code.ABI_PARAM2, code.ABI_PARAM3);
-    code.mov(code.ABI_PARAM1, arg);
-    code.CallFunction(fn);
-}
-
-void ArgCallback::EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) {
-    l(code.ABI_PARAM2, code.ABI_PARAM3, code.ABI_PARAM4);
-    code.mov(code.ABI_PARAM1, arg);
+#else
+    l(code.ABI_PARAM1, {code.ABI_PARAM3, code.ABI_PARAM4});
+    code.mov(code.ABI_PARAM2, arg);
+#endif
     code.CallFunction(fn);
 }
 

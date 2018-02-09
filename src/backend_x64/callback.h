@@ -7,6 +7,7 @@
 #pragma once
 
 #include <functional>
+#include <vector>
 
 #include <xbyak.h>
 
@@ -14,16 +15,16 @@
 
 namespace Dynarmic::BackendX64 {
 
+using RegList = std::vector<Xbyak::Reg64>;
+
 class BlockOfCode;
 
 class Callback {
 public:
     virtual ~Callback() = default;
 
-    virtual void EmitCall(BlockOfCode& code, std::function<void()> fn = []{}) = 0;
-    virtual void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64)> fn) = 0;
-    virtual void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> fn) = 0;
-    virtual void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> fn) = 0;
+    virtual void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) = 0;
+    virtual void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) = 0;
 };
 
 class SimpleCallback final : public Callback {
@@ -33,10 +34,8 @@ public:
 
     ~SimpleCallback() override = default;
 
-    void EmitCall(BlockOfCode& code, std::function<void()> l = []{}) override;
-    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64)> l) override;
-    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) override;
-    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) override;
+    void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) override;
+    void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) override;
 
 private:
     void (*fn)();
@@ -49,10 +48,8 @@ public:
 
     ~ArgCallback() override = default;
 
-    void EmitCall(BlockOfCode& code, std::function<void()> l = []{}) override;
-    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64)> l) override;
-    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64)> l) override;
-    void EmitCall(BlockOfCode& code, std::function<void(Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64)> l) override;
+    void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) override;
+    void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) override;
 
 private:
     void (*fn)();
