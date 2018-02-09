@@ -38,6 +38,12 @@ ArgCallback DevirtualizeGeneric(mp::class_type_t<FunctionType>* this_) {
 }
 
 template <typename FunctionType, FunctionType mfp>
+ArgCallback DevirtualizeWindows(mp::class_type_t<FunctionType>* this_) {
+    static_assert(sizeof(mfp) == 8);
+    return ArgCallback{Common::BitCast<u64>(mfp), reinterpret_cast<u64>(this_)};
+}
+
+template <typename FunctionType, FunctionType mfp>
 ArgCallback DevirtualizeItanium(mp::class_type_t<FunctionType>* this_) {
     struct MemberFunctionPointer {
         /// For a non-virtual function, this is a simple function pointer.
@@ -61,6 +67,8 @@ ArgCallback DevirtualizeItanium(mp::class_type_t<FunctionType>* this_) {
 
 #if defined(__APPLE__) || defined(linux) || defined(__linux) || defined(__linux__)
 #define DEVIRT(this_, mfp) Dynarmic::BackendX64::DevirtualizeItanium<decltype(mfp), mfp>(this_)
+#elif defined(_WIN32)
+#define DEVIRT(this_, mfp) Dynarmic::BackendX64::DevirtualizeWindows<decltype(mfp), mfp>(this_)
 #else
 #define DEVIRT(this_, mfp) Dynarmic::BackendX64::DevirtualizeGeneric<decltype(mfp), mfp>(this_)
 #endif
