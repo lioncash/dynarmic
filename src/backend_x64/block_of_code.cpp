@@ -33,12 +33,13 @@ const Xbyak::Reg64 BlockOfCode::ABI_PARAM4 = Xbyak::util::rcx;
 
 constexpr size_t TOTAL_CODE_SIZE = 128 * 1024 * 1024;
 constexpr size_t FAR_CODE_OFFSET = 100 * 1024 * 1024;
+constexpr size_t CONSTANT_POOL_SIZE = 2 * 1024 * 1024;
 
 BlockOfCode::BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi)
         : Xbyak::CodeGenerator(TOTAL_CODE_SIZE)
         , cb(std::move(cb))
         , jsi(jsi)
-        , constant_pool(*this, 256)
+        , constant_pool(*this, CONSTANT_POOL_SIZE)
 {
     GenRunCode();
     exception_handler.Register(*this);
