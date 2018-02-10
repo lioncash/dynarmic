@@ -222,6 +222,67 @@ void EmitX64::EmitVectorAnd(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pand);
 }
 
+void EmitX64::EmitVectorArithmeticShiftRight8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    // TODO: Optimize
+    code.movdqa(tmp, result);
+    code.pslldq(tmp, 1);
+    code.psraw(tmp, shift_amount);
+    code.psraw(result, shift_amount + 8);
+    code.psllw(result, 8);
+    code.psrlw(tmp, 8);
+    code.por(result, tmp);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorArithmeticShiftRight16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    code.psraw(result, shift_amount);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorArithmeticShiftRight32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    code.psrad(result, shift_amount);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorArithmeticShiftRight64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+    Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+    const u8 shift_amount = std::min(args[1].GetImmediateU8(), u8(63));
+
+    const u64 sign_bit = 0x80000000'00000000u >> shift_amount;
+
+    code.pxor(tmp2, tmp2);
+    code.psrlq(result, shift_amount);
+    code.movdqa(tmp1, code.MConst(sign_bit, sign_bit));
+    code.pand(tmp1, result);
+    code.psubq(tmp2, tmp1);
+    code.por(result, tmp2);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void EmitX64::EmitVectorBroadcastLower8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

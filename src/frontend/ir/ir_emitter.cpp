@@ -804,6 +804,21 @@ U128 IREmitter::VectorAnd(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorAnd, a, b);
 }
 
+U128 IREmitter::VectorArithmeticShiftRight(size_t esize, const U128& a, u8 shift_amount) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorArithmeticShiftRight8, a, Imm8(shift_amount));
+    case 16:
+        return Inst<U128>(Opcode::VectorArithmeticShiftRight16, a, Imm8(shift_amount));
+    case 32:
+        return Inst<U128>(Opcode::VectorArithmeticShiftRight32, a, Imm8(shift_amount));
+    case 64:
+        return Inst<U128>(Opcode::VectorArithmeticShiftRight64, a, Imm8(shift_amount));
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorBroadcastLower(size_t esize, const UAny& a) {
     switch (esize) {
     case 8:
