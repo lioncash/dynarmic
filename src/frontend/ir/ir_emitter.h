@@ -207,21 +207,19 @@ public:
 
     UAny VectorGetElement(size_t esize, const U128& a, size_t index);
     U128 VectorSetElement(size_t esize, const U128& a, size_t index, const UAny& elem);
-    U128 VectorAdd8(const U128& a, const U128& b);
     U128 VectorAdd16(const U128& a, const U128& b);
     U128 VectorAdd32(const U128& a, const U128& b);
     U128 VectorAdd64(const U128& a, const U128& b);
+    U128 VectorAdd8(const U128& a, const U128& b);
     U128 VectorAnd(const U128& a, const U128& b);
-    U128 VectorOr(const U128& a, const U128& b);
-    U128 VectorEor(const U128& a, const U128& b);
-    U128 VectorNot(const U128& a);
-    U128 VectorLowerBroadcast8(const U8& a);
-    U128 VectorLowerBroadcast16(const U16& a);
-    U128 VectorLowerBroadcast32(const U32& a);
     U128 VectorBroadcast8(const U8& a);
     U128 VectorBroadcast16(const U16& a);
     U128 VectorBroadcast32(const U32& a);
     U128 VectorBroadcast64(const U64& a);
+    U128 VectorBroadcastLower8(const U8& a);
+    U128 VectorBroadcastLower16(const U16& a);
+    U128 VectorBroadcastLower32(const U32& a);
+    U128 VectorEor(const U128& a, const U128& b);
     U128 VectorEqual8(const U128& a, const U128& b);
     U128 VectorEqual16(const U128& a, const U128& b);
     U128 VectorEqual32(const U128& a, const U128& b);
@@ -231,13 +229,15 @@ public:
     U128 VectorInterleaveLower16(const U128& a, const U128& b);
     U128 VectorInterleaveLower32(const U128& a, const U128& b);
     U128 VectorInterleaveLower64(const U128& a, const U128& b);
-    U128 VectorLowerPairedAdd8(const U128& a, const U128& b);
-    U128 VectorLowerPairedAdd16(const U128& a, const U128& b);
-    U128 VectorLowerPairedAdd32(const U128& a, const U128& b);
+    U128 VectorNot(const U128& a);
+    U128 VectorOr(const U128& a, const U128& b);
     U128 VectorPairedAdd8(const U128& a, const U128& b);
     U128 VectorPairedAdd16(const U128& a, const U128& b);
     U128 VectorPairedAdd32(const U128& a, const U128& b);
     U128 VectorPairedAdd64(const U128& a, const U128& b);
+    U128 VectorPairedAddLower8(const U128& a, const U128& b);
+    U128 VectorPairedAddLower16(const U128& a, const U128& b);
+    U128 VectorPairedAddLower32(const U128& a, const U128& b);
     U128 VectorZeroUpper(const U128& a);
 
     U32U64 FPAbs(const U32U64& a);

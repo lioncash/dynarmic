@@ -805,28 +805,16 @@ U128 IREmitter::VectorAnd(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorAnd, a, b);
 }
 
-U128 IREmitter::VectorOr(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorOr, a, b);
+U128 IREmitter::VectorBroadcastLower8(const U8& a) {
+    return Inst<U128>(Opcode::VectorBroadcastLower8, a);
 }
 
-U128 IREmitter::VectorEor(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorEor, a, b);
+U128 IREmitter::VectorBroadcastLower16(const U16& a) {
+    return Inst<U128>(Opcode::VectorBroadcastLower16, a);
 }
 
-U128 IREmitter::VectorNot(const U128& a) {
-    return Inst<U128>(Opcode::VectorNot, a);
-}
-
-U128 IREmitter::VectorLowerBroadcast8(const U8& a) {
-    return Inst<U128>(Opcode::VectorLowerBroadcast8, a);
-}
-
-U128 IREmitter::VectorLowerBroadcast16(const U16& a) {
-    return Inst<U128>(Opcode::VectorLowerBroadcast16, a);
-}
-
-U128 IREmitter::VectorLowerBroadcast32(const U32& a) {
-    return Inst<U128>(Opcode::VectorLowerBroadcast32, a);
+U128 IREmitter::VectorBroadcastLower32(const U32& a) {
+    return Inst<U128>(Opcode::VectorBroadcastLower32, a);
 }
 
 U128 IREmitter::VectorBroadcast8(const U8& a) {
@@ -843,6 +831,10 @@ U128 IREmitter::VectorBroadcast32(const U32& a) {
 
 U128 IREmitter::VectorBroadcast64(const U64& a) {
     return Inst<U128>(Opcode::VectorBroadcast64, a);
+}
+
+U128 IREmitter::VectorEor(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorEor, a, b);
 }
 
 U128 IREmitter::VectorEqual8(const U128& a, const U128& b) {
@@ -881,16 +873,24 @@ U128 IREmitter::VectorInterleaveLower64(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorInterleaveLower64, a, b);
 }
 
-U128 IREmitter::VectorLowerPairedAdd8(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorLowerPairedAdd8, a, b);
+U128 IREmitter::VectorNot(const U128& a) {
+    return Inst<U128>(Opcode::VectorNot, a);
 }
 
-U128 IREmitter::VectorLowerPairedAdd16(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorLowerPairedAdd16, a, b);
+U128 IREmitter::VectorOr(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorOr, a, b);
 }
 
-U128 IREmitter::VectorLowerPairedAdd32(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorLowerPairedAdd32, a, b);
+U128 IREmitter::VectorPairedAddLower8(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorPairedAddLower8, a, b);
+}
+
+U128 IREmitter::VectorPairedAddLower16(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorPairedAddLower16, a, b);
+}
+
+U128 IREmitter::VectorPairedAddLower32(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorPairedAddLower32, a, b);
 }
 
 U128 IREmitter::VectorPairedAdd8(const U128& a, const U128& b) {

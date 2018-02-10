@@ -222,7 +222,7 @@ void EmitX64::EmitVectorAnd(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pand);
 }
 
-void EmitX64::EmitVectorLowerBroadcast8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorBroadcastLower8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -241,7 +241,7 @@ void EmitX64::EmitVectorLowerBroadcast8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
-void EmitX64::EmitVectorLowerBroadcast16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorBroadcastLower16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -251,7 +251,7 @@ void EmitX64::EmitVectorLowerBroadcast16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
-void EmitX64::EmitVectorLowerBroadcast32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorBroadcastLower32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -311,24 +311,8 @@ void EmitX64::EmitVectorBroadcast64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
-void EmitX64::EmitVectorOr(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::por);
-}
-
 void EmitX64::EmitVectorEor(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pxor);
-}
-
-void EmitX64::EmitVectorNot(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm xmm_b = ctx.reg_alloc.ScratchXmm();
-
-    code.pcmpeqw(xmm_b, xmm_b);
-    code.pxor(xmm_a, xmm_b);
-
-    ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
 void EmitX64::EmitVectorEqual8(EmitContext& ctx, IR::Inst* inst) {
@@ -430,7 +414,23 @@ void EmitX64::EmitVectorInterleaveLower64(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorInterleaveLower(code, ctx, inst, 64);
 }
 
-void EmitX64::EmitVectorLowerPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorNot(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm xmm_b = ctx.reg_alloc.ScratchXmm();
+
+    code.pcmpeqw(xmm_b, xmm_b);
+    code.pxor(xmm_a, xmm_b);
+
+    ctx.reg_alloc.DefineValue(inst, xmm_a);
+}
+
+void EmitX64::EmitVectorOr(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::por);
+}
+
+void EmitX64::EmitVectorPairedAddLower8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -448,7 +448,7 @@ void EmitX64::EmitVectorLowerPairedAdd8(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitVectorLowerPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorPairedAddLower16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -471,7 +471,7 @@ void EmitX64::EmitVectorLowerPairedAdd16(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
-void EmitX64::EmitVectorLowerPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorPairedAddLower32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);

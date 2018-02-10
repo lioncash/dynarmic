@@ -45,11 +45,11 @@ bool TranslatorVisitor::ADDP_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     const IR::U128 result = [&]{
         switch (esize) {
         case 8:
-            return Q ? ir.VectorPairedAdd8(operand1, operand2) : ir.VectorLowerPairedAdd8(operand1, operand2);
+            return Q ? ir.VectorPairedAdd8(operand1, operand2) : ir.VectorPairedAddLower8(operand1, operand2);
         case 16:
-            return Q ? ir.VectorPairedAdd16(operand1, operand2) : ir.VectorLowerPairedAdd16(operand1, operand2);
+            return Q ? ir.VectorPairedAdd16(operand1, operand2) : ir.VectorPairedAddLower16(operand1, operand2);
         case 32:
-            return Q ? ir.VectorPairedAdd32(operand1, operand2) : ir.VectorLowerPairedAdd32(operand1, operand2);
+            return Q ? ir.VectorPairedAdd32(operand1, operand2) : ir.VectorPairedAddLower32(operand1, operand2);
         default:
             return ir.VectorPairedAdd64(operand1, operand2);
         }
