@@ -32,6 +32,7 @@ struct TranslatorVisitor final {
 
     bool InterpretThisInstruction();
     bool UnpredictableInstruction();
+    bool DecodeError();
     bool ReservedValue();
     bool UnallocatedEncoding();
 
@@ -609,53 +610,29 @@ struct TranslatorVisitor final {
 
     // Data Processing - FP and SIMD - SIMD Scalar shift by immediate
     bool SSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SRSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SRSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SRSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SRSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SHL_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SHL_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SQSHL_imm_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SQSHL_imm_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool SQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool SQRSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool SQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool SCVTF_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SCVTF_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool FCVTZS_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool FCVTZS_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool USHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool USHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool USRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool USRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool URSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool URSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool URSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool URSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SRI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SRI_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SLI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SLI_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SQSHLU_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SQSHLU_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool UQSHL_imm_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool UQSHL_imm_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SQSHRUN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool SQSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool SQRSHRUN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool SQRSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool UQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool UQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool UQRSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool UQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool UCVTF_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool UCVTF_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool FCVTZU_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool FCVTZU_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Scalar x indexed element
     bool SQDMLAL_elt_1(Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
@@ -874,11 +851,35 @@ struct TranslatorVisitor final {
     bool MOVI(bool Q, bool op, Imm<1> a, Imm<1> b, Imm<1> c, Imm<4> cmode, Imm<1> d, Imm<1> e, Imm<1> f, Imm<1> g, Imm<1> h, Vec Vd);
     bool FMOV_2(bool Q, Imm<1> a, Imm<1> b, Imm<1> c, Imm<1> d, Imm<1> e, Imm<1> f, Imm<1> g, Imm<1> h, Reg Rd);
 
-    // Data Processing - FP and SIMD - SIMD Shfit by immediate
+    // Data Processing - FP and SIMD - SIMD Shift by immediate
+    bool SSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SRSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SRSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SHL_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SQSHL_imm_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool RSHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
+    bool SQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
+    bool SQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool SSHLL(bool Q, Imm<4> immh, Imm<3> immb, Reg Rn, Vec Vd);
+    bool SCVTF_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool FCVTZS_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool USHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool USRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool URSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool URSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SRI_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SLI_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SQSHLU_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool UQSHL_imm_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SQSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
+    bool SQRSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
+    bool UQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
+    bool UQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool USHLL(bool Q, Imm<4> immh, Imm<3> immb, Reg Rn, Vec Vd);
+    bool UCVTF_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool FCVTZU_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD x indexed element
     bool SMLAL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);

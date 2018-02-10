@@ -21,6 +21,11 @@ bool TranslatorVisitor::UnpredictableInstruction() {
     return false;
 }
 
+bool TranslatorVisitor::DecodeError() {
+    // TODO: This is an internal error.
+    return UnallocatedEncoding();
+}
+
 bool TranslatorVisitor::ReservedValue() {
     ir.ExceptionRaised(Exception::ReservedValue);
     ir.SetTerm(IR::Term::CheckHalt{IR::Term::ReturnToDispatch{}});

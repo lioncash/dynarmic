@@ -97,6 +97,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/simd_modified_immediate.cpp
     frontend/A64/translate/impl/simd_permute.cpp
     frontend/A64/translate/impl/simd_scalar_three_same.cpp
+    frontend/A64/translate/impl/simd_shift_by_immediate.cpp
     frontend/A64/translate/impl/simd_three_same.cpp
     frontend/A64/translate/impl/system.cpp
     frontend/A64/translate/translate.cpp
