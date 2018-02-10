@@ -634,6 +634,47 @@ void EmitX64::EmitVectorLogicalShiftLeft64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+static void EmitVectorZeroExtend(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int size) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
+
+    code.pxor(zeros, zeros);
+    switch (size) {
+    case 8:
+        code.punpcklbw(a, zeros);
+        break;
+    case 16:
+        code.punpcklwd(a, zeros);
+        break;
+    case 32:
+        code.punpckldq(a, zeros);
+        break;
+    case 64:
+        code.punpcklqdq(a, zeros);
+        break;
+    }
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorZeroExtend8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorZeroExtend(code, ctx, inst, 8);
+}
+
+void EmitX64::EmitVectorZeroExtend16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorZeroExtend(code, ctx, inst, 16);
+}
+
+void EmitX64::EmitVectorZeroExtend32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorZeroExtend(code, ctx, inst, 32);
+}
+
+void EmitX64::EmitVectorZeroExtend64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorZeroExtend(code, ctx, inst, 64);
+}
+
 void EmitX64::EmitVectorZeroUpper(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
