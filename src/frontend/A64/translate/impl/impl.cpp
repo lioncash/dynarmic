@@ -236,7 +236,7 @@ void TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part, IR::U128 val
         V(128, vec, value);
     } else {
         ASSERT(bitsize == 64);
-        V(128, vec, ir.VectorSetElement(64, V(128, vec), 1, ir.VectorGetElement(64, value, 0)));
+        V(128, vec, ir.VectorInterleaveLower(64, V(128, vec), value));
     }
 }
 
