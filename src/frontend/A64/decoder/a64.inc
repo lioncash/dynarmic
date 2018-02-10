@@ -778,7 +778,7 @@ INST(MOVI,                   "MOVI, MVNI, ORR, BIC (vector, immediate)",  "0Qo01
 //INST(FMOV_2,                 "FMOV (vector, immediate)",                  "0Q00111100000abc111111defghddddd")
 
 // Data Processing - FP and SIMD - SIMD Shift by immediate
-//INST(SSHR_2,                 "SSHR",                                      "0Q0011110IIIIiii000001nnnnnddddd")
+INST(SSHR_2,                 "SSHR",                                      "0Q0011110IIIIiii000001nnnnnddddd")
 //INST(SSRA_2,                 "SSRA",                                      "0Q0011110IIIIiii000101nnnnnddddd")
 //INST(SRSHR_2,                "SRSHR",                                     "0Q0011110IIIIiii001001nnnnnddddd")
 //INST(SRSRA_2,                "SRSRA",                                     "0Q0011110IIIIiii001101nnnnnddddd")
