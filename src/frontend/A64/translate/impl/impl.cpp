@@ -229,6 +229,17 @@ IR::U128 TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part) {
     return ir.ZeroExtendToQuad(ir.VectorGetElement(bitsize, V(128, vec), part));
 }
 
+void TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part, IR::U128 value) {
+    ASSERT(part == 0 || part == 1);
+    if (part == 0) {
+        ASSERT(bitsize == 64);
+        V(128, vec, value);
+    } else {
+        ASSERT(bitsize == 64);
+        V(128, vec, ir.VectorSetElement(64, V(128, vec), 1, ir.VectorGetElement(64, value, 0)));
+    }
+}
+
 IR::UAny TranslatorVisitor::Vpart_scalar(size_t bitsize, Vec vec, size_t part) {
     ASSERT(part == 0 || part == 1);
     if (part == 0) {

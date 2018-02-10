@@ -56,6 +56,7 @@ struct TranslatorVisitor final {
     void V_scalar(size_t bitsize, Vec vec, IR::UAny value);
 
     IR::U128 Vpart(size_t bitsize, Vec vec, size_t part);
+    void Vpart(size_t bitsize, Vec vec, size_t part, IR::U128 value);
 
     IR::UAny Vpart_scalar(size_t bitsize, Vec vec, size_t part);
     void Vpart_scalar(size_t bitsize, Vec vec, size_t part, IR::UAny value);
@@ -757,7 +758,7 @@ struct TranslatorVisitor final {
     bool CLS_asimd(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool CNT(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool SADALP(bool Q, Imm<2> size, Vec Vn, Vec Vd);
-    bool XTN(bool Q, Imm<2> size, Vec Vn, Reg Rd);
+    bool XTN(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool FCVTN(bool Q, bool sz, Vec Vn, Reg Rd);
     bool FCVTL(bool Q, bool sz, Reg Rn, Vec Vd);
     bool URECPE(bool Q, bool sz, Vec Vn, Vec Vd);
