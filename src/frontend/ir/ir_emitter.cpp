@@ -873,6 +873,22 @@ U128 IREmitter::VectorInterleaveLower64(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorInterleaveLower64, a, b);
 }
 
+U128 IREmitter::VectorLogicalShiftLeft8(const U128& a, u8 shift_amount) {
+    return Inst<U128>(Opcode::VectorLogicalShiftLeft8, a, Imm8(shift_amount));
+}
+
+U128 IREmitter::VectorLogicalShiftLeft16(const U128& a, u8 shift_amount) {
+    return Inst<U128>(Opcode::VectorLogicalShiftLeft16, a, Imm8(shift_amount));
+}
+
+U128 IREmitter::VectorLogicalShiftLeft32(const U128& a, u8 shift_amount) {
+    return Inst<U128>(Opcode::VectorLogicalShiftLeft32, a, Imm8(shift_amount));
+}
+
+U128 IREmitter::VectorLogicalShiftLeft64(const U128& a, u8 shift_amount) {
+    return Inst<U128>(Opcode::VectorLogicalShiftLeft64, a, Imm8(shift_amount));
+}
+
 U128 IREmitter::VectorNot(const U128& a) {
     return Inst<U128>(Opcode::VectorNot, a);
 }

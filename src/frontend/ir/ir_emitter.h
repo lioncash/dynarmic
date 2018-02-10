@@ -229,6 +229,10 @@ public:
     U128 VectorInterleaveLower16(const U128& a, const U128& b);
     U128 VectorInterleaveLower32(const U128& a, const U128& b);
     U128 VectorInterleaveLower64(const U128& a, const U128& b);
+    U128 VectorLogicalShiftLeft8(const U128& a, u8 shift_amount);
+    U128 VectorLogicalShiftLeft16(const U128& a, u8 shift_amount);
+    U128 VectorLogicalShiftLeft32(const U128& a, u8 shift_amount);
+    U128 VectorLogicalShiftLeft64(const U128& a, u8 shift_amount);
     U128 VectorNot(const U128& a);
     U128 VectorOr(const U128& a, const U128& b);
     U128 VectorPairedAdd8(const U128& a, const U128& b);

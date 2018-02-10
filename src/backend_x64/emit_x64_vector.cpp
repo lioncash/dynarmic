@@ -587,6 +587,53 @@ void EmitX64::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+void EmitX64::EmitVectorLogicalShiftLeft8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    // TODO: Optimize
+    for (size_t i = 0; i < shift_amount; ++i) {
+        code.paddb(result, result);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorLogicalShiftLeft16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    code.psllw(result, shift_amount);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorLogicalShiftLeft32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    code.pslld(result, shift_amount);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorLogicalShiftLeft64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    code.psllq(result, shift_amount);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void EmitX64::EmitVectorZeroUpper(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
