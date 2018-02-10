@@ -24,12 +24,12 @@ class ConstantPool final {
 public:
     ConstantPool(BlockOfCode& code, size_t size);
 
-    Xbyak::Address GetConstant(u64 constant);
+    Xbyak::Address GetConstant(u64 lower, u64 upper = 0);
 
 private:
     static constexpr size_t align_size = 16; // bytes
 
-    std::map<u64, void*> constant_info;
+    std::map<std::tuple<u64, u64>, void*> constant_info;
 
     BlockOfCode& code;
     size_t pool_size;
