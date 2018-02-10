@@ -28,6 +28,27 @@ bool TranslatorVisitor::SSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd)
     return true;
 }
 
+bool TranslatorVisitor::SSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (immh == 0b0000) {
+        return DecodeError();
+    }
+    if (immh.Bit<3>() && !Q) {
+        return ReservedValue();
+    }
+    const size_t esize = 8 << Common::HighestSetBit(immh.ZeroExtend());
+    const size_t datasize = Q ? 128 : 64;
+
+    const u8 shift_amount = static_cast<u8>(2 * esize) - concatenate(immh, immb).ZeroExtend<u8>();
+
+    const IR::U128 operand = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vd);
+    const IR::U128 shifted_operand = ir.VectorArithmeticShiftRight(esize, operand, shift_amount);
+    const IR::U128 result = ir.VectorAdd(esize, shifted_operand, operand2);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SHL_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     if (immh == 0b0000) {
         return DecodeError();
