@@ -687,6 +687,22 @@ void EmitX64::EmitVectorLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void EmitX64::EmitVectorSub8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubb);
+}
+
+void EmitX64::EmitVectorSub16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubw);
+}
+
+void EmitX64::EmitVectorSub32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubd);
+}
+
+void EmitX64::EmitVectorSub64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubq);
+}
+
 static void EmitVectorZeroExtend(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int size) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
