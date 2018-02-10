@@ -634,6 +634,59 @@ void EmitX64::EmitVectorLogicalShiftLeft64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void EmitX64::EmitVectorLogicalShiftRight8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
+    Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    // TODO: Optimize
+    code.pcmpeqb(mask, mask); // mask = 0xFF
+    code.paddb(mask, mask); // mask = 0xFE
+    code.pxor(zeros, zeros);
+    for (size_t i = 0; i < shift_amount; ++i) {
+        code.pand(result, mask);
+        code.pavgb(result, zeros);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorLogicalShiftRight16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    code.psrlw(result, shift_amount);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorLogicalShiftRight32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    code.psrld(result, shift_amount);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    code.psrlq(result, shift_amount);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 static void EmitVectorZeroExtend(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int size) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

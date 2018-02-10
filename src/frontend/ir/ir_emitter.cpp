@@ -883,6 +883,21 @@ U128 IREmitter::VectorLogicalShiftLeft(size_t esize, const U128& a, u8 shift_amo
     return {};
 }
 
+U128 IREmitter::VectorLogicalShiftRight(size_t esize, const U128& a, u8 shift_amount) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorLogicalShiftRight8, a, Imm8(shift_amount));
+    case 16:
+        return Inst<U128>(Opcode::VectorLogicalShiftRight16, a, Imm8(shift_amount));
+    case 32:
+        return Inst<U128>(Opcode::VectorLogicalShiftRight32, a, Imm8(shift_amount));
+    case 64:
+        return Inst<U128>(Opcode::VectorLogicalShiftRight64, a, Imm8(shift_amount));
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorNot(const U128& a) {
     return Inst<U128>(Opcode::VectorNot, a);
 }
