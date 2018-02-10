@@ -803,7 +803,7 @@ INST(SHL_2,                  "SHL",                                       "0Q001
 //INST(SQRSHRUN_2,             "SQRSHRUN, SQRSHRUN2",                       "0Q1011110IIIIiii100011nnnnnddddd")
 //INST(UQSHRN_2,               "UQSHRN, UQSHRN2",                           "0Q1011110IIIIiii100101nnnnnddddd")
 //INST(UQRSHRN_2,              "UQRSHRN, UQRSHRN2",                         "0Q1011110IIIIiii100111nnnnnddddd")
-//INST(USHLL,                  "USHLL, USHLL2",                             "0Q1011110IIIIiii101001nnnnnddddd")
+INST(USHLL,                  "USHLL, USHLL2",                             "0Q1011110IIIIiii101001nnnnnddddd")
 //INST(UCVTF_fix_2,            "UCVTF (vector, fixed-point)",               "0Q1011110IIIIiii111001nnnnnddddd")
 //INST(FCVTZU_fix_2,           "FCVTZU (vector, fixed-point)",              "0Q1011110IIIIiii111111nnnnnddddd")
 

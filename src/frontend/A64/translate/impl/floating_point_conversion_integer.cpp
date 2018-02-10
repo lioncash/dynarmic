@@ -125,9 +125,9 @@ bool TranslatorVisitor::FMOV_float_gen(bool sf, Imm<2> type, Imm<1> rmode_0, Imm
 
     if (integer_to_float) {
         IR::U32U64 intval = X(intsize, static_cast<Reg>(n));
-        Vpart(fltsize, static_cast<Vec>(d), part, intval);
+        Vpart_scalar(fltsize, static_cast<Vec>(d), part, intval);
     } else {
-        IR::UAny fltval = Vpart(fltsize, static_cast<Vec>(n), part);
+        IR::UAny fltval = Vpart_scalar(fltsize, static_cast<Vec>(n), part);
         IR::U32U64 intval = ZeroExtend(fltval, intsize);
         X(intsize, static_cast<Reg>(d), intval);
     }

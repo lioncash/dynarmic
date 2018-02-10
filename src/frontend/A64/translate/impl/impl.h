@@ -55,8 +55,10 @@ struct TranslatorVisitor final {
     IR::UAny V_scalar(size_t bitsize, Vec vec);
     void V_scalar(size_t bitsize, Vec vec, IR::UAny value);
 
-    IR::UAny Vpart(size_t bitsize, Vec vec, size_t part);
-    void Vpart(size_t bitsize, Vec vec, size_t part, IR::UAny value);
+    IR::U128 Vpart(size_t bitsize, Vec vec, size_t part);
+
+    IR::UAny Vpart_scalar(size_t bitsize, Vec vec, size_t part);
+    void Vpart_scalar(size_t bitsize, Vec vec, size_t part, IR::UAny value);
 
     IR::UAnyU128 Mem(IR::U64 address, size_t size, AccType acctype);
     void Mem(IR::U64 address, size_t size, AccType acctype, IR::UAnyU128 value);
@@ -877,7 +879,7 @@ struct TranslatorVisitor final {
     bool SQRSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool UQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool UQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool USHLL(bool Q, Imm<4> immh, Imm<3> immb, Reg Rn, Vec Vd);
+    bool USHLL(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool UCVTF_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool FCVTZU_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
 

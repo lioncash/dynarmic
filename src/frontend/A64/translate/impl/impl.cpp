@@ -220,7 +220,16 @@ void TranslatorVisitor::V_scalar(size_t /*bitsize*/, Vec vec, IR::UAny value) {
     ir.SetQ(vec, ir.ZeroExtendToQuad(value));
 }
 
-IR::UAny TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part) {
+IR::U128 TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part) {
+    ASSERT(part == 0 || part == 1);
+    ASSERT(bitsize == 64);
+    if (part == 0) {
+        return V(64, vec);
+    }
+    return ir.ZeroExtendToQuad(ir.VectorGetElement(bitsize, V(128, vec), part));
+}
+
+IR::UAny TranslatorVisitor::Vpart_scalar(size_t bitsize, Vec vec, size_t part) {
     ASSERT(part == 0 || part == 1);
     if (part == 0) {
         ASSERT(bitsize == 8 || bitsize == 16 || bitsize == 32 || bitsize == 64);
@@ -230,7 +239,7 @@ IR::UAny TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part) {
     return ir.VectorGetElement(bitsize, V(128, vec), part);
 }
 
-void TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part, IR::UAny value) {
+void TranslatorVisitor::Vpart_scalar(size_t bitsize, Vec vec, size_t part, IR::UAny value) {
     ASSERT(part == 0 || part == 1);
     if (part == 0) {
         ASSERT(bitsize == 8 || bitsize == 16 || bitsize == 32 || bitsize == 64);
