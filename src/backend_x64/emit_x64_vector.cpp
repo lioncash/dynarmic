@@ -414,6 +414,47 @@ void EmitX64::EmitVectorInterleaveLower64(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorInterleaveLower(code, ctx, inst, 64);
 }
 
+void EmitX64::EmitVectorNarrow16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
+
+    // TODO: AVX512F implementation
+
+    code.pxor(zeros, zeros);
+    code.pand(a, code.MConst(0x00FF00FF00FF00FF, 0x00FF00FF00FF00FF));
+    code.packuswb(a, zeros);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorNarrow32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
+
+    // TODO: AVX512F implementation
+
+    code.pxor(zeros, zeros);
+    code.pand(a, code.MConst(0x0000FFFF0000FFFF, 0x0000FFFF0000FFFF));
+    code.packusdw(a, zeros);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorNarrow64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
+
+    // TODO: AVX512F implementation
+
+    code.pxor(zeros, zeros);
+    code.shufps(a, zeros, 0b00001000);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
 void EmitX64::EmitVectorNot(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
