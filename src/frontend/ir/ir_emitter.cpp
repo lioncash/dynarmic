@@ -785,108 +785,102 @@ U128 IREmitter::VectorSetElement(size_t esize, const U128& a, size_t index, cons
     }
 }
 
-U128 IREmitter::VectorAdd8(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorAdd8, a, b);
-}
-
-U128 IREmitter::VectorAdd16(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorAdd16, a, b);
-}
-
-U128 IREmitter::VectorAdd32(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorAdd32, a, b);
-}
-
-U128 IREmitter::VectorAdd64(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorAdd64, a, b);
+U128 IREmitter::VectorAdd(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorAdd8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorAdd16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorAdd32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorAdd64, a, b);
+    }
+    UNREACHABLE();
+    return {};
 }
 
 U128 IREmitter::VectorAnd(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorAnd, a, b);
 }
 
-U128 IREmitter::VectorBroadcastLower8(const U8& a) {
-    return Inst<U128>(Opcode::VectorBroadcastLower8, a);
+U128 IREmitter::VectorBroadcastLower(size_t esize, const UAny& a) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorBroadcastLower8, U8(a));
+    case 16:
+        return Inst<U128>(Opcode::VectorBroadcastLower16, U16(a));
+    case 32:
+        return Inst<U128>(Opcode::VectorBroadcastLower32, U32(a));
+    }
+    UNREACHABLE();
+    return {};
 }
 
-U128 IREmitter::VectorBroadcastLower16(const U16& a) {
-    return Inst<U128>(Opcode::VectorBroadcastLower16, a);
-}
-
-U128 IREmitter::VectorBroadcastLower32(const U32& a) {
-    return Inst<U128>(Opcode::VectorBroadcastLower32, a);
-}
-
-U128 IREmitter::VectorBroadcast8(const U8& a) {
-    return Inst<U128>(Opcode::VectorBroadcast8, a);
-}
-
-U128 IREmitter::VectorBroadcast16(const U16& a) {
-    return Inst<U128>(Opcode::VectorBroadcast16, a);
-}
-
-U128 IREmitter::VectorBroadcast32(const U32& a) {
-    return Inst<U128>(Opcode::VectorBroadcast32, a);
-}
-
-U128 IREmitter::VectorBroadcast64(const U64& a) {
-    return Inst<U128>(Opcode::VectorBroadcast64, a);
+U128 IREmitter::VectorBroadcast(size_t esize, const UAny& a) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorBroadcast8, U8(a));
+    case 16:
+        return Inst<U128>(Opcode::VectorBroadcast16, U16(a));
+    case 32:
+        return Inst<U128>(Opcode::VectorBroadcast32, U32(a));
+    case 64:
+        return Inst<U128>(Opcode::VectorBroadcast64, U64(a));
+    }
+    UNREACHABLE();
+    return {};
 }
 
 U128 IREmitter::VectorEor(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorEor, a, b);
 }
 
-U128 IREmitter::VectorEqual8(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorEqual8, a, b);
+U128 IREmitter::VectorEqual(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorEqual8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorEqual16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorEqual32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorEqual64, a, b);
+    case 128:
+        return Inst<U128>(Opcode::VectorEqual128, a, b);
+    }
+    UNREACHABLE();
+    return {};
 }
 
-U128 IREmitter::VectorEqual16(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorEqual16, a, b);
+U128 IREmitter::VectorInterleaveLower(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorInterleaveLower8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorInterleaveLower16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorInterleaveLower32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorInterleaveLower64, a, b);
+    }
+    UNREACHABLE();
+    return {};
 }
 
-U128 IREmitter::VectorEqual32(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorEqual32, a, b);
-}
-
-U128 IREmitter::VectorEqual64(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorEqual64, a, b);
-}
-
-U128 IREmitter::VectorEqual128(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorEqual128, a, b);
-}
-
-U128 IREmitter::VectorInterleaveLower8(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorInterleaveLower8, a, b);
-}
-
-U128 IREmitter::VectorInterleaveLower16(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorInterleaveLower16, a, b);
-}
-
-U128 IREmitter::VectorInterleaveLower32(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorInterleaveLower32, a, b);
-}
-
-U128 IREmitter::VectorInterleaveLower64(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorInterleaveLower64, a, b);
-}
-
-U128 IREmitter::VectorLogicalShiftLeft8(const U128& a, u8 shift_amount) {
-    return Inst<U128>(Opcode::VectorLogicalShiftLeft8, a, Imm8(shift_amount));
-}
-
-U128 IREmitter::VectorLogicalShiftLeft16(const U128& a, u8 shift_amount) {
-    return Inst<U128>(Opcode::VectorLogicalShiftLeft16, a, Imm8(shift_amount));
-}
-
-U128 IREmitter::VectorLogicalShiftLeft32(const U128& a, u8 shift_amount) {
-    return Inst<U128>(Opcode::VectorLogicalShiftLeft32, a, Imm8(shift_amount));
-}
-
-U128 IREmitter::VectorLogicalShiftLeft64(const U128& a, u8 shift_amount) {
-    return Inst<U128>(Opcode::VectorLogicalShiftLeft64, a, Imm8(shift_amount));
+U128 IREmitter::VectorLogicalShiftLeft(size_t esize, const U128& a, u8 shift_amount) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorLogicalShiftLeft8, a, Imm8(shift_amount));
+    case 16:
+        return Inst<U128>(Opcode::VectorLogicalShiftLeft16, a, Imm8(shift_amount));
+    case 32:
+        return Inst<U128>(Opcode::VectorLogicalShiftLeft32, a, Imm8(shift_amount));
+    case 64:
+        return Inst<U128>(Opcode::VectorLogicalShiftLeft64, a, Imm8(shift_amount));
+    }
+    UNREACHABLE();
+    return {};
 }
 
 U128 IREmitter::VectorNot(const U128& a) {
@@ -897,32 +891,32 @@ U128 IREmitter::VectorOr(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorOr, a, b);
 }
 
-U128 IREmitter::VectorPairedAddLower8(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorPairedAddLower8, a, b);
+U128 IREmitter::VectorPairedAddLower(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorPairedAddLower8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorPairedAddLower16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorPairedAddLower32, a, b);
+    }
+    UNREACHABLE();
+    return {};
 }
 
-U128 IREmitter::VectorPairedAddLower16(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorPairedAddLower16, a, b);
-}
-
-U128 IREmitter::VectorPairedAddLower32(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorPairedAddLower32, a, b);
-}
-
-U128 IREmitter::VectorPairedAdd8(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorPairedAdd8, a, b);
-}
-
-U128 IREmitter::VectorPairedAdd16(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorPairedAdd16, a, b);
-}
-
-U128 IREmitter::VectorPairedAdd32(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorPairedAdd32, a, b);
-}
-
-U128 IREmitter::VectorPairedAdd64(const U128& a, const U128& b) {
-    return Inst<U128>(Opcode::VectorPairedAdd64, a, b);
+U128 IREmitter::VectorPairedAdd(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorPairedAdd8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorPairedAdd16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorPairedAdd32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorPairedAdd64, a, b);
+    }
+    UNREACHABLE();
+    return {};
 }
 
 U128 IREmitter::VectorZeroUpper(const U128& a) {

@@ -18,18 +18,7 @@ bool TranslatorVisitor::DUP_gen(bool Q, Imm<5> imm5, Reg Rn, Vec Vd) {
 
     const IR::UAny element = X(esize, Rn);
 
-    const IR::U128 result = [&]{
-        switch (esize) {
-        case 8:
-            return Q ? ir.VectorBroadcast8(element) : ir.VectorBroadcastLower8(element);
-        case 16:
-            return Q ? ir.VectorBroadcast16(element) : ir.VectorBroadcastLower16(element);
-        case 32:
-            return Q ? ir.VectorBroadcast32(element) : ir.VectorBroadcastLower32(element);
-        default:
-            return ir.VectorBroadcast64(element);
-        }
-    }();
+    const IR::U128 result = Q ? ir.VectorBroadcast(esize, element) : ir.VectorBroadcastLower(esize, element);
 
     V(datasize, Vd, result);
 

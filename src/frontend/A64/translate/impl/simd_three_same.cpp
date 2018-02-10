@@ -16,18 +16,7 @@ bool TranslatorVisitor::ADD_vector(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) 
     auto operand1 = V(datasize, Vn);
     auto operand2 = V(datasize, Vm);
 
-    auto result = [&]{
-        switch (esize) {
-        case 8:
-            return ir.VectorAdd8(operand1, operand2);
-        case 16:
-            return ir.VectorAdd16(operand1, operand2);
-        case 32:
-            return ir.VectorAdd32(operand1, operand2);
-        default:
-            return ir.VectorAdd64(operand1, operand2);
-        }
-    }();
+    auto result = ir.VectorAdd(esize, operand1, operand2);
 
     V(datasize, Vd, result);
 
@@ -42,18 +31,7 @@ bool TranslatorVisitor::ADDP_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     const IR::U128 operand1 = V(datasize, Vn);
     const IR::U128 operand2 = V(datasize, Vm);
 
-    const IR::U128 result = [&]{
-        switch (esize) {
-        case 8:
-            return Q ? ir.VectorPairedAdd8(operand1, operand2) : ir.VectorPairedAddLower8(operand1, operand2);
-        case 16:
-            return Q ? ir.VectorPairedAdd16(operand1, operand2) : ir.VectorPairedAddLower16(operand1, operand2);
-        case 32:
-            return Q ? ir.VectorPairedAdd32(operand1, operand2) : ir.VectorPairedAddLower32(operand1, operand2);
-        default:
-            return ir.VectorPairedAdd64(operand1, operand2);
-        }
-    }();
+    const IR::U128 result = Q ? ir.VectorPairedAdd(esize, operand1, operand2) : ir.VectorPairedAddLower(esize, operand1, operand2);
 
     V(datasize, Vd, result);
 
@@ -128,18 +106,7 @@ bool TranslatorVisitor::CMEQ_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) 
     const IR::U128 operand1 = V(datasize, Vn);
     const IR::U128 operand2 = V(datasize, Vm);
 
-    IR::U128 result = [&]{
-        switch (esize) {
-        case 8:
-            return ir.VectorEqual8(operand1, operand2);
-        case 16:
-            return ir.VectorEqual16(operand1, operand2);
-        case 32:
-            return ir.VectorEqual32(operand1, operand2);
-        default:
-            return ir.VectorEqual64(operand1, operand2);
-        }
-    }();
+    IR::U128 result = ir.VectorEqual(esize, operand1, operand2);
 
     if (datasize == 64) {
         result = ir.VectorZeroUpper(result);
@@ -170,8 +137,7 @@ bool TranslatorVisitor::BIF(bool Q, Vec Vm, Vec Vn, Vec Vd) {
   auto operand4 = V(datasize, Vn);
   auto operand3 = ir.VectorNot(V(datasize, Vm));
 
-  auto result = ir.VectorEor(operand1,
-                    ir.VectorAnd(ir.VectorEor(operand1, operand4), operand3));
+  auto result = ir.VectorEor(operand1, ir.VectorAnd(ir.VectorEor(operand1, operand4), operand3));
 
   V(datasize, Vd, result);
 
@@ -185,8 +151,7 @@ bool TranslatorVisitor::BIT(bool Q, Vec Vm, Vec Vn, Vec Vd) {
   auto operand4 = V(datasize, Vn);
   auto operand3 = V(datasize, Vm);
 
-  auto result = ir.VectorEor(operand1,
-                    ir.VectorAnd(ir.VectorEor(operand1, operand4), operand3));
+  auto result = ir.VectorEor(operand1, ir.VectorAnd(ir.VectorEor(operand1, operand4), operand3));
 
   V(datasize, Vd, result);
 
@@ -200,8 +165,7 @@ bool TranslatorVisitor::BSL(bool Q, Vec Vm, Vec Vn, Vec Vd) {
   auto operand1 = V(datasize, Vm);
   auto operand3 = V(datasize, Vd);
 
-  auto result = ir.VectorEor(operand1,
-                    ir.VectorAnd(ir.VectorEor(operand1, operand4), operand3));
+  auto result = ir.VectorEor(operand1, ir.VectorAnd(ir.VectorEor(operand1, operand4), operand3));
 
   V(datasize, Vd, result);
 
