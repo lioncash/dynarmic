@@ -747,7 +747,7 @@ INST(ORN_asimd,              "ORN (vector)",                              "0Q001
 //INST(UMIN,                   "UMIN",                                      "0Q101110zz1mmmmm011011nnnnnddddd")
 //INST(UABD,                   "UABD",                                      "0Q101110zz1mmmmm011101nnnnnddddd")
 //INST(UABA,                   "UABA",                                      "0Q101110zz1mmmmm011111nnnnnddddd")
-//INST(SUB_2,                  "SUB (vector)",                              "0Q101110zz1mmmmm100001nnnnnddddd")
+INST(SUB_2,                  "SUB (vector)",                              "0Q101110zz1mmmmm100001nnnnnddddd")
 INST(CMEQ_reg_2,             "CMEQ (register)",                           "0Q101110zz1mmmmm100011nnnnnddddd")
 //INST(MLS_vec,                "MLS (vector)",                              "0Q101110zz1mmmmm100101nnnnnddddd")
 //INST(PMUL,                   "PMUL",                                      "0Q101110zz1mmmmm100111nnnnnddddd")
