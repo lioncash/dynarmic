@@ -257,6 +257,22 @@ void EmitX64::EmitFPDiv64(EmitContext& ctx, IR::Inst* inst) {
     FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::divsd);
 }
 
+void EmitX64::EmitFPMax32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::maxss);
+}
+
+void EmitX64::EmitFPMax64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::maxsd);
+}
+
+void EmitX64::EmitFPMin32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::minss);
+}
+
+void EmitX64::EmitFPMin64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::minsd);
+}
+
 void EmitX64::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
     FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::mulss);
 }

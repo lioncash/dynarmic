@@ -233,6 +233,8 @@ public:
     U32U64 FPAdd(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     NZCV FPCompare(const U32U64& a, const U32U64& b, bool exc_on_qnan, bool fpscr_controlled);
     U32U64 FPDiv(const U32U64& a, const U32U64& b, bool fpscr_controlled);
+    U32U64 FPMax(const U32U64& a, const U32U64& b, bool fpscr_controlled);
+    U32U64 FPMin(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32U64 FPMul(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32U64 FPNeg(const U32U64& a);
     U32U64 FPSqrt(const U32U64& a);

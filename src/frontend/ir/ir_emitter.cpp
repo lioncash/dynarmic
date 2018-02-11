@@ -1068,6 +1068,26 @@ U32U64 IREmitter::FPDiv(const U32U64& a, const U32U64& b, bool fpscr_controlled)
     }
 }
 
+U32U64 IREmitter::FPMax(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
+    ASSERT(fpscr_controlled);
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPMax32, a, b);
+    } else {
+        return Inst<U64>(Opcode::FPMax64, a, b);
+    }
+}
+
+U32U64 IREmitter::FPMin(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
+    ASSERT(fpscr_controlled);
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPMin32, a, b);
+    } else {
+        return Inst<U64>(Opcode::FPMin64, a, b);
+    }
+}
+
 U32U64 IREmitter::FPMul(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
     ASSERT(a.GetType() == b.GetType());
