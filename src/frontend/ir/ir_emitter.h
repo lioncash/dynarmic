@@ -217,6 +217,7 @@ public:
     U128 VectorInterleaveLower(size_t esize, const U128& a, const U128& b);
     U128 VectorLogicalShiftLeft(size_t esize, const U128& a, u8 shift_amount);
     U128 VectorLogicalShiftRight(size_t esize, const U128& a, u8 shift_amount);
+    U128 VectorMultiply(size_t esize, const U128& a, const U128& b);
     U128 VectorNarrow(size_t original_esize, const U128& a);
     U128 VectorNot(const U128& a);
     U128 VectorOr(const U128& a, const U128& b);

@@ -4,6 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
+#include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
 #include "common/assert.h"
@@ -26,6 +27,31 @@ static void EmitVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
     (code.*fn)(xmm_a, xmm_b);
 
     ctx.reg_alloc.DefineValue(inst, xmm_a);
+}
+
+template <typename Lambda>
+static void EmitTwoArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+    const auto fn = +lambda; // Force decay of lambda to function pointer
+    constexpr u32 stack_space = 3 * 16;
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm arg2 = ctx.reg_alloc.UseXmm(args[1]);
+    ctx.reg_alloc.EndOfAllocScope();
+
+    ctx.reg_alloc.HostCall(nullptr);
+    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
+    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+    code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
+
+    code.movaps(xword[code.ABI_PARAM2], arg1);
+    code.movaps(xword[code.ABI_PARAM3], arg2);
+    code.CallFunction(+fn);
+    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+
+    code.add(rsp, stack_space + ABI_SHADOW_SPACE);
+
+    ctx.reg_alloc.DefineValue(inst, xmm0);
 }
 
 void EmitX64::EmitVectorGetElement8(EmitContext& ctx, IR::Inst* inst) {
@@ -573,6 +599,52 @@ void EmitX64::EmitVectorLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
     code.psrlq(result, shift_amount);
 
     ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorMultiply8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Xmm tmp_a = ctx.reg_alloc.ScratchXmm();
+    Xbyak::Xmm tmp_b = ctx.reg_alloc.ScratchXmm();
+
+    // TODO: Optimize
+    code.movdqa(tmp_a, a);
+    code.movdqa(tmp_b, b);
+    code.pmullw(a, b);
+    code.psrlw(tmp_a, 8);
+    code.psrlw(tmp_b, 8);
+    code.pmullw(tmp_a, tmp_b);
+    code.pand(a, code.MConst(0x00FF00FF00FF00FF, 0x00FF00FF00FF00FF));
+    code.psllw(tmp_a, 8);
+    code.por(a, tmp_a);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorMultiply16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pmullw);
+}
+
+void EmitX64::EmitVectorMultiply32(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pmulld);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b){
+        for (size_t i = 0; i < 4; ++i) {
+            result[i] = a[i] * b[i];
+        }
+    });
+}
+
+void EmitX64::EmitVectorMultiply64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
+        for (size_t i = 0; i < 2; ++i) {
+            result[i] = a[i] * b[i];
+        }
+    });
 }
 
 void EmitX64::EmitVectorNarrow16(EmitContext& ctx, IR::Inst* inst) {
