@@ -977,6 +977,10 @@ U128 IREmitter::VectorPairedAdd(size_t esize, const U128& a, const U128& b) {
     return {};
 }
 
+U128 IREmitter::VectorPopulationCount(const U128& a) {
+    return Inst<U128>(Opcode::VectorPopulationCount, a);
+}
+
 U128 IREmitter::VectorSub(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 8:

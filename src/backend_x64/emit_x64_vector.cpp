@@ -8,6 +8,7 @@
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
 #include "common/assert.h"
+#include "common/bit_util.h"
 #include "common/common_types.h"
 #include "common/mp.h"
 #include "frontend/ir/basic_block.h"
@@ -880,6 +881,39 @@ void EmitX64::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
     code.paddq(a, c);
 
     ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        Xbyak::Xmm low_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm high_a = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+        Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+
+        code.movdqa(high_a, low_a);
+        code.psrlw(high_a, 4);
+        code.movdqa(tmp1, code.MConst(0x0F0F0F0F0F0F0F0F, 0x0F0F0F0F0F0F0F0F));
+        code.pand(high_a, tmp1); // High nibbles
+        code.pand(low_a, tmp1); // Low nibbles
+
+        code.movdqa(tmp1, code.MConst(0x0302020102010100, 0x0403030203020201));
+        code.movdqa(tmp2, tmp1);
+        code.pshufb(tmp1, low_a);
+        code.pshufb(tmp2, high_a);
+
+        code.paddb(tmp1, tmp2);
+
+        ctx.reg_alloc.DefineValue(inst, tmp1);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u8, 16>& result, const std::array<u8, 16>& a){
+        for (size_t i = 0; i < 16; ++i) {
+            result[i] = static_cast<u8>(Common::BitCount(a[i]));
+        }
+    });
 }
 
 void EmitX64::EmitVectorSub8(EmitContext& ctx, IR::Inst* inst) {

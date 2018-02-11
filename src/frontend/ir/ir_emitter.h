@@ -223,6 +223,7 @@ public:
     U128 VectorOr(const U128& a, const U128& b);
     U128 VectorPairedAdd(size_t esize, const U128& a, const U128& b);
     U128 VectorPairedAddLower(size_t esize, const U128& a, const U128& b);
+    U128 VectorPopulationCount(const U128& a);
     U128 VectorSub(size_t esize, const U128& a, const U128& b);
     U128 VectorZeroExtend(size_t original_esize, const U128& a);
     U128 VectorZeroUpper(const U128& a);

@@ -248,6 +248,7 @@ OPCODE(VectorPairedAdd8,            T::U128,        T::U128,        T::U128     
 OPCODE(VectorPairedAdd16,           T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorPairedAdd32,           T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorPairedAdd64,           T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorPopulationCount,       T::U128,        T::U128                                         )
 OPCODE(VectorSub8,                  T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorSub16,                 T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorSub32,                 T::U128,        T::U128,        T::U128                         )
