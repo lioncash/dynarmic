@@ -83,6 +83,36 @@ bool TranslatorVisitor::FSUB_float(Imm<2> type, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FMAX_float(Imm<2> type, Vec Vm, Vec Vn, Vec Vd) {
+    auto datasize = GetDataSize(type);
+    if (!datasize) {
+        return UnallocatedEncoding();
+    }
+
+    const IR::U32U64 operand1 = V_scalar(*datasize, Vn);
+    const IR::U32U64 operand2 = V_scalar(*datasize, Vm);
+
+    const IR::U32U64 result = ir.FPMax(operand1, operand2, true);
+
+    V_scalar(*datasize, Vd, result);
+    return true;
+}
+
+bool TranslatorVisitor::FMIN_float(Imm<2> type, Vec Vm, Vec Vn, Vec Vd) {
+    auto datasize = GetDataSize(type);
+    if (!datasize) {
+        return UnallocatedEncoding();
+    }
+
+    const IR::U32U64 operand1 = V_scalar(*datasize, Vn);
+    const IR::U32U64 operand2 = V_scalar(*datasize, Vm);
+
+    const IR::U32U64 result = ir.FPMin(operand1, operand2, true);
+
+    V_scalar(*datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FNMUL_float(Imm<2> type, Vec Vm, Vec Vn, Vec Vd) {
     auto datasize = GetDataSize(type);
     if (!datasize) {
