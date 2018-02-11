@@ -210,12 +210,18 @@ void TranslatorVisitor::V(size_t bitsize, Vec vec, IR::U128 value) {
     }
 }
 
-IR::UAny TranslatorVisitor::V_scalar(size_t bitsize, Vec vec) {
+IR::UAnyU128 TranslatorVisitor::V_scalar(size_t bitsize, Vec vec) {
+    if (bitsize == 128) {
+        return V(128, vec);
+    }
     // TODO: Optimize
     return ir.VectorGetElement(bitsize, ir.GetQ(vec), 0);
 }
 
-void TranslatorVisitor::V_scalar(size_t /*bitsize*/, Vec vec, IR::UAny value) {
+void TranslatorVisitor::V_scalar(size_t bitsize, Vec vec, IR::UAnyU128 value) {
+    if (bitsize == 128) {
+        return V(128, vec, value);
+    }
     // TODO: Optimize
     ir.SetQ(vec, ir.ZeroExtendToQuad(value));
 }

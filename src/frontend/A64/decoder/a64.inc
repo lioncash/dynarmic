@@ -225,8 +225,8 @@ INST(LDTRSW,                 "LDTRSW",                                    "10111
 // Loads and stores - Load/Store register (register offset)
 INST(STRx_reg,               "STRx (register)",                           "zz111000o01mmmmmxxxS10nnnnnttttt")
 INST(LDRx_reg,               "LDRx (register)",                           "zz111000o11mmmmmxxxS10nnnnnttttt")
-//INST(STR_reg_fpsimd,         "STR (register, SIMD&FP)",                   "zz111100-01mmmmmxxxS10nnnnnttttt")
-//INST(LDR_reg_fpsimd,         "LDR (register, SIMD&FP)",                   "zz111100-11mmmmmxxxS10nnnnnttttt")
+INST(STR_reg_fpsimd,         "STR (register, SIMD&FP)",                   "zz111100o01mmmmmxxxS10nnnnnttttt")
+INST(LDR_reg_fpsimd,         "LDR (register, SIMD&FP)",                   "zz111100o11mmmmmxxxS10nnnnnttttt")
 
 // Loads and stores - Load/Store register (pointer authentication)
 //INST(LDRA,                   "LDRAA, LDRAB",                              "11111000MS1iiiiiiiiiW1nnnnnttttt")

@@ -52,8 +52,8 @@ struct TranslatorVisitor final {
     IR::U128 V(size_t bitsize, Vec vec);
     void V(size_t bitsize, Vec vec, IR::U128 value);
 
-    IR::UAny V_scalar(size_t bitsize, Vec vec);
-    void V_scalar(size_t bitsize, Vec vec, IR::UAny value);
+    IR::UAnyU128 V_scalar(size_t bitsize, Vec vec);
+    void V_scalar(size_t bitsize, Vec vec, IR::UAnyU128 value);
 
     IR::U128 Vpart(size_t bitsize, Vec vec, size_t part);
     void Vpart(size_t bitsize, Vec vec, size_t part, IR::U128 value);
@@ -287,8 +287,8 @@ struct TranslatorVisitor final {
     // Loads and stores - Load/Store register (register offset)
     bool STRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
     bool LDRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt);
-    bool STR_reg_fpsimd(Imm<2> size, Reg Rm, Imm<3> option, bool S, Reg Rn, Vec Vt);
-    bool LDR_reg_fpsimd(Imm<2> size, Reg Rm, Imm<3> option, bool S, Reg Rn, Vec Vt);
+    bool STR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn, Vec Vt);
+    bool LDR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn, Vec Vt);
 
     // Loads and stores - Load/Store register (pointer authentication)
     bool LDRA(bool M, bool S, Imm<9> imm9, bool W, Reg Rn, Reg Rt);
