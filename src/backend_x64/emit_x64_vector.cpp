@@ -938,6 +938,61 @@ void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
+void EmitX64::EmitVectorSignExtend8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        code.pmovsxbw(a, a);
+        ctx.reg_alloc.DefineValue(inst, a);
+    } else {
+        const Xbyak::Xmm a = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        code.pxor(result, result);
+        code.punpcklbw(result, a);
+        code.psraw(result, 8);
+        ctx.reg_alloc.DefineValue(inst, result);
+    }
+}
+
+void EmitX64::EmitVectorSignExtend16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        ctx.reg_alloc.DefineValue(inst, a);
+        code.pmovsxwd(a, a);
+    } else {
+        const Xbyak::Xmm a = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        code.pxor(result, result);
+        code.punpcklwd(result, a);
+        code.psrad(result, 16);
+        ctx.reg_alloc.DefineValue(inst, result);
+    }
+}
+
+void EmitX64::EmitVectorSignExtend32(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        code.pmovsxdq(a, a);
+        ctx.reg_alloc.DefineValue(inst, a);
+        return;
+    }
+
+    EmitOneArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u32, 4>& a){
+        for (size_t i = 0; i < 2; ++i) {
+            result[i] = Common::SignExtend<32, u64>(a[i]);
+        }
+    });
+}
+
+void EmitX64::EmitVectorSignExtend64(EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a){
+        result[1] = (a[0] >> 63) ? ~u64(0) : 0;
+        result[0] = a[0];
+    });
+}
+
 void EmitX64::EmitVectorSub8(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubb);
 }
