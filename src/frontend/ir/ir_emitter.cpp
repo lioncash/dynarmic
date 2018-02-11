@@ -1139,6 +1139,17 @@ U64 IREmitter::FPU32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_con
     return Inst<U64>(Opcode::FPU32ToDouble, a, Imm1(round_to_nearest));
 }
 
+U128 IREmitter::FPVectorSub(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 32:
+        return Inst<U128>(Opcode::FPVectorSub32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::FPVectorSub64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 void IREmitter::Breakpoint() {
     Inst(Opcode::Breakpoint);
 }

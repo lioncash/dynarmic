@@ -289,6 +289,10 @@ OPCODE(FPS32ToSingle,               T::U32,         T::U32,         T::U1       
 OPCODE(FPU32ToDouble,               T::U64,         T::U32,         T::U1                           )
 OPCODE(FPS32ToDouble,               T::U64,         T::U32,         T::U1                           )
 
+// Floating-point vector instructions
+OPCODE(FPVectorSub32,               T::U128,        T::U128,        T::U128                         )
+OPCODE(FPVectorSub64,               T::U128,        T::U128,        T::U128                         )
+
 // A32 Memory access
 A32OPC(ClearExclusive,              T::Void,                                                        )
 A32OPC(SetExclusive,                T::Void,        T::U32,         T::U8                           )

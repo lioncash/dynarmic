@@ -167,6 +167,7 @@ if (ARCHITECTURE_x86_64)
          backend_x64/emit_x64_packed.cpp
          backend_x64/emit_x64_saturation.cpp
          backend_x64/emit_x64_vector.cpp
+         backend_x64/emit_x64_vector_floating_point.cpp
          backend_x64/hostloc.cpp
          backend_x64/hostloc.h
          backend_x64/jitstate_info.h
