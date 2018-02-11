@@ -641,6 +641,26 @@ void EmitX64::EmitVectorMultiply32(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorMultiply64(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
+        Xbyak::Reg64 tmp1 = ctx.reg_alloc.ScratchGpr();
+        Xbyak::Reg64 tmp2 = ctx.reg_alloc.ScratchGpr();
+
+        code.movq(tmp1, a);
+        code.movq(tmp2, b);
+        code.imul(tmp2, tmp1);
+        code.pextrq(tmp1, a, 1);
+        code.movq(a, tmp2);
+        code.pextrq(tmp2, b, 1);
+        code.imul(tmp1, tmp2);
+        code.pinsrq(a, tmp1, 1);
+
+        ctx.reg_alloc.DefineValue(inst, a);
+        return;
+    }
+
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
         for (size_t i = 0; i < 2; ++i) {
             result[i] = a[i] * b[i];
