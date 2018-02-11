@@ -141,6 +141,17 @@ struct TranslatorVisitor final {
     bool SYSL(Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt);
     bool MRS(bool o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt);
 
+    // SYS: Data Cache
+    bool DC_IVAC(Reg Rt);
+    bool DC_ISW(Reg Rt);
+    bool DC_CSW(Reg Rt);
+    bool DC_CISW(Reg Rt);
+    bool DC_ZVA(Reg Rt);
+    bool DC_CVAC(Reg Rt);
+    bool DC_CVAU(Reg Rt);
+    bool DC_CVAP(Reg Rt);
+    bool DC_CIVAC(Reg Rt);
+
     // Unconditonal branch (Register)
     bool BR(Reg Rn);
     bool BRA(bool Z, bool M, Reg Rn, Reg Rm);

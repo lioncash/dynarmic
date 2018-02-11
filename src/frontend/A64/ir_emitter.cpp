@@ -13,7 +13,7 @@ namespace Dynarmic::A64 {
 using Opcode = IR::Opcode;
 
 u64 IREmitter::PC() {
-    return current_location.PC();
+    return current_location->PC();
 }
 
 u64 IREmitter::AlignPC(size_t alignment) {
@@ -39,6 +39,10 @@ void IREmitter::CallSupervisor(u32 imm) {
 
 void IREmitter::ExceptionRaised(Exception exception) {
     Inst(Opcode::A64ExceptionRaised, Imm64(PC()), Imm64(static_cast<u64>(exception)));
+}
+
+void IREmitter::DataCacheOperationRaised(DataCacheOperation op, const IR::U64& value) {
+    Inst(Opcode::A64DataCacheOperationRaised, Imm64(static_cast<u64>(op)), value);
 }
 
 IR::U8 IREmitter::ReadMemory8(const IR::U64& vaddr) {

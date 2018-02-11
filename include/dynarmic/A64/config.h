@@ -30,6 +30,27 @@ enum class Exception {
     UnpredictableInstruction,
 };
 
+enum class DataCacheOperation {
+    /// DC CISW
+    CleanAndInvalidateBySetWay,
+    /// DC CIVAC
+    CleanAndInvalidateByVAToPoC,
+    /// DC CSW
+    CleanBySetWay,
+    /// DC CVAC
+    CleanByVAToPoC,
+    /// DC CVAU
+    CleanByVAToPoU,
+    /// DC CVAP
+    CleanByVAToPoP,
+    /// DC ISW
+    InvalidateBySetWay,
+    /// DC IVAC
+    InvaldiateByVAToPoC,
+    /// DC ZVA
+    ZeroByVA,
+};
+
 struct UserCallbacks {
     virtual ~UserCallbacks() = default;
 
@@ -64,6 +85,7 @@ struct UserCallbacks {
     virtual void CallSVC(std::uint32_t swi) = 0;
 
     virtual void ExceptionRaised(VAddr pc, Exception exception) = 0;
+    virtual void DataCacheOperationRaised(DataCacheOperation /*op*/, VAddr /*value*/) {}
 
     // Timing-related callbacks
     // ticks ticks have passed
@@ -74,6 +96,16 @@ struct UserCallbacks {
 
 struct UserConfig {
     UserCallbacks* callbacks;
+
+    /// When set to true, UserCallbacks::DataCacheOperationRaised will be called when any
+    /// data cache instruction is executed. Notably DC ZVA will not implicitly do anything.
+    /// When set to false, UserCallbacks::DataCacheOperationRaised will never be called.
+    /// Executing DC ZVA in this mode will result in zeros being written to memory.
+    bool hook_data_cache_operations = false;
+
+    /// DCZID_EL0<3:0> is log2 of the block size in words
+    /// DCZID_EL0<4> is 0 if the DC ZVA instruction is permitted.
+    std::uint32_t dczid_el0 = 4;
 
     // Determines whether AddTicks and GetTicksRemaining are called.
     // If false, execution will continue until soon after Jit::HaltExecution is called.

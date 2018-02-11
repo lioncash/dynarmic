@@ -100,6 +100,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/simd_shift_by_immediate.cpp
     frontend/A64/translate/impl/simd_three_same.cpp
     frontend/A64/translate/impl/simd_two_register_misc.cpp
+    frontend/A64/translate/impl/sys_dc.cpp
     frontend/A64/translate/impl/system.cpp
     frontend/A64/translate/translate.cpp
     frontend/A64/translate/translate.h
@@ -125,6 +126,7 @@ add_library(dynarmic
     frontend/ir/value.h
     ir_opt/a32_constant_memory_reads_pass.cpp
     ir_opt/a32_get_set_elimination_pass.cpp
+    ir_opt/a64_callback_config_pass.cpp
     ir_opt/a64_get_set_elimination_pass.cpp
     ir_opt/a64_merge_interpret_blocks.cpp
     ir_opt/constant_propagation_pass.cpp

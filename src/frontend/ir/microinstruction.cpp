@@ -269,14 +269,15 @@ bool Inst::IsCoprocessorInstruction() const {
 }
 
 bool Inst::MayHaveSideEffects() const {
-    return op == Opcode::PushRSB        ||
-           op == Opcode::A64SetCheckBit ||
-           CausesCPUException()         ||
-           WritesToCoreRegister()       ||
-           WritesToCPSR()               ||
-           WritesToFPSCR()              ||
-           AltersExclusiveState()       ||
-           IsMemoryWrite()              ||
+    return op == Opcode::PushRSB                        ||
+           op == Opcode::A64SetCheckBit                 ||
+           op == Opcode::A64DataCacheOperationRaised    ||
+           CausesCPUException()                         ||
+           WritesToCoreRegister()                       ||
+           WritesToCPSR()                               ||
+           WritesToFPSCR()                              ||
+           AltersExclusiveState()                       ||
+           IsMemoryWrite()                              ||
            IsCoprocessorInstruction();
 }
 

@@ -70,6 +70,17 @@ INST(SEVL,                   "SEVL",                                      "11010
 //INST(SYSL,                   "SYSL",                                      "1101010100101oooNNNNMMMMooottttt")
 //INST(MRS,                    "MRS",                                       "110101010011poooNNNNMMMMooottttt")
 
+// SYS: Data Cache
+INST(DC_IVAC,                "DC IVAC",                                   "110101010000100001110110001ttttt")
+INST(DC_ISW,                 "DC ISW",                                    "110101010000100001110110010ttttt")
+INST(DC_CSW,                 "DC CSW",                                    "110101010000100001111010010ttttt")
+INST(DC_CISW,                "DC CISW",                                   "110101010000100001111110010ttttt")
+INST(DC_ZVA,                 "DC ZVA",                                    "110101010000101101110100001ttttt")
+INST(DC_CVAC,                "DC CVAC",                                   "110101010000101101111010001ttttt")
+INST(DC_CVAU,                "DC CVAU",                                   "110101010000101101111011001ttttt")
+INST(DC_CVAP,                "DC CVAP",                                   "110101010000101101111100001ttttt")
+INST(DC_CIVAC,               "DC CIVAC",                                  "110101010000101101111110001ttttt")
+
 // Unconditonal branch (Register)
 INST(BLR,                    "BLR",                                       "1101011000111111000000nnnnn00000")
 INST(BR,                     "BR",                                        "1101011000011111000000nnnnn00000")

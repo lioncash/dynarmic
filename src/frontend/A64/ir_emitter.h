@@ -8,6 +8,8 @@
 
 #include <initializer_list>
 
+#include <boost/optional.hpp>
+
 #include <dynarmic/A64/config.h>
 
 #include "common/common_types.h"
@@ -25,9 +27,10 @@ namespace Dynarmic::A64 {
  */
 class IREmitter : public IR::IREmitter {
 public:
+    explicit IREmitter(IR::Block& block) : IR::IREmitter(block) {}
     explicit IREmitter(IR::Block& block, LocationDescriptor descriptor) : IR::IREmitter(block), current_location(descriptor) {}
 
-    LocationDescriptor current_location;
+    boost::optional<LocationDescriptor> current_location;
 
     u64 PC();
     u64 AlignPC(size_t alignment);
@@ -38,6 +41,7 @@ public:
 
     void CallSupervisor(u32 imm);
     void ExceptionRaised(Exception exception);
+    void DataCacheOperationRaised(DataCacheOperation op, const IR::U64& value);
 
     IR::U8 ReadMemory8(const IR::U64& vaddr);
     IR::U16 ReadMemory16(const IR::U64& vaddr);

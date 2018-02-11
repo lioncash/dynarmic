@@ -83,7 +83,7 @@ restart:
     if (auto terminal = block.GetTerminal(); boost::get<IR::Term::Interpret>(&terminal))
         goto restart;
     for (const auto& ir_inst : block)
-        if (ir_inst.GetOpcode() == IR::Opcode::A64ExceptionRaised || ir_inst.GetOpcode() == IR::Opcode::A64CallSupervisor)
+        if (ir_inst.GetOpcode() == IR::Opcode::A64ExceptionRaised || ir_inst.GetOpcode() == IR::Opcode::A64CallSupervisor || ir_inst.GetOpcode() == IR::Opcode::A64DataCacheOperationRaised)
             goto restart;
 
     return instruction;
