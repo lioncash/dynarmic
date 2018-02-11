@@ -32,6 +32,28 @@ static void EmitVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
 }
 
 template <typename Lambda>
+static void EmitOneArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+    const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
+    constexpr u32 stack_space = 2 * 16;
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
+    ctx.reg_alloc.EndOfAllocScope();
+
+    ctx.reg_alloc.HostCall(nullptr);
+    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
+    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+
+    code.movaps(xword[code.ABI_PARAM2], arg1);
+    code.CallFunction(fn);
+    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+
+    code.add(rsp, stack_space + ABI_SHADOW_SPACE);
+
+    ctx.reg_alloc.DefineValue(inst, xmm0);
+}
+
+template <typename Lambda>
 static void EmitTwoArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
     const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
     constexpr u32 stack_space = 3 * 16;
@@ -48,7 +70,7 @@ static void EmitTwoArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Ins
 
     code.movaps(xword[code.ABI_PARAM2], arg1);
     code.movaps(xword[code.ABI_PARAM3], arg2);
-    code.CallFunction(+fn);
+    code.CallFunction(fn);
     code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
 
     code.add(rsp, stack_space + ABI_SHADOW_SPACE);
@@ -909,7 +931,7 @@ void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u8, 16>& result, const std::array<u8, 16>& a){
+    EmitOneArgumentFallback(code, ctx, inst, [](std::array<u8, 16>& result, const std::array<u8, 16>& a){
         for (size_t i = 0; i < 16; ++i) {
             result[i] = static_cast<u8>(Common::BitCount(a[i]));
         }
