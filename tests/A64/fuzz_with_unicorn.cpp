@@ -15,6 +15,7 @@
 #include "frontend/A64/location_descriptor.h"
 #include "frontend/A64/translate/translate.h"
 #include "frontend/ir/basic_block.h"
+#include "frontend/ir/opcodes.h"
 #include "inst_gen.h"
 #include "rand_int.h"
 #include "testenv.h"

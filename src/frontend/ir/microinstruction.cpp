@@ -8,6 +8,8 @@
 
 #include "common/assert.h"
 #include "frontend/ir/microinstruction.h"
+#include "frontend/ir/opcodes.h"
+#include "frontend/ir/type.h"
 
 namespace Dynarmic::IR {
 
@@ -347,6 +349,10 @@ Type Inst::GetType() const {
     if (op == Opcode::Identity)
         return args[0].GetType();
     return GetTypeOf(op);
+}
+
+size_t Inst::NumArgs() const {
+    return GetNumArgsOf(op);
 }
 
 Value Inst::GetArg(size_t index) const {

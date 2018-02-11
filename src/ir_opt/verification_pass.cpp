@@ -10,6 +10,8 @@
 #include "common/common_types.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
+#include "frontend/ir/opcodes.h"
+#include "frontend/ir/type.h"
 #include "ir_opt/passes.h"
 
 namespace Dynarmic::Optimization {

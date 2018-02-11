@@ -119,6 +119,8 @@ add_library(dynarmic
     frontend/ir/opcodes.h
     frontend/ir/opcodes.inc
     frontend/ir/terminal.h
+    frontend/ir/type.cpp
+    frontend/ir/type.h
     frontend/ir/value.cpp
     frontend/ir/value.h
     ir_opt/a32_constant_memory_reads_pass.cpp

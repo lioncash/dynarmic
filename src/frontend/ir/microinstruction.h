@@ -10,10 +10,12 @@
 
 #include "common/common_types.h"
 #include "common/intrusive_list.h"
-#include "frontend/ir/opcodes.h"
 #include "frontend/ir/value.h"
 
 namespace Dynarmic::IR {
+
+enum class Opcode;
+enum class Type;
 
 /**
  * A representation of a microinstruction. A single ARM/Thumb instruction may be
@@ -98,7 +100,7 @@ public:
     /// Get the type this instruction returns.
     Type GetType() const;
     /// Get the number of arguments this instruction has.
-    size_t NumArgs() const { return GetNumArgsOf(op); }
+    size_t NumArgs() const;
 
     Value GetArg(size_t index) const;
     void SetArg(size_t index, Value value);
