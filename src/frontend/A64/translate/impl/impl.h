@@ -865,7 +865,7 @@ struct TranslatorVisitor final {
     bool RSHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool SQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
     bool SQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool SSHLL(bool Q, Imm<4> immh, Imm<3> immb, Reg Rn, Vec Vd);
+    bool SSHLL(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SCVTF_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool FCVTZS_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool USHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);

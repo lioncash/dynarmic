@@ -788,7 +788,7 @@ INST(SHL_2,                  "SHL",                                       "0Q001
 //INST(RSHRN,                  "RSHRN, RSHRN2",                             "0Q0011110IIIIiii100011nnnnnddddd")
 //INST(SQSHRN_2,               "SQSHRN, SQSHRN2",                           "0Q0011110IIIIiii100101nnnnnddddd")
 //INST(SQRSHRN_2,              "SQRSHRN, SQRSHRN2",                         "0Q0011110IIIIiii100111nnnnnddddd")
-//INST(SSHLL,                  "SSHLL, SSHLL2",                             "0Q0011110IIIIiii101001nnnnnddddd")
+INST(SSHLL,                  "SSHLL, SSHLL2",                             "0Q0011110IIIIiii101001nnnnnddddd")
 //INST(SCVTF_fix_2,            "SCVTF (vector, fixed-point)",               "0Q0011110IIIIiii111001nnnnnddddd")
 //INST(FCVTZS_fix_2,           "FCVTZS (vector, fixed-point)",              "0Q0011110IIIIiii111111nnnnnddddd")
 INST(USHR_2,                 "USHR",                                      "0Q1011110IIIIiii000001nnnnnddddd")
