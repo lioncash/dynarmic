@@ -13,7 +13,9 @@ namespace Dynarmic::mp {
 
 /// Used to provide information about an arbitrary function.
 template <typename Function>
-struct FunctionInfo;
+struct FunctionInfo : public FunctionInfo<decltype(&Function::operator())>
+{
+};
 
 /**
  * Partial specialization for function types.
@@ -32,6 +34,8 @@ struct FunctionInfo<R(Args...)>
         static_assert(args_count != 0 && ParameterIndex < args_count, "Non-existent function parameter index");
         using type = std::tuple_element_t<ParameterIndex, std::tuple<Args...>>;
     };
+
+    using equivalent_function_type = R(Args...);
 };
 
 /// Partial specialization for function pointers
@@ -78,5 +82,13 @@ using return_type_t = typename FunctionInfo<Function>::return_type;
  */
 template <typename Function>
 using class_type_t = typename FunctionInfo<Function>::class_type;
+
+/**
+ * Helper template for retrieving the equivalent function type of a member function or functor.
+ *
+ * @tparam Function The function type to get the return type of.
+ */
+template <typename Function>
+using equivalent_function_type_t = typename FunctionInfo<Function>::equivalent_function_type;
 
 } // namespace Dynarmic::mp
