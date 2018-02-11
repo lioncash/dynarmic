@@ -22,8 +22,8 @@ bool TranslatorVisitor::UnpredictableInstruction() {
 }
 
 bool TranslatorVisitor::DecodeError() {
-    // TODO: This is an internal error.
-    return UnallocatedEncoding();
+    UNREACHABLE();
+    return false;
 }
 
 bool TranslatorVisitor::ReservedValue() {
