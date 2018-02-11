@@ -25,6 +25,14 @@ static void EmitVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
     ctx.reg_alloc.DefineValue(inst, xmm_a);
 }
 
+void EmitX64::EmitFPVectorAdd32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::addps);
+}
+
+void EmitX64::EmitFPVectorAdd64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::addpd);
+}
+
 void EmitX64::EmitFPVectorSub32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::subps);
 }
