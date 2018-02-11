@@ -644,7 +644,7 @@ INST(XTN,                    "XTN, XTN2",                                 "0Q001
 //INST(CLZ_asimd,              "CLZ (vector)",                              "0Q101110zz100000010010nnnnnddddd")
 //INST(UADALP,                 "UADALP",                                    "0Q101110zz100000011010nnnnnddddd")
 //INST(SHLL,                   "SHLL, SHLL2",                               "0Q101110zz100001001110nnnnnddddd")
-//INST(NOT,                    "NOT",                                       "0Q10111000100000010110nnnnnddddd")
+INST(NOT,                    "NOT",                                       "0Q10111000100000010110nnnnnddddd")
 //INST(RBIT_asimd,             "RBIT (vector)",                             "0Q10111001100000010110nnnnnddddd")
 //INST(URSQRTE,                "URSQRTE",                                   "0Q1011101z100001110010nnnnnddddd")
 

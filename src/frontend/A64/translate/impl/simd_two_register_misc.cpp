@@ -36,4 +36,18 @@ bool TranslatorVisitor::XTN(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::NOT(bool Q, Vec Vn, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = V(datasize, Vn);
+    IR::U128 result = ir.VectorNot(operand);
+
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64
