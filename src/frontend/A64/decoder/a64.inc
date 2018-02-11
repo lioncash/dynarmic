@@ -324,7 +324,6 @@ INST(AESIMC,                 "AESIMC",                                    "01001
 
 // Data Processing - FP and SIMD - Scalar copy
 //INST(DUP_elt_1,              "DUP (element)",                             "01011110000iiiii000001nnnnnddddd")
-//INST(DUP_elt_2,              "DUP (element)",                             "0Q001110000iiiii000001nnnnnddddd")
 
 // Data Processing - FP and SIMD - Scalar three
 //INST(FMULX_vec_1,            "FMULX",                                     "01011110010mmmmm000111nnnnnddddd")
@@ -568,6 +567,7 @@ INST(ZIP1,                   "ZIP1",                                      "0Q001
 //INST(EXT,                    "EXT",                                       "0Q101110000mmmmm0iiii0nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Copy
+INST(DUP_elt_2,              "DUP (element)",                             "0Q001110000iiiii000001nnnnnddddd")
 INST(DUP_gen,                "DUP (general)",                             "0Q001110000iiiii000011nnnnnddddd")
 INST(SMOV,                   "SMOV",                                      "0Q001110000iiiii001011nnnnnddddd")
 INST(UMOV,                   "UMOV",                                      "0Q001110000iiiii001111nnnnnddddd")

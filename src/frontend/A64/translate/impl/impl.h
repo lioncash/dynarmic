@@ -386,7 +386,6 @@ struct TranslatorVisitor final {
 
     // Data Processing - FP and SIMD - Scalar copy
     bool DUP_elt_1(Imm<5> imm5, Vec Vn, Vec Vd);
-    bool DUP_elt_2(bool Q, Imm<5> imm5, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - Scalar three
     bool FMULX_vec_1(Vec Vm, Vec Vn, Vec Vd);
@@ -685,6 +684,7 @@ struct TranslatorVisitor final {
     bool EXT(bool Q, Vec Vm, Imm<4> imm4, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Copy
+    bool DUP_elt_2(bool Q, Imm<5> imm5, Vec Vn, Vec Vd);
     bool DUP_gen(bool Q, Imm<5> imm5, Reg Rn, Vec Vd);
     bool SMOV(bool Q, Imm<5> imm5, Vec Vn, Reg Rd);
     bool UMOV(bool Q, Imm<5> imm5, Vec Vn, Reg Rd);
