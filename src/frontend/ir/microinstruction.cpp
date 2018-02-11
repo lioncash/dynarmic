@@ -272,6 +272,8 @@ bool Inst::MayHaveSideEffects() const {
     return op == Opcode::PushRSB                        ||
            op == Opcode::A64SetCheckBit                 ||
            op == Opcode::A64DataCacheOperationRaised    ||
+           op == Opcode::A64DataSynchronizationBarrier  ||
+           op == Opcode::A64DataMemoryBarrier           ||
            CausesCPUException()                         ||
            WritesToCoreRegister()                       ||
            WritesToCPSR()                               ||

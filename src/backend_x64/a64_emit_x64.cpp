@@ -316,6 +316,14 @@ void A64EmitX64::EmitA64DataCacheOperationRaised(A64EmitContext& ctx, IR::Inst* 
     DEVIRT(conf.callbacks, &A64::UserCallbacks::DataCacheOperationRaised).EmitCall(code);
 }
 
+void A64EmitX64::EmitA64DataSynchronizationBarrier(A64EmitContext&, IR::Inst*) {
+    code.mfence();
+}
+
+void A64EmitX64::EmitA64DataMemoryBarrier(A64EmitContext&, IR::Inst*) {
+    code.lfence();
+}
+
 void A64EmitX64::EmitA64ReadMemory8(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, {}, args[0]);

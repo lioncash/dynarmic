@@ -45,6 +45,14 @@ void IREmitter::DataCacheOperationRaised(DataCacheOperation op, const IR::U64& v
     Inst(Opcode::A64DataCacheOperationRaised, Imm64(static_cast<u64>(op)), value);
 }
 
+void IREmitter::DataSynchronizationBarrier() {
+    Inst(Opcode::A64DataSynchronizationBarrier);
+}
+
+void IREmitter::DataMemoryBarrier() {
+    Inst(Opcode::A64DataMemoryBarrier);
+}
+
 IR::U8 IREmitter::ReadMemory8(const IR::U64& vaddr) {
     return Inst<IR::U8>(Opcode::A64ReadMemory8, vaddr);
 }

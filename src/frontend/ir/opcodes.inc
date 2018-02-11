@@ -59,6 +59,8 @@ A64OPC(SetPC,                       T::Void,        T::U64                      
 A64OPC(CallSupervisor,              T::Void,        T::U32                                          )
 A64OPC(ExceptionRaised,             T::Void,        T::U64,         T::U64                          )
 A64OPC(DataCacheOperationRaised,    T::Void,        T::U64,         T::U64                          )
+A64OPC(DataSynchronizationBarrier,  T::Void,                                                        )
+A64OPC(DataMemoryBarrier,           T::Void,                                                        )
 
 // Hints
 OPCODE(PushRSB,                     T::Void,        T::U64                                          )

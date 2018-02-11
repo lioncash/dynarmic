@@ -36,4 +36,14 @@ bool TranslatorVisitor::SEVL() {
     return true;
 }
 
+bool TranslatorVisitor::DSB(Imm<4> /*CRm*/) {
+    ir.DataSynchronizationBarrier();
+    return true;
+}
+
+bool TranslatorVisitor::DMB(Imm<4> /*CRm*/) {
+    ir.DataMemoryBarrier();
+    return true;
+}
+
 } // namespace Dynarmic::A64
