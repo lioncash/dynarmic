@@ -633,7 +633,7 @@ INST(INS_elt,                "INS (element)",                             "01101
 //INST(REV16_asimd,            "REV16 (vector)",                            "0Q001110zz100000000110nnnnnddddd")
 //INST(SADDLP,                 "SADDLP",                                    "0Q001110zz100000001010nnnnnddddd")
 //INST(CLS_asimd,              "CLS (vector)",                              "0Q001110zz100000010010nnnnnddddd")
-//INST(CNT,                    "CNT",                                       "0Q001110zz100000010110nnnnnddddd")
+INST(CNT,                    "CNT",                                       "0Q001110zz100000010110nnnnnddddd")
 //INST(SADALP,                 "SADALP",                                    "0Q001110zz100000011010nnnnnddddd")
 INST(XTN,                    "XTN, XTN2",                                 "0Q001110zz100001001010nnnnnddddd")
 //INST(FCVTN,                  "FCVTN, FCVTN2",                             "0Q0011100z100001011010nnnnnddddd")
