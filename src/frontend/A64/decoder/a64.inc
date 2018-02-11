@@ -709,7 +709,7 @@ INST(XTN,                    "XTN, XTN2",                                 "0Q001
 INST(ADD_vector,             "ADD (vector)",                              "0Q001110zz1mmmmm100001nnnnnddddd")
 //INST(CMTST_2,                "CMTST",                                     "0Q001110zz1mmmmm100011nnnnnddddd")
 //INST(MLA_vec,                "MLA (vector)",                              "0Q001110zz1mmmmm100101nnnnnddddd")
-//INST(MUL_vec,                "MUL (vector)",                              "0Q001110zz1mmmmm100111nnnnnddddd")
+INST(MUL_vec,                "MUL (vector)",                              "0Q001110zz1mmmmm100111nnnnnddddd")
 //INST(SMAXP,                  "SMAXP",                                     "0Q001110zz1mmmmm101001nnnnnddddd")
 //INST(SMINP,                  "SMINP",                                     "0Q001110zz1mmmmm101011nnnnnddddd")
 //INST(SQDMULH_vec_2,          "SQDMULH (vector)",                          "0Q001110zz1mmmmm101101nnnnnddddd")
