@@ -51,6 +51,7 @@ static bool SharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, bool 
     default:
         return tv.UnallocatedEncoding();
     }
+    ASSERT(rpt == 1 || selem == 1);
 
     if ((size == 0b11 && !Q) && selem != 1) {
         return tv.ReservedValue();
@@ -64,10 +65,22 @@ static bool SharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, bool 
         address = tv.X(64, Rn);
 
     IR::U64 offs = ir.Imm64(0);
-    for (size_t r = 0; r < rpt; r++) {
+    if (selem == 1) {
+        for (size_t r = 0; r < rpt; r++) {
+            const Vec tt = static_cast<Vec>((VecNumber(Vt) + r) % 32);
+            if (memop == MemOp::LOAD) {
+                const IR::UAnyU128 vec = tv.Mem(ir.Add(address, offs), ebytes * elements, AccType::VEC);
+                tv.V_scalar(datasize, tt, vec);
+            } else {
+                const IR::UAnyU128 vec = tv.V_scalar(datasize, tt);
+                tv.Mem(ir.Add(address, offs), ebytes * elements, AccType::VEC, vec);
+            }
+            offs = ir.Add(offs, ir.Imm64(ebytes * elements));
+        }
+    } else {
         for (size_t e = 0; e < elements; e++) {
             for (size_t s = 0; s < selem; s++) {
-                const Vec tt = static_cast<Vec>((VecNumber(Vt) + r + s) % 32);
+                const Vec tt = static_cast<Vec>((VecNumber(Vt) + s) % 32);
                 if (memop == MemOp::LOAD) {
                     const IR::UAny elem = tv.Mem(ir.Add(address, offs), ebytes, AccType::VEC);
                     const IR::U128 vec = ir.VectorSetElement(esize, tv.V(datasize, tt), e, elem);
