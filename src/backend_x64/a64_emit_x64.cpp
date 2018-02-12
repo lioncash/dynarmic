@@ -4,6 +4,8 @@
  * General Public License version 2 or any later version.
  */
 
+#include <initializer_list>
+
 #include <fmt/ostream.h>
 
 #include "backend_x64/a64_emit_x64.h"
@@ -53,6 +55,7 @@ A64EmitX64::A64EmitX64(BlockOfCode& code, A64::UserConfig conf)
     : EmitX64(code), conf(conf)
 {
     GenMemory128Accessors();
+    GenFastmemFallbacks();
     code.PreludeComplete();
 }
 
@@ -172,6 +175,94 @@ void A64EmitX64::GenMemory128Accessors() {
     code.add(rsp, 8);
 #endif
     code.ret();
+}
+
+void A64EmitX64::GenFastmemFallbacks() {
+    const std::initializer_list<int> idxes{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    const std::vector<std::tuple<size_t, ArgCallback>> read_callbacks {
+        {8, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead8)},
+        {16, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead16)},
+        {32, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead32)},
+        {64, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead64)},
+    };
+    const std::vector<std::tuple<size_t, ArgCallback>> write_callbacks {
+        {8, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite8)},
+        {16, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite16)},
+        {32, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite32)},
+        {64, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite64)},
+    };
+
+    for (int vaddr_idx : idxes) {
+        if (vaddr_idx == 4 || vaddr_idx == 15) {
+            continue;
+        }
+
+        for (int value_idx : idxes) {
+            code.align();
+            read_fallbacks[std::make_tuple(128, vaddr_idx, value_idx)] = code.getCurr<void(*)()>();
+            ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(value_idx));
+            if (vaddr_idx != code.ABI_PARAM2.getIdx()) {
+                code.mov(code.ABI_PARAM2, Xbyak::Reg64{vaddr_idx});
+            }
+            code.call(memory_read_128);
+            if (value_idx != 0) {
+                code.movaps(Xbyak::Xmm{value_idx}, xmm0);
+            }
+            ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(value_idx));
+            code.ret();
+
+            code.align();
+            write_fallbacks[std::make_tuple(128, vaddr_idx, value_idx)] = code.getCurr<void(*)()>();
+            ABI_PushCallerSaveRegistersAndAdjustStack(code);
+            if (vaddr_idx != code.ABI_PARAM2.getIdx()) {
+                code.mov(code.ABI_PARAM2, Xbyak::Reg64{vaddr_idx});
+            }
+            if (value_idx != 0) {
+                code.movaps(xmm0, Xbyak::Xmm{value_idx});
+            }
+            code.call(memory_write_128);
+            ABI_PopCallerSaveRegistersAndAdjustStack(code);
+            code.ret();
+
+            if (vaddr_idx == value_idx || value_idx == 4 || value_idx == 15) {
+                continue;
+            }
+
+            for (auto& [bitsize, callback] : read_callbacks) {
+                code.align();
+                read_fallbacks[std::make_tuple(bitsize, vaddr_idx, value_idx)] = code.getCurr<void(*)()>();
+                ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocRegIdx(value_idx));
+                if (vaddr_idx != code.ABI_PARAM2.getIdx()) {
+                    code.mov(code.ABI_PARAM2, Xbyak::Reg64{vaddr_idx});
+                }
+                callback.EmitCall(code);
+                if (value_idx != code.ABI_RETURN.getIdx()) {
+                    code.mov(Xbyak::Reg64{value_idx}, code.ABI_RETURN);
+                }
+                ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocRegIdx(value_idx));
+                code.ret();
+            }
+
+            for (auto& [bitsize, callback] : write_callbacks) {
+                code.align();
+                write_fallbacks[std::make_tuple(bitsize, vaddr_idx, value_idx)] = code.getCurr<void(*)()>();
+                ABI_PushCallerSaveRegistersAndAdjustStack(code);
+                if (vaddr_idx == code.ABI_PARAM3.getIdx() && value_idx == code.ABI_PARAM2.getIdx()) {
+                    code.xchg(code.ABI_PARAM2, code.ABI_PARAM3);
+                } else {
+                    if (vaddr_idx != code.ABI_PARAM2.getIdx()) {
+                        code.mov(code.ABI_PARAM2, Xbyak::Reg64{vaddr_idx});
+                    }
+                    if (value_idx != code.ABI_PARAM3.getIdx()) {
+                        code.mov(code.ABI_PARAM3, Xbyak::Reg64{value_idx});
+                    }
+                }
+                callback.EmitCall(code);
+                ABI_PopCallerSaveRegistersAndAdjustStack(code);
+                code.ret();
+            }
+        }
+    }
 }
 
 void A64EmitX64::EmitA64SetCheckBit(A64EmitContext& ctx, IR::Inst* inst) {
@@ -389,31 +480,157 @@ void A64EmitX64::EmitA64GetTPIDRRO(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+static std::tuple<Xbyak::Reg, Xbyak::RegExp> EmitVAddrLookup(const A64::UserConfig& conf, BlockOfCode& code, A64EmitContext& ctx, Xbyak::Reg64 vaddr, boost::optional<Xbyak::Reg64> arg_scratch = {}) {
+    constexpr int PAGE_BITS = 12;
+    constexpr u64 PAGE_SIZE = 1 << PAGE_BITS;
+
+    Xbyak::Reg64 page_table = arg_scratch.value_or_eval([&]{ return ctx.reg_alloc.ScratchGpr(); });
+    Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
+    code.mov(page_table, reinterpret_cast<u64>(conf.page_table));
+    code.mov(tmp, vaddr);
+    code.shr(tmp, PAGE_BITS);
+    code.mov(page_table, qword[page_table + tmp * sizeof(void*)]);
+    code.mov(tmp, vaddr);
+    code.and_(tmp, PAGE_SIZE - 1);
+    return {page_table, page_table + tmp};
+}
+
+void A64EmitX64::EmitDirectPageTableMemoryRead(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize) {
+    Xbyak::Label abort, end;
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 value = ctx.reg_alloc.ScratchGpr();
+
+    auto [page, src_ptr] = EmitVAddrLookup(conf, code, ctx, vaddr, value);
+    code.test(page, page);
+    code.jz(abort, code.T_NEAR);
+    switch (bitsize) {
+    case 8:
+        code.movzx(value.cvt32(), code.byte[src_ptr]);
+        break;
+    case 16:
+        code.movzx(value.cvt32(), word[src_ptr]);
+        break;
+    case 32:
+        code.mov(value.cvt32(), dword[src_ptr]);
+        break;
+    case 64:
+        code.mov(value, qword[src_ptr]);
+        break;
+    }
+    code.L(end);
+
+    code.SwitchToFarCode();
+    code.L(abort);
+    code.call(read_fallbacks[std::make_tuple(bitsize, vaddr.getIdx(), value.getIdx())]);
+    code.jmp(end, code.T_NEAR);
+    code.SwitchToNearCode();
+
+    ctx.reg_alloc.DefineValue(inst, value);
+}
+
+void A64EmitX64::EmitDirectPageTableMemoryWrite(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize) {
+    Xbyak::Label abort, end;
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
+
+    auto [page, dest_ptr] = EmitVAddrLookup(conf, code, ctx, vaddr);
+    code.test(page, page);
+    code.jz(abort, code.T_NEAR);
+    switch (bitsize) {
+    case 8:
+        code.mov(code.byte[dest_ptr], value.cvt8());
+        break;
+    case 16:
+        code.mov(word[dest_ptr], value.cvt16());
+        break;
+    case 32:
+        code.mov(dword[dest_ptr], value.cvt32());
+        break;
+    case 64:
+        code.mov(qword[dest_ptr], value);
+        break;
+    }
+    code.L(end);
+
+    code.SwitchToFarCode();
+    code.L(abort);
+    code.call(write_fallbacks[std::make_tuple(bitsize, vaddr.getIdx(), value.getIdx())]);
+    code.jmp(end, code.T_NEAR);
+    code.SwitchToNearCode();
+}
+
 void A64EmitX64::EmitA64ReadMemory8(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.page_table) {
+        EmitDirectPageTableMemoryRead(ctx, inst, 8);
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, {}, args[0]);
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead8).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64ReadMemory16(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.page_table) {
+        EmitDirectPageTableMemoryRead(ctx, inst, 16);
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, {}, args[0]);
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead16).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64ReadMemory32(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.page_table) {
+        EmitDirectPageTableMemoryRead(ctx, inst, 32);
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, {}, args[0]);
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead32).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64ReadMemory64(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.page_table) {
+        EmitDirectPageTableMemoryRead(ctx, inst, 64);
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, {}, args[0]);
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead64).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.page_table) {
+        Xbyak::Label abort, end;
+
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
+        Xbyak::Xmm value = ctx.reg_alloc.ScratchXmm();
+
+        auto [page, dest_ptr] = EmitVAddrLookup(conf, code, ctx, vaddr);
+        code.test(page, page);
+        code.jz(abort, code.T_NEAR);
+        code.movups(value, xword[dest_ptr]);
+        code.L(end);
+
+        code.SwitchToFarCode();
+        code.L(abort);
+        code.call(read_fallbacks[std::make_tuple(128, vaddr.getIdx(), value.getIdx())]);
+        code.jmp(end, code.T_NEAR);
+        code.SwitchToNearCode();
+
+        ctx.reg_alloc.DefineValue(inst, value);
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0]);
     code.CallFunction(memory_read_128);
@@ -421,30 +638,71 @@ void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 void A64EmitX64::EmitA64WriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.page_table) {
+        EmitDirectPageTableMemoryWrite(ctx, inst, 8);
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite8).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64WriteMemory16(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.page_table) {
+        EmitDirectPageTableMemoryWrite(ctx, inst, 16);
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite16).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64WriteMemory32(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.page_table) {
+        EmitDirectPageTableMemoryWrite(ctx, inst, 32);
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite32).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64WriteMemory64(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.page_table) {
+        EmitDirectPageTableMemoryWrite(ctx, inst, 64);
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite64).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.page_table) {
+        Xbyak::Label abort, end;
+
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
+        Xbyak::Xmm value = ctx.reg_alloc.UseXmm(args[1]);
+
+        auto [page, dest_ptr] = EmitVAddrLookup(conf, code, ctx, vaddr);
+        code.test(page, page);
+        code.jz(abort, code.T_NEAR);
+        code.movups(xword[dest_ptr], value);
+        code.L(end);
+
+        code.SwitchToFarCode();
+        code.L(abort);
+        code.call(write_fallbacks[std::make_tuple(128, vaddr.getIdx(), value.getIdx())]);
+        code.jmp(end, code.T_NEAR);
+        code.SwitchToNearCode();
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.Use(args[0], ABI_PARAM2);
     ctx.reg_alloc.Use(args[1], HostLoc::XMM0);

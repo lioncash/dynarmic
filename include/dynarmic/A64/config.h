@@ -111,6 +111,9 @@ struct UserConfig {
     /// emitted code.
     const std::uint64_t* tpidrro_el0 = nullptr;
 
+    /// Pointer to the page table which we can use for direct page table access.
+    void** page_table = nullptr;
+
     // Determines whether AddTicks and GetTicksRemaining are called.
     // If false, execution will continue until soon after Jit::HaltExecution is called.
     // bool enable_ticks = true; // TODO

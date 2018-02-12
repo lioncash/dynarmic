@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <map>
+#include <tuple>
+
 #include "backend_x64/a64_jitstate.h"
 #include "backend_x64/block_range_information.h"
 #include "backend_x64/emit_x64.h"
@@ -47,6 +50,13 @@ protected:
     void (*memory_read_128)();
     void (*memory_write_128)();
     void GenMemory128Accessors();
+
+    std::map<std::tuple<size_t, int, int>, void(*)()> read_fallbacks;
+    std::map<std::tuple<size_t, int, int>, void(*)()> write_fallbacks;
+    void GenFastmemFallbacks();
+
+    void EmitDirectPageTableMemoryRead(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize);
+    void EmitDirectPageTableMemoryWrite(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize);
 
     // Microinstruction emitters
 #define OPCODE(...)
