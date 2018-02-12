@@ -44,6 +44,8 @@ public:
     void DataCacheOperationRaised(DataCacheOperation op, const IR::U64& value);
     void DataSynchronizationBarrier();
     void DataMemoryBarrier();
+    IR::U32 GetDCZID();
+    IR::U64 GetTPIDRRO();
 
     IR::U8 ReadMemory8(const IR::U64& vaddr);
     IR::U16 ReadMemory16(const IR::U64& vaddr);

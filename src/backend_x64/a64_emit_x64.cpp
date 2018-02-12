@@ -324,6 +324,23 @@ void A64EmitX64::EmitA64DataMemoryBarrier(A64EmitContext&, IR::Inst*) {
     code.lfence();
 }
 
+void A64EmitX64::EmitA64GetDCZID(A64EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
+    code.mov(result, conf.dczid_el0);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void A64EmitX64::EmitA64GetTPIDRRO(A64EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
+    if (conf.tpidrro_el0) {
+        code.mov(result, u64(conf.tpidrro_el0));
+        code.mov(result, qword[result]);
+    } else {
+        code.xor_(result.cvt32(), result.cvt32());
+    }
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void A64EmitX64::EmitA64ReadMemory8(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, {}, args[0]);

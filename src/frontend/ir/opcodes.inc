@@ -61,6 +61,8 @@ A64OPC(ExceptionRaised,             T::Void,        T::U64,         T::U64      
 A64OPC(DataCacheOperationRaised,    T::Void,        T::U64,         T::U64                          )
 A64OPC(DataSynchronizationBarrier,  T::Void,                                                        )
 A64OPC(DataMemoryBarrier,           T::Void,                                                        )
+A64OPC(GetDCZID,                    T::U32,                                                         )
+A64OPC(GetTPIDRRO,                  T::U64,                                                         )
 
 // Hints
 OPCODE(PushRSB,                     T::Void,        T::U64                                          )

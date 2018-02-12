@@ -53,6 +53,14 @@ void IREmitter::DataMemoryBarrier() {
     Inst(Opcode::A64DataMemoryBarrier);
 }
 
+IR::U32 IREmitter::GetDCZID() {
+    return Inst<IR::U32>(Opcode::A64GetDCZID);
+}
+
+IR::U64 IREmitter::GetTPIDRRO() {
+    return Inst<IR::U64>(Opcode::A64GetTPIDRRO);
+}
+
 IR::U8 IREmitter::ReadMemory8(const IR::U64& vaddr) {
     return Inst<IR::U8>(Opcode::A64ReadMemory8, vaddr);
 }

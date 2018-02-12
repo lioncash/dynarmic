@@ -68,7 +68,7 @@ INST(DMB,                    "DMB",                                       "11010
 //INST(SYS,                    "SYS",                                       "1101010100001oooNNNNMMMMooottttt")
 //INST(MSR_reg,                "MSR (register)",                            "110101010001poooNNNNMMMMooottttt")
 //INST(SYSL,                   "SYSL",                                      "1101010100101oooNNNNMMMMooottttt")
-//INST(MRS,                    "MRS",                                       "110101010011poooNNNNMMMMooottttt")
+INST(MRS,                    "MRS",                                       "110101010011poooNNNNMMMMooottttt")
 
 // SYS: Data Cache
 INST(DC_IVAC,                "DC IVAC",                                   "110101010000100001110110001ttttt")

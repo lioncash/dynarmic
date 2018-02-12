@@ -107,6 +107,10 @@ struct UserConfig {
     /// DCZID_EL0<4> is 0 if the DC ZVA instruction is permitted.
     std::uint32_t dczid_el0 = 4;
 
+    /// Pointer to where TPIDRRO_EL0 is stored. This pointer will be inserted into
+    /// emitted code.
+    const std::uint64_t* tpidrro_el0 = nullptr;
+
     // Determines whether AddTicks and GetTicksRemaining are called.
     // If false, execution will continue until soon after Jit::HaltExecution is called.
     // bool enable_ticks = true; // TODO
