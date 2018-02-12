@@ -112,7 +112,19 @@ struct UserConfig {
     const std::uint64_t* tpidrro_el0 = nullptr;
 
     /// Pointer to the page table which we can use for direct page table access.
+    /// If an entry in page_table is null, the relevant memory callback will be called.
+    /// If page_table is nullptr, all memory accesses hit the memory callbacks.
     void** page_table = nullptr;
+    /// Declares how many valid address bits are there in virtual addresses.
+    /// Determines the size of page_table. Valid values are between 12 and 64 inclusive.
+    /// This is only used if page_table is not nullptr.
+    size_t page_table_address_space_bits = 36;
+    /// Determines what happens if the guest accesses an entry that is off the end of the
+    /// page table. If true, Dynarmic will silently mirror page_table's address space. If
+    /// false, accessing memory outside of page_table bounds will result in a call to the
+    /// relevant memory callback.
+    /// This is only used if page_table is not nullptr.
+    bool silently_mirror_page_table = true;
 
     // Determines whether AddTicks and GetTicksRemaining are called.
     // If false, execution will continue until soon after Jit::HaltExecution is called.

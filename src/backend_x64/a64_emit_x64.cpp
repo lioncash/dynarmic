@@ -480,19 +480,38 @@ void A64EmitX64::EmitA64GetTPIDRRO(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static std::tuple<Xbyak::Reg, Xbyak::RegExp> EmitVAddrLookup(const A64::UserConfig& conf, BlockOfCode& code, A64EmitContext& ctx, Xbyak::Reg64 vaddr, boost::optional<Xbyak::Reg64> arg_scratch = {}) {
-    constexpr int PAGE_BITS = 12;
-    constexpr u64 PAGE_SIZE = 1 << PAGE_BITS;
+static Xbyak::RegExp EmitVAddrLookup(const A64::UserConfig& conf, BlockOfCode& code, A64EmitContext& ctx, Xbyak::Label& abort, Xbyak::Reg64 vaddr, boost::optional<Xbyak::Reg64> arg_scratch = {}) {
+    constexpr size_t PAGE_BITS = 12;
+    constexpr size_t PAGE_SIZE = 1 << PAGE_BITS;
+    const size_t valid_page_index_bits = conf.page_table_address_space_bits - PAGE_BITS;
+    const size_t unused_top_bits = 64 - conf.page_table_address_space_bits;
 
     Xbyak::Reg64 page_table = arg_scratch.value_or_eval([&]{ return ctx.reg_alloc.ScratchGpr(); });
     Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
     code.mov(page_table, reinterpret_cast<u64>(conf.page_table));
     code.mov(tmp, vaddr);
-    code.shr(tmp, PAGE_BITS);
+    if (unused_top_bits == 0) {
+        code.shr(tmp, int(PAGE_BITS));
+    } else if (conf.silently_mirror_page_table) {
+        if (valid_page_index_bits >= 32) {
+            code.shl(tmp, int(unused_top_bits));
+            code.shr(tmp, int(unused_top_bits + PAGE_BITS));
+        } else {
+            code.shr(tmp, int(PAGE_BITS));
+            code.and_(tmp, u32((1 << valid_page_index_bits) - 1));
+        }
+    } else {
+        ASSERT(valid_page_index_bits < 32);
+        code.shr(tmp, int(PAGE_BITS));
+        code.test(tmp, u32(-(1 << valid_page_index_bits)));
+        code.jnz(abort, code.T_NEAR);
+    }
     code.mov(page_table, qword[page_table + tmp * sizeof(void*)]);
+    code.test(page_table, page_table);
+    code.jz(abort, code.T_NEAR);
     code.mov(tmp, vaddr);
-    code.and_(tmp, PAGE_SIZE - 1);
-    return {page_table, page_table + tmp};
+    code.and_(tmp, static_cast<u32>(PAGE_SIZE - 1));
+    return page_table + tmp;
 }
 
 void A64EmitX64::EmitDirectPageTableMemoryRead(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize) {
@@ -502,9 +521,7 @@ void A64EmitX64::EmitDirectPageTableMemoryRead(A64EmitContext& ctx, IR::Inst* in
     Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
     Xbyak::Reg64 value = ctx.reg_alloc.ScratchGpr();
 
-    auto [page, src_ptr] = EmitVAddrLookup(conf, code, ctx, vaddr, value);
-    code.test(page, page);
-    code.jz(abort, code.T_NEAR);
+    auto src_ptr = EmitVAddrLookup(conf, code, ctx, abort, vaddr, value);
     switch (bitsize) {
     case 8:
         code.movzx(value.cvt32(), code.byte[src_ptr]);
@@ -537,9 +554,7 @@ void A64EmitX64::EmitDirectPageTableMemoryWrite(A64EmitContext& ctx, IR::Inst* i
     Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
     Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
 
-    auto [page, dest_ptr] = EmitVAddrLookup(conf, code, ctx, vaddr);
-    code.test(page, page);
-    code.jz(abort, code.T_NEAR);
+    auto dest_ptr = EmitVAddrLookup(conf, code, ctx, abort, vaddr);
     switch (bitsize) {
     case 8:
         code.mov(code.byte[dest_ptr], value.cvt8());
@@ -615,10 +630,8 @@ void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
         Xbyak::Xmm value = ctx.reg_alloc.ScratchXmm();
 
-        auto [page, dest_ptr] = EmitVAddrLookup(conf, code, ctx, vaddr);
-        code.test(page, page);
-        code.jz(abort, code.T_NEAR);
-        code.movups(value, xword[dest_ptr]);
+        auto src_ptr = EmitVAddrLookup(conf, code, ctx, abort, vaddr);
+        code.movups(value, xword[src_ptr]);
         code.L(end);
 
         code.SwitchToFarCode();
@@ -689,9 +702,7 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
         Xbyak::Xmm value = ctx.reg_alloc.UseXmm(args[1]);
 
-        auto [page, dest_ptr] = EmitVAddrLookup(conf, code, ctx, vaddr);
-        code.test(page, page);
-        code.jz(abort, code.T_NEAR);
+        auto dest_ptr = EmitVAddrLookup(conf, code, ctx, abort, vaddr);
         code.movups(xword[dest_ptr], value);
         code.L(end);
 
