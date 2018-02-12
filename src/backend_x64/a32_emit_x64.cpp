@@ -148,58 +148,58 @@ void A32EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u32>& rang
 void A32EmitX64::GenMemoryAccessors() {
     code.align();
     read_memory_8 = code.getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead8).EmitCall(code);
-    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     read_memory_16 = code.getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead16).EmitCall(code);
-    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     read_memory_32 = code.getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead32).EmitCall(code);
-    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     read_memory_64 = code.getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead64).EmitCall(code);
-    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     write_memory_8 = code.getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite8).EmitCall(code);
-    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     write_memory_16 = code.getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite16).EmitCall(code);
-    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     write_memory_32 = code.getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite32).EmitCall(code);
-    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     write_memory_64 = code.getCurr<const void*>();
-    ABI_PushCallerSaveRegistersAndAdjustStack(code);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite64).EmitCall(code);
-    ABI_PopCallerSaveRegistersAndAdjustStack(code);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 }
 

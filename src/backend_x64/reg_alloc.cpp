@@ -351,6 +351,7 @@ void RegAlloc::HostCall(IR::Inst* result_def, boost::optional<Argument&> arg0, b
     static const std::vector<HostLoc> other_caller_save = [args_hostloc]() {
         std::vector<HostLoc> ret(ABI_ALL_CALLER_SAVE.begin(), ABI_ALL_CALLER_SAVE.end());
 
+        ret.erase(std::find(ret.begin(), ret.end(), ABI_RETURN));
         for (auto hostloc : args_hostloc)
             ret.erase(std::find(ret.begin(), ret.end(), hostloc));
 

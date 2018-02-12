@@ -126,4 +126,16 @@ void ABI_PopCallerSaveRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t
     ABI_PopRegistersAndAdjustStack(code, frame_size, ABI_ALL_CALLER_SAVE);
 }
 
+void ABI_PushCallerSaveRegistersAndAdjustStackExcept(Xbyak::CodeGenerator& code, HostLoc exception) {
+    std::vector<HostLoc> regs;
+    std::remove_copy(ABI_ALL_CALLER_SAVE.begin(), ABI_ALL_CALLER_SAVE.end(), std::back_inserter(regs), exception);
+    ABI_PushRegistersAndAdjustStack(code, 0, regs);
+}
+
+void ABI_PopCallerSaveRegistersAndAdjustStackExcept(Xbyak::CodeGenerator& code, HostLoc exception) {
+    std::vector<HostLoc> regs;
+    std::remove_copy(ABI_ALL_CALLER_SAVE.begin(), ABI_ALL_CALLER_SAVE.end(), std::back_inserter(regs), exception);
+    ABI_PopRegistersAndAdjustStack(code, 0, regs);
+}
+
 } // namespace Dynarmic::BackendX64
