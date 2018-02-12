@@ -90,27 +90,31 @@ restart:
 }
 
 static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Vector, 32>& vecs, const size_t instructions_offset, const std::vector<u32>& instructions, const u32 pstate) {
-    TestEnv jit_env;
-    TestEnv uni_env;
+    static TestEnv jit_env;
+    static TestEnv uni_env;
 
     std::copy(instructions.begin(), instructions.end(), jit_env.code_mem.begin() + instructions_offset);
     std::copy(instructions.begin(), instructions.end(), uni_env.code_mem.begin() + instructions_offset);
     jit_env.code_mem[instructions.size() + instructions_offset] = 0x14000000; // B .
     uni_env.code_mem[instructions.size() + instructions_offset] = 0x14000000; // B .
+    jit_env.modified_memory.clear();
+    uni_env.modified_memory.clear();
 
-    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&jit_env}};
-    Unicorn uni{uni_env};
+    static Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&jit_env}};
+    static Unicorn uni{uni_env};
 
     jit.SetRegisters(regs);
     jit.SetVectors(vecs);
     jit.SetPC(instructions_offset * 4);
     jit.SetSP(0x08000000);
     jit.SetPstate(pstate);
+    jit.ClearCache();
     uni.SetRegisters(regs);
     uni.SetVectors(vecs);
     uni.SetPC(instructions_offset * 4);
     uni.SetSP(0x08000000);
     uni.SetPstate(pstate);
+    uni.ClearPageCache();
 
     jit_env.ticks_left = instructions.size();
     jit.Run();

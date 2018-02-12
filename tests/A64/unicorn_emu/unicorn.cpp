@@ -28,9 +28,7 @@ Unicorn::Unicorn(TestEnv& testenv) : testenv(testenv) {
 }
 
 Unicorn::~Unicorn() {
-    for (const auto& page : pages) {
-        CHECKED(uc_mem_unmap(uc, page->address, 4096));
-    }
+    ClearPageCache();
     CHECKED(uc_hook_del(uc, intr_hook));
     CHECKED(uc_hook_del(uc, mem_invalid_hook));
     CHECKED(uc_close(uc));
@@ -135,6 +133,9 @@ void Unicorn::SetPstate(u32 value) {
 }
 
 void Unicorn::ClearPageCache() {
+    for (const auto& page : pages) {
+        CHECKED(uc_mem_unmap(uc, page->address, 4096));
+    }
     pages.clear();
 }
 
