@@ -40,7 +40,9 @@ public:
         : conf(conf) 
         , block_of_code(GenRunCodeCallbacks(conf.callbacks, &GetCurrentBlockThunk, this), JitStateInfo{jit_state})
         , emitter(block_of_code, conf)
-    {}
+    {
+        ASSERT(conf.page_table_address_space_bits >= 12 && conf.page_table_address_space_bits <= 64);
+    }
 
     ~Impl() = default;
 

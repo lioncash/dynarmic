@@ -23,8 +23,8 @@ class Callback {
 public:
     virtual ~Callback() = default;
 
-    virtual void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) = 0;
-    virtual void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) = 0;
+    virtual void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) const = 0;
+    virtual void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) const = 0;
 };
 
 class SimpleCallback final : public Callback {
@@ -34,8 +34,8 @@ public:
 
     ~SimpleCallback() override = default;
 
-    void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) override;
-    void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) override;
+    void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) const override;
+    void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) const override;
 
 private:
     void (*fn)();
@@ -48,8 +48,8 @@ public:
 
     ~ArgCallback() override = default;
 
-    void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) override;
-    void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) override;
+    void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) const override;
+    void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) const override;
 
 private:
     void (*fn)();

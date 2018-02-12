@@ -39,6 +39,16 @@ inline bool HostLocIsFlag(HostLoc reg) {
     return reg >= HostLoc::CF && reg <= HostLoc::OF;
 }
 
+inline HostLoc HostLocRegIdx(int idx) {
+    ASSERT(idx >= 0 && idx <= 15);
+    return static_cast<HostLoc>(idx);
+}
+
+inline HostLoc HostLocXmmIdx(int idx) {
+    ASSERT(idx >= 0 && idx <= 15);
+    return static_cast<HostLoc>(static_cast<size_t>(HostLoc::XMM0) + idx);
+}
+
 inline HostLoc HostLocSpill(size_t i) {
     return static_cast<HostLoc>(static_cast<size_t>(HostLoc::FirstSpill) + i);
 }

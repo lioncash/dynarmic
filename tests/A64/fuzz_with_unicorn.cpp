@@ -150,7 +150,7 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Ve
         auto uni_iter = uni_env.modified_memory.begin();
         auto jit_iter = jit_env.modified_memory.begin();
         while (uni_iter != uni_env.modified_memory.end() || jit_iter != jit_env.modified_memory.end()) {
-            if (uni_iter == uni_env.modified_memory.end() || uni_iter->first > jit_iter->first) {
+            if (uni_iter == uni_env.modified_memory.end() || (jit_iter != jit_env.modified_memory.end() && uni_iter->first > jit_iter->first)) {
                 fmt::print("{:016x}:    {:02x} *\n", jit_iter->first, jit_iter->second);
                 jit_iter++;
             } else if (jit_iter == jit_env.modified_memory.end() || jit_iter->first > uni_iter->first) {
