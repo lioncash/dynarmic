@@ -44,6 +44,10 @@ protected:
     const A64::UserConfig conf;
     BlockRangeInformation<u64> block_ranges;
 
+    void (*memory_read_128)();
+    void (*memory_write_128)();
+    void GenMemory128Accessors();
+
     // Microinstruction emitters
 #define OPCODE(...)
 #define A32OPC(...)

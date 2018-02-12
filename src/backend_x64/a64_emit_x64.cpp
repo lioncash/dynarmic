@@ -4,9 +4,6 @@
  * General Public License version 2 or any later version.
  */
 
-#include <unordered_map>
-#include <unordered_set>
-
 #include <fmt/ostream.h>
 
 #include "backend_x64/a64_emit_x64.h"
@@ -55,6 +52,7 @@ bool A64EmitContext::FPSCR_DN() const {
 A64EmitX64::A64EmitX64(BlockOfCode& code, A64::UserConfig conf)
     : EmitX64(code), conf(conf)
 {
+    GenMemory128Accessors();
     code.PreludeComplete();
 }
 
@@ -124,6 +122,56 @@ void A64EmitX64::ClearCache() {
 
 void A64EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u64>& ranges) {
     InvalidateBasicBlocks(block_ranges.InvalidateRanges(ranges));
+}
+
+void A64EmitX64::GenMemory128Accessors() {
+    code.align();
+    memory_read_128 = code.getCurr<void(*)()>();
+#ifdef _WIN32
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCallWithReturnPointer(code, [&](Xbyak::Reg64 return_value_ptr, RegList args) {
+        code.mov(code.ABI_PARAM3, code.ABI_PARAM2);
+        code.sub(rsp, 8 + 16 + ABI_SHADOW_SPACE);
+        code.lea(return_value_ptr, ptr[rsp + ABI_SHADOW_SPACE]);
+    });
+    code.movups(xmm0, xword[code.ABI_RETURN]);
+    code.add(rsp, 8 + 16 + ABI_SHADOW_SPACE);
+#else
+    code.sub(rsp, 8);
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.movq(xmm0, code.ABI_RETURN);
+        code.pinsrq(xmm0, code.ABI_RETURN2, 1);
+    } else {
+        code.movq(xmm0, code.ABI_RETURN);
+        code.movq(xmm1, code.ABI_RETURN2);
+        code.punpcklqdq(xmm0, xmm1);
+    }
+    code.add(rsp, 8);
+#endif
+    code.ret();
+
+    code.align();
+    memory_write_128 = code.getCurr<void(*)()>();
+#ifdef _WIN32
+    code.sub(rsp, 8 + 16 + ABI_SHADOW_SPACE);
+    code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE]);
+    code.movaps(xword[code.ABI_PARAM3], xmm0);
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code);
+    code.add(rsp, 8 + 16 + ABI_SHADOW_SPACE);
+#else
+    code.sub(rsp, 8);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.movq(code.ABI_PARAM3, xmm0);
+        code.pextrq(code.ABI_PARAM4, xmm0, 1);
+    } else {
+        code.movq(code.ABI_PARAM3, xmm0);
+        code.punpckhqdq(xmm0, xmm0);
+        code.movq(code.ABI_PARAM4, xmm0);
+    }
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code);
+    code.add(rsp, 8);
+#endif
+    code.ret();
 }
 
 void A64EmitX64::EmitA64SetCheckBit(A64EmitContext& ctx, IR::Inst* inst) {
@@ -366,39 +414,10 @@ void A64EmitX64::EmitA64ReadMemory64(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
-#ifdef _WIN32
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    static_assert(ABI_SHADOW_SPACE >= 16);
-    ctx.reg_alloc.HostCall(nullptr, {}, {}, args[0]);
-
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCallWithReturnPointer(code, [&](Xbyak::Reg64 return_value_ptr, RegList) {
-        code.lea(return_value_ptr, ptr[rsp]);
-        code.sub(rsp, ABI_SHADOW_SPACE);
-    });
-
-    Xbyak::Xmm result = xmm0;
-    code.movups(result, xword[code.ABI_RETURN]);
-    code.add(rsp, ABI_SHADOW_SPACE);
-
-    ctx.reg_alloc.DefineValue(inst, result);
-#else
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0]);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code);
-
-    Xbyak::Xmm result = xmm0;
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        code.movq(result, code.ABI_RETURN);
-        code.pinsrq(result, code.ABI_RETURN2, 1);
-    } else {
-        Xbyak::Xmm tmp = xmm1;
-        code.movq(result, code.ABI_RETURN);
-        code.movq(tmp, code.ABI_RETURN2);
-        code.punpcklqdq(result, tmp);
-    }
-    ctx.reg_alloc.DefineValue(inst, result);
-#endif
+    code.CallFunction(memory_read_128);
+    ctx.reg_alloc.DefineValue(inst, xmm0);
 }
 
 void A64EmitX64::EmitA64WriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
@@ -426,40 +445,12 @@ void A64EmitX64::EmitA64WriteMemory64(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
-#ifdef _WIN32
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    static_assert(ABI_SHADOW_SPACE >= 16);
-    ctx.reg_alloc.Use(args[0], ABI_PARAM2);
-    Xbyak::Xmm xmm_value = ctx.reg_alloc.UseXmm(args[1]);
-    ctx.reg_alloc.EndOfAllocScope();
-    ctx.reg_alloc.HostCall(nullptr);
-    code.lea(code.ABI_PARAM3, ptr[rsp]);
-    code.sub(rsp, ABI_SHADOW_SPACE);
-    code.movaps(xword[code.ABI_PARAM3], xmm_value);
-
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code);
-
-    code.add(rsp, ABI_SHADOW_SPACE);
-#else
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.Use(args[0], ABI_PARAM2);
-    ctx.reg_alloc.ScratchGpr({ABI_PARAM3});
-    ctx.reg_alloc.ScratchGpr({ABI_PARAM4});
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        Xbyak::Xmm xmm_value = ctx.reg_alloc.UseXmm(args[1]);
-        code.movq(code.ABI_PARAM3, xmm_value);
-        code.pextrq(code.ABI_PARAM4, xmm_value, 1);
-    } else {
-        Xbyak::Xmm xmm_value = ctx.reg_alloc.UseScratchXmm(args[1]);
-        code.movq(code.ABI_PARAM3, xmm_value);
-        code.punpckhqdq(xmm_value, xmm_value);
-        code.movq(code.ABI_PARAM4, xmm_value);
-    }
+    ctx.reg_alloc.Use(args[1], HostLoc::XMM0);
     ctx.reg_alloc.EndOfAllocScope();
     ctx.reg_alloc.HostCall(nullptr);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code);
-#endif
+    code.CallFunction(memory_write_128);
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor) {
