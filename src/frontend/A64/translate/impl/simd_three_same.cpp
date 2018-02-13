@@ -20,6 +20,34 @@ bool TranslatorVisitor::CMGT_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) 
     return true;
 }
 
+bool TranslatorVisitor::SMAX(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+    const size_t esize = 8 << size.ZeroExtend<size_t>();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+    const IR::U128 result = ir.VectorMaxSigned(esize, operand1, operand2);
+    V(datasize, Vd, result);
+    return true;
+}
+
+bool TranslatorVisitor::SMIN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+    const size_t esize = 8 << size.ZeroExtend<size_t>();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+    const IR::U128 result = ir.VectorMinSigned(esize, operand1, operand2);
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::ADD_vector(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11 && !Q) return ReservedValue();
     const size_t esize = 8 << size.ZeroExtend<size_t>();
@@ -122,6 +150,34 @@ bool TranslatorVisitor::BIC_asimd_reg(bool Q, Vec Vm, Vec Vn, Vec Vd) {
 
     V(datasize, Vd, result);
 
+    return true;
+}
+
+bool TranslatorVisitor::UMAX(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+    const size_t esize = 8 << size.ZeroExtend<size_t>();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+    const IR::U128 result = ir.VectorMaxUnsigned(esize, operand1, operand2);
+    V(datasize, Vd, result);
+    return true;
+}
+
+bool TranslatorVisitor::UMIN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+    const size_t esize = 8 << size.ZeroExtend<size_t>();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+    const IR::U128 result = ir.VectorMinUnsigned(esize, operand1, operand2);
+    V(datasize, Vd, result);
     return true;
 }
 
