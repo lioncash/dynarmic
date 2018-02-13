@@ -4,6 +4,8 @@
  * General Public License version 2 or any later version.
  */
 
+#include <algorithm>
+
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
@@ -648,6 +650,119 @@ void EmitX64::EmitVectorLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
     code.psrlq(result, shift_amount);
 
     ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorMaxS8(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pmaxsb);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s8, 16>& result, const std::array<s8, 16>& a, const std::array<s8, 16>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::max(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMaxS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pmaxsw);
+}
+
+void EmitX64::EmitVectorMaxS32(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pmaxsd);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s32, 4>& result, const std::array<s32, 4>& a, const std::array<s32, 4>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::max(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMaxS64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s64, 2>& result, const std::array<s64, 2>& a, const std::array<s64, 2>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::max(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMaxU8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pmaxub);
+}
+
+void EmitX64::EmitVectorMaxU16(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pmaxuw);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u16, 8>& result, const std::array<u16, 8>& a, const std::array<u16, 8>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::max(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMaxU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::max(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMaxU64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::max(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMinS8(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pminsb);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s8, 16>& result, const std::array<s8, 16>& a, const std::array<s8, 16>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMinS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pminsw);
+}
+
+void EmitX64::EmitVectorMinS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s32, 4>& result, const std::array<s32, 4>& a, const std::array<s32, 4>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMinS64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s64, 2>& result, const std::array<s64, 2>& a, const std::array<s64, 2>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMinU8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pminub);
+}
+
+void EmitX64::EmitVectorMinU16(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pminuw);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u16, 8>& result, const std::array<u16, 8>& a, const std::array<u16, 8>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMinU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
+    });
+}
+
+void EmitX64::EmitVectorMinU64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
+    });
 }
 
 void EmitX64::EmitVectorMultiply8(EmitContext& ctx, IR::Inst* inst) {

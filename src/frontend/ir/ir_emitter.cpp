@@ -932,6 +932,66 @@ U128 IREmitter::VectorLogicalShiftRight(size_t esize, const U128& a, u8 shift_am
     return {};
 }
 
+U128 IREmitter::VectorMaxSigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorMaxS8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorMaxS16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorMaxS32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorMaxS64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
+U128 IREmitter::VectorMaxUnsigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorMaxU8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorMaxU16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorMaxU32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorMaxU64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
+U128 IREmitter::VectorMinSigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorMinS8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorMinS16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorMinS32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorMinS64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
+U128 IREmitter::VectorMinUnsigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorMinU8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorMinU16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorMinU32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorMinU64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorMultiply(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 8:
