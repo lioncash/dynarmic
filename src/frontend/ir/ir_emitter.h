@@ -215,8 +215,15 @@ public:
     U128 VectorBroadcastLower(size_t esize, const UAny& a);
     U128 VectorEor(const U128& a, const U128& b);
     U128 VectorEqual(size_t esize, const U128& a, const U128& b);
+    U128 VectorGreaterEqualSigned(size_t esize, const U128& a, const U128& b);
+    U128 VectorGreaterEqualUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorGreaterSigned(size_t esize, const U128& a, const U128& b);
+    U128 VectorGreaterUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorInterleaveLower(size_t esize, const U128& a, const U128& b);
+    U128 VectorLessEqualSigned(size_t esize, const U128& a, const U128& b);
+    U128 VectorLessEqualUnsigned(size_t esize, const U128& a, const U128& b);
+    U128 VectorLessSigned(size_t esize, const U128& a, const U128& b);
+    U128 VectorLessUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorLogicalShiftLeft(size_t esize, const U128& a, u8 shift_amount);
     U128 VectorLogicalShiftRight(size_t esize, const U128& a, u8 shift_amount);
     U128 VectorMaxSigned(size_t esize, const U128& a, const U128& b);

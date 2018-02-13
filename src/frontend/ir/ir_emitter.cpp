@@ -887,6 +887,18 @@ U128 IREmitter::VectorGreaterSigned(size_t esize, const U128& a, const U128& b) 
     return {};
 }
 
+U128 IREmitter::VectorGreaterEqualSigned(size_t esize, const U128& a, const U128& b) {
+    return VectorOr(VectorGreaterSigned(esize, a, b), VectorEqual(esize, a, b));
+}
+
+U128 IREmitter::VectorGreaterEqualUnsigned(size_t esize, const U128& a, const U128& b) {
+    return VectorEqual(esize, VectorMaxUnsigned(esize, a, b), a);
+}
+
+U128 IREmitter::VectorGreaterUnsigned(size_t esize, const U128& a, const U128& b) {
+    return VectorNot(VectorEqual(esize, VectorMinUnsigned(esize, a, b), a));
+}
+
 U128 IREmitter::VectorInterleaveLower(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 8:
@@ -900,6 +912,22 @@ U128 IREmitter::VectorInterleaveLower(size_t esize, const U128& a, const U128& b
     }
     UNREACHABLE();
     return {};
+}
+
+U128 IREmitter::VectorLessEqualSigned(size_t esize, const U128& a, const U128& b) {
+    return VectorNot(VectorGreaterSigned(esize, a, b));
+}
+
+U128 IREmitter::VectorLessEqualUnsigned(size_t esize, const U128& a, const U128& b) {
+    return VectorEqual(esize, VectorMinUnsigned(esize, a, b), a);
+}
+
+U128 IREmitter::VectorLessSigned(size_t esize, const U128& a, const U128& b) {
+    return VectorNot(VectorOr(VectorGreaterSigned(esize, a, b), VectorEqual(esize, a, b)));
+}
+
+U128 IREmitter::VectorLessUnsigned(size_t esize, const U128& a, const U128& b) {
+    return VectorNot(VectorEqual(esize, VectorMaxUnsigned(esize, a, b), a));
 }
 
 U128 IREmitter::VectorLogicalShiftLeft(size_t esize, const U128& a, u8 shift_amount) {
