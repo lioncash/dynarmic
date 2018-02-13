@@ -325,6 +325,8 @@ A32OPC(ExclusiveWriteMemory32,      T::U32,         T::U32,         T::U32      
 A32OPC(ExclusiveWriteMemory64,      T::U32,         T::U32,         T::U32,         T::U32          )
 
 // A64 Memory access
+A64OPC(ClearExclusive,              T::Void,                                                        )
+A64OPC(SetExclusive,                T::Void,        T::U64,         T::U8                           )
 A64OPC(ReadMemory8,                 T::U8,          T::U64                                          )
 A64OPC(ReadMemory16,                T::U16,         T::U64                                          )
 A64OPC(ReadMemory32,                T::U32,         T::U64                                          )
@@ -335,6 +337,11 @@ A64OPC(WriteMemory16,               T::Void,        T::U64,         T::U16      
 A64OPC(WriteMemory32,               T::Void,        T::U64,         T::U32                          )
 A64OPC(WriteMemory64,               T::Void,        T::U64,         T::U64                          )
 A64OPC(WriteMemory128,              T::Void,        T::U64,         T::U128                         )
+A64OPC(ExclusiveWriteMemory8,       T::U32,         T::U64,         T::U8                           )
+A64OPC(ExclusiveWriteMemory16,      T::U32,         T::U64,         T::U16                          )
+A64OPC(ExclusiveWriteMemory32,      T::U32,         T::U64,         T::U32                          )
+A64OPC(ExclusiveWriteMemory64,      T::U32,         T::U64,         T::U64                          )
+A64OPC(ExclusiveWriteMemory128,     T::U32,         T::U64,         T::U128                         )
 
 // Coprocessor
 A32OPC(CoprocInternalOperation,     T::Void,        T::CoprocInfo                                   )

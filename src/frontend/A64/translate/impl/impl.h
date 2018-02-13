@@ -63,6 +63,7 @@ struct TranslatorVisitor final {
 
     IR::UAnyU128 Mem(IR::U64 address, size_t size, AccType acctype);
     void Mem(IR::U64 address, size_t size, AccType acctype, IR::UAnyU128 value);
+    IR::U32 ExclusiveMem(IR::U64 address, size_t size, AccType acctype, IR::UAnyU128 value);
 
     IR::U32U64 SignExtend(IR::UAny value, size_t to_size);
     IR::U32U64 ZeroExtend(IR::UAny value, size_t to_size);
@@ -211,7 +212,7 @@ struct TranslatorVisitor final {
     bool STXP(Imm<1> size, Reg Rs, Reg Rt2, Reg Rn, Reg Rt);
     bool STLXP(Imm<1> size, Reg Rs, Reg Rt2, Reg Rn, Reg Rt);
     bool LDXR(Imm<2> size, Reg Rn, Reg Rt);
-    bool LDAXRB(Imm<2> size, Reg Rn, Reg Rt);
+    bool LDAXR(Imm<2> size, Reg Rn, Reg Rt);
     bool LDXP(Imm<1> size, Reg Rt2, Reg Rn, Reg Rt);
     bool LDAXP(Imm<1> size, Reg Rt2, Reg Rn, Reg Rt);
     bool STLLR(Imm<2> size, Reg Rn, Reg Rt);

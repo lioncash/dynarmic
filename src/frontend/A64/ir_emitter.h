@@ -47,6 +47,8 @@ public:
     IR::U32 GetDCZID();
     IR::U64 GetTPIDRRO();
 
+    void ClearExclusive();
+    void SetExclusive(const IR::U64& vaddr, size_t byte_size);
     IR::U8 ReadMemory8(const IR::U64& vaddr);
     IR::U16 ReadMemory16(const IR::U64& vaddr);
     IR::U32 ReadMemory32(const IR::U64& vaddr);
@@ -57,6 +59,11 @@ public:
     void WriteMemory32(const IR::U64& vaddr, const IR::U32& value);
     void WriteMemory64(const IR::U64& vaddr, const IR::U64& value);
     void WriteMemory128(const IR::U64& vaddr, const IR::U128& value);
+    IR::U32 ExclusiveWriteMemory8(const IR::U64& vaddr, const IR::U8& value);
+    IR::U32 ExclusiveWriteMemory16(const IR::U64& vaddr, const IR::U16& value);
+    IR::U32 ExclusiveWriteMemory32(const IR::U64& vaddr, const IR::U32& value);
+    IR::U32 ExclusiveWriteMemory64(const IR::U64& vaddr, const IR::U64& value);
+    IR::U32 ExclusiveWriteMemory128(const IR::U64& vaddr, const IR::U128& value);
 
     IR::U32 GetW(Reg source_reg);
     IR::U64 GetX(Reg source_reg);

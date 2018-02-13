@@ -61,6 +61,15 @@ IR::U64 IREmitter::GetTPIDRRO() {
     return Inst<IR::U64>(Opcode::A64GetTPIDRRO);
 }
 
+void IREmitter::ClearExclusive() {
+    Inst(Opcode::A64ClearExclusive);
+}
+
+void IREmitter::SetExclusive(const IR::U64& vaddr, size_t byte_size) {
+    ASSERT(byte_size == 1 || byte_size == 2 || byte_size == 4 || byte_size == 8 || byte_size == 16);
+    Inst(Opcode::A64SetExclusive, vaddr, Imm8(u8(byte_size)));
+}
+
 IR::U8 IREmitter::ReadMemory8(const IR::U64& vaddr) {
     return Inst<IR::U8>(Opcode::A64ReadMemory8, vaddr);
 }
@@ -99,6 +108,26 @@ void IREmitter::WriteMemory64(const IR::U64& vaddr, const IR::U64& value) {
 
 void IREmitter::WriteMemory128(const IR::U64& vaddr, const IR::U128& value) {
     Inst(Opcode::A64WriteMemory128, vaddr, value);
+}
+
+IR::U32 IREmitter::ExclusiveWriteMemory8(const IR::U64& vaddr, const IR::U8& value) {
+    return Inst<IR::U32>(Opcode::A64ExclusiveWriteMemory8, vaddr, value);
+}
+
+IR::U32 IREmitter::ExclusiveWriteMemory16(const IR::U64& vaddr, const IR::U16& value) {
+    return Inst<IR::U32>(Opcode::A64ExclusiveWriteMemory16, vaddr, value);
+}
+
+IR::U32 IREmitter::ExclusiveWriteMemory32(const IR::U64& vaddr, const IR::U32& value) {
+    return Inst<IR::U32>(Opcode::A64ExclusiveWriteMemory32, vaddr, value);
+}
+
+IR::U32 IREmitter::ExclusiveWriteMemory64(const IR::U64& vaddr, const IR::U64& value) {
+    return Inst<IR::U32>(Opcode::A64ExclusiveWriteMemory64, vaddr, value);
+}
+
+IR::U32 IREmitter::ExclusiveWriteMemory128(const IR::U64& vaddr, const IR::U128& value) {
+    return Inst<IR::U32>(Opcode::A64ExclusiveWriteMemory128, vaddr, value);
 }
 
 IR::U32 IREmitter::GetW(Reg reg) {

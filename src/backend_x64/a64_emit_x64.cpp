@@ -224,7 +224,7 @@ void A64EmitX64::GenFastmemFallbacks() {
             ABI_PopCallerSaveRegistersAndAdjustStack(code);
             code.ret();
 
-            if (vaddr_idx == value_idx || value_idx == 4 || value_idx == 15) {
+            if (value_idx == 4 || value_idx == 15) {
                 continue;
             }
 
@@ -249,12 +249,17 @@ void A64EmitX64::GenFastmemFallbacks() {
                 ABI_PushCallerSaveRegistersAndAdjustStack(code);
                 if (vaddr_idx == code.ABI_PARAM3.getIdx() && value_idx == code.ABI_PARAM2.getIdx()) {
                     code.xchg(code.ABI_PARAM2, code.ABI_PARAM3);
-                } else {
-                    if (vaddr_idx != code.ABI_PARAM2.getIdx()) {
-                        code.mov(code.ABI_PARAM2, Xbyak::Reg64{vaddr_idx});
-                    }
+                } else if (vaddr_idx == code.ABI_PARAM3.getIdx()) {
+                    code.mov(code.ABI_PARAM2, Xbyak::Reg64{vaddr_idx});
                     if (value_idx != code.ABI_PARAM3.getIdx()) {
                         code.mov(code.ABI_PARAM3, Xbyak::Reg64{value_idx});
+                    }
+                } else {
+                    if (value_idx != code.ABI_PARAM3.getIdx()) {
+                        code.mov(code.ABI_PARAM3, Xbyak::Reg64{value_idx});
+                    }
+                    if (vaddr_idx != code.ABI_PARAM2.getIdx()) {
+                        code.mov(code.ABI_PARAM2, Xbyak::Reg64{vaddr_idx});
                     }
                 }
                 callback.EmitCall(code);
@@ -478,6 +483,19 @@ void A64EmitX64::EmitA64GetTPIDRRO(A64EmitContext& ctx, IR::Inst* inst) {
         code.xor_(result.cvt32(), result.cvt32());
     }
     ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void A64EmitX64::EmitA64ClearExclusive(A64EmitContext&, IR::Inst*) {
+    code.mov(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(0));
+}
+
+void A64EmitX64::EmitA64SetExclusive(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ASSERT(args[1].IsImmediate());
+    Xbyak::Reg32 address = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+
+    code.mov(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(1));
+    code.mov(dword[r15 + offsetof(A64JitState, exclusive_address)], address);
 }
 
 static Xbyak::RegExp EmitVAddrLookup(const A64::UserConfig& conf, BlockOfCode& code, A64EmitContext& ctx, Xbyak::Label& abort, Xbyak::Reg64 vaddr, boost::optional<Xbyak::Reg64> arg_scratch = {}) {
@@ -720,6 +738,61 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.EndOfAllocScope();
     ctx.reg_alloc.HostCall(nullptr);
     code.CallFunction(memory_write_128);
+}
+
+void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize, Xbyak::Reg64 vaddr, size_t value_idx) {
+    Xbyak::Label end;
+    Xbyak::Reg32 passed = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
+
+    code.mov(passed, u32(1));
+    code.cmp(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(0));
+    code.je(end);
+    code.mov(tmp, vaddr);
+    code.xor_(tmp, dword[r15 + offsetof(A64JitState, exclusive_address)]);
+    code.test(tmp, A64JitState::RESERVATION_GRANULE_MASK);
+    code.jne(end);
+    code.mov(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(0));
+    code.call(write_fallbacks[std::make_tuple(bitsize, vaddr.getIdx(), value_idx)]);
+    code.xor_(passed, passed);
+    code.L(end);
+
+    ctx.reg_alloc.DefineValue(inst, passed);
+}
+
+void A64EmitX64::EmitA64ExclusiveWriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
+    EmitExclusiveWrite(ctx, inst, 8, vaddr, value.getIdx());
+}
+
+void A64EmitX64::EmitA64ExclusiveWriteMemory16(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
+    EmitExclusiveWrite(ctx, inst, 16, vaddr, value.getIdx());
+}
+
+void A64EmitX64::EmitA64ExclusiveWriteMemory32(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
+    EmitExclusiveWrite(ctx, inst, 32, vaddr, value.getIdx());
+}
+
+void A64EmitX64::EmitA64ExclusiveWriteMemory64(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
+    EmitExclusiveWrite(ctx, inst, 64, vaddr, value.getIdx());
+}
+
+void A64EmitX64::EmitA64ExclusiveWriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Xmm value = ctx.reg_alloc.UseXmm(args[1]);
+    EmitExclusiveWrite(ctx, inst, 128, vaddr, value.getIdx());
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor) {
