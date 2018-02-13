@@ -740,7 +740,7 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
     code.CallFunction(memory_write_128);
 }
 
-void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize, Xbyak::Reg64 vaddr, size_t value_idx) {
+void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize, Xbyak::Reg64 vaddr, int value_idx) {
     Xbyak::Label end;
     Xbyak::Reg32 passed = ctx.reg_alloc.ScratchGpr().cvt32();
     Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
