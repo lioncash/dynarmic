@@ -68,6 +68,7 @@ public:
     void PushRSB(const LocationDescriptor& return_location);
 
     U64 Pack2x32To1x64(const U32& lo, const U32& hi);
+    U128 Pack2x64To1x128(const U64& lo, const U64& hi);
     U32 LeastSignificantWord(const U64& value);
     ResultAndCarry<U32> MostSignificantWord(const U64& value);
     U16 LeastSignificantHalf(U32U64 value);

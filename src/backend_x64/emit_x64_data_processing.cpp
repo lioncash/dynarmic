@@ -28,6 +28,25 @@ void EmitX64::EmitPack2x32To1x64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, lo);
 }
 
+void EmitX64::EmitPack2x64To1x128(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 lo = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 hi = ctx.reg_alloc.UseGpr(args[1]);
+    Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.movq(result, lo);
+        code.pinsrq(result, hi, 1);
+    } else {
+        Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+        code.movq(result, lo);
+        code.movq(tmp, hi);
+        code.punpcklqdq(result, tmp);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void EmitX64::EmitLeastSignificantWord(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.DefineValue(inst, args[0]);

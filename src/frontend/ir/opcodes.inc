@@ -77,6 +77,7 @@ OPCODE(NZCVFromPackedFlags,         T::NZCVFlags,   T::U32                      
 
 // Calculations
 OPCODE(Pack2x32To1x64,              T::U64,         T::U32,         T::U32                          )
+OPCODE(Pack2x64To1x128,             T::U128,        T::U64,         T::U64                          )
 OPCODE(LeastSignificantWord,        T::U32,         T::U64                                          )
 OPCODE(MostSignificantWord,         T::U32,         T::U64                                          )
 OPCODE(LeastSignificantHalf,        T::U16,         T::U32                                          )
