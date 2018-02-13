@@ -708,7 +708,7 @@ INST(NOT,                    "NOT",                                       "0Q101
 //INST(SHSUB,                  "SHSUB",                                     "0Q001110zz1mmmmm001001nnnnnddddd")
 //INST(SQSUB_2,                "SQSUB",                                     "0Q001110zz1mmmmm001011nnnnnddddd")
 INST(CMGT_reg_2,             "CMGT (register)",                           "0Q001110zz1mmmmm001101nnnnnddddd")
-//INST(CMGE_reg_2,             "CMGE (register)",                           "0Q001110zz1mmmmm001111nnnnnddddd")
+INST(CMGE_reg_2,             "CMGE (register)",                           "0Q001110zz1mmmmm001111nnnnnddddd")
 //INST(SSHL_2,                 "SSHL",                                      "0Q001110zz1mmmmm010001nnnnnddddd")
 //INST(SQSHL_reg_2,            "SQSHL (register)",                          "0Q001110zz1mmmmm010011nnnnnddddd")
 //INST(SRSHL_2,                "SRSHL",                                     "0Q001110zz1mmmmm010101nnnnnddddd")
