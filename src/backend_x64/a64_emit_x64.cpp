@@ -492,10 +492,10 @@ void A64EmitX64::EmitA64ClearExclusive(A64EmitContext&, IR::Inst*) {
 void A64EmitX64::EmitA64SetExclusive(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[1].IsImmediate());
-    Xbyak::Reg32 address = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Reg64 address = ctx.reg_alloc.UseGpr(args[0]);
 
     code.mov(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(1));
-    code.mov(dword[r15 + offsetof(A64JitState, exclusive_address)], address);
+    code.mov(qword[r15 + offsetof(A64JitState, exclusive_address)], address);
 }
 
 static Xbyak::RegExp EmitVAddrLookup(const A64::UserConfig& conf, BlockOfCode& code, A64EmitContext& ctx, Xbyak::Label& abort, Xbyak::Reg64 vaddr, boost::optional<Xbyak::Reg64> arg_scratch = {}) {
@@ -743,14 +743,14 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
 void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize, Xbyak::Reg64 vaddr, int value_idx) {
     Xbyak::Label end;
     Xbyak::Reg32 passed = ctx.reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
 
     code.mov(passed, u32(1));
     code.cmp(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(0));
     code.je(end);
     code.mov(tmp, vaddr);
-    code.xor_(tmp, dword[r15 + offsetof(A64JitState, exclusive_address)]);
-    code.test(tmp, A64JitState::RESERVATION_GRANULE_MASK);
+    code.xor_(tmp, qword[r15 + offsetof(A64JitState, exclusive_address)]);
+    code.test(tmp, static_cast<u32>(A64JitState::RESERVATION_GRANULE_MASK & 0xFFFF'FFFF));
     code.jne(end);
     code.mov(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(0));
     code.call(write_fallbacks[std::make_tuple(bitsize, vaddr.getIdx(), value_idx)]);

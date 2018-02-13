@@ -47,7 +47,7 @@ static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& 
         } else if (pair && elsize == 32) {
             data = ir.Pack2x32To1x64(tv.X(32, Rt), tv.X(32, *Rt2));
         } else {
-            data = tv.X(datasize, Rt);
+            data = tv.X(elsize, Rt);
         }
         IR::U32 status = tv.ExclusiveMem(address, dbytes, acctype, data);
         tv.X(32, *Rs, status);

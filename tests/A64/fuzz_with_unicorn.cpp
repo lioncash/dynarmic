@@ -53,6 +53,8 @@ static u32 GenRandomInst(u64 pc, bool is_last_inst) {
             "STLLR",
             // Unimplemented in QEMU
             "LDLAR",
+            // Dynarmic and QEMU currently differ on how the exclusive monitor's address range works.
+            "STXR", "STLXR", "STXP", "STLXP", "LDXR", "LDAXR", "LDXP", "LDAXP",
         };
 
         for (const auto& [fn, bitstring] : list) {
