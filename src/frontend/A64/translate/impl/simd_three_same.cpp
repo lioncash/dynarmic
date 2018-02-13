@@ -27,7 +27,10 @@ bool TranslatorVisitor::CMGE_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) 
 
     const IR::U128 operand1 = V(datasize, Vn);
     const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.VectorGreaterEqualSigned(esize, operand1, operand2);
+    IR::U128 result = ir.VectorGreaterEqualSigned(esize, operand1, operand2);
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
     V(datasize, Vd, result);
     return true;
 }
@@ -188,7 +191,10 @@ bool TranslatorVisitor::CMHS_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 
     const IR::U128 operand1 = V(datasize, Vn);
     const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.VectorGreaterEqualUnsigned(esize, operand1, operand2);
+    IR::U128 result = ir.VectorGreaterEqualUnsigned(esize, operand1, operand2);
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
     V(datasize, Vd, result);
     return true;
 }
