@@ -38,6 +38,10 @@ U64 IREmitter::Pack2x32To1x64(const U32& lo, const U32& hi) {
     return Inst<U64>(Opcode::Pack2x32To1x64, lo, hi);
 }
 
+U128 IREmitter::Pack2x64To1x128(const U64& lo, const U64& hi) {
+    return Inst<U128>(Opcode::Pack2x64To1x128, lo, hi);
+}
+
 U32 IREmitter::LeastSignificantWord(const U64& value) {
     return Inst<U32>(Opcode::LeastSignificantWord, value);
 }

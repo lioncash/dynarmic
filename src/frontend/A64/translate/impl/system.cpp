@@ -36,6 +36,11 @@ bool TranslatorVisitor::SEVL() {
     return true;
 }
 
+bool TranslatorVisitor::CLREX(Imm<4> /*CRm*/) {
+    ir.ClearExclusive();
+    return true;
+}
+
 bool TranslatorVisitor::DSB(Imm<4> /*CRm*/) {
     ir.DataSynchronizationBarrier();
     return true;

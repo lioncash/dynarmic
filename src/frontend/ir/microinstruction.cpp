@@ -89,6 +89,11 @@ bool Inst::IsExclusiveMemoryWrite() const {
     case Opcode::A32ExclusiveWriteMemory16:
     case Opcode::A32ExclusiveWriteMemory32:
     case Opcode::A32ExclusiveWriteMemory64:
+    case Opcode::A64ExclusiveWriteMemory8:
+    case Opcode::A64ExclusiveWriteMemory16:
+    case Opcode::A64ExclusiveWriteMemory32:
+    case Opcode::A64ExclusiveWriteMemory64:
+    case Opcode::A64ExclusiveWriteMemory128:
         return true;
 
     default:
@@ -249,6 +254,8 @@ bool Inst::CausesCPUException() const {
 bool Inst::AltersExclusiveState() const {
     return op == Opcode::A32ClearExclusive ||
            op == Opcode::A32SetExclusive   ||
+           op == Opcode::A64ClearExclusive ||
+           op == Opcode::A64SetExclusive   ||
            IsExclusiveMemoryWrite();
 }
 
