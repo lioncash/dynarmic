@@ -872,6 +872,21 @@ U128 IREmitter::VectorEqual(size_t esize, const U128& a, const U128& b) {
     return {};
 }
 
+U128 IREmitter::VectorGreaterSigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorGreaterS8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorGreaterS16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorGreaterS32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorGreaterS64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorInterleaveLower(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 8:

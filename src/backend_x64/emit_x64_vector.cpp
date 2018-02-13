@@ -485,6 +485,31 @@ void EmitX64::EmitVectorEqual128(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
+void EmitX64::EmitVectorGreaterS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pcmpgtb);
+}
+
+void EmitX64::EmitVectorGreaterS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pcmpgtw);
+}
+
+void EmitX64::EmitVectorGreaterS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pcmpgtd);
+}
+
+void EmitX64::EmitVectorGreaterS64(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE42)) {
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pcmpgtq);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<s64, 2>& a, const std::array<s64, 2>& b){
+        for (size_t i = 0; i < 2; ++i) {
+            result[i] = (a[i] > b[i]) ? ~u64(0) : 0;
+        }
+    });
+}
+
 static void EmitVectorInterleaveLower(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int size) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
