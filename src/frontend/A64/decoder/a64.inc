@@ -61,7 +61,7 @@ INST(SEVL,                   "SEVL",                                      "11010
 //INST(AUTIB_2,                "AUTIB, AUTIB1716, AUTIBSP, AUTIBZ, AUTIZB", "1101010100000011001000-111-11111")
 //INST(ESB,                    "ESB",                                       "11010101000000110010001000011111")
 //INST(PSB,                    "PSB CSYNC",                                 "11010101000000110010001000111111")
-//INST(CLREX,                  "CLREX",                                     "11010101000000110011MMMM01011111")
+INST(CLREX,                  "CLREX",                                     "11010101000000110011MMMM01011111")
 INST(DSB,                    "DSB",                                       "11010101000000110011MMMM10011111")
 INST(DMB,                    "DMB",                                       "11010101000000110011MMMM10111111")
 //INST(ISB,                    "ISB",                                       "11010101000000110011MMMM11011111")
