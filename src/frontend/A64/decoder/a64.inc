@@ -422,7 +422,7 @@ INST(DUP_elt_1,              "DUP (element)",                             "01011
 //INST(FCVTXN_1,               "FCVTXN, FCVTXN2",                           "011111100z100001011010nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Scalar pairwise
-//INST(ADDP_pair,              "ADDP (scalar)",                             "01011110zz110001101110nnnnnddddd")
+INST(ADDP_pair,              "ADDP (scalar)",                             "01011110zz110001101110nnnnnddddd")
 //INST(FMAXNMP_pair_1,         "FMAXNMP (scalar)",                          "0101111000110000110010nnnnnddddd")
 //INST(FMAXNMP_pair_2,         "FMAXNMP (scalar)",                          "011111100z110000110010nnnnnddddd")
 //INST(FADDP_pair_1,           "FADDP (scalar)",                            "0101111000110000110110nnnnnddddd")
