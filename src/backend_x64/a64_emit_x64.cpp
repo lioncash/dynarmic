@@ -48,7 +48,11 @@ bool A64EmitContext::FPSCR_FTZ() const {
 }
 
 bool A64EmitContext::FPSCR_DN() const {
-    return Location().FPCR().DN();
+    return Location().FPCR().DN() || conf.floating_point_nan_accuracy == A64::UserConfig::NaNAccuracy::AlwaysForceDefaultNaN;
+}
+
+bool A64EmitContext::AccurateNaN() const {
+    return conf.floating_point_nan_accuracy == A64::UserConfig::NaNAccuracy::Accurate;
 }
 
 A64EmitX64::A64EmitX64(BlockOfCode& code, A64::UserConfig conf)

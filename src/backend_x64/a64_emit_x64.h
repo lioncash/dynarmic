@@ -26,6 +26,7 @@ struct A64EmitContext final : public EmitContext {
     bool FPSCR_RoundTowardsZero() const override;
     bool FPSCR_FTZ() const override;
     bool FPSCR_DN() const override;
+    bool AccurateNaN() const override;
 
     const A64::UserConfig& conf;
 };

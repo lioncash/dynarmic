@@ -126,6 +126,18 @@ struct UserConfig {
     /// This is only used if page_table is not nullptr.
     bool silently_mirror_page_table = true;
 
+    // The below options relate to accuracy of floating-point emulation.
+
+    /// Determines how accurate NaN handling is.
+    enum class NaNAccuracy {
+        /// Results of operations with NaNs will exactly match hardware.
+        Accurate,
+        /// Behave as if FPCR.DN is always set.
+        AlwaysForceDefaultNaN,
+        /// No special handling of NaN, other than setting default NaN when FPCR.DN is set.
+        NoChecks,
+    } floating_point_nan_accuracy = NaNAccuracy::Accurate;
+
     // Determines whether AddTicks and GetTicksRemaining are called.
     // If false, execution will continue until soon after Jit::HaltExecution is called.
     // bool enable_ticks = true; // TODO
