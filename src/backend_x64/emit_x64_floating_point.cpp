@@ -4,6 +4,8 @@
  * General Public License version 2 or any later version.
  */
 
+#include <type_traits>
+
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
@@ -213,7 +215,8 @@ static Xbyak::Label ProcessNaN64(BlockOfCode& code, Xbyak::Xmm a) {
     return end;
 }
 
-static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+template <typename Function>
+static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
@@ -229,7 +232,11 @@ static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, voi
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
         end = PreProcessNaNs32(code, result, operand);
     }
-    (code.*fn)(result, operand);
+    if constexpr (std::is_member_function_pointer_v<Function>) {
+        (code.*fn)(result, operand);
+    } else {
+        fn(result, operand);
+    }
     if (ctx.FPSCR_FTZ()) {
         FlushToZero32(code, result, gpr_scratch);
     }
@@ -243,7 +250,8 @@ static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, voi
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+template <typename Function>
+static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
@@ -259,7 +267,11 @@ static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, voi
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
         end = PreProcessNaNs64(code, result, operand);
     }
-    (code.*fn)(result, operand);
+    if constexpr (std::is_member_function_pointer_v<Function>) {
+        (code.*fn)(result, operand);
+    } else {
+        fn(result, operand);
+    }
     if (ctx.FPSCR_FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
@@ -273,7 +285,8 @@ static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, voi
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static void FPTwoOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+template <typename Function>
+static void FPTwoOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
@@ -287,7 +300,11 @@ static void FPTwoOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void 
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
         end = ProcessNaN32(code, result);
     }
-    (code.*fn)(result, result);
+    if constexpr (std::is_member_function_pointer_v<Function>) {
+        (code.*fn)(result, result);
+    } else {
+        fn(result);
+    }
     if (ctx.FPSCR_FTZ()) {
         FlushToZero32(code, result, gpr_scratch);
     }
@@ -301,7 +318,8 @@ static void FPTwoOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static void FPTwoOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
+template <typename Function>
+static void FPTwoOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
@@ -315,7 +333,11 @@ static void FPTwoOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void 
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
         end = ProcessNaN64(code, result);
     }
-    (code.*fn)(result, result);
+    if constexpr (std::is_member_function_pointer_v<Function>) {
+        (code.*fn)(result, result);
+    } else {
+        fn(result);
+    }
     if (ctx.FPSCR_FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
@@ -382,19 +404,69 @@ void EmitX64::EmitFPDiv64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPMax32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::maxss);
+    FPThreeOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand){
+        Xbyak::Label normal, end;
+        code.ucomiss(result, operand);
+        code.jnz(normal);
+        if (!ctx.AccurateNaN()) {
+            Xbyak::Label notnan;
+            code.jnp(notnan);
+            code.addss(result, operand);
+            code.jmp(end);
+            code.L(notnan);
+        }
+        code.andps(result, operand);
+        code.jmp(end);
+        code.L(normal);
+        code.maxss(result, operand);
+        code.L(end);
+    });
 }
 
 void EmitX64::EmitFPMax64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::maxsd);
+    FPThreeOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand){
+        Xbyak::Label normal, end;
+        code.ucomisd(result, operand);
+        code.jnz(normal);
+        if (!ctx.AccurateNaN()) {
+            Xbyak::Label notnan;
+            code.jnp(notnan);
+            code.addsd(result, operand);
+            code.jmp(end);
+            code.L(notnan);
+        }
+        code.andps(result, operand);
+        code.jmp(end);
+        code.L(normal);
+        code.maxsd(result, operand);
+        code.L(end);
+    });
 }
 
 void EmitX64::EmitFPMin32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::minss);
+    FPThreeOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand){
+        Xbyak::Label normal, end;
+        code.ucomiss(result, operand);
+        code.jnz(normal);
+        code.orps(result, operand);
+        code.jmp(end);
+        code.L(normal);
+        code.minss(result, operand);
+        code.L(end);
+    });
 }
 
 void EmitX64::EmitFPMin64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::minsd);
+    FPThreeOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand){
+        Xbyak::Label normal, end;
+        code.ucomisd(result, operand);
+        code.jnz(normal);
+        code.orps(result, operand);
+        code.jmp(end);
+        code.L(normal);
+        code.minsd(result, operand);
+        code.L(end);
+    });
 }
 
 void EmitX64::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
