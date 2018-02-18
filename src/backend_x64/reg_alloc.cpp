@@ -34,10 +34,8 @@ static u64 ImmediateToU64(const IR::Value& imm) {
     }
 }
 
-static bool IsSameHostLocClass(HostLoc a, HostLoc b) {
-    return (HostLocIsGPR(a) && HostLocIsGPR(b))
-           || (HostLocIsXMM(a) && HostLocIsXMM(b))
-           || (HostLocIsSpill(a) && HostLocIsSpill(b));
+static bool CanExchange(HostLoc a, HostLoc b) {
+    return HostLocIsGPR(a) && HostLocIsGPR(b);
 }
 
 // Minimum number of bits required to represent a type
@@ -302,7 +300,7 @@ HostLoc RegAlloc::UseImpl(IR::Value use_value, HostLocList desired_locations) {
     }
 
     const HostLoc destination_location = SelectARegister(desired_locations);
-    if (IsSameHostLocClass(destination_location, current_location)) {
+    if (CanExchange(destination_location, current_location)) {
         Exchange(destination_location, current_location);
     } else {
         MoveOutOfTheWay(destination_location);
