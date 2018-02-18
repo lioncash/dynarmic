@@ -32,8 +32,8 @@ namespace Dynarmic::BackendX64 {
 
 using namespace Xbyak::util;
 
-A64EmitContext::A64EmitContext(RegAlloc& reg_alloc, IR::Block& block)
-    : EmitContext(reg_alloc, block) {}
+A64EmitContext::A64EmitContext(const A64::UserConfig& conf, RegAlloc& reg_alloc, IR::Block& block)
+    : EmitContext(reg_alloc, block), conf(conf) {}
 
 A64::LocationDescriptor A64EmitContext::Location() const {
     return A64::LocationDescriptor{block.Location()};
@@ -69,7 +69,7 @@ A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
     EmitCondPrelude(block);
 
     RegAlloc reg_alloc{code, A64JitState::SpillCount, SpillToOpArg<A64JitState>};
-    A64EmitContext ctx{reg_alloc, block};
+    A64EmitContext ctx{conf, reg_alloc, block};
 
     for (auto iter = block.begin(); iter != block.end(); ++iter) {
         IR::Inst* inst = &*iter;
@@ -498,19 +498,19 @@ void A64EmitX64::EmitA64SetExclusive(A64EmitContext& ctx, IR::Inst* inst) {
     code.mov(qword[r15 + offsetof(A64JitState, exclusive_address)], address);
 }
 
-static Xbyak::RegExp EmitVAddrLookup(const A64::UserConfig& conf, BlockOfCode& code, A64EmitContext& ctx, Xbyak::Label& abort, Xbyak::Reg64 vaddr, boost::optional<Xbyak::Reg64> arg_scratch = {}) {
+static Xbyak::RegExp EmitVAddrLookup(BlockOfCode& code, A64EmitContext& ctx, Xbyak::Label& abort, Xbyak::Reg64 vaddr, boost::optional<Xbyak::Reg64> arg_scratch = {}) {
     constexpr size_t PAGE_BITS = 12;
     constexpr size_t PAGE_SIZE = 1 << PAGE_BITS;
-    const size_t valid_page_index_bits = conf.page_table_address_space_bits - PAGE_BITS;
-    const size_t unused_top_bits = 64 - conf.page_table_address_space_bits;
+    const size_t valid_page_index_bits = ctx.conf.page_table_address_space_bits - PAGE_BITS;
+    const size_t unused_top_bits = 64 - ctx.conf.page_table_address_space_bits;
 
     Xbyak::Reg64 page_table = arg_scratch.value_or_eval([&]{ return ctx.reg_alloc.ScratchGpr(); });
     Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
-    code.mov(page_table, reinterpret_cast<u64>(conf.page_table));
+    code.mov(page_table, reinterpret_cast<u64>(ctx.conf.page_table));
     code.mov(tmp, vaddr);
     if (unused_top_bits == 0) {
         code.shr(tmp, int(PAGE_BITS));
-    } else if (conf.silently_mirror_page_table) {
+    } else if (ctx.conf.silently_mirror_page_table) {
         if (valid_page_index_bits >= 32) {
             code.shl(tmp, int(unused_top_bits));
             code.shr(tmp, int(unused_top_bits + PAGE_BITS));
@@ -539,7 +539,7 @@ void A64EmitX64::EmitDirectPageTableMemoryRead(A64EmitContext& ctx, IR::Inst* in
     Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
     Xbyak::Reg64 value = ctx.reg_alloc.ScratchGpr();
 
-    auto src_ptr = EmitVAddrLookup(conf, code, ctx, abort, vaddr, value);
+    auto src_ptr = EmitVAddrLookup(code, ctx, abort, vaddr, value);
     switch (bitsize) {
     case 8:
         code.movzx(value.cvt32(), code.byte[src_ptr]);
@@ -572,7 +572,7 @@ void A64EmitX64::EmitDirectPageTableMemoryWrite(A64EmitContext& ctx, IR::Inst* i
     Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
     Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
 
-    auto dest_ptr = EmitVAddrLookup(conf, code, ctx, abort, vaddr);
+    auto dest_ptr = EmitVAddrLookup(code, ctx, abort, vaddr);
     switch (bitsize) {
     case 8:
         code.mov(code.byte[dest_ptr], value.cvt8());
@@ -648,7 +648,7 @@ void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
         Xbyak::Xmm value = ctx.reg_alloc.ScratchXmm();
 
-        auto src_ptr = EmitVAddrLookup(conf, code, ctx, abort, vaddr);
+        auto src_ptr = EmitVAddrLookup(code, ctx, abort, vaddr);
         code.movups(value, xword[src_ptr]);
         code.L(end);
 
@@ -720,7 +720,7 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
         Xbyak::Xmm value = ctx.reg_alloc.UseXmm(args[1]);
 
-        auto dest_ptr = EmitVAddrLookup(conf, code, ctx, abort, vaddr);
+        auto dest_ptr = EmitVAddrLookup(code, ctx, abort, vaddr);
         code.movups(xword[dest_ptr], value);
         code.L(end);
 

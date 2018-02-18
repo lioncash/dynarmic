@@ -21,11 +21,13 @@ namespace Dynarmic::BackendX64 {
 class RegAlloc;
 
 struct A64EmitContext final : public EmitContext {
-    A64EmitContext(RegAlloc& reg_alloc, IR::Block& block);
+    A64EmitContext(const A64::UserConfig& conf, RegAlloc& reg_alloc, IR::Block& block);
     A64::LocationDescriptor Location() const;
     bool FPSCR_RoundTowardsZero() const override;
     bool FPSCR_FTZ() const override;
     bool FPSCR_DN() const override;
+
+    const A64::UserConfig& conf;
 };
 
 class A64EmitX64 final : public EmitX64 {
