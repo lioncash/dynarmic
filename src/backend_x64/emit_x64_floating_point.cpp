@@ -4,10 +4,12 @@
  * General Public License version 2 or any later version.
  */
 
+#include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
 #include "common/assert.h"
 #include "common/common_types.h"
+#include "common/fp_util.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/opcodes.h"
@@ -95,32 +97,126 @@ static void FlushToZero64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 
     code.L(end);
 }
 
-static void DefaultNaN32(BlockOfCode& code, Xbyak::Xmm xmm_value) {
-    Xbyak::Label end;
-
-    code.ucomiss(xmm_value, xmm_value);
-    code.jnp(end);
-    code.movaps(xmm_value, code.MConst(f32_nan));
-    code.L(end);
-}
-
-static void DefaultNaN64(BlockOfCode& code, Xbyak::Xmm xmm_value) {
-    Xbyak::Label end;
-
-    code.ucomisd(xmm_value, xmm_value);
-    code.jnp(end);
-    code.movaps(xmm_value, code.MConst(f64_nan));
-    code.L(end);
-}
-
 static void ZeroIfNaN64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_scratch) {
     code.pxor(xmm_scratch, xmm_scratch);
     code.cmpordsd(xmm_scratch, xmm_value); // true mask when ordered (i.e.: when not an NaN)
     code.pand(xmm_value, xmm_scratch);
 }
 
+static Xbyak::Label PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b) {
+    Xbyak::Label nan, end;
+
+    code.ucomiss(a, b);
+    code.jp(nan, code.T_NEAR);
+    code.SwitchToFarCode();
+    code.L(nan);
+
+    code.sub(rsp, 8);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
+    code.xor_(code.ABI_PARAM1.cvt32(), code.ABI_PARAM1.cvt32());
+    code.xor_(code.ABI_PARAM2.cvt32(), code.ABI_PARAM2.cvt32());
+    code.movd(code.ABI_PARAM1.cvt32(), a);
+    code.movd(code.ABI_PARAM2.cvt32(), b);
+    code.CallFunction(static_cast<u32(*)(u32, u32)>([](u32 a, u32 b) -> u32 {
+        return *Common::ProcessNaNs(a, b);
+    }));
+    code.movd(a, code.ABI_RETURN.cvt32());
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
+    code.add(rsp, 8);
+
+    code.jmp(end, code.T_NEAR);
+    code.SwitchToNearCode();
+    return end;
+}
+
+static void PostProcessNaNs32(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm tmp) {
+    code.movaps(tmp, result);
+    code.cmpunordps(tmp, tmp);
+    code.pslld(tmp, 31);
+    code.xorps(result, tmp);
+}
+
+static void DefaultNaN32(BlockOfCode& code, Xbyak::Xmm xmm_value) {
+    Xbyak::Label end;
+    code.ucomiss(xmm_value, xmm_value);
+    code.jnp(end);
+    code.movaps(xmm_value, code.MConst(f32_nan));
+    code.L(end);
+}
+
+static Xbyak::Label PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b) {
+    Xbyak::Label nan, end;
+
+    code.ucomisd(a, b);
+    code.jp(nan, code.T_NEAR);
+    code.SwitchToFarCode();
+    code.L(nan);
+
+    code.sub(rsp, 8);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
+    code.movq(code.ABI_PARAM1, a);
+    code.movq(code.ABI_PARAM2, b);
+    code.CallFunction(static_cast<u64(*)(u64, u64)>([](u64 a, u64 b) -> u64 {
+        return *Common::ProcessNaNs(a, b);
+    }));
+    code.movq(a, code.ABI_RETURN);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
+    code.add(rsp, 8);
+
+    code.jmp(end, code.T_NEAR);
+    code.SwitchToNearCode();
+    return end;
+}
+
+static void PostProcessNaNs64(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm tmp) {
+    code.movaps(tmp, result);
+    code.cmpunordpd(tmp, tmp);
+    code.psllq(tmp, 63);
+    code.xorps(result, tmp);
+}
+
+static void DefaultNaN64(BlockOfCode& code, Xbyak::Xmm xmm_value) {
+    Xbyak::Label end;
+    code.ucomisd(xmm_value, xmm_value);
+    code.jnp(end);
+    code.movaps(xmm_value, code.MConst(f64_nan));
+    code.L(end);
+}
+
+static Xbyak::Label ProcessNaN32(BlockOfCode& code, Xbyak::Xmm a) {
+    Xbyak::Label nan, end;
+
+    code.ucomiss(a, a);
+    code.jp(nan, code.T_NEAR);
+    code.SwitchToFarCode();
+    code.L(nan);
+
+    code.orps(a, code.MConst(0x00400000));
+
+    code.jmp(end, code.T_NEAR);
+    code.SwitchToNearCode();
+    return end;
+}
+
+static Xbyak::Label ProcessNaN64(BlockOfCode& code, Xbyak::Xmm a) {
+    Xbyak::Label nan, end;
+
+    code.ucomisd(a, a);
+    code.jp(nan, code.T_NEAR);
+    code.SwitchToFarCode();
+    code.L(nan);
+
+    code.orps(a, code.MConst(0x0008'0000'0000'0000));
+
+    code.jmp(end, code.T_NEAR);
+    code.SwitchToNearCode();
+    return end;
+}
+
 static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Label end;
 
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
@@ -130,19 +226,27 @@ static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, voi
         DenormalsAreZero32(code, result, gpr_scratch);
         DenormalsAreZero32(code, operand, gpr_scratch);
     }
+    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
+        end = PreProcessNaNs32(code, result, operand);
+    }
     (code.*fn)(result, operand);
     if (ctx.FPSCR_FTZ()) {
         FlushToZero32(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
+    } else if (ctx.AccurateNaN()) {
+        PostProcessNaNs32(code, result, operand);
     }
+    code.L(end);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
 static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Label end;
 
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
@@ -152,13 +256,19 @@ static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, voi
         DenormalsAreZero64(code, result, gpr_scratch);
         DenormalsAreZero64(code, operand, gpr_scratch);
     }
+    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
+        end = PreProcessNaNs64(code, result, operand);
+    }
     (code.*fn)(result, operand);
     if (ctx.FPSCR_FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
+    } else if (ctx.AccurateNaN()) {
+        PostProcessNaNs64(code, result, operand);
     }
+    code.L(end);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -166,20 +276,27 @@ static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, voi
 static void FPTwoOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
+    Xbyak::Label end;
+
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
 
     if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero32(code, result, gpr_scratch);
     }
-
+    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
+        end = ProcessNaN32(code, result);
+    }
     (code.*fn)(result, result);
     if (ctx.FPSCR_FTZ()) {
         FlushToZero32(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN32(code, result);
+    } else if (ctx.AccurateNaN()) {
+        PostProcessNaNs32(code, result, ctx.reg_alloc.ScratchXmm());
     }
+    code.L(end);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -187,20 +304,27 @@ static void FPTwoOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void 
 static void FPTwoOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Xmm&, const Xbyak::Operand&)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
+    Xbyak::Label end;
+
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero64(code, result, gpr_scratch);
     }
-
+    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
+        end = ProcessNaN64(code, result);
+    }
     (code.*fn)(result, result);
     if (ctx.FPSCR_FTZ()) {
         FlushToZero64(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN64(code, result);
+    } else if (ctx.AccurateNaN()) {
+        PostProcessNaNs64(code, result, ctx.reg_alloc.ScratchXmm());
     }
+    code.L(end);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }

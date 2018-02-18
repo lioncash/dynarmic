@@ -36,6 +36,7 @@ struct EmitContext {
     virtual bool FPSCR_RoundTowardsZero() const = 0;
     virtual bool FPSCR_FTZ() const = 0;
     virtual bool FPSCR_DN() const = 0;
+    virtual bool AccurateNaN() const { return true; }
 
     RegAlloc& reg_alloc;
     IR::Block& block;
