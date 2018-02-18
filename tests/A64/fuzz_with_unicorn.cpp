@@ -109,7 +109,7 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
         // List of instructions not to test
         const std::vector<std::string> do_not_test {
             // QEMU's implementation of FCVT is incorrect
-            "FCVT",
+            "FCVT_float",
         };
 
         std::vector<InstructionGenerator> result;
