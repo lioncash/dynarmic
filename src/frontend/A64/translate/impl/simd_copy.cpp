@@ -9,6 +9,21 @@
 
 namespace Dynarmic::A64 {
 
+bool TranslatorVisitor::DUP_elt_1(Imm<5> imm5, Vec Vn, Vec Vd) {
+    const size_t size = Common::LowestSetBit(imm5.ZeroExtend());
+    if (size > 3) return UnallocatedEncoding();
+
+    const size_t index = imm5.ZeroExtend<size_t>() >> (size + 1);
+    const size_t idxdsize = imm5.Bit<4>() ? 128 : 64;
+    const size_t esize = 8 << size;
+
+    const IR::U128 operand = V(idxdsize, Vn);
+    const IR::UAny element = ir.VectorGetElement(esize, operand, index);
+    const IR::U128 result = ir.ZeroExtendToQuad(element);
+    V(128, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::DUP_elt_2(bool Q, Imm<5> imm5, Vec Vn, Vec Vd) {
     const size_t size = Common::LowestSetBit(imm5.ZeroExtend());
     if (size > 3) return UnallocatedEncoding();

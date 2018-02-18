@@ -334,7 +334,7 @@ INST(AESIMC,                 "AESIMC",                                    "01001
 //INST(SHA256SU0,              "SHA256SU0",                                 "0101111000101000001010nnnnnddddd")
 
 // Data Processing - FP and SIMD - Scalar copy
-//INST(DUP_elt_1,              "DUP (element)",                             "01011110000iiiii000001nnnnnddddd")
+INST(DUP_elt_1,              "DUP (element)",                             "01011110000iiiii000001nnnnnddddd")
 
 // Data Processing - FP and SIMD - Scalar three
 //INST(FMULX_vec_1,            "FMULX",                                     "01011110010mmmmm000111nnnnnddddd")
