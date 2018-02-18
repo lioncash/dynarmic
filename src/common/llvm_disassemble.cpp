@@ -13,11 +13,11 @@
 #include <llvm-c/Target.h>
 #endif
 
-#include "backend_x64/disassemble_x64.h"
 #include "common/assert.h"
 #include "common/common_types.h"
+#include "common/llvm_disassemble.h"
 
-namespace Dynarmic::BackendX64 {
+namespace Dynarmic::Common {
 
 std::string DisassembleX64(const void* begin, const void* end) {
     std::string result;
@@ -55,4 +55,28 @@ std::string DisassembleX64(const void* begin, const void* end) {
     return result;
 }
 
-} // namespace Dynarmic::BackendX64
+std::string DisassembleAArch64([[maybe_unused]] u32 instruction, [[maybe_unused]] u64 pc) {
+    std::string result;
+
+#ifdef DYNARMIC_USE_LLVM
+    LLVMInitializeAArch64TargetInfo();
+    LLVMInitializeAArch64TargetMC();
+    LLVMInitializeAArch64Disassembler();
+    LLVMDisasmContextRef llvm_ctx = LLVMCreateDisasm("aarch64", nullptr, 0, nullptr, nullptr);
+    LLVMSetDisasmOptions(llvm_ctx, LLVMDisassembler_Option_AsmPrinterVariant);
+
+    char buffer[80];
+    size_t inst_size = LLVMDisasmInstruction(llvm_ctx, (u8*)&instruction, sizeof(instruction), pc, buffer, sizeof(buffer));
+    ASSERT(inst_size);
+    result = buffer;
+    result += '\n';
+
+    LLVMDisasmDispose(llvm_ctx);
+#else
+    result += fmt::format("(disassembly disabled)\n");
+#endif
+
+    return result;
+}
+
+} // namespace Dynarmic::Common

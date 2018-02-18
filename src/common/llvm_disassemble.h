@@ -6,8 +6,11 @@
 
 #include <string>
 
-namespace Dynarmic::BackendX64 {
+#include "common/common_types.h"
+
+namespace Dynarmic::Common {
 
 std::string DisassembleX64(const void* pos, const void* end);
+std::string DisassembleAArch64(u32 instruction, u64 pc = 0);
 
-} // namespace Dynarmic::BackendX64
+} // namespace Dynarmic::Common

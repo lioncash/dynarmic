@@ -15,6 +15,8 @@ add_library(dynarmic
     common/crc32.h
     common/intrusive_list.h
     common/iterator_util.h
+    common/llvm_disassemble.cpp
+    common/llvm_disassemble.h
     common/memory_pool.cpp
     common/memory_pool.h
     common/mp.h
@@ -158,8 +160,6 @@ if (ARCHITECTURE_x86_64)
          backend_x64/constant_pool.cpp
          backend_x64/constant_pool.h
          backend_x64/devirtualize.h
-         backend_x64/disassemble_x64.cpp
-         backend_x64/disassemble_x64.h
          backend_x64/emit_x64.cpp
          backend_x64/emit_x64.h
          backend_x64/emit_x64_aes.cpp

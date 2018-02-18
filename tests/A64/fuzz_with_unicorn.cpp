@@ -11,6 +11,7 @@
 
 #include <catch.hpp>
 
+#include "common/llvm_disassemble.h"
 #include "common/scope_exit.h"
 #include "frontend/A64/location_descriptor.h"
 #include "frontend/A64/translate/translate.h"
@@ -127,7 +128,7 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Ve
     SCOPE_FAIL {
         fmt::print("Instruction Listing:\n");
         for (u32 instruction : instructions)
-            fmt::print("{:08x}\n", instruction);
+            fmt::print("{:08x} {}\n", instruction, Common::DisassembleAArch64(instruction));
         fmt::print("\n");
 
         fmt::print("Initial register listing:\n");

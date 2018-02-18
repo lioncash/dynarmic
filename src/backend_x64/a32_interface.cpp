@@ -9,20 +9,15 @@
 #include <boost/icl/interval_set.hpp>
 #include <fmt/format.h>
 
-#ifdef DYNARMIC_USE_LLVM
-#include <llvm-c/Disassembler.h>
-#include <llvm-c/Target.h>
-#endif
-
 #include "backend_x64/a32_emit_x64.h"
 #include "backend_x64/a32_jitstate.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/callback.h"
 #include "backend_x64/devirtualize.h"
-#include "backend_x64/disassemble_x64.h"
 #include "backend_x64/jitstate_info.h"
 #include "common/assert.h"
 #include "common/common_types.h"
+#include "common/llvm_disassemble.h"
 #include "common/scope_exit.h"
 #include "dynarmic/A32/a32.h"
 #include "dynarmic/A32/context.h"
@@ -74,7 +69,7 @@ struct Jit::Impl {
     std::string Disassemble(const IR::LocationDescriptor& descriptor) {
         auto block = GetBasicBlock(descriptor);
         std::string result = fmt::format("address: {}\nsize: {} bytes\n", block.entrypoint, block.size);
-        result += DisassembleX64(block.entrypoint, reinterpret_cast<const char*>(block.entrypoint) + block.size);
+        result += Common::DisassembleX64(block.entrypoint, reinterpret_cast<const char*>(block.entrypoint) + block.size);
         return result;
     }
 

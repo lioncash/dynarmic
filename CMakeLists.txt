@@ -122,7 +122,7 @@ if (DYNARMIC_USE_LLVM)
     find_package(LLVM REQUIRED CONFIG)
     include_directories(${LLVM_INCLUDE_DIRS})
     add_definitions(-DDYNARMIC_USE_LLVM ${LLVM_DEFINITIONS})
-    llvm_map_components_to_libnames(llvm_libs x86desc x86disassembler)
+    llvm_map_components_to_libnames(llvm_libs aarch64desc aarch64disassembler x86desc x86disassembler)
 endif()
 
 if (DYNARMIC_TESTS_USE_UNICORN)

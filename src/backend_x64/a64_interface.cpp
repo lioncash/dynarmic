@@ -13,10 +13,10 @@
 #include "backend_x64/a64_jitstate.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/devirtualize.h"
-#include "backend_x64/disassemble_x64.h"
 #include "backend_x64/jitstate_info.h"
 #include "common/assert.h"
 #include "common/scope_exit.h"
+#include "common/llvm_disassemble.h"
 #include "dynarmic/A64/a64.h"
 #include "frontend/A64/translate/translate.h"
 #include "frontend/ir/basic_block.h"
@@ -164,7 +164,7 @@ public:
     }
 
     std::string Disassemble() const {
-        return DisassembleX64(block_of_code.GetCodeBegin(), block_of_code.getCurr());
+        return Common::DisassembleX64(block_of_code.GetCodeBegin(), block_of_code.getCurr());
     }
 
 private:
