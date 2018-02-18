@@ -13,6 +13,7 @@
 
 #include "common/llvm_disassemble.h"
 #include "common/scope_exit.h"
+#include "frontend/A64/decoder/a64.h"
 #include "frontend/A64/location_descriptor.h"
 #include "frontend/A64/translate/translate.h"
 #include "frontend/ir/basic_block.h"
@@ -34,6 +35,20 @@ using namespace Dynarmic;
 
 static Vector RandomVector() {
     return {RandInt<u64>(0, ~u64(0)), RandInt<u64>(0, ~u64(0))};
+}
+
+static bool ShouldTestInst(u32 instruction, u64 pc, bool is_last_inst) {
+    const A64::LocationDescriptor location{pc, {}};
+    IR::Block block{location};
+    bool should_continue = A64::TranslateSingleInstruction(block, location, instruction);
+    if (!should_continue && !is_last_inst)
+        return false;
+    if (auto terminal = block.GetTerminal(); boost::get<IR::Term::Interpret>(&terminal))
+        return false;
+    for (const auto& ir_inst : block)
+        if (ir_inst.GetOpcode() == IR::Opcode::A64ExceptionRaised || ir_inst.GetOpcode() == IR::Opcode::A64CallSupervisor || ir_inst.GetOpcode() == IR::Opcode::A64DataCacheOperationRaised)
+            return false;
+    return true;
 }
 
 static u32 GenRandomInst(u64 pc, bool is_last_inst) {
@@ -73,23 +88,52 @@ static u32 GenRandomInst(u64 pc, bool is_last_inst) {
         return result;
     }();
 
-    const A64::LocationDescriptor location{pc, {}};
+    while (true) {
+        const size_t index = RandInt<size_t>(0, instruction_generators.size() - 1);
+        const u32 instruction = instruction_generators[index].Generate();
 
-restart:
-    const size_t index = RandInt<size_t>(0, instruction_generators.size() - 1);
-    const u32 instruction = instruction_generators[index].Generate();
+        if (ShouldTestInst(instruction, pc, is_last_inst)) {
+            return instruction;
+        }
+    }
+}
 
-    IR::Block block{location};
-    bool should_continue = A64::TranslateSingleInstruction(block, location, instruction);
-    if (!should_continue && !is_last_inst)
-        goto restart;
-    if (auto terminal = block.GetTerminal(); boost::get<IR::Term::Interpret>(&terminal))
-        goto restart;
-    for (const auto& ir_inst : block)
-        if (ir_inst.GetOpcode() == IR::Opcode::A64ExceptionRaised || ir_inst.GetOpcode() == IR::Opcode::A64CallSupervisor || ir_inst.GetOpcode() == IR::Opcode::A64DataCacheOperationRaised)
-            goto restart;
+static u32 GenFloatInst(u64 pc, bool is_last_inst) {
+    static const std::vector<InstructionGenerator> instruction_generators = []{
+        const std::vector<std::tuple<std::string, std::string, const char*>> list {
+#define INST(fn, name, bitstring) {#fn, #name, bitstring},
+#include "frontend/A64/decoder/a64.inc"
+#undef INST
+        };
 
-    return instruction;
+        // List of instructions not to test
+        const std::vector<std::string> do_not_test {
+            // QEMU's implementation of FCVT is incorrect
+            "FCVT",
+        };
+
+        std::vector<InstructionGenerator> result;
+
+        for (const auto& [fn, name, bitstring] : list) {
+            if (fn[0] != 'F') {
+                continue;
+            } else if (std::find(do_not_test.begin(), do_not_test.end(), fn) != do_not_test.end()) {
+                continue;
+            }
+            result.emplace_back(InstructionGenerator{bitstring});
+        }
+
+        return result;
+    }();
+
+    while (true) {
+        const size_t index = RandInt<size_t>(0, instruction_generators.size() - 1);
+        const u32 instruction = instruction_generators[index].Generate();
+
+        if ((instruction & 0x00800000) == 0 && ShouldTestInst(instruction, pc, is_last_inst)) {
+            return instruction;
+        }
+    }
 }
 
 static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Vector, 32>& vecs, const size_t instructions_offset, const std::vector<u32>& instructions, const u32 pstate) {
@@ -192,6 +236,118 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
         std::generate(regs.begin(), regs.end(), []{ return RandInt<u64>(0, ~u64(0)); });
         std::generate(vecs.begin(), vecs.end(), RandomVector);
         instructions[0] = GenRandomInst(0, true);
+        u32 pstate = RandInt<u32>(0, 0xF) << 28;
+
+        INFO("Instruction: 0x" << std::hex << instructions[0]);
+
+        RunTestInstance(regs, vecs, 100, instructions, pstate);
+    }
+}
+
+TEST_CASE("A64: Floating point instructions", "[a64]") {
+    std::array<u64, 80> float_numbers {
+        0x00000000, // positive zero
+        0x00000001, // smallest positive denormal
+        0x00000076, //
+        0x00002b94, //
+        0x00636d24, //
+        0x007fffff, // largest positive denormal
+        0x00800000, // smallest positive normalised real
+        0x00800002, //
+        0x01398437, //
+        0x0ba98d27, //
+        0x0ba98d7a, //
+        0x751f853a, //
+        0x7f7ffff0, //
+        0x7f7fffff, // largest positive normalised real
+        0x7f800000, // positive infinity
+        0x7f800001, // first positive SNaN
+        0x7f984a37, //
+        0x7fbfffff, // last positive SNaN
+        0x7fc00000, // first positive QNaN
+        0x7fd9ba98, //
+        0x7fffffff, // last positive QNaN
+        0x80000000, // negative zero
+        0x80000001, // smallest negative denormal
+        0x80000076, //
+        0x80002b94, //
+        0x80636d24, //
+        0x807fffff, // largest negative denormal
+        0x80800000, // smallest negative normalised real
+        0x80800002, //
+        0x81398437, //
+        0x8ba98d27, //
+        0x8ba98d7a, //
+        0xf51f853a, //
+        0xff7ffff0, //
+        0xff7fffff, // largest negative normalised real
+        0xff800000, // negative infinity
+        0xff800001, // first negative SNaN
+        0xff984a37, //
+        0xffbfffff, // last negative SNaN
+        0xffc00000, // first negative QNaN
+        0xffd9ba98, //
+        0xffffffff, // last negative QNaN
+        // some random numbers follow
+        0x4f3495cb,
+        0xe73a5134,
+        0x7c994e9e,
+        0x6164bd6c,
+        0x09503366,
+        0xbf5a97c9,
+        0xe6ff1a14,
+        0x77f31e2f,
+        0xaab4d7d8,
+        0x0966320b,
+        0xb26bddee,
+        0xb5c8e5d3,
+        0x317285d3,
+        0x3c9623b1,
+        0x51fd2c7c,
+        0x7b906a6c,
+        0x3f800000,
+        0x3dcccccd,
+        0x3f000000,
+        0x42280000,
+        0x3eaaaaab,
+        0xc1200000,
+        0xbf800000,
+        0xbf8147ae,
+        0x3f8147ae,
+        0x415df525,
+        0xc79b271e,
+        0x460e8c84,
+        // some 64-bit-float upper-halves
+        0x7ff00000, // +SNaN / +Inf
+        0x7ff0abcd, // +SNaN
+        0x7ff80000, // +QNaN
+        0x7ff81234, // +QNaN
+        0xfff00000, // -SNaN / -Inf
+        0xfff05678, // -SNaN
+        0xfff80000, // -QNaN
+        0xfff809ef, // -QNaN
+        0x3ff00000, // Number near +1.0
+        0xbff00000, // Number near -1.0
+    };
+
+    const auto gen_float = [&]{
+        return float_numbers[RandInt<size_t>(0, float_numbers.size() - 1)];
+    };
+
+    const auto gen_vector = [&]{
+        u64 upper = (gen_float() << 32) | gen_float();
+        u64 lower = (gen_float() << 32) | gen_float();
+        return Vector{lower, upper};
+    };
+
+    std::array<u64, 31> regs;
+    std::array<Vector, 32> vecs;
+    std::vector<u32> instructions(1);
+
+    for (size_t iteration = 0; iteration < 100000; ++iteration) {
+        std::generate(regs.begin(), regs.end(), gen_float);
+        std::generate(vecs.begin(), vecs.end(), gen_vector);
+        instructions[0] = GenFloatInst(0, true);
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
