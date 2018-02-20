@@ -54,6 +54,9 @@ bool TranslatorVisitor::DMB(Imm<4> /*CRm*/) {
 bool TranslatorVisitor::MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt) {
     const size_t sys_reg = concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<size_t>();
     switch (sys_reg) {
+    case 0b11'011'1101'0000'010: // TPIDR_EL0
+        ir.SetTPIDR(X(64, Rt));
+        return true;
     case 0b11'011'0100'0100'000: // FPCR
         ir.SetFPCR(X(32, Rt));
         ir.SetTerm(IR::Term::ReturnToDispatch{});
@@ -68,6 +71,9 @@ bool TranslatorVisitor::MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, I
 bool TranslatorVisitor::MRS(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt) {
     const size_t sys_reg = concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<size_t>();
     switch (sys_reg) {
+    case 0b11'011'1101'0000'010: // TPIDR_EL0
+        X(64, Rt, ir.GetTPIDR());
+        return true;
     case 0b11'011'1101'0000'011: // TPIDRRO_EL0
         X(64, Rt, ir.GetTPIDRRO());
         return true;

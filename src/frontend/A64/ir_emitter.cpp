@@ -65,6 +65,14 @@ IR::U32 IREmitter::GetDCZID() {
     return Inst<IR::U32>(Opcode::A64GetDCZID);
 }
 
+IR::U64 IREmitter::GetTPIDR() {
+    return Inst<IR::U64>(Opcode::A64GetTPIDR);
+}
+
+void IREmitter::SetTPIDR(const IR::U64& value) {
+    Inst(Opcode::A64SetTPIDR, value);
+}
+
 IR::U64 IREmitter::GetTPIDRRO() {
     return Inst<IR::U64>(Opcode::A64GetTPIDRRO);
 }

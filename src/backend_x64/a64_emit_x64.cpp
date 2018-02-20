@@ -530,6 +530,27 @@ void A64EmitX64::EmitA64GetDCZID(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void A64EmitX64::EmitA64GetTPIDR(A64EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
+    if (conf.tpidr_el0) {
+        code.mov(result, u64(conf.tpidr_el0));
+        code.mov(result, qword[result]);
+    } else {
+        code.xor_(result.cvt32(), result.cvt32());
+    }
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void A64EmitX64::EmitA64SetTPIDR(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 addr = ctx.reg_alloc.ScratchGpr();
+    if (conf.tpidr_el0) {
+        code.mov(addr, u64(conf.tpidr_el0));
+        code.mov(qword[addr], value);
+    }
+}
+
 void A64EmitX64::EmitA64GetTPIDRRO(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
     if (conf.tpidrro_el0) {
