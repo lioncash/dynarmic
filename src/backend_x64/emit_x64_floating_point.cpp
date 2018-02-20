@@ -551,6 +551,75 @@ void EmitX64::EmitFPMin64(EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
+
+void EmitX64::EmitFPMinNumeric32(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg32 scratch, Xbyak::Label& end){
+        Xbyak::Label normal, normal_or_equal, result_is_result;
+
+        code.ucomiss(result, operand);
+        code.jnp(normal_or_equal);
+        // If operand == QNaN, result = result.
+        code.movd(scratch, operand);
+        code.shl(scratch, 1);
+        code.cmp(scratch, 0xff800000u);
+        code.jae(result_is_result);
+        // If operand == SNaN, let usual NaN code handle it.
+        code.cmp(scratch, 0xff000000u);
+        code.ja(normal);
+        // If result == SNaN, && operand != NaN, result = result.
+        code.movd(scratch, result);
+        code.shl(scratch, 1);
+        code.cmp(scratch, 0xff800000u);
+        code.jnae(result_is_result);
+        // If result == QNaN && operand != NaN, result = operand.
+        code.movaps(result, operand);
+        code.jmp(end);
+
+        code.L(result_is_result);
+        code.movaps(operand, result);
+        code.jmp(normal);
+
+        code.L(normal_or_equal);
+        code.jnz(normal);
+        code.orps(operand, result);
+        code.L(normal);
+    }, &Xbyak::CodeGenerator::minss);
+}
+
+void EmitX64::EmitFPMinNumeric64(EmitContext& ctx, IR::Inst* inst) {
+    FPThreeOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
+        Xbyak::Label normal, normal_or_equal, result_is_result;
+
+        code.ucomisd(result, operand);
+        code.jnp(normal_or_equal);
+        // If operand == QNaN, result = result.
+        code.movq(scratch, operand);
+        code.shl(scratch, 1);
+        code.cmp(scratch, code.MConst(qword, 0xfff0'0000'0000'0000u));
+        code.jae(result_is_result);
+        // If operand == SNaN, let usual NaN code handle it.
+        code.cmp(scratch, code.MConst(qword, 0xffe0'0000'0000'0000u));
+        code.ja(normal);
+        // If result == SNaN, && operand != NaN, result = result.
+        code.movq(scratch, result);
+        code.shl(scratch, 1);
+        code.cmp(scratch, code.MConst(qword, 0xfff0'0000'0000'0000u));
+        code.jnae(result_is_result);
+        // If result == QNaN && operand != NaN, result = operand.
+        code.movaps(result, operand);
+        code.jmp(end);
+
+        code.L(result_is_result);
+        code.movaps(operand, result);
+        code.jmp(normal);
+
+        code.L(normal_or_equal);
+        code.jnz(normal);
+        code.orps(operand, result);
+        code.L(normal);
+    }, &Xbyak::CodeGenerator::minsd);
+}
+
 void EmitX64::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
     FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::mulss);
 }

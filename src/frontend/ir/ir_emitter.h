@@ -249,6 +249,7 @@ public:
     U32U64 FPMax(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32U64 FPMaxNumeric(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32U64 FPMin(const U32U64& a, const U32U64& b, bool fpscr_controlled);
+    U32U64 FPMinNumeric(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32U64 FPMul(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32U64 FPNeg(const U32U64& a);
     U32U64 FPSqrt(const U32U64& a);

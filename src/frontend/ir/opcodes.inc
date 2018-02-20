@@ -304,6 +304,8 @@ OPCODE(FPMaxNumeric32,              T::U32,         T::U32,         T::U32      
 OPCODE(FPMaxNumeric64,              T::U64,         T::U64,         T::U64                          )
 OPCODE(FPMin32,                     T::U32,         T::U32,         T::U32                          )
 OPCODE(FPMin64,                     T::U64,         T::U64,         T::U64                          )
+OPCODE(FPMinNumeric32,              T::U32,         T::U32,         T::U32                          )
+OPCODE(FPMinNumeric64,              T::U64,         T::U64,         T::U64                          )
 OPCODE(FPMul32,                     T::U32,         T::U32,         T::U32                          )
 OPCODE(FPMul64,                     T::U64,         T::U64,         T::U64                          )
 OPCODE(FPNeg32,                     T::U32,         T::U32                                          )
