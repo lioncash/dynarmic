@@ -214,7 +214,7 @@ static Xbyak::Label ProcessNaN64(BlockOfCode& code, Xbyak::Xmm a) {
 }
 
 template <typename PreprocessFunction, typename Function>
-static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, PreprocessFunction preprocess, Function fn) {
+static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unused]] PreprocessFunction preprocess, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
@@ -252,7 +252,7 @@ static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Pre
 }
 
 template <typename PreprocessFunction, typename Function>
-static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, PreprocessFunction preprocess, Function fn) {
+static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unused]] PreprocessFunction preprocess, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
