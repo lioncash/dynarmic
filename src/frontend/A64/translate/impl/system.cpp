@@ -59,6 +59,7 @@ bool TranslatorVisitor::MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, I
         return true;
     case 0b11'011'0100'0100'000: // FPCR
         ir.SetFPCR(X(32, Rt));
+        ir.SetPC(ir.Imm64(ir.current_location->PC() + 4));
         ir.SetTerm(IR::Term::ReturnToDispatch{});
         return false;
     case 0b11'011'0100'0100'001: // FPSR

@@ -348,8 +348,8 @@ void A64EmitX64::EmitA64GetSP(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 void A64EmitX64::EmitA64GetFPCR(A64EmitContext& ctx, IR::Inst* inst) {
-    Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
-    code.mov(result, qword[r15 + offsetof(A64JitState, fpcr)]);
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
+    code.mov(result, dword[r15 + offsetof(A64JitState, fpcr)]);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 

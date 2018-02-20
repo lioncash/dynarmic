@@ -62,7 +62,8 @@ u32 A64JitState::GetFpcr() const {
 void A64JitState::SetFpcr(u32 value) {
     fpcr = value & FPCR_MASK;
 
-    guest_MXCSR = 0x00001f80; // Mask all exceptions
+    guest_MXCSR &= 0x0000003D;
+    guest_MXCSR |= 0x00001f80; // Mask all exceptions
 
     // RMode
     const std::array<u32, 4> MXCSR_RMode {0x0, 0x4000, 0x2000, 0x6000};
@@ -108,6 +109,7 @@ u32 A64JitState::GetFpsr() const {
 }
 
 void A64JitState::SetFpsr(u32 value) {
+    guest_MXCSR &= ~0x0000003D;
     guest_MXCSR |= ( value     ) & 0b0000000000001;  // IE = IOC
     guest_MXCSR |= ( value << 1) & 0b0000000111100;  // PE, UE, OE, ZE = IXC, UFC, OFC, DZC
 
