@@ -32,7 +32,7 @@ static void EmitVectorOperation32(BlockOfCode& code, EmitContext& ctx, IR::Inst*
             code.cmpordps(nan_mask, nan_mask);
             code.andps(xmm_a, nan_mask);
             code.xorps(nan_mask, tmp);
-            code.andps(nan_mask, code.MConst(0x7fc0'0000'7fc0'0000, 0x7fc0'0000'7fc0'0000));
+            code.andps(nan_mask, code.MConst(xword, 0x7fc0'0000'7fc0'0000, 0x7fc0'0000'7fc0'0000));
             code.orps(xmm_a, nan_mask);
         }
 
@@ -114,7 +114,7 @@ static void EmitVectorOperation64(BlockOfCode& code, EmitContext& ctx, IR::Inst*
             code.cmpordpd(nan_mask, nan_mask);
             code.andps(xmm_a, nan_mask);
             code.xorps(nan_mask, tmp);
-            code.andps(nan_mask, code.MConst(0x7ff8'0000'0000'0000, 0x7ff8'0000'0000'0000));
+            code.andps(nan_mask, code.MConst(xword, 0x7ff8'0000'0000'0000, 0x7ff8'0000'0000'0000));
             code.orps(xmm_a, nan_mask);
         }
 

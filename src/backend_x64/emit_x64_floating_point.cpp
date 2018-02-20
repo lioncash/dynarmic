@@ -53,9 +53,9 @@ static void DenormalsAreZero32(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::R
 static void DenormalsAreZero64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
     Xbyak::Label end;
 
-    auto mask = code.MConst(f64_non_sign_mask);
+    auto mask = code.MConst(xword, f64_non_sign_mask);
     mask.setBit(64);
-    auto penult_denormal = code.MConst(f64_penultimate_positive_denormal);
+    auto penult_denormal = code.MConst(xword, f64_penultimate_positive_denormal);
     penult_denormal.setBit(64);
 
     code.movq(gpr_scratch, xmm_value);
@@ -84,9 +84,9 @@ static void FlushToZero32(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg32 
 static void FlushToZero64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
     Xbyak::Label end;
 
-    auto mask = code.MConst(f64_non_sign_mask);
+    auto mask = code.MConst(xword, f64_non_sign_mask);
     mask.setBit(64);
-    auto penult_denormal = code.MConst(f64_penultimate_positive_denormal);
+    auto penult_denormal = code.MConst(xword, f64_penultimate_positive_denormal);
     penult_denormal.setBit(64);
 
     code.movq(gpr_scratch, xmm_value);
@@ -142,7 +142,7 @@ static void DefaultNaN32(BlockOfCode& code, Xbyak::Xmm xmm_value) {
     Xbyak::Label end;
     code.ucomiss(xmm_value, xmm_value);
     code.jnp(end);
-    code.movaps(xmm_value, code.MConst(f32_nan));
+    code.movaps(xmm_value, code.MConst(xword, f32_nan));
     code.L(end);
 }
 
@@ -181,7 +181,7 @@ static void DefaultNaN64(BlockOfCode& code, Xbyak::Xmm xmm_value) {
     Xbyak::Label end;
     code.ucomisd(xmm_value, xmm_value);
     code.jnp(end);
-    code.movaps(xmm_value, code.MConst(f64_nan));
+    code.movaps(xmm_value, code.MConst(xword, f64_nan));
     code.L(end);
 }
 
@@ -193,7 +193,7 @@ static Xbyak::Label ProcessNaN32(BlockOfCode& code, Xbyak::Xmm a) {
     code.SwitchToFarCode();
     code.L(nan);
 
-    code.orps(a, code.MConst(0x00400000));
+    code.orps(a, code.MConst(xword, 0x00400000));
 
     code.jmp(end, code.T_NEAR);
     code.SwitchToNearCode();
@@ -208,7 +208,7 @@ static Xbyak::Label ProcessNaN64(BlockOfCode& code, Xbyak::Xmm a) {
     code.SwitchToFarCode();
     code.L(nan);
 
-    code.orps(a, code.MConst(0x0008'0000'0000'0000));
+    code.orps(a, code.MConst(xword, 0x0008'0000'0000'0000));
 
     code.jmp(end, code.T_NEAR);
     code.SwitchToNearCode();
@@ -355,7 +355,7 @@ void EmitX64::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code.pand(result, code.MConst(f32_non_sign_mask));
+    code.pand(result, code.MConst(xword, f32_non_sign_mask));
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -364,7 +364,7 @@ void EmitX64::EmitFPAbs64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code.pand(result, code.MConst(f64_non_sign_mask));
+    code.pand(result, code.MConst(xword, f64_non_sign_mask));
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -373,7 +373,7 @@ void EmitX64::EmitFPNeg32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code.pxor(result, code.MConst(f32_negative_zero));
+    code.pxor(result, code.MConst(xword, f32_negative_zero));
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -382,7 +382,7 @@ void EmitX64::EmitFPNeg64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code.pxor(result, code.MConst(f64_negative_zero));
+    code.pxor(result, code.MConst(xword, f64_negative_zero));
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -612,8 +612,8 @@ void EmitX64::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
     }
     // Clamp to output range
     ZeroIfNaN64(code, from, xmm_scratch);
-    code.minsd(from, code.MConst(f64_max_s32));
-    code.maxsd(from, code.MConst(f64_min_s32));
+    code.minsd(from, code.MConst(xword, f64_max_s32));
+    code.maxsd(from, code.MConst(xword, f64_min_s32));
     // Second time is for real
     if (round_towards_zero) {
         code.cvttsd2si(to, from); // 32 bit gpr
@@ -644,8 +644,8 @@ void EmitX64::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
     code.cvtss2sd(from, from);
     // Clamp to output range
     ZeroIfNaN64(code, from, xmm_scratch);
-    code.minsd(from, code.MConst(f64_max_u32));
-    code.maxsd(from, code.MConst(f64_min_u32));
+    code.minsd(from, code.MConst(xword, f64_max_u32));
+    code.maxsd(from, code.MConst(xword, f64_min_u32));
     if (round_towards_zero) {
         code.cvttsd2si(to, from); // 64 bit gpr
     } else {
@@ -676,8 +676,8 @@ void EmitX64::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
     }
     // Clamp to output range
     ZeroIfNaN64(code, from, xmm_scratch);
-    code.minsd(from, code.MConst(f64_max_s32));
-    code.maxsd(from, code.MConst(f64_min_s32));
+    code.minsd(from, code.MConst(xword, f64_max_s32));
+    code.maxsd(from, code.MConst(xword, f64_min_s32));
     // Second time is for real
     if (round_towards_zero) {
         code.cvttsd2si(to, from); // 32 bit gpr
@@ -704,8 +704,8 @@ void EmitX64::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
     }
     // Clamp to output range
     ZeroIfNaN64(code, from, xmm_scratch);
-    code.minsd(from, code.MConst(f64_max_u32));
-    code.maxsd(from, code.MConst(f64_min_u32));
+    code.minsd(from, code.MConst(xword, f64_max_u32));
+    code.maxsd(from, code.MConst(xword, f64_min_u32));
     if (round_towards_zero) {
         code.cvttsd2si(to, from); // 64 bit gpr
     } else {

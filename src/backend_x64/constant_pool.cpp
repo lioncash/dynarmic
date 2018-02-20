@@ -20,7 +20,7 @@ ConstantPool::ConstantPool(BlockOfCode& code, size_t size) : code(code), pool_si
     current_pool_ptr = pool_begin;
 }
 
-Xbyak::Address ConstantPool::GetConstant(u64 lower, u64 upper) {
+Xbyak::Address ConstantPool::GetConstant(const Xbyak::AddressFrame& frame, u64 lower, u64 upper) {
     const auto constant = std::make_tuple(lower, upper);
     auto iter = constant_info.find(constant);
     if (iter == constant_info.end()) {
@@ -30,7 +30,7 @@ Xbyak::Address ConstantPool::GetConstant(u64 lower, u64 upper) {
         iter = constant_info.emplace(constant, current_pool_ptr).first;
         current_pool_ptr += align_size;
     }
-    return code.xword[code.rip + iter->second];
+    return frame[code.rip + iter->second];
 }
 
 } // namespace Dynarmic::BackendX64

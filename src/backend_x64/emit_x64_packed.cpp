@@ -100,8 +100,8 @@ void EmitX64::EmitPackedAddU16(EmitContext& ctx, IR::Inst* inst) {
             // !(b <= a+b) == b > a+b
             code.movdqa(tmp_a, xmm_a);
             code.movdqa(tmp_b, xmm_b);
-            code.paddw(tmp_a, code.MConst(0x80008000));
-            code.paddw(tmp_b, code.MConst(0x80008000));
+            code.paddw(tmp_a, code.MConst(xword, 0x80008000));
+            code.paddw(tmp_b, code.MConst(xword, 0x80008000));
             code.pcmpgtw(tmp_b, tmp_a); // *Signed* comparison!
 
             ctx.reg_alloc.DefineValue(ge_inst, tmp_b);
@@ -227,8 +227,8 @@ void EmitX64::EmitPackedSubU16(EmitContext& ctx, IR::Inst* inst) {
 
     // (a >= b) == !(b > a)
     code.pcmpeqb(ones, ones);
-    code.paddw(xmm_a, code.MConst(0x80008000));
-    code.paddw(xmm_b, code.MConst(0x80008000));
+    code.paddw(xmm_a, code.MConst(xword, 0x80008000));
+    code.paddw(xmm_b, code.MConst(xword, 0x80008000));
     code.movdqa(xmm_ge, xmm_b);
     code.pcmpgtw(xmm_ge, xmm_a); // *Signed* comparison!
     code.pxor(xmm_ge, ones);

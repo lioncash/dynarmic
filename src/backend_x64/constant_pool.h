@@ -24,7 +24,7 @@ class ConstantPool final {
 public:
     ConstantPool(BlockOfCode& code, size_t size);
 
-    Xbyak::Address GetConstant(u64 lower, u64 upper = 0);
+    Xbyak::Address GetConstant(const Xbyak::AddressFrame& frame, u64 lower, u64 upper = 0);
 
 private:
     static constexpr size_t align_size = 16; // bytes

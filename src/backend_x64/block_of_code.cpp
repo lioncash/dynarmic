@@ -189,8 +189,8 @@ void BlockOfCode::SwitchMxcsrOnExit() {
     ldmxcsr(dword[r15 + jsi.offsetof_save_host_MXCSR]);
 }
 
-Xbyak::Address BlockOfCode::MConst(u64 lower, u64 upper) {
-    return constant_pool.GetConstant(lower, upper);
+Xbyak::Address BlockOfCode::MConst(const Xbyak::AddressFrame& frame, u64 lower, u64 upper) {
+    return constant_pool.GetConstant(frame, lower, upper);
 }
 
 void BlockOfCode::SwitchToFarCode() {

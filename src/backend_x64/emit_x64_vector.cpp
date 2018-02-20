@@ -327,7 +327,7 @@ void EmitX64::EmitVectorArithmeticShiftRight64(EmitContext& ctx, IR::Inst* inst)
 
     code.pxor(tmp2, tmp2);
     code.psrlq(result, shift_amount);
-    code.movdqa(tmp1, code.MConst(sign_bit, sign_bit));
+    code.movdqa(tmp1, code.MConst(xword, sign_bit, sign_bit));
     code.pand(tmp1, result);
     code.psubq(tmp2, tmp1);
     code.por(result, tmp2);
@@ -779,7 +779,7 @@ void EmitX64::EmitVectorMultiply8(EmitContext& ctx, IR::Inst* inst) {
     code.psrlw(tmp_a, 8);
     code.psrlw(tmp_b, 8);
     code.pmullw(tmp_a, tmp_b);
-    code.pand(a, code.MConst(0x00FF00FF00FF00FF, 0x00FF00FF00FF00FF));
+    code.pand(a, code.MConst(xword, 0x00FF00FF00FF00FF, 0x00FF00FF00FF00FF));
     code.psllw(tmp_a, 8);
     code.por(a, tmp_a);
 
@@ -839,7 +839,7 @@ void EmitX64::EmitVectorNarrow16(EmitContext& ctx, IR::Inst* inst) {
     // TODO: AVX512F implementation
 
     code.pxor(zeros, zeros);
-    code.pand(a, code.MConst(0x00FF00FF00FF00FF, 0x00FF00FF00FF00FF));
+    code.pand(a, code.MConst(xword, 0x00FF00FF00FF00FF, 0x00FF00FF00FF00FF));
     code.packuswb(a, zeros);
 
     ctx.reg_alloc.DefineValue(inst, a);
@@ -853,7 +853,7 @@ void EmitX64::EmitVectorNarrow32(EmitContext& ctx, IR::Inst* inst) {
     // TODO: AVX512F implementation
 
     code.pxor(zeros, zeros);
-    code.pand(a, code.MConst(0x0000FFFF0000FFFF, 0x0000FFFF0000FFFF));
+    code.pand(a, code.MConst(xword, 0x0000FFFF0000FFFF, 0x0000FFFF0000FFFF));
     code.packusdw(a, zeros);
 
     ctx.reg_alloc.DefineValue(inst, a);
@@ -1056,11 +1056,11 @@ void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
 
         code.movdqa(high_a, low_a);
         code.psrlw(high_a, 4);
-        code.movdqa(tmp1, code.MConst(0x0F0F0F0F0F0F0F0F, 0x0F0F0F0F0F0F0F0F));
+        code.movdqa(tmp1, code.MConst(xword, 0x0F0F0F0F0F0F0F0F, 0x0F0F0F0F0F0F0F0F));
         code.pand(high_a, tmp1); // High nibbles
         code.pand(low_a, tmp1); // Low nibbles
 
-        code.movdqa(tmp1, code.MConst(0x0302020102010100, 0x0403030203020201));
+        code.movdqa(tmp1, code.MConst(xword, 0x0302020102010100, 0x0403030203020201));
         code.movdqa(tmp2, tmp1);
         code.pshufb(tmp1, low_a);
         code.pshufb(tmp2, high_a);

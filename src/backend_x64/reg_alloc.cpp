@@ -470,7 +470,7 @@ HostLoc RegAlloc::LoadImmediate(IR::Value imm, HostLoc host_loc) {
         if (imm_value == 0)
             code.pxor(reg, reg);
         else
-            code.movdqa(reg, code.MConst(imm_value)); // TODO: movaps/movapd more appropriate sometimes
+            code.movdqa(reg, code.MConst(code.xword, imm_value)); // TODO: movaps/movapd more appropriate sometimes
         return host_loc;
     }
 
