@@ -356,7 +356,7 @@ INST(DUP_elt_1,              "DUP (element)",                             "01011
 //INST(FACGT_1,                "FACGT",                                     "01111110110mmmmm001011nnnnnddddd")
 //INST(FACGT_2,                "FACGT",                                     "011111101z1mmmmm111011nnnnnddddd")
 
-// Data Processing - FP and SIMD - Two register misc
+// Data Processing - FP and SIMD - Scalar two register misc
 //INST(FCVTNS_1,               "FCVTNS (vector)",                           "0101111001111001101010nnnnnddddd")
 //INST(FCVTNS_2,               "FCVTNS (vector)",                           "010111100z100001101010nnnnnddddd")
 //INST(FCVTMS_1,               "FCVTMS (vector)",                           "0101111001111001101110nnnnnddddd")
@@ -386,7 +386,7 @@ INST(DUP_elt_1,              "DUP (element)",                             "01011
 //INST(FCVTAU_1,               "FCVTAU (vector)",                           "0111111001111001110010nnnnnddddd")
 //INST(FCVTAU_2,               "FCVTAU (vector)",                           "011111100z100001110010nnnnnddddd")
 //INST(UCVTF_int_1,            "UCVTF (vector, integer)",                   "0111111001111001110110nnnnnddddd")
-//INST(UCVTF_int_2,            "UCVTF (vector, integer)",                   "011111100z100001110110nnnnnddddd")
+INST(UCVTF_int_2,            "UCVTF (vector, integer)",                   "011111100z100001110110nnnnnddddd")
 //INST(FCMGE_zero_1,           "FCMGE (zero)",                              "0111111011111000110010nnnnnddddd")
 //INST(FCMGE_zero_2,           "FCMGE (zero)",                              "011111101z100000110010nnnnnddddd")
 //INST(FCMLE_1,                "FCMLE (zero)",                              "0111111011111000110110nnnnnddddd")
