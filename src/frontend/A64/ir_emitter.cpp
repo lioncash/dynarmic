@@ -166,6 +166,14 @@ IR::U64 IREmitter::GetSP() {
     return Inst<IR::U64>(Opcode::A64GetSP);
 }
 
+IR::U32 IREmitter::GetFPCR() {
+    return Inst<IR::U32>(Opcode::A64GetFPCR);
+}
+
+IR::U32 IREmitter::GetFPSR() {
+    return Inst<IR::U32>(Opcode::A64GetFPSR);
+}
+
 void IREmitter::SetW(const Reg reg, const IR::U32& value) {
     if (reg == Reg::ZR)
         return;
@@ -192,6 +200,14 @@ void IREmitter::SetQ(const Vec vec, const IR::U128& value) {
 
 void IREmitter::SetSP(const IR::U64& value) {
     Inst(Opcode::A64SetSP, value);
+}
+
+void IREmitter::SetFPCR(const IR::U32& value) {
+    Inst(Opcode::A64SetFPCR, value);
+}
+
+void IREmitter::SetFPSR(const IR::U32& value) {
+    Inst(Opcode::A64SetFPSR, value);
 }
 
 void IREmitter::SetPC(const IR::U64& value) {

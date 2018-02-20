@@ -73,12 +73,16 @@ public:
     IR::U128 GetD(Vec source_vec);
     IR::U128 GetQ(Vec source_vec);
     IR::U64 GetSP();
+    IR::U32 GetFPCR();
+    IR::U32 GetFPSR();
     void SetW(Reg dest_reg, const IR::U32& value);
     void SetX(Reg dest_reg, const IR::U64& value);
     void SetS(Vec dest_vec, const IR::U128& value);
     void SetD(Vec dest_vec, const IR::U128& value);
     void SetQ(Vec dest_vec, const IR::U128& value);
     void SetSP(const IR::U64& value);
+    void SetFPCR(const IR::U32& value);
+    void SetFPSR(const IR::U32& value);
     void SetPC(const IR::U64& value);
 };
 

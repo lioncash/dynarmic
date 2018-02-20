@@ -347,6 +347,23 @@ void A64EmitX64::EmitA64GetSP(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void A64EmitX64::EmitA64GetFPCR(A64EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
+    code.mov(result, qword[r15 + offsetof(A64JitState, fpcr)]);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+static u32 GetFPSRImpl(A64JitState* jit_state) {
+    return jit_state->GetFpsr();
+}
+
+void A64EmitX64::EmitA64GetFPSR(A64EmitContext& ctx, IR::Inst* inst) {
+    ctx.reg_alloc.HostCall(inst);
+    code.mov(code.ABI_PARAM1, code.r15);
+    code.stmxcsr(code.dword[code.r15 + offsetof(A64JitState, guest_MXCSR)]);
+    code.CallFunction(GetFPSRImpl);
+}
+
 void A64EmitX64::EmitA64SetW(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     A64::Reg reg = inst->GetArg(0).GetA64RegRef();
@@ -420,6 +437,30 @@ void A64EmitX64::EmitA64SetSP(A64EmitContext& ctx, IR::Inst* inst) {
         Xbyak::Reg64 to_store = ctx.reg_alloc.UseGpr(args[0]);
         code.mov(addr, to_store);
     }
+}
+
+static void SetFPCRImpl(A64JitState* jit_state, u32 value) {
+    jit_state->SetFpcr(value);
+}
+
+void A64EmitX64::EmitA64SetFPCR(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.HostCall(nullptr, {}, args[0]);
+    code.mov(code.ABI_PARAM1, code.r15);
+    code.CallFunction(SetFPCRImpl);
+    code.ldmxcsr(code.dword[code.r15 + offsetof(A64JitState, guest_MXCSR)]);
+}
+
+static void SetFPSRImpl(A64JitState* jit_state, u32 value) {
+    jit_state->SetFpsr(value);
+}
+
+void A64EmitX64::EmitA64SetFPSR(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.HostCall(nullptr, {}, args[0]);
+    code.mov(code.ABI_PARAM1, code.r15);
+    code.CallFunction(SetFPSRImpl);
+    code.ldmxcsr(code.dword[code.r15 + offsetof(A64JitState, guest_MXCSR)]);
 }
 
 void A64EmitX64::EmitA64SetPC(A64EmitContext& ctx, IR::Inst* inst) {

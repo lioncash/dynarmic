@@ -66,7 +66,7 @@ INST(DSB,                    "DSB",                                       "11010
 INST(DMB,                    "DMB",                                       "11010101000000110011MMMM10111111")
 //INST(ISB,                    "ISB",                                       "11010101000000110011MMMM11011111")
 //INST(SYS,                    "SYS",                                       "1101010100001oooNNNNMMMMooottttt")
-//INST(MSR_reg,                "MSR (register)",                            "110101010001poooNNNNMMMMooottttt")
+INST(MSR_reg,                "MSR (register)",                            "110101010001poooNNNNMMMMooottttt")
 //INST(SYSL,                   "SYSL",                                      "1101010100101oooNNNNMMMMooottttt")
 INST(MRS,                    "MRS",                                       "110101010011poooNNNNMMMMooottttt")
 

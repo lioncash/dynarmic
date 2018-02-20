@@ -194,6 +194,8 @@ bool Inst::ReadsFromFPSCR() const {
     switch (op) {
     case Opcode::A32GetFpscr:
     case Opcode::A32GetFpscrNZCV:
+    case Opcode::A64GetFPCR:
+    case Opcode::A64GetFPSR:
     case Opcode::FPAbs32:
     case Opcode::FPAbs64:
     case Opcode::FPAdd32:
@@ -221,6 +223,8 @@ bool Inst::WritesToFPSCR() const {
     switch (op) {
     case Opcode::A32SetFpscr:
     case Opcode::A32SetFpscrNZCV:
+    case Opcode::A64SetFPCR:
+    case Opcode::A64SetFPSR:
     case Opcode::FPAbs32:
     case Opcode::FPAbs64:
     case Opcode::FPAdd32:

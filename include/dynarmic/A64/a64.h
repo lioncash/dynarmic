@@ -90,6 +90,11 @@ public:
     /// Modify FPCR.
     void SetFpcr(std::uint32_t value);
 
+    /// View FPSR.
+    std::uint32_t GetFpsr() const;
+    /// Modify FPSR.
+    void SetFpsr(std::uint32_t value);
+
     /// View PSTATE
     std::uint32_t GetPstate() const;
     /// Modify PSTATE

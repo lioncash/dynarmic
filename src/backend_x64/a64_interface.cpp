@@ -151,6 +151,14 @@ public:
         jit_state.SetFpcr(value);
     }
 
+    u32 GetFpsr() const {
+        return jit_state.GetFpsr();
+    }
+
+    void SetFpsr(u32 value) {
+        jit_state.SetFpsr(value);
+    }
+
     u32 GetPstate() const {
         return jit_state.GetPstate();
     }
@@ -312,6 +320,14 @@ u32 Jit::GetFpcr() const {
 
 void Jit::SetFpcr(u32 value) {
     impl->SetFpcr(value);
+}
+
+u32 Jit::GetFpsr() const {
+    return impl->GetFpsr();
+}
+
+void Jit::SetFpsr(u32 value) {
+    impl->SetFpsr(value);
 }
 
 u32 Jit::GetPstate() const {
