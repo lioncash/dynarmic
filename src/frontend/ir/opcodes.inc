@@ -288,6 +288,7 @@ OPCODE(VectorZeroExtend16,          T::U128,        T::U128                     
 OPCODE(VectorZeroExtend32,          T::U128,        T::U128                                         )
 OPCODE(VectorZeroExtend64,          T::U128,        T::U128                                         )
 OPCODE(VectorZeroUpper,             T::U128,        T::U128                                         )
+OPCODE(ZeroVector,                  T::U128,                                                        )
 
 // Floating-point operations
 OPCODE(FPAbs32,                     T::U32,         T::U32                                          )

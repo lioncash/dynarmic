@@ -1207,4 +1207,10 @@ void EmitX64::EmitVectorZeroUpper(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+void EmitX64::EmitZeroVector(EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Xmm a = ctx.reg_alloc.ScratchXmm();
+    code.pxor(a, a);
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
 } // namespace Dynarmic::BackendX64

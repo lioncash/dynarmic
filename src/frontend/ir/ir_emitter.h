@@ -241,6 +241,7 @@ public:
     U128 VectorSub(size_t esize, const U128& a, const U128& b);
     U128 VectorZeroExtend(size_t original_esize, const U128& a);
     U128 VectorZeroUpper(const U128& a);
+    U128 ZeroVector();
 
     U32U64 FPAbs(const U32U64& a);
     U32U64 FPAdd(const U32U64& a, const U32U64& b, bool fpscr_controlled);

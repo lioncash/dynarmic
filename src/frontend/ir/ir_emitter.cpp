@@ -1137,6 +1137,10 @@ U128 IREmitter::VectorZeroUpper(const U128& a) {
     return Inst<U128>(Opcode::VectorZeroUpper, a);
 }
 
+U128 IREmitter::ZeroVector() {
+    return Inst<U128>(Opcode::ZeroVector);
+}
+
 U32U64 IREmitter::FPAbs(const U32U64& a) {
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPAbs32, a);
