@@ -44,6 +44,7 @@ public:
     void DataCacheOperationRaised(DataCacheOperation op, const IR::U64& value);
     void DataSynchronizationBarrier();
     void DataMemoryBarrier();
+    IR::U64 GetCNTPCT(); // TODO: Ensure sub-basic-block cycle counts are updated before this.
     IR::U32 GetCTR();
     IR::U32 GetDCZID();
     IR::U64 GetTPIDRRO();

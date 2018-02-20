@@ -63,6 +63,9 @@ bool TranslatorVisitor::MRS(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3
     case 0b11'011'0000'0000'001: // CTR_EL0
         X(32, Rt, ir.GetCTR());
         return true;
+    case 0b11'011'1110'0000'001: // CNTPCT_EL0
+        X(64, Rt, ir.GetCNTPCT());
+        return true;
     }
     return InterpretThisInstruction();
 }

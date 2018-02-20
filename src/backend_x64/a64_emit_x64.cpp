@@ -472,6 +472,11 @@ void A64EmitX64::EmitA64DataMemoryBarrier(A64EmitContext&, IR::Inst*) {
     code.lfence();
 }
 
+void A64EmitX64::EmitA64GetCNTPCT(A64EmitContext& ctx, IR::Inst* inst) {
+    ctx.reg_alloc.HostCall(inst);
+    DEVIRT(conf.callbacks, &A64::UserCallbacks::GetCNTPCT).EmitCall(code);
+}
+
 void A64EmitX64::EmitA64GetCTR(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
     code.mov(result, conf.ctr_el0);

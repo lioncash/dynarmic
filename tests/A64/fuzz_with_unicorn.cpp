@@ -45,9 +45,17 @@ static bool ShouldTestInst(u32 instruction, u64 pc, bool is_last_inst) {
         return false;
     if (auto terminal = block.GetTerminal(); boost::get<IR::Term::Interpret>(&terminal))
         return false;
-    for (const auto& ir_inst : block)
-        if (ir_inst.GetOpcode() == IR::Opcode::A64ExceptionRaised || ir_inst.GetOpcode() == IR::Opcode::A64CallSupervisor || ir_inst.GetOpcode() == IR::Opcode::A64DataCacheOperationRaised)
+    for (const auto& ir_inst : block) {
+        switch (ir_inst.GetOpcode()) {
+        case IR::Opcode::A64ExceptionRaised:
+        case IR::Opcode::A64CallSupervisor:
+        case IR::Opcode::A64DataCacheOperationRaised:
+        case IR::Opcode::A64GetCNTPCT:
             return false;
+        default:
+            continue;
+        }
+    }
     return true;
 }
 

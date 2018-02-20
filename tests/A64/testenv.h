@@ -92,4 +92,7 @@ public:
     std::uint64_t GetTicksRemaining() override {
         return ticks_left;
     }
+    std::uint64_t GetCNTPCT() override {
+        ASSERT_MSG(false, "GetCNTPCT()");
+    }
 };

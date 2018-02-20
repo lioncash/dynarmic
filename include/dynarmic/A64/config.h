@@ -92,6 +92,8 @@ struct UserCallbacks {
     virtual void AddTicks(std::uint64_t ticks) = 0;
     // How many more ticks am I allowed to execute?
     virtual std::uint64_t GetTicksRemaining() = 0;
+    // Get value in the emulated counter-timer physical count register.
+    virtual std::uint64_t GetCNTPCT() = 0;
 };
 
 struct UserConfig {
