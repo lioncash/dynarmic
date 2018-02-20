@@ -162,12 +162,14 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Ve
     jit.SetVectors(vecs);
     jit.SetPC(instructions_offset * 4);
     jit.SetSP(0x08000000);
+    jit.SetFpcr(0);
     jit.SetPstate(pstate);
     jit.ClearCache();
     uni.SetRegisters(regs);
     uni.SetVectors(vecs);
     uni.SetPC(instructions_offset * 4);
     uni.SetSP(0x08000000);
+    uni.SetFpcr(0);
     uni.SetPstate(pstate);
     uni.ClearPageCache();
 

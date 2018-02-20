@@ -876,8 +876,8 @@ INST(USHLL,                  "USHLL, USHLL2",                             "0Q101
 // Data Processing - FP and SIMD - Conversion between floating point and fixed point
 //INST(SCVTF_float_fix,        "SCVTF (scalar, fixed-point)",               "z0011110yy000010ppppppnnnnnddddd")
 //INST(UCVTF_float_fix,        "UCVTF (scalar, fixed-point)",               "z0011110yy000011ppppppnnnnnddddd")
-//INST(FCVTZS_float_fix,       "FCVTZS (scalar, fixed-point)",              "z0011110yy011000ppppppnnnnnddddd")
-//INST(FCVTZU_float_fix,       "FCVTZU (scalar, fixed-point)",              "z0011110yy011001ppppppnnnnnddddd")
+INST(FCVTZS_float_fix,       "FCVTZS (scalar, fixed-point)",              "z0011110yy011000ppppppnnnnnddddd")
+INST(FCVTZU_float_fix,       "FCVTZU (scalar, fixed-point)",              "z0011110yy011001ppppppnnnnnddddd")
 
 // Data Processing - FP and SIMD - Conversion between floating point and integer
 //INST(FCVTNS_float,           "FCVTNS (scalar)",                           "z0011110yy100000000000nnnnnddddd")
