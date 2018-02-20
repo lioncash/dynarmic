@@ -53,6 +53,10 @@ void IREmitter::DataMemoryBarrier() {
     Inst(Opcode::A64DataMemoryBarrier);
 }
 
+IR::U32 IREmitter::GetCTR() {
+    return Inst<IR::U32>(Opcode::A64GetCTR);
+}
+
 IR::U32 IREmitter::GetDCZID() {
     return Inst<IR::U32>(Opcode::A64GetDCZID);
 }

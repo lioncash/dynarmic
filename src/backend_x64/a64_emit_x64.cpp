@@ -472,6 +472,12 @@ void A64EmitX64::EmitA64DataMemoryBarrier(A64EmitContext&, IR::Inst*) {
     code.lfence();
 }
 
+void A64EmitX64::EmitA64GetCTR(A64EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
+    code.mov(result, conf.ctr_el0);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void A64EmitX64::EmitA64GetDCZID(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
     code.mov(result, conf.dczid_el0);
