@@ -620,7 +620,7 @@ INST(XTN,                    "XTN, XTN2",                                 "0Q001
 //INST(SQNEG_2,                "SQNEG",                                     "0Q101110zz100000011110nnnnnddddd")
 //INST(CMGE_zero_2,            "CMGE (zero)",                               "0Q101110zz100000100010nnnnnddddd")
 //INST(CMLE_2,                 "CMLE (zero)",                               "0Q101110zz100000100110nnnnnddddd")
-//INST(NEG_2,                  "NEG (vector)",                              "0Q101110zz100000101110nnnnnddddd")
+INST(NEG_2,                  "NEG (vector)",                              "0Q101110zz100000101110nnnnnddddd")
 //INST(SQXTUN_2,               "SQXTUN, SQXTUN2",                           "0Q101110zz100001001010nnnnnddddd")
 //INST(SHLL,                   "SHLL, SHLL2",                               "0Q101110zz100001001110nnnnnddddd")
 //INST(UQXTN_2,                "UQXTN, UQXTN2",                             "0Q101110zz100001010010nnnnnddddd")

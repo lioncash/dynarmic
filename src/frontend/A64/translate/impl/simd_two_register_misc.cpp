@@ -81,6 +81,21 @@ bool TranslatorVisitor::XTN(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::NEG_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    if (size == 0b11 && !Q) {
+        return ReservedValue();
+    }
+    const size_t esize = 8 << size.ZeroExtend<size_t>();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = V(datasize, Vn);
+    const IR::U128 zero = ir.ZeroVector();
+    const IR::U128 result = ir.VectorSub(esize, zero, operand);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::NOT(bool Q, Vec Vn, Vec Vd) {
     const size_t datasize = Q ? 128 : 64;
 
