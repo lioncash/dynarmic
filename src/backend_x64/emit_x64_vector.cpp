@@ -652,6 +652,66 @@ void EmitX64::EmitVectorLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void EmitX64::EmitVectorLogicalVShift8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u8, 16>& result, const std::array<u8, 16>& a, const std::array<u8, 16>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](u8 x, u8 y) -> u8 {
+            s8 shift_amount = static_cast<s8>(static_cast<u8>(y));
+            if (shift_amount <= -8 || shift_amount >= 8) {
+                return 0;
+            }
+            if (shift_amount < 0) {
+                return x >> u8(-shift_amount);
+            }
+            return x << u8(shift_amount);
+        });
+    });
+}
+
+void EmitX64::EmitVectorLogicalVShift16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u16, 8>& result, const std::array<u16, 8>& a, const std::array<u16, 8>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](u16 x, u16 y) -> u16 {
+            s8 shift_amount = static_cast<s8>(static_cast<u8>(y));
+            if (shift_amount <= -16 || shift_amount >= 16) {
+                return 0;
+            }
+            if (shift_amount < 0) {
+                return x >> u16(-shift_amount);
+            }
+            return x << u16(shift_amount);
+        });
+    });
+}
+
+void EmitX64::EmitVectorLogicalVShift32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](u32 x, u32 y) -> u32 {
+            s8 shift_amount = static_cast<s8>(static_cast<u8>(y));
+            if (shift_amount <= -32 || shift_amount >= 32) {
+                return 0;
+            }
+            if (shift_amount < 0) {
+                return x >> u32(-shift_amount);
+            }
+            return x << u32(shift_amount);
+        });
+    });
+}
+
+void EmitX64::EmitVectorLogicalVShift64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](u64 x, u64 y) -> u64 {
+            s8 shift_amount = static_cast<s8>(static_cast<u8>(y));
+            if (shift_amount <= -64 || shift_amount >= 64) {
+                return 0;
+            }
+            if (shift_amount < 0) {
+                return x >> u64(-shift_amount);
+            }
+            return x << u64(shift_amount);
+        });
+    });
+}
+
 void EmitX64::EmitVectorMaxS8(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pmaxsb);

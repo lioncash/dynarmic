@@ -226,6 +226,7 @@ public:
     U128 VectorLessUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorLogicalShiftLeft(size_t esize, const U128& a, u8 shift_amount);
     U128 VectorLogicalShiftRight(size_t esize, const U128& a, u8 shift_amount);
+    U128 VectorLogicalVShift(size_t esize, const U128& a, const U128& b);
     U128 VectorMaxSigned(size_t esize, const U128& a, const U128& b);
     U128 VectorMaxUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorMinSigned(size_t esize, const U128& a, const U128& b);

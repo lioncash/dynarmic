@@ -748,7 +748,7 @@ INST(ORN_asimd,              "ORN (vector)",                              "0Q001
 //INST(UQSUB_2,                "UQSUB",                                     "0Q101110zz1mmmmm001011nnnnnddddd")
 INST(CMHI_2,                 "CMHI (register)",                           "0Q101110zz1mmmmm001101nnnnnddddd")
 INST(CMHS_2,                 "CMHS (register)",                           "0Q101110zz1mmmmm001111nnnnnddddd")
-//INST(USHL_2,                 "USHL",                                      "0Q101110zz1mmmmm010001nnnnnddddd")
+INST(USHL_2,                 "USHL",                                      "0Q101110zz1mmmmm010001nnnnnddddd")
 //INST(UQSHL_reg_2,            "UQSHL (register)",                          "0Q101110zz1mmmmm010011nnnnnddddd")
 //INST(URSHL_2,                "URSHL",                                     "0Q101110zz1mmmmm010101nnnnnddddd")
 //INST(UQRSHL_2,               "UQRSHL",                                    "0Q101110zz1mmmmm010111nnnnnddddd")
