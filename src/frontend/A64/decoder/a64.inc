@@ -770,7 +770,7 @@ INST(MLS_vec,                "MLS (vector)",                              "0Q101
 //INST(FCMGE_reg_4,            "FCMGE (register)",                          "0Q1011100z1mmmmm111001nnnnnddddd")
 //INST(FACGE_4,                "FACGE",                                     "0Q1011100z1mmmmm111011nnnnnddddd")
 //INST(FMAXP_vec_2,            "FMAXP (vector)",                            "0Q1011100z1mmmmm111101nnnnnddddd")
-//INST(FDIV_2,                 "FDIV (vector)",                             "0Q1011100z1mmmmm111111nnnnnddddd")
+INST(FDIV_2,                 "FDIV (vector)",                             "0Q1011100z1mmmmm111111nnnnnddddd")
 INST(EOR_asimd,              "EOR (vector)",                              "0Q101110001mmmmm000111nnnnnddddd")
 INST(BSL,                    "BSL",                                       "0Q101110011mmmmm000111nnnnnddddd")
 //INST(FMINNMP_vec_2,          "FMINNMP (vector)",                          "0Q1011101z1mmmmm110001nnnnnddddd")

@@ -187,6 +187,14 @@ void EmitX64::EmitFPVectorAdd64(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation64(code, ctx, inst, &Xbyak::CodeGenerator::addpd);
 }
 
+void EmitX64::EmitFPVectorDiv32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::divps);
+}
+
+void EmitX64::EmitFPVectorDiv64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation64(code, ctx, inst, &Xbyak::CodeGenerator::divpd);
+}
+
 void EmitX64::EmitFPVectorSub32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::subps);
 }
