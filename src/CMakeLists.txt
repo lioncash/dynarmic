@@ -13,10 +13,13 @@ add_library(dynarmic
     common/common_types.h
     common/crc32.cpp
     common/crc32.h
+    common/fp_util.h
     common/intrusive_list.h
     common/iterator_util.h
     common/llvm_disassemble.cpp
     common/llvm_disassemble.h
+    common/macro_util.h
+    common/math_util.h
     common/memory_pool.cpp
     common/memory_pool.h
     common/mp.h
