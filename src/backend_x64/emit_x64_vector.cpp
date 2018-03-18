@@ -1138,6 +1138,42 @@ void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
+enum class ShuffleType {
+    LowHalfwords,
+    HighHalfwords,
+    Words
+};
+
+static void VectorShuffleImpl(ShuffleType type, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const u8 mask = args[1].GetImmediateU8();
+
+    if (type == ShuffleType::LowHalfwords) {
+        code.pshuflw(result, operand, mask);
+    } else if (type == ShuffleType::HighHalfwords) {
+        code.pshufhw(result, operand, mask);
+    } else {
+        code.pshufw(result, operand, mask);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorShuffleHighHalfwords(EmitContext& ctx, IR::Inst* inst) {
+    VectorShuffleImpl(ShuffleType::HighHalfwords, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorShuffleLowHalfwords(EmitContext& ctx, IR::Inst* inst) {
+    VectorShuffleImpl(ShuffleType::LowHalfwords, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorShuffleWords(EmitContext& ctx, IR::Inst* inst) {
+    VectorShuffleImpl(ShuffleType::Words, ctx, inst, code);
+}
+
 void EmitX64::EmitVectorSignExtend8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {

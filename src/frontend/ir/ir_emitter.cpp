@@ -1103,6 +1103,18 @@ U128 IREmitter::VectorPopulationCount(const U128& a) {
     return Inst<U128>(Opcode::VectorPopulationCount, a);
 }
 
+U128 IREmitter::VectorShuffleHighHalfwords(const U128& a, u8 mask) {
+    return Inst<U128>(Opcode::VectorShuffleHighHalfwords, a, mask);
+}
+
+U128 IREmitter::VectorShuffleLowHalfwords(const U128& a, u8 mask) {
+    return Inst<U128>(Opcode::VectorShuffleLowHalfwords, a, mask);
+}
+
+U128 IREmitter::VectorShuffleWords(const U128& a, u8 mask) {
+    return Inst<U128>(Opcode::VectorShuffleWords, a, mask);
+}
+
 U128 IREmitter::VectorSignExtend(size_t original_esize, const U128& a) {
     switch (original_esize) {
     case 8:
