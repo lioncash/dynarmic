@@ -160,7 +160,7 @@ static void EmitVectorOperation64(BlockOfCode& code, EmitContext& ctx, IR::Inst*
     code.movaps(xword[code.ABI_PARAM3], xmm_b);
     code.CallFunction(static_cast<void(*)(std::array<u64, 2>&, const std::array<u64, 2>&, const std::array<u64, 2>&)>(
         [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b) {
-            for (size_t i = 0; i < 4; ++i) {
+            for (size_t i = 0; i < 2; ++i) {
                 if (auto r = Common::ProcessNaNs(a[i], b[i])) {
                     result[i] = *r;
                 } else if (Common::IsNaN(result[i])) {
