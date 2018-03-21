@@ -130,6 +130,11 @@ inline T Replicate(T value, size_t element_size) {
 template <typename T>
 inline T RotateRight(T value, size_t amount) {
     amount %= BitSize<T>();
+
+    if (amount == 0) {
+        return value;
+    }
+
     auto x = static_cast<std::make_unsigned_t<T>>(value);
     return static_cast<T>((x >> amount) | (x << (BitSize<T>() - amount)));
 }
