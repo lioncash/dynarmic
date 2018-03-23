@@ -1156,7 +1156,7 @@ static void VectorShuffleImpl(ShuffleType type, EmitContext& ctx, IR::Inst* inst
     } else if (type == ShuffleType::HighHalfwords) {
         code.pshufhw(result, operand, mask);
     } else {
-        code.pshufw(result, operand, mask);
+        code.pshufd(result, operand, mask);
     }
 
     ctx.reg_alloc.DefineValue(inst, result);
