@@ -565,7 +565,7 @@ INST(INS_elt,                "INS (element)",                             "01101
 //INST(FCADD_vec,              "FCADD",                                     "0Q101110zz0mmmmm111r01nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Two-register misc
-//INST(REV64_asimd,            "REV64",                                     "0Q001110zz100000000010nnnnnddddd")
+INST(REV64_asimd,            "REV64",                                     "0Q001110zz100000000010nnnnnddddd")
 INST(REV16_asimd,            "REV16 (vector)",                            "0Q001110zz100000000110nnnnnddddd")
 //INST(SADDLP,                 "SADDLP",                                    "0Q001110zz100000001010nnnnnddddd")
 //INST(SUQADD_2,               "SUQADD",                                    "0Q001110zz100000001110nnnnnddddd")

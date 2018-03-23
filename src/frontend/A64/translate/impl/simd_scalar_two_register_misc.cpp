@@ -55,6 +55,40 @@ bool TranslatorVisitor::REV32_asimd(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::REV64_asimd(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    const u32 zext_size = size.ZeroExtend();
+
+    if (zext_size >= 3) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = 16 << zext_size;
+    const u8 shift = static_cast<u8>(8 << zext_size);
+
+    const IR::U128 data = V(datasize, Vn);
+
+    // TODO: Consider factoring byte swapping code out into its own opcode.
+    //       Technically the rest of the following code can be a PSHUFB
+    //       in the presence of SSSE3.
+    IR::U128 result = ir.VectorOr(ir.VectorLogicalShiftRight(esize, data, shift),
+                                  ir.VectorLogicalShiftLeft(esize, data, shift));
+
+    switch (zext_size) {
+    case 0: // 8-bit elements
+        result = ir.VectorShuffleLowHalfwords(result, 0b00011011);
+        result = ir.VectorShuffleHighHalfwords(result, 0b00011011);
+        break;
+    case 1: // 16-bit elements
+        result = ir.VectorShuffleLowHalfwords(result, 0b01001110);
+        result = ir.VectorShuffleHighHalfwords(result, 0b01001110);
+        break;
+    }
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::UCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     const auto esize = sz ? 64 : 32;
 
