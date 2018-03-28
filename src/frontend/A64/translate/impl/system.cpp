@@ -8,6 +8,24 @@
 
 namespace Dynarmic::A64 {
 
+// Register encodings used by MRS and MSR.
+enum class SystemRegisterEncoding : u32 {
+    // Counter-timer Physical Count register
+    CNTPCT_EL0 = 0b11'011'1110'0000'001,
+    // Cache Type Register
+    CTR_EL0 = 0b11'011'0000'0000'001,
+    // Data Cache Zero ID register
+    DCZID_EL0 = 0b11'011'0000'0000'111,
+    // Floating-point Control Register
+    FPCR = 0b11'011'0100'0100'000,
+    // Floating-point Status Register
+    FPSR = 0b11'011'0100'0100'001,
+    // Read/Write Software Thread ID Register
+    TPIDR_EL0 = 0b11'011'1101'0000'010,
+    // Read-Only Software Thread ID Register
+    TPIDRRO_EL0 = 0b11'011'1101'0000'011,
+};
+
 bool TranslatorVisitor::HINT([[maybe_unused]] Imm<4> CRm, [[maybe_unused]] Imm<3> op2) {
     return true;
 }
@@ -52,45 +70,47 @@ bool TranslatorVisitor::DMB(Imm<4> /*CRm*/) {
 }
 
 bool TranslatorVisitor::MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt) {
-    const size_t sys_reg = concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<size_t>();
+    const auto sys_reg = static_cast<SystemRegisterEncoding>(concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<size_t>());
     switch (sys_reg) {
-    case 0b11'011'1101'0000'010: // TPIDR_EL0
+    case SystemRegisterEncoding::TPIDR_EL0:
         ir.SetTPIDR(X(64, Rt));
         return true;
-    case 0b11'011'0100'0100'000: // FPCR
+    case SystemRegisterEncoding::FPCR:
         ir.SetFPCR(X(32, Rt));
         ir.SetPC(ir.Imm64(ir.current_location->PC() + 4));
         ir.SetTerm(IR::Term::ReturnToDispatch{});
         return false;
-    case 0b11'011'0100'0100'001: // FPSR
+    case SystemRegisterEncoding::FPSR:
         ir.SetFPSR(X(32, Rt));
         return true;
+    default:
+        break;
     }
     return InterpretThisInstruction();
 }
 
 bool TranslatorVisitor::MRS(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt) {
-    const size_t sys_reg = concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<size_t>();
+    const auto sys_reg = static_cast<SystemRegisterEncoding>(concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<size_t>());
     switch (sys_reg) {
-    case 0b11'011'1101'0000'010: // TPIDR_EL0
+    case SystemRegisterEncoding::TPIDR_EL0:
         X(64, Rt, ir.GetTPIDR());
         return true;
-    case 0b11'011'1101'0000'011: // TPIDRRO_EL0
+    case SystemRegisterEncoding::TPIDRRO_EL0:
         X(64, Rt, ir.GetTPIDRRO());
         return true;
-    case 0b11'011'0000'0000'111: // DCZID_EL0
+    case SystemRegisterEncoding::DCZID_EL0:
         X(32, Rt, ir.GetDCZID());
         return true;
-    case 0b11'011'0000'0000'001: // CTR_EL0
+    case SystemRegisterEncoding::CTR_EL0:
         X(32, Rt, ir.GetCTR());
         return true;
-    case 0b11'011'1110'0000'001: // CNTPCT_EL0
+    case SystemRegisterEncoding::CNTPCT_EL0:
         X(64, Rt, ir.GetCNTPCT());
         return true;
-    case 0b11'011'0100'0100'000: // FPCR
+    case SystemRegisterEncoding::FPCR:
         X(32, Rt, ir.GetFPCR());
         return true;
-    case 0b11'011'0100'0100'001: // FPSR
+    case SystemRegisterEncoding::FPSR:
         X(32, Rt, ir.GetFPSR());
         return true;
     }
