@@ -174,7 +174,7 @@ INST(UnallocatedEncoding,    "",                                          "--101
 INST(STURx_LDURx,            "STURx/LDURx",                               "zz111000oo0iiiiiiiii00nnnnnttttt")
 INST(UnallocatedEncoding,    "",                                          "111110001-0---------00----------")
 INST(UnallocatedEncoding,    "",                                          "10111000110---------00----------")
-//INST(PRFM_imm,               "PRFM (immediate)",                          "1111100110iiiiiiiiiiiinnnnnttttt")
+INST(PRFM_imm,               "PRFM (immediate)",                          "1111100110iiiiiiiiiiiinnnnnttttt")
 INST(STUR_fpsimd,            "STUR (SIMD&FP)",                            "zz111100o00iiiiiiiii00nnnnnttttt")
 INST(LDUR_fpsimd,            "LDUR (SIMD&FP)",                            "zz111100o10iiiiiiiii00nnnnnttttt")
 

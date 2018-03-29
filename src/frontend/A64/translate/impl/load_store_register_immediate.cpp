@@ -100,6 +100,12 @@ bool TranslatorVisitor::STURx_LDURx(Imm<2> size, Imm<2> opc, Imm<9> imm9, Reg Rn
     return load_store_register_immediate(wback, postindex, scale, offset, size, opc, Rn, Rt);
 }
 
+bool TranslatorVisitor::PRFM_imm([[maybe_unused]] Imm<12> imm12, [[maybe_unused]] Reg Rn, [[maybe_unused]] Reg Rt) {
+    // Currently a NOP (which is valid behavior, as indicated by
+    // the ARMv8 architecture reference manual)
+    return true;
+}
+
 static bool LoadStoreSIMD(TranslatorVisitor& tv, IREmitter& ir, bool wback, bool postindex, size_t scale, u64 offset, MemOp memop, Reg Rn, Vec Vt) {
     const AccType acctype = AccType::VEC;
     const size_t datasize = 8 << scale;
