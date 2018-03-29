@@ -14,6 +14,9 @@
 
 // 24th August 2016: This code was modified for Dynarmic.
 
+#include <algorithm>
+#include <vector>
+
 #include <xbyak.h>
 
 #include "backend_x64/abi.h"
