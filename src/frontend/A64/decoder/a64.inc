@@ -329,7 +329,7 @@ INST(AESIMC,                 "AESIMC",                                    "01001
 //INST(SHA256H,                "SHA256H",                                   "01011110000mmmmm010000nnnnnddddd")
 //INST(SHA256H2,               "SHA256H2",                                  "01011110000mmmmm010100nnnnnddddd")
 //INST(SHA256SU1,              "SHA256SU1",                                 "01011110000mmmmm011000nnnnnddddd")
-//INST(SHA1H,                  "SHA1H",                                     "0101111000101000000010nnnnnddddd")
+INST(SHA1H,                  "SHA1H",                                     "0101111000101000000010nnnnnddddd")
 //INST(SHA1SU1,                "SHA1SU1",                                   "0101111000101000000110nnnnnddddd")
 //INST(SHA256SU0,              "SHA256SU0",                                 "0101111000101000001010nnnnnddddd")
 

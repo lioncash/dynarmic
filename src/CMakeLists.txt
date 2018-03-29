@@ -106,6 +106,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/simd_scalar_pairwise.cpp
     frontend/A64/translate/impl/simd_scalar_three_same.cpp
     frontend/A64/translate/impl/simd_scalar_two_register_misc.cpp
+    frontend/A64/translate/impl/simd_sha.cpp
     frontend/A64/translate/impl/simd_shift_by_immediate.cpp
     frontend/A64/translate/impl/simd_three_same.cpp
     frontend/A64/translate/impl/simd_two_register_misc.cpp
