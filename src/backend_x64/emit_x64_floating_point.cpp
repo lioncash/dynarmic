@@ -573,7 +573,7 @@ void EmitX64::EmitFPMinNumeric32(EmitContext& ctx, IR::Inst* inst) {
         code.jnae(result_is_result);
         // If result == QNaN && operand != NaN, result = operand.
         code.movaps(result, operand);
-        code.jmp(end);
+        code.jmp(end, code.T_NEAR);
 
         code.L(result_is_result);
         code.movaps(operand, result);
@@ -607,7 +607,7 @@ void EmitX64::EmitFPMinNumeric64(EmitContext& ctx, IR::Inst* inst) {
         code.jnae(result_is_result);
         // If result == QNaN && operand != NaN, result = operand.
         code.movaps(result, operand);
-        code.jmp(end);
+        code.jmp(end, code.T_NEAR);
 
         code.L(result_is_result);
         code.movaps(operand, result);
