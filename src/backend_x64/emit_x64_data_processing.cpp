@@ -1218,17 +1218,13 @@ void EmitX64::EmitZeroExtendHalfToWord(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitZeroExtendByteToLong(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
-    code.movzx(result.cvt32(), result.cvt8()); // x64 zeros upper 32 bits on a 32-bit move
-    ctx.reg_alloc.DefineValue(inst, result);
+    // x64 zeros upper 32 bits on a 32-bit move
+    EmitZeroExtendByteToWord(ctx, inst);
 }
 
 void EmitX64::EmitZeroExtendHalfToLong(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 result = ctx.reg_alloc.UseScratchGpr(args[0]);
-    code.movzx(result.cvt32(), result.cvt16()); // x64 zeros upper 32 bits on a 32-bit move
-    ctx.reg_alloc.DefineValue(inst, result);
+    // x64 zeros upper 32 bits on a 32-bit move
+    EmitZeroExtendHalfToWord(ctx, inst);
 }
 
 void EmitX64::EmitZeroExtendWordToLong(EmitContext& ctx, IR::Inst* inst) {
