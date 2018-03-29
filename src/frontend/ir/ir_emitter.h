@@ -220,6 +220,7 @@ public:
     U128 VectorGreaterSigned(size_t esize, const U128& a, const U128& b);
     U128 VectorGreaterUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorInterleaveLower(size_t esize, const U128& a, const U128& b);
+    U128 VectorInterleaveUpper(size_t esize, const U128& a, const U128& b);
     U128 VectorLessEqualSigned(size_t esize, const U128& a, const U128& b);
     U128 VectorLessEqualUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorLessSigned(size_t esize, const U128& a, const U128& b);

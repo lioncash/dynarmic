@@ -552,6 +552,46 @@ void EmitX64::EmitVectorInterleaveLower64(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorInterleaveLower(code, ctx, inst, 64);
 }
 
+static void EmitVectorInterleaveUpper(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int size) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
+
+    switch (size) {
+    case 8:
+        code.punpckhbw(a, b);
+        break;
+    case 16:
+        code.punpckhwd(a, b);
+        break;
+    case 32:
+        code.punpckhdq(a, b);
+        break;
+    case 64:
+        code.punpckhqdq(a, b);
+        break;
+    }
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorInterleaveUpper8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorInterleaveUpper(code, ctx, inst, 8);
+}
+
+void EmitX64::EmitVectorInterleaveUpper16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorInterleaveUpper(code, ctx, inst, 16);
+}
+
+void EmitX64::EmitVectorInterleaveUpper32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorInterleaveUpper(code, ctx, inst, 32);
+}
+
+void EmitX64::EmitVectorInterleaveUpper64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorInterleaveUpper(code, ctx, inst, 64);
+}
+
 void EmitX64::EmitVectorLogicalShiftLeft8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
