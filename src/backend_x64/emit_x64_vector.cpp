@@ -1285,6 +1285,61 @@ void EmitX64::EmitVectorSub64(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubq);
 }
 
+static void EmitVectorUnsignedAbsoluteDifference(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    switch (esize) {
+    case 8:
+        code.movdqa(temp, x);
+        code.psubusb(temp, y);
+        code.psubusb(y, x);
+        code.por(temp, y);
+        break;
+    case 16:
+        code.movdqa(temp, x);
+        code.psubusw(temp, y);
+        code.psubusw(y, x);
+        code.por(temp, y);
+        break;
+    case 32:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+            code.movdqa(temp, x);
+            code.pminud(x, y);
+            code.pmaxud(temp, y);
+            code.psubd(temp, x);
+        } else {
+            code.movdqa(temp, code.MConst(xword, 0x8000000080000000, 0x8000000080000000));
+            code.pxor(x, temp);
+            code.pxor(y, temp);
+            code.movdqa(temp, x);
+            code.psubd(temp, y);
+            code.pcmpgtd(y, x);
+            code.psrld(y, 1);
+            code.pxor(temp, y);
+            code.psubd(temp, y);
+        }
+        break;
+    }
+
+    ctx.reg_alloc.DefineValue(inst, temp);
+}
+
+void EmitX64::EmitVectorUnsignedAbsoluteDifference8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorUnsignedAbsoluteDifference(8, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorUnsignedAbsoluteDifference16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorUnsignedAbsoluteDifference(16, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorUnsignedAbsoluteDifference32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorUnsignedAbsoluteDifference(32, ctx, inst, code);
+}
+
 void EmitX64::EmitVectorZeroExtend8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);

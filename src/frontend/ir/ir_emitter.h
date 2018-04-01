@@ -244,6 +244,7 @@ public:
     U128 VectorShuffleWords(const U128& a, u8 mask);
     U128 VectorSignExtend(size_t original_esize, const U128& a);
     U128 VectorSub(size_t esize, const U128& a, const U128& b);
+    U128 VectorUnsignedAbsoluteDifference(size_t esize, const U128& a, const U128& b);
     U128 VectorZeroExtend(size_t original_esize, const U128& a);
     U128 VectorZeroUpper(const U128& a);
     U128 ZeroVector();
