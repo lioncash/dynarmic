@@ -227,6 +227,22 @@ bool TranslatorVisitor::UMAX(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::UABD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+    const IR::U128 result = ir.VectorUnsignedAbsoluteDifference(esize, operand1, operand2);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::UMIN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11) {
         return ReservedValue();

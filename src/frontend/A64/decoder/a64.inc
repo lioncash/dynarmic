@@ -754,7 +754,7 @@ INST(USHL_2,                 "USHL",                                      "0Q101
 //INST(UQRSHL_2,               "UQRSHL",                                    "0Q101110zz1mmmmm010111nnnnnddddd")
 INST(UMAX,                   "UMAX",                                      "0Q101110zz1mmmmm011001nnnnnddddd")
 INST(UMIN,                   "UMIN",                                      "0Q101110zz1mmmmm011011nnnnnddddd")
-//INST(UABD,                   "UABD",                                      "0Q101110zz1mmmmm011101nnnnnddddd")
+INST(UABD,                   "UABD",                                      "0Q101110zz1mmmmm011101nnnnnddddd")
 //INST(UABA,                   "UABA",                                      "0Q101110zz1mmmmm011111nnnnnddddd")
 INST(SUB_2,                  "SUB (vector)",                              "0Q101110zz1mmmmm100001nnnnnddddd")
 INST(CMEQ_reg_2,             "CMEQ (register)",                           "0Q101110zz1mmmmm100011nnnnnddddd")
