@@ -52,6 +52,21 @@ bool TranslatorVisitor::CMEQ_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::ABS_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    if (!Q && size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::U128 data = V(datasize, Vn);
+    const IR::U128 result = ir.VectorAbs(esize, data);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::CMLT_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     if (size == 0b11 && !Q) {
         return ReservedValue();
