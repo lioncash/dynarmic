@@ -817,7 +817,7 @@ struct TranslatorVisitor final {
     bool UADDL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
     bool UADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool USUBL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool USUBW(bool Q, Imm<2> size, Reg Rm, Vec Vn, Vec Vd);
+    bool USUBW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool RADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Reg Rd);
     bool UABAL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
     bool RSUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Reg Rd);
