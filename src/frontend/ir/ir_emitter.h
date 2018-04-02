@@ -59,11 +59,11 @@ public:
 
     Block& block;
 
-    U1 Imm1(bool value);
-    U8 Imm8(u8 value);
-    U16 Imm16(u16 value);
-    U32 Imm32(u32 value);
-    U64 Imm64(u64 value);
+    U1 Imm1(bool value) const;
+    U8 Imm8(u8 value) const;
+    U16 Imm16(u16 value) const;
+    U32 Imm32(u32 value) const;
+    U64 Imm64(u64 value) const;
 
     void PushRSB(const LocationDescriptor& return_location);
 

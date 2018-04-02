@@ -10,23 +10,23 @@
 
 namespace Dynarmic::IR {
 
-U1 IREmitter::Imm1(bool imm1) {
+U1 IREmitter::Imm1(bool imm1) const {
     return U1(Value(imm1));
 }
 
-U8 IREmitter::Imm8(u8 imm8) {
+U8 IREmitter::Imm8(u8 imm8) const {
     return U8(Value(imm8));
 }
 
-U16 IREmitter::Imm16(u16 imm16) {
+U16 IREmitter::Imm16(u16 imm16) const {
     return U16(Value(imm16));
 }
 
-U32 IREmitter::Imm32(u32 imm32) {
+U32 IREmitter::Imm32(u32 imm32) const {
     return U32(Value(imm32));
 }
 
-U64 IREmitter::Imm64(u64 imm64) {
+U64 IREmitter::Imm64(u64 imm64) const {
     return U64(Value(imm64));
 }
 
