@@ -254,6 +254,72 @@ void EmitX64::EmitVectorSetElement64(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
+static void EmitVectorAbs(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm data = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    switch (esize) {
+    case 8:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+            code.pabsb(data, data);
+        } else {
+            const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
+            code.pxor(temp, temp);
+            code.psubb(temp, data);
+            code.pminub(data, temp);
+        }
+        break;
+    case 16:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+            code.pabsw(data, data);
+        } else {
+            const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
+            code.pxor(temp, temp);
+            code.psubw(temp, data);
+            code.pmaxsw(data, temp);
+        }
+        break;
+    case 32:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+            code.pabsd(data, data);
+        } else {
+            const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
+            code.movdqa(temp, data);
+            code.psrad(temp, 31);
+            code.pxor(data, temp);
+            code.psubd(data, temp);
+        }
+        break;
+    case 64: {
+        const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
+        code.pshufd(temp, data, 0b11110101);
+        code.psrad(temp, 31);
+        code.pxor(data, temp);
+        code.psubq(data, temp);
+        break;
+    }
+    }
+
+    ctx.reg_alloc.DefineValue(inst, data);
+}
+
+void EmitX64::EmitVectorAbs8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorAbs(8, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorAbs16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorAbs(16, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorAbs32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorAbs(32, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorAbs64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorAbs(64, ctx, inst, code);
+}
+
 void EmitX64::EmitVectorAdd8(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::paddb);
 }

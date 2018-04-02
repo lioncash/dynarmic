@@ -789,6 +789,21 @@ U128 IREmitter::VectorSetElement(size_t esize, const U128& a, size_t index, cons
     }
 }
 
+U128 IREmitter::VectorAbs(size_t esize, const U128& a) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorAbs8, a);
+    case 16:
+        return Inst<U128>(Opcode::VectorAbs16, a);
+    case 32:
+        return Inst<U128>(Opcode::VectorAbs32, a);
+    case 64:
+        return Inst<U128>(Opcode::VectorAbs64, a);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorAdd(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 8:
