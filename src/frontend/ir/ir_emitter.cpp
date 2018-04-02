@@ -872,6 +872,16 @@ U128 IREmitter::VectorEqual(size_t esize, const U128& a, const U128& b) {
     return {};
 }
 
+U128 IREmitter::VectorExtract(const U128& a, const U128& b, size_t position) {
+    ASSERT(position <= 128);
+    return Inst<U128>(Opcode::VectorExtract, a, b, Imm8(static_cast<u8>(position)));
+}
+
+U128 IREmitter::VectorExtractLower(const U128& a, const U128& b, size_t position) {
+    ASSERT(position <= 64);
+    return Inst<U128>(Opcode::VectorExtractLower, a, b, Imm8(static_cast<u8>(position)));
+}
+
 U128 IREmitter::VectorGreaterSigned(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 8:

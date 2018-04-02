@@ -233,6 +233,8 @@ OPCODE(VectorEqual16,                       T::U128,        T::U128,        T::U
 OPCODE(VectorEqual32,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorEqual64,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorEqual128,                      T::U128,        T::U128,        T::U128                         )
+OPCODE(VectorExtract,                       T::U128,        T::U128,        T::U128,        T::U8           )
+OPCODE(VectorExtractLower,                  T::U128,        T::U128,        T::U128,        T::U8           )
 OPCODE(VectorGreaterS8,                     T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorGreaterS16,                    T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorGreaterS32,                    T::U128,        T::U128,        T::U128                         )
