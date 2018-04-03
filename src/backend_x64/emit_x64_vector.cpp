@@ -1276,6 +1276,49 @@ void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
+void EmitX64::EmitVectorReverseBits(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm data = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm high_nibble_reg = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(high_nibble_reg, code.MConst(xword, 0xF0F0F0F0F0F0F0F0, 0xF0F0F0F0F0F0F0F0));
+    code.pand(high_nibble_reg, data);
+    code.pxor(data, high_nibble_reg);
+    code.psrld(high_nibble_reg, 4);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        // High lookup
+        const Xbyak::Xmm high_reversed_reg = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(high_reversed_reg, code.MConst(xword, 0xE060A020C0408000, 0xF070B030D0509010));
+        code.pshufb(high_reversed_reg, data);
+
+        // Low lookup (low nibble equivalent of the above)
+        code.movdqa(data, code.MConst(xword, 0x0E060A020C040800, 0x0F070B030D050901));
+        code.pshufb(data, high_nibble_reg);
+        code.por(data, high_reversed_reg);
+    } else {
+        code.pslld(data, 4);
+        code.por(data, high_nibble_reg);
+
+        code.movdqa(high_nibble_reg, code.MConst(xword, 0xCCCCCCCCCCCCCCCC, 0xCCCCCCCCCCCCCCCC));
+        code.pand(high_nibble_reg, data);
+        code.pxor(data, high_nibble_reg);
+        code.psrld(high_nibble_reg, 2);
+        code.pslld(data, 2);
+        code.por(data, high_nibble_reg);
+
+        code.movdqa(high_nibble_reg, code.MConst(xword, 0xAAAAAAAAAAAAAAAA, 0xAAAAAAAAAAAAAAAA));
+        code.pand(high_nibble_reg, data);
+        code.pxor(data, high_nibble_reg);
+        code.psrld(high_nibble_reg, 1);
+        code.paddd(data, data);
+        code.por(data, high_nibble_reg);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, data);
+}
+
 enum class ShuffleType {
     LowHalfwords,
     HighHalfwords,

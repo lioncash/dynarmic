@@ -296,6 +296,7 @@ OPCODE(VectorPairedAdd16,                   T::U128,        T::U128,        T::U
 OPCODE(VectorPairedAdd32,                   T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorPairedAdd64,                   T::U128,        T::U128,        T::U128                         )
 OPCODE(VectorPopulationCount,               T::U128,        T::U128                                         )
+OPCODE(VectorReverseBits,                   T::U128,        T::U128                                         )
 OPCODE(VectorShuffleHighHalfwords,          T::U128,        T::U128,        T::U8                           )
 OPCODE(VectorShuffleLowHalfwords,           T::U128,        T::U128,        T::U8                           )
 OPCODE(VectorShuffleWords,                  T::U128,        T::U128,        T::U8                           )

@@ -1143,6 +1143,10 @@ U128 IREmitter::VectorPopulationCount(const U128& a) {
     return Inst<U128>(Opcode::VectorPopulationCount, a);
 }
 
+U128 IREmitter::VectorReverseBits(const U128& a) {
+    return Inst<U128>(Opcode::VectorReverseBits, a);
+}
+
 U128 IREmitter::VectorShuffleHighHalfwords(const U128& a, u8 mask) {
     return Inst<U128>(Opcode::VectorShuffleHighHalfwords, a, mask);
 }

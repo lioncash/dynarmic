@@ -242,6 +242,7 @@ public:
     U128 VectorPairedAdd(size_t esize, const U128& a, const U128& b);
     U128 VectorPairedAddLower(size_t esize, const U128& a, const U128& b);
     U128 VectorPopulationCount(const U128& a);
+    U128 VectorReverseBits(const U128& a);
     U128 VectorShuffleHighHalfwords(const U128& a, u8 mask);
     U128 VectorShuffleLowHalfwords(const U128& a, u8 mask);
     U128 VectorShuffleWords(const U128& a, u8 mask);
