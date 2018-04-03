@@ -519,7 +519,7 @@ INST(SUB_1,                  "SUB (vector)",                              "01111
 INST(ZIP1,                   "ZIP1",                                      "0Q001110zz0mmmmm001110nnnnnddddd")
 //INST(UZP2,                   "UZP2",                                      "0Q001110zz0mmmmm010110nnnnnddddd")
 //INST(TRN2,                   "TRN2",                                      "0Q001110zz0mmmmm011010nnnnnddddd")
-//INST(ZIP2,                   "ZIP2",                                      "0Q001110zz0mmmmm011110nnnnnddddd")
+INST(ZIP2,                   "ZIP2",                                      "0Q001110zz0mmmmm011110nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Extract
 //INST(EXT,                    "EXT",                                       "0Q101110000mmmmm0iiii0nnnnnddddd")

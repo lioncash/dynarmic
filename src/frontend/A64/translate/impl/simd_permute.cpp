@@ -24,4 +24,28 @@ bool TranslatorVisitor::ZIP1(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::ZIP2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11 && !Q) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend<size_t>();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+    const IR::U128 result = [&]{
+        if (Q) {
+            return ir.VectorInterleaveUpper(esize, operand1, operand2);
+        }
+
+        // TODO: Urgh.
+        const IR::U128 interleaved = ir.VectorInterleaveLower(esize, operand1, operand2);
+        return ir.VectorZeroUpper(ir.VectorShuffleWords(interleaved, 0b01001110));
+    }();
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64
