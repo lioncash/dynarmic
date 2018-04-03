@@ -91,6 +91,33 @@ bool TranslatorVisitor::SHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::RSHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (immh == 0b0000) {
+        return DecodeError();
+    }
+
+    if (immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << Common::HighestSetBit(immh.ZeroExtend());
+    const size_t source_esize = 2 * esize;
+    const size_t part = Q ? 1 : 0;
+
+    const u8 shift_amount = static_cast<u8>(source_esize - concatenate(immh, immb).ZeroExtend());
+    const u64 round_const = 1ULL << (shift_amount - 1);
+
+    const IR::U128 operand = ir.GetQ(Vn);
+    const IR::U128 round_operand = ir.VectorBroadcast(source_esize, I(source_esize, round_const));
+    const IR::U128 rounded_value = ir.VectorAdd(source_esize, operand, round_operand);
+
+    const IR::U128 result = ir.VectorNarrow(source_esize,
+                                            ir.VectorLogicalShiftRight(source_esize, rounded_value, shift_amount));
+
+    Vpart(64, Vd, part, result);
+    return true;
+}
+
 bool TranslatorVisitor::SSHLL(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     if (immh == 0b0000) {
         return DecodeError();
