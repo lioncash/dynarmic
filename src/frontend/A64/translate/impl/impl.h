@@ -772,14 +772,14 @@ struct TranslatorVisitor final {
     bool CNT(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool SADALP(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool XTN(bool Q, Imm<2> size, Vec Vn, Vec Vd);
-    bool FCVTN(bool Q, bool sz, Vec Vn, Reg Rd);
-    bool FCVTL(bool Q, bool sz, Reg Rn, Vec Vd);
+    bool FCVTN(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FCVTL(bool Q, bool sz, Vec Vn, Vec Vd);
     bool URECPE(bool Q, bool sz, Vec Vn, Vec Vd);
     bool REV32_asimd(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool UADDLP(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool CLZ_asimd(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool UADALP(bool Q, Imm<2> size, Vec Vn, Vec Vd);
-    bool SHLL(bool Q, Imm<2> size, Reg Rn, Vec Vd);
+    bool SHLL(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool NOT(bool Q, Vec Vn, Vec Vd);
     bool RBIT_asimd(bool Q, Vec Vn, Vec Vd);
     bool URSQRTE(bool Q, bool sz, Vec Vn, Vec Vd);
@@ -802,29 +802,29 @@ struct TranslatorVisitor final {
     bool UMINV(bool Q, Imm<2> size, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD three different
-    bool SADDL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
+    bool SADDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool SSUBL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
+    bool SSUBL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SSUBW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool ADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Reg Rd);
-    bool SABAL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool SUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Reg Rd);
-    bool SABDL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool SMLAL_vec(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool SMLSL_vec(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool SMULL_vec(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool PMULL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool UADDL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
+    bool ADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SABAL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SABDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SMLAL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SMLSL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SMULL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool PMULL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool UADDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool UADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool USUBL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
+    bool USUBL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool USUBW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool RADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Reg Rd);
-    bool UABAL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool RSUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Reg Rd);
-    bool UABDL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool UMLAL_vec(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool UMLSL_vec(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool UMULL_vec(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
+    bool RADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool UABAL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool RSUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool UABDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool UMLAL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool UMLSL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool UMULL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD three same
     bool SHADD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
@@ -839,12 +839,12 @@ struct TranslatorVisitor final {
     bool SMAXP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SMINP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool ADDP_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool FMLAL_vec_1(bool Q, bool sz, Reg Rm, Reg Rn, Vec Vd);
-    bool FMLAL_vec_2(bool Q, bool sz, Reg Rm, Reg Rn, Vec Vd);
+    bool FMLAL_vec_1(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMLAL_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool AND_asimd(bool Q, Vec Vm, Vec Vn, Vec Vd);
     bool BIC_asimd_reg(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMLSL_vec_1(bool Q, bool sz, Reg Rm, Reg Rn, Vec Vd);
-    bool FMLSL_vec_2(bool Q, bool sz, Reg Rm, Reg Rn, Vec Vd);
+    bool FMLSL_vec_1(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMLSL_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool ORR_asimd_reg(bool Q, Vec Vm, Vec Vn, Vec Vd);
     bool ORN_asimd(bool Q, Vec Vm, Vec Vn, Vec Vd);
     bool UHADD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
@@ -865,7 +865,7 @@ struct TranslatorVisitor final {
 
     // Data Processing - FP and SIMD - SIMD modified immediate
     bool MOVI(bool Q, bool op, Imm<1> a, Imm<1> b, Imm<1> c, Imm<4> cmode, Imm<1> d, Imm<1> e, Imm<1> f, Imm<1> g, Imm<1> h, Vec Vd);
-    bool FMOV_2(bool Q, Imm<1> a, Imm<1> b, Imm<1> c, Imm<1> d, Imm<1> e, Imm<1> f, Imm<1> g, Imm<1> h, Reg Rd);
+    bool FMOV_2(bool Q, Imm<1> a, Imm<1> b, Imm<1> c, Imm<1> d, Imm<1> e, Imm<1> f, Imm<1> g, Imm<1> h, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Shift by immediate
     bool SSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
@@ -874,10 +874,10 @@ struct TranslatorVisitor final {
     bool SRSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SHL_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SQSHL_imm_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool RSHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool SQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool SQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
+    bool SHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool RSHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SSHLL(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SCVTF_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool FCVTZS_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
@@ -889,29 +889,29 @@ struct TranslatorVisitor final {
     bool SLI_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SQSHLU_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool UQSHL_imm_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SQSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool SQRSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool UQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool UQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
+    bool SQSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SQRSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool UQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool UQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool USHLL(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool UCVTF_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool FCVTZU_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD x indexed element
-    bool SMLAL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
-    bool SMLSL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
+    bool SMLAL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool SMLSL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool MUL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool SMULL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
+    bool SMULL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool SDOT_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMLAL_elt_1(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
-    bool FMLAL_elt_2(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
-    bool FMLSL_elt_1(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
-    bool FMLSL_elt_2(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
+    bool FMLAL_elt_1(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool FMLAL_elt_2(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool FMLSL_elt_1(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool FMLSL_elt_2(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool MLA_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool UMLAL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
+    bool UMLAL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool MLS_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool UMLSL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
-    bool UMULL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
+    bool UMLSL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool UMULL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool UDOT_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool FCMLA_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, Imm<2> rot, bool H, Vec Vn, Vec Vd);
 
