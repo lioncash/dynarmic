@@ -38,9 +38,9 @@ bool ArmTranslatorVisitor::arm_LDC(Cond cond, bool p, bool u, bool d, bool w, Re
     // LDC{2}{L} <coproc_no>, <CRd>, [<Rn>], #+/-<imm32>
     // LDC{2}{L} <coproc_no>, <CRd>, [<Rn>], <imm8>
     if (two || ConditionPassed(cond)) {
-        auto reg_n = ir.GetRegister(n);
-        auto offset_address = add ? ir.Add(reg_n, ir.Imm32(imm32)) : ir.Sub(reg_n, ir.Imm32(imm32));
-        auto address = index ? offset_address : reg_n;
+        const IR::U32 reg_n = ir.GetRegister(n);
+        const IR::U32 offset_address = add ? ir.Add(reg_n, ir.Imm32(imm32)) : ir.Sub(reg_n, ir.Imm32(imm32));
+        const IR::U32 address = index ? offset_address : reg_n;
         ir.CoprocLoadWords(coproc_no, two, d, CRd, address, has_option, imm8);
         if (wback) {
             ir.SetRegister(n, offset_address);
@@ -134,9 +134,9 @@ bool ArmTranslatorVisitor::arm_STC(Cond cond, bool p, bool u, bool d, bool w, Re
     // STC{2}{L} <coproc>, <CRd>, [<Rn>], #+/-<imm32>
     // STC{2}{L} <coproc>, <CRd>, [<Rn>], <imm8>
     if (two || ConditionPassed(cond)) {
-        auto reg_n = ir.GetRegister(n);
-        auto offset_address = add ? ir.Add(reg_n, ir.Imm32(imm32)) : ir.Sub(reg_n, ir.Imm32(imm32));
-        auto address = index ? offset_address : reg_n;
+        const IR::U32 reg_n = ir.GetRegister(n);
+        const IR::U32 offset_address = add ? ir.Add(reg_n, ir.Imm32(imm32)) : ir.Sub(reg_n, ir.Imm32(imm32));
+        const IR::U32 address = index ? offset_address : reg_n;
         ir.CoprocStoreWords(coproc_no, two, d, CRd, address, has_option, imm8);
         if (wback) {
             ir.SetRegister(n, offset_address);

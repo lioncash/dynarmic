@@ -652,9 +652,9 @@ bool ArmTranslatorVisitor::vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool 
 
     // VSTM<mode>.F64 <Rn>{!}, <list of double registers>
     if (ConditionPassed(cond)) {
-        auto address = u ? ir.GetRegister(n) : ir.Sub(ir.GetRegister(n), ir.Imm32(imm32));
+        auto address = u ? ir.GetRegister(n) : IR::U32(ir.Sub(ir.GetRegister(n), ir.Imm32(imm32)));
         if (w)
-            ir.SetRegister(n, u ? ir.Add(address, ir.Imm32(imm32)) : address);
+            ir.SetRegister(n, u ? IR::U32(ir.Add(address, ir.Imm32(imm32))) : address);
         for (size_t i = 0; i < regs; i++) {
             auto value = ir.GetExtendedRegister(d + i);
             auto word1 = ir.LeastSignificantWord(value);
@@ -688,9 +688,9 @@ bool ArmTranslatorVisitor::vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool 
 
     // VSTM<mode>.F32 <Rn>{!}, <list of single registers>
     if (ConditionPassed(cond)) {
-        auto address = u ? ir.GetRegister(n) : ir.Sub(ir.GetRegister(n), ir.Imm32(imm32));
+        auto address = u ? ir.GetRegister(n) : IR::U32(ir.Sub(ir.GetRegister(n), ir.Imm32(imm32)));
         if (w)
-            ir.SetRegister(n, u ? ir.Add(address, ir.Imm32(imm32)) : address);
+            ir.SetRegister(n, u ? IR::U32(ir.Add(address, ir.Imm32(imm32))) : address);
         for (size_t i = 0; i < regs; i++) {
             auto word = ir.GetExtendedRegister(d + i);
             ir.WriteMemory32(address, word);
@@ -719,9 +719,9 @@ bool ArmTranslatorVisitor::vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool 
 
     // VLDM<mode>.F64 <Rn>{!}, <list of double registers>
     if (ConditionPassed(cond)) {
-        auto address = u ? ir.GetRegister(n) : ir.Sub(ir.GetRegister(n), ir.Imm32(imm32));
+        auto address = u ? ir.GetRegister(n) : IR::U32(ir.Sub(ir.GetRegister(n), ir.Imm32(imm32)));
         if (w)
-            ir.SetRegister(n, u ? ir.Add(address, ir.Imm32(imm32)) : address);
+            ir.SetRegister(n, u ? IR::U32(ir.Add(address, ir.Imm32(imm32))) : address);
         for (size_t i = 0; i < regs; i++) {
             auto word1 = ir.ReadMemory32(address);
             address = ir.Add(address, ir.Imm32(4));
@@ -753,9 +753,9 @@ bool ArmTranslatorVisitor::vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool 
 
     // VLDM<mode>.F32 <Rn>{!}, <list of single registers>
     if (ConditionPassed(cond)) {
-        auto address = u ? ir.GetRegister(n) : ir.Sub(ir.GetRegister(n), ir.Imm32(imm32));
+        auto address = u ? ir.GetRegister(n) : IR::U32(ir.Sub(ir.GetRegister(n), ir.Imm32(imm32)));
         if (w)
-            ir.SetRegister(n, u ? ir.Add(address, ir.Imm32(imm32)) : address);
+            ir.SetRegister(n, u ? IR::U32(ir.Add(address, ir.Imm32(imm32))) : address);
         for (size_t i = 0; i < regs; i++) {
             auto word = ir.ReadMemory32(address);
             address = ir.Add(address, ir.Imm32(4));

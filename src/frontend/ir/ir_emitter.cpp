@@ -217,14 +217,6 @@ U32U64 IREmitter::AddWithCarry(const U32U64& a, const U32U64& b, const U1& carry
     }
 }
 
-U32 IREmitter::Add(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::Add32, a, b, Imm1(0));
-}
-
-U64 IREmitter::Add(const U64& a, const U64& b) {
-    return Inst<U64>(Opcode::Add64, a, b, Imm1(0));
-}
-
 U32U64 IREmitter::Add(const U32U64& a, const U32U64& b) {
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
@@ -251,14 +243,6 @@ U32U64 IREmitter::SubWithCarry(const U32U64& a, const U32U64& b, const U1& carry
     }
 }
 
-U32 IREmitter::Sub(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::Sub32, a, b, Imm1(1));
-}
-
-U64 IREmitter::Sub(const U64& a, const U64& b) {
-    return Inst<U64>(Opcode::Sub64, a, b, Imm1(1));
-}
-
 U32U64 IREmitter::Sub(const U32U64& a, const U32U64& b) {
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
@@ -266,14 +250,6 @@ U32U64 IREmitter::Sub(const U32U64& a, const U32U64& b) {
     } else {
         return Inst<U64>(Opcode::Sub64, a, b, Imm1(1));
     }
-}
-
-U32 IREmitter::Mul(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::Mul32, a, b);
-}
-
-U64 IREmitter::Mul(const U64& a, const U64& b) {
-    return Inst<U64>(Opcode::Mul64, a, b);
 }
 
 U32U64 IREmitter::Mul(const U32U64& a, const U32U64& b) {
@@ -292,14 +268,6 @@ U64 IREmitter::SignedMultiplyHigh(const U64& a, const U64& b) {
     return Inst<U64>(Opcode::SignedMultiplyHigh64, a, b);
 }
 
-U32 IREmitter::UnsignedDiv(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::UnsignedDiv32, a, b);
-}
-
-U64 IREmitter::UnsignedDiv(const U64& a, const U64& b) {
-    return Inst<U64>(Opcode::UnsignedDiv64, a, b);
-}
-
 U32U64 IREmitter::UnsignedDiv(const U32U64& a, const U32U64& b) {
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::UnsignedDiv32, a, b);
@@ -308,24 +276,12 @@ U32U64 IREmitter::UnsignedDiv(const U32U64& a, const U32U64& b) {
     return Inst<U64>(Opcode::UnsignedDiv64, a, b);
 }
 
-U32 IREmitter::SignedDiv(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::SignedDiv32, a, b);
-}
-
-U64 IREmitter::SignedDiv(const U64& a, const U64& b) {
-    return Inst<U64>(Opcode::SignedDiv64, a, b);
-}
-
 U32U64 IREmitter::SignedDiv(const U32U64& a, const U32U64& b) {
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::SignedDiv32, a, b);
     }
 
     return Inst<U64>(Opcode::SignedDiv64, a, b);
-}
-
-U32 IREmitter::And(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::And32, a, b);
 }
 
 U32U64 IREmitter::And(const U32U64& a, const U32U64& b) {
@@ -337,10 +293,6 @@ U32U64 IREmitter::And(const U32U64& a, const U32U64& b) {
     }
 }
 
-U32 IREmitter::Eor(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::Eor32, a, b);
-}
-
 U32U64 IREmitter::Eor(const U32U64& a, const U32U64& b) {
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
@@ -350,10 +302,6 @@ U32U64 IREmitter::Eor(const U32U64& a, const U32U64& b) {
     }
 }
 
-U32 IREmitter::Or(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::Or32, a, b);
-}
-
 U32U64 IREmitter::Or(const U32U64& a, const U32U64& b) {
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
@@ -361,10 +309,6 @@ U32U64 IREmitter::Or(const U32U64& a, const U32U64& b) {
     } else {
         return Inst<U64>(Opcode::Or64, a, b);
     }
-}
-
-U32 IREmitter::Not(const U32& a) {
-    return Inst<U32>(Opcode::Not32, a);
 }
 
 U32U64 IREmitter::Not(const U32U64& a) {
@@ -489,28 +433,12 @@ U64 IREmitter::ByteReverseDual(const U64& a) {
     return Inst<U64>(Opcode::ByteReverseDual, a);
 }
 
-U32 IREmitter::CountLeadingZeros(const U32& a) {
-    return Inst<U32>(Opcode::CountLeadingZeros32, a);
-}
-
-U64 IREmitter::CountLeadingZeros(const U64& a) {
-    return Inst<U64>(Opcode::CountLeadingZeros64, a);
-}
-
 U32U64 IREmitter::CountLeadingZeros(const U32U64& a) {
     if (a.GetType() == IR::Type::U32) {
         return Inst<U32>(Opcode::CountLeadingZeros32, a);
     }
 
     return Inst<U64>(Opcode::CountLeadingZeros64, a);
-}
-
-U32 IREmitter::ExtractRegister(const U32& a, const U32& b, const U8& lsb) {
-    return Inst<U32>(Opcode::ExtractRegister32, a, b, lsb);
-}
-
-U64 IREmitter::ExtractRegister(const U64& a, const U64& b, const U8& lsb) {
-    return Inst<U64>(Opcode::ExtractRegister64, a, b, lsb);
 }
 
 U32U64 IREmitter::ExtractRegister(const U32U64& a, const U32U64& b, const U8& lsb) {
