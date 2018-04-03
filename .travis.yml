@@ -24,6 +24,7 @@ matrix:
           packages:
             - gcc-7
             - g++-7
+            - llvm-dev
       install: ./.travis/test-a64-on-x86_64-linux/deps.sh
       script: ./.travis/test-a64-on-x86_64-linux/build.sh
     - env: NAME="Test - SSE3 only"
@@ -36,6 +37,7 @@ matrix:
           packages:
             - gcc-7
             - g++-7
+            - llvm-dev
       install: ./.travis/sse3-only-on-x86_64-linux/deps.sh
       script: ./.travis/sse3-only-on-x86_64-linux/build.sh
     - env: NAME="macOS Build"
