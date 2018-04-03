@@ -638,7 +638,7 @@ INST(NEG_2,                  "NEG (vector)",                              "0Q101
 //INST(UCVTF_int_3,            "UCVTF (vector, integer)",                   "0Q10111001111001110110nnnnnddddd")
 //INST(UCVTF_int_4,            "UCVTF (vector, integer)",                   "0Q1011100z100001110110nnnnnddddd")
 INST(NOT,                    "NOT",                                       "0Q10111000100000010110nnnnnddddd")
-//INST(RBIT_asimd,             "RBIT (vector)",                             "0Q10111001100000010110nnnnnddddd")
+INST(RBIT_asimd,             "RBIT (vector)",                             "0Q10111001100000010110nnnnnddddd")
 //INST(FNEG_1,                 "FNEG (vector)",                             "0Q10111011111000111110nnnnnddddd")
 //INST(FNEG_2,                 "FNEG (vector)",                             "0Q1011101z100000111110nnnnnddddd")
 //INST(FRINTI_1,               "FRINTI (vector)",                           "0Q10111011111001100110nnnnnddddd")

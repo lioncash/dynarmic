@@ -125,4 +125,14 @@ bool TranslatorVisitor::NOT(bool Q, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::RBIT_asimd(bool Q, Vec Vn, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 data = V(datasize, Vn);
+    const IR::U128 result = ir.VectorReverseBits(data);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64
