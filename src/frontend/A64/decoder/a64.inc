@@ -676,7 +676,7 @@ INST(NOT,                    "NOT",                                       "0Q101
 
 // Data Processing - FP and SIMD - SIMD three different
 //INST(SADDL,                  "SADDL, SADDL2",                             "0Q001110zz1mmmmm000000nnnnnddddd")
-//INST(SADDW,                  "SADDW, SADDW2",                             "0Q001110zz1mmmmm000100nnnnnddddd")
+INST(SADDW,                  "SADDW, SADDW2",                             "0Q001110zz1mmmmm000100nnnnnddddd")
 //INST(SSUBL,                  "SSUBL, SSUBL2",                             "0Q001110zz1mmmmm001000nnnnnddddd")
 //INST(SSUBW,                  "SSUBW, SSUBW2",                             "0Q001110zz1mmmmm001100nnnnnddddd")
 //INST(ADDHN,                  "ADDHN, ADDHN2",                             "0Q001110zz1mmmmm010000nnnnnddddd")

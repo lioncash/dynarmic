@@ -8,6 +8,22 @@
 
 namespace Dynarmic::A64 {
 
+bool TranslatorVisitor::SADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t part = Q ? 1 : 0;
+
+    const IR::U128 operand1 = V(128, Vn);
+    const IR::U128 operand2 = ir.VectorSignExtend(esize, Vpart(64, Vm, part));
+    const IR::U128 result = ir.VectorAdd(esize * 2, operand1, operand2);
+
+    V(128, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::UADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11) {
         return ReservedValue();

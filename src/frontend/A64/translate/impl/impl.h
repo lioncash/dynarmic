@@ -803,7 +803,7 @@ struct TranslatorVisitor final {
 
     // Data Processing - FP and SIMD - SIMD three different
     bool SADDL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool SADDW(bool Q, Imm<2> size, Reg Rm, Vec Vn, Vec Vd);
+    bool SADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SSUBL(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
     bool SSUBW(bool Q, Imm<2> size, Reg Rm, Vec Vn, Vec Vd);
     bool ADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Reg Rd);
