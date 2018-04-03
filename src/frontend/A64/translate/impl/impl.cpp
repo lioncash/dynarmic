@@ -116,8 +116,12 @@ u64 TranslatorVisitor::AdvSIMDExpandImm(bool op, Imm<4> cmode, Imm<8> imm8) {
     return 0;
 }
 
-IR::U32U64 TranslatorVisitor::I(size_t bitsize, u64 value) {
+IR::UAny TranslatorVisitor::I(size_t bitsize, u64 value) {
     switch (bitsize) {
+    case 8:
+        return ir.Imm8(static_cast<u8>(value));
+    case 16:
+        return ir.Imm16(static_cast<u16>(value));
     case 32:
         return ir.Imm32(static_cast<u32>(value));
     case 64:
