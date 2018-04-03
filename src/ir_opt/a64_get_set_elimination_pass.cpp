@@ -19,7 +19,7 @@ namespace Dynarmic::Optimization {
 void A64GetSetElimination(IR::Block& block) {
     using Iterator = IR::Block::iterator;
 
-    enum TrackingType {
+    enum class TrackingType {
         W, X,
         S, D, Q,
         SP, NZCV,
