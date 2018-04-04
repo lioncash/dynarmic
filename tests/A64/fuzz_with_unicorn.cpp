@@ -61,7 +61,7 @@ static bool ShouldTestInst(u32 instruction, u64 pc, bool is_last_inst) {
 
 static u32 GenRandomInst(u64 pc, bool is_last_inst) {
     static const std::vector<InstructionGenerator> instruction_generators = []{
-        const std::vector<std::tuple<const char*, const char*>> list {
+        const std::vector<std::tuple<std::string, const char*>> list {
 #define INST(fn, name, bitstring) {#fn, bitstring},
 #include "frontend/A64/decoder/a64.inc"
 #undef INST
@@ -71,8 +71,6 @@ static u32 GenRandomInst(u64 pc, bool is_last_inst) {
 
         // List of instructions not to test
         const std::vector<std::string> do_not_test {
-            // Unallocated encodings are invalid.
-            "UnallocatedEncoding",
             // Unimplemented in QEMU
             "STLLR",
             // Unimplemented in QEMU
@@ -82,6 +80,9 @@ static u32 GenRandomInst(u64 pc, bool is_last_inst) {
         };
 
         for (const auto& [fn, bitstring] : list) {
+            if (fn == "UnallocatedEncoding") {
+                continue;
+            }
             if (std::find(do_not_test.begin(), do_not_test.end(), fn) != do_not_test.end()) {
                 InstructionGenerator::AddInvalidInstruction(bitstring);
                 continue;
