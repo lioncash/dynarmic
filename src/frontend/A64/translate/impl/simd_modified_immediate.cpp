@@ -76,4 +76,36 @@ bool TranslatorVisitor::MOVI(bool Q, bool op, Imm<1> a, Imm<1> b, Imm<1> c, Imm<
     return true;
 }
 
-} // namespace Dynarmic::A64
+bool TranslatorVisitor::FMOV_2(bool Q, bool op, Imm<1> a, Imm<1> b, Imm<1> c, Imm<1> d, Imm<1> e, Imm<1> f, Imm<1> g, Imm<1> h, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+
+    if (op && !Q) {
+        return UnallocatedEncoding();
+    }
+
+    const u64 imm64 = AdvSIMDExpandImm(op, Imm<4>{0b1111}, concatenate(a, b, c, d, e, f, g, h));
+
+    const IR::U128 imm = datasize == 64 ? ir.ZeroExtendToQuad(ir.Imm64(imm64)) : ir.VectorBroadcast(64, ir.Imm64(imm64));
+    V(128, Vd, imm);
+    return true;
+}
+
+bool TranslatorVisitor::FMOV_3(bool Q, Imm<1> a, Imm<1> b, Imm<1> c, Imm<1> d, Imm<1> e, Imm<1> f, Imm<1> g, Imm<1> h, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+
+    const Imm<8> imm8 = concatenate(a, b, c, d, e, f, g, h);
+    const u16 imm16 = [&imm8]{
+        u16 imm16 = 0;
+        imm16 |= imm8.Bit<7>() ? 0x8000 : 0;
+        imm16 |= imm8.Bit<6>() ? 0x3000 : 0x4000;
+        imm16 |= imm8.Bits<0, 5, u16>() << 6;
+        return imm16;
+    }();
+    const u64 imm64 = Common::Replicate<u64>(imm16, 16);
+
+    const IR::U128 imm = datasize == 64 ? ir.ZeroExtendToQuad(ir.Imm64(imm64)) : ir.VectorBroadcast(64, ir.Imm64(imm64));
+    V(128, Vd, imm);
+    return true;
+}
+
+} // namespace Dynarmic::A6

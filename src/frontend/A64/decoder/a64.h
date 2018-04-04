@@ -40,6 +40,7 @@ std::vector<Matcher<Visitor>> GetDecodeTable() {
     const std::set<std::string> comes_first {
         "MOVI, MVNI, ORR, BIC (vector, immediate)",
         "FMOV (vector, immediate)",
+        "Unallocated SIMD modified immediate",
     };
 
     std::stable_partition(table.begin(), table.end(), [&](const auto& matcher) {

@@ -784,7 +784,9 @@ INST(BIF,                    "BIF",                                       "0Q101
 
 // Data Processing - FP and SIMD - SIMD modified immediate
 INST(MOVI,                   "MOVI, MVNI, ORR, BIC (vector, immediate)",  "0Qo0111100000abcmmmm01defghddddd")
-//INST(FMOV_2,                 "FMOV (vector, immediate)",                  "0Q00111100000abc111111defghddddd")
+INST(FMOV_2,                 "FMOV (vector, immediate)",                  "0Qo0111100000abc111101defghddddd")
+INST(FMOV_3,                 "FMOV (vector, immediate)",                  "0Q00111100000abc111111defghddddd")
+INST(UnallocatedEncoding,    "Unallocated SIMD modified immediate",       "0--0111100000-------11----------")
 
 // Data Processing - FP and SIMD - SIMD Shift by immediate
 INST(SSHR_2,                 "SSHR",                                      "0Q0011110IIIIiii000001nnnnnddddd")
