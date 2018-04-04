@@ -139,7 +139,13 @@ bool TranslatorVisitor::SSHLL(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) 
     return true;
 }
 
-static void UnsignedRoundingShiftRight(TranslatorVisitor& v, bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+enum class UnsignedRoundingShiftExtraBehavior {
+    None,
+    Accumulate
+};
+
+static void UnsignedRoundingShiftRight(TranslatorVisitor& v, bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+                                       UnsignedRoundingShiftExtraBehavior behavior) {
     const size_t datasize = Q ? 128 : 64;
     const size_t esize = 8 << Common::HighestSetBit(immh.ZeroExtend());
     const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
@@ -150,7 +156,12 @@ static void UnsignedRoundingShiftRight(TranslatorVisitor& v, bool Q, Imm<4> immh
     const IR::U128 round_correction = v.ir.VectorEqual(esize, v.ir.VectorAnd(operand, round_const), round_const);
 
     const IR::U128 result = v.ir.VectorLogicalShiftRight(esize, operand, shift_amount);
-    const IR::U128 corrected_result = v.ir.VectorSub(esize, result, round_correction);
+    IR::U128 corrected_result = v.ir.VectorSub(esize, result, round_correction);
+
+    if (behavior == UnsignedRoundingShiftExtraBehavior::Accumulate) {
+        const IR::U128 accumulator = v.V(datasize, Vd);
+        corrected_result = v.ir.VectorAdd(esize, accumulator, corrected_result);
+    }
 
     v.V(datasize, Vd, corrected_result);
 }
@@ -164,7 +175,20 @@ bool TranslatorVisitor::URSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd
         return ReservedValue();
     }
 
-    UnsignedRoundingShiftRight(*this, Q, immh, immb, Vn, Vd);
+    UnsignedRoundingShiftRight(*this, Q, immh, immb, Vn, Vd, UnsignedRoundingShiftExtraBehavior::None);
+    return true;
+}
+
+bool TranslatorVisitor::URSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (immh == 0b0000) {
+        return DecodeError();
+    }
+
+    if (!Q && immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    UnsignedRoundingShiftRight(*this, Q, immh, immb, Vn, Vd, UnsignedRoundingShiftExtraBehavior::Accumulate);
     return true;
 }
 
