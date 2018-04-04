@@ -804,7 +804,7 @@ INST(SSHLL,                  "SSHLL, SSHLL2",                             "0Q001
 //INST(FCVTZS_fix_2,           "FCVTZS (vector, fixed-point)",              "0Q0011110IIIIiii111111nnnnnddddd")
 INST(USHR_2,                 "USHR",                                      "0Q1011110IIIIiii000001nnnnnddddd")
 INST(USRA_2,                 "USRA",                                      "0Q1011110IIIIiii000101nnnnnddddd")
-//INST(URSHR_2,                "URSHR",                                     "0Q1011110IIIIiii001001nnnnnddddd")
+INST(URSHR_2,                "URSHR",                                     "0Q1011110IIIIiii001001nnnnnddddd")
 //INST(URSRA_2,                "URSRA",                                     "0Q1011110IIIIiii001101nnnnnddddd")
 //INST(SRI_2,                  "SRI",                                       "0Q1011110IIIIiii010001nnnnnddddd")
 //INST(SLI_2,                  "SLI",                                       "0Q1011110IIIIiii010101nnnnnddddd")
