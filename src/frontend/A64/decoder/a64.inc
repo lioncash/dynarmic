@@ -942,4 +942,4 @@ INST(FCSEL_float,            "FCSEL",                                     "00011
 INST(FMADD_float,            "FMADD",                                     "00011111yy0mmmmm0aaaaannnnnddddd")
 INST(FMSUB_float,            "FMSUB",                                     "00011111yy0mmmmm1aaaaannnnnddddd")
 INST(FNMADD_float,           "FNMADD",                                    "00011111yy1mmmmm0aaaaannnnnddddd")
-//INST(FNMSUB_float,           "FNMSUB",                                    "00011111yy1mmmmm1aaaaannnnnddddd")
+INST(FNMSUB_float,           "FNMSUB",                                    "00011111yy1mmmmm1aaaaannnnnddddd")
