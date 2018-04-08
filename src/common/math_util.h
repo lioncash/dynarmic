@@ -16,7 +16,7 @@ namespace Common {
  * do not work when the /permissive- flag is enabled.
  */
 template<typename T, typename... Ts>
-constexpr T Sum(T first, Ts ...rest) {
+constexpr T Sum(T first, Ts&&... rest) {
     if constexpr (sizeof...(rest) == 0) {
         return first;
     } else {
