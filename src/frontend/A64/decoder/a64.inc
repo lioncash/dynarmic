@@ -869,7 +869,7 @@ INST(RAX1,                   "RAX1",                                      "11001
 // Data Processing - FP and SIMD - Cryptographic four register
 INST(EOR3,                   "EOR3",                                      "11001110000mmmmm0aaaaannnnnddddd")
 INST(BCAX,                   "BCAX",                                      "11001110001mmmmm0aaaaannnnnddddd")
-//INST(SM3SS1,                 "SM3SS1",                                    "11001110010mmmmm0aaaaannnnnddddd")
+INST(SM3SS1,                 "SM3SS1",                                    "11001110010mmmmm0aaaaannnnnddddd")
 
 // Data Processing - FP and SIMD - SHA512 two register
 //INST(SHA512SU0,              "SHA512SU0",                                 "1100111011000000100000nnnnnddddd")
