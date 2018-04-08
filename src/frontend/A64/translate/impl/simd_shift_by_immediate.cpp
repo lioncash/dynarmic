@@ -304,6 +304,32 @@ bool TranslatorVisitor::USHLL(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) 
     return true;
 }
 
+bool TranslatorVisitor::SRI_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (immh == 0b0000) {
+        return DecodeError();
+    }
+
+    if (!Q && immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << Common::HighestSetBit(immh.ZeroExtend());
+    const size_t datasize = Q ? 128 : 64;
+
+    const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend<u8>());
+    const u64 mask = shift_amount == esize ? 0 : Common::Ones<u64>(esize) >> shift_amount;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vd);
+
+    const IR::U128 shifted = ir.VectorLogicalShiftRight(esize, operand1, shift_amount);
+    const IR::U128 mask_vec = ir.VectorBroadcast(esize, I(esize, mask));
+    const IR::U128 result = ir.VectorOr(ir.VectorAnd(operand2, ir.VectorNot(mask_vec)), shifted);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SLI_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     if (immh == 0b0000) {
         return DecodeError();
