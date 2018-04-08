@@ -791,7 +791,7 @@ INST(UnallocatedEncoding,    "Unallocated SIMD modified immediate",       "0--01
 // Data Processing - FP and SIMD - SIMD Shift by immediate
 INST(SSHR_2,                 "SSHR",                                      "0Q0011110IIIIiii000001nnnnnddddd")
 INST(SSRA_2,                 "SSRA",                                      "0Q0011110IIIIiii000101nnnnnddddd")
-//INST(SRSHR_2,                "SRSHR",                                     "0Q0011110IIIIiii001001nnnnnddddd")
+INST(SRSHR_2,                "SRSHR",                                     "0Q0011110IIIIiii001001nnnnnddddd")
 //INST(SRSRA_2,                "SRSRA",                                     "0Q0011110IIIIiii001101nnnnnddddd")
 INST(SHL_2,                  "SHL",                                       "0Q0011110IIIIiii010101nnnnnddddd")
 //INST(SQSHL_imm_2,            "SQSHL (immediate)",                         "0Q0011110IIIIiii011101nnnnnddddd")

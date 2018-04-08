@@ -45,6 +45,41 @@ bool TranslatorVisitor::SSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd)
     return true;
 }
 
+static void SignedRoundingShiftRight(TranslatorVisitor& v, bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+                                     ShiftExtraBehavior behavior) {
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = 8 << Common::HighestSetBit(immh.ZeroExtend());
+    const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
+    const u64 round_value = 1ULL << (shift_amount - 1);
+
+    const IR::U128 operand = v.V(datasize, Vn);
+    const IR::U128 round_const = v.ir.VectorBroadcast(esize, v.I(esize, round_value));
+    const IR::U128 round_correction = v.ir.VectorEqual(esize, v.ir.VectorAnd(operand, round_const), round_const);
+
+    const IR::U128 result = v.ir.VectorArithmeticShiftRight(esize, operand, shift_amount);
+    IR::U128 corrected_result = v.ir.VectorSub(esize, result, round_correction);
+
+    if (behavior == ShiftExtraBehavior::Accumulate) {
+        const IR::U128 accumulator = v.V(datasize, Vd);
+        corrected_result = v.ir.VectorAdd(esize, accumulator, corrected_result);
+    }
+
+    v.V(datasize, Vd, corrected_result);
+}
+
+bool TranslatorVisitor::SRSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (immh == 0b0000) {
+        return DecodeError();
+    }
+
+    if (!Q && immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    SignedRoundingShiftRight(*this, Q, immh, immb, Vn, Vd, ShiftExtraBehavior::None);
+    return true;
+}
+
 bool TranslatorVisitor::SSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     if (immh == 0b0000) {
         return DecodeError();
