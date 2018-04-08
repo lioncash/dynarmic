@@ -80,6 +80,19 @@ bool TranslatorVisitor::SRSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd
     return true;
 }
 
+bool TranslatorVisitor::SRSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (immh == 0b0000) {
+        return DecodeError();
+    }
+
+    if (!Q && immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    SignedRoundingShiftRight(*this, Q, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate);
+    return true;
+}
+
 bool TranslatorVisitor::SSRA_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     if (immh == 0b0000) {
         return DecodeError();
