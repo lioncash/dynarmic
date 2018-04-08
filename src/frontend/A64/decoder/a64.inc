@@ -807,7 +807,7 @@ INST(USRA_2,                 "USRA",                                      "0Q101
 INST(URSHR_2,                "URSHR",                                     "0Q1011110IIIIiii001001nnnnnddddd")
 INST(URSRA_2,                "URSRA",                                     "0Q1011110IIIIiii001101nnnnnddddd")
 //INST(SRI_2,                  "SRI",                                       "0Q1011110IIIIiii010001nnnnnddddd")
-//INST(SLI_2,                  "SLI",                                       "0Q1011110IIIIiii010101nnnnnddddd")
+INST(SLI_2,                  "SLI",                                       "0Q1011110IIIIiii010101nnnnnddddd")
 //INST(SQSHLU_2,               "SQSHLU",                                    "0Q1011110IIIIiii011001nnnnnddddd")
 //INST(UQSHL_imm_2,            "UQSHL (immediate)",                         "0Q1011110IIIIiii011101nnnnnddddd")
 //INST(SQSHRUN_2,              "SQSHRUN, SQSHRUN2",                         "0Q1011110IIIIiii100001nnnnnddddd")
