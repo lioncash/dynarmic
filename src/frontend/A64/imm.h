@@ -46,6 +46,7 @@ public:
 
     template <size_t begin_bit, size_t end_bit, typename T = u32>
     T Bits() const {
+        static_assert(begin_bit <= end_bit && end_bit < bit_size);
         static_assert(Common::BitSize<T>() >= end_bit - begin_bit + 1);
         return static_cast<T>(Common::Bits<begin_bit, end_bit>(value));
     }
@@ -87,7 +88,7 @@ bool operator!=(const Imm<bit_size>& a, u32 b) {
 
 /**
  * Concatentate immediates together.
- * Left to right correpeonds to most significant imm to least significant imm.
+ * Left to right corresponds to most significant imm to least significant imm.
  * This is equivalent to a:b:...:z in ASL.
  */
 template <size_t first_bit_size, size_t ...rest_bit_sizes>
