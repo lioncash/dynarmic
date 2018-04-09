@@ -852,7 +852,7 @@ INST(USHLL,                  "USHLL, USHLL2",                             "0Q101
 //INST(FCMLA_elt,              "FCMLA (by element)",                        "0Q101111zzLMmmmm0rr1H0nnnnnddddd")
 
 // Data Processing - FP and SIMD - Cryptographic three register
-//INST(SM3TT1A,                "SM3TT1A",                                   "11001110010mmmmm10ii00nnnnnddddd")
+INST(SM3TT1A,                "SM3TT1A",                                   "11001110010mmmmm10ii00nnnnnddddd")
 //INST(SM3TT1B,                "SM3TT1B",                                   "11001110010mmmmm10ii01nnnnnddddd")
 //INST(SM3TT2A,                "SM3TT2A",                                   "11001110010mmmmm10ii10nnnnnddddd")
 //INST(SM3TT2B,                "SM3TT2B",                                   "11001110010mmmmm10ii11nnnnnddddd")
