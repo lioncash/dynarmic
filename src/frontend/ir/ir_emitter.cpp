@@ -1075,6 +1075,28 @@ U128 IREmitter::VectorReverseBits(const U128& a) {
     return Inst<U128>(Opcode::VectorReverseBits, a);
 }
 
+U128 IREmitter::VectorRotateLeft(size_t esize, const U128& a, u8 amount) {
+    ASSERT(amount < esize);
+
+    if (amount == 0) {
+        return a;
+    }
+
+    return VectorOr(VectorLogicalShiftLeft(esize, a, amount),
+                    VectorLogicalShiftRight(esize, a, static_cast<u8>(esize - amount)));
+}
+
+U128 IREmitter::VectorRotateRight(size_t esize, const U128& a, u8 amount) {
+    ASSERT(amount < esize);
+
+    if (amount == 0) {
+        return a;
+    }
+
+    return VectorOr(VectorLogicalShiftRight(esize, a, amount),
+                    VectorLogicalShiftLeft(esize, a, static_cast<u8>(esize - amount)));
+}
+
 U128 IREmitter::VectorShuffleHighHalfwords(const U128& a, u8 mask) {
     return Inst<U128>(Opcode::VectorShuffleHighHalfwords, a, mask);
 }
