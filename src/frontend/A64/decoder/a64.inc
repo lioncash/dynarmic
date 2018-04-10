@@ -855,7 +855,7 @@ INST(USHLL,                  "USHLL, USHLL2",                             "0Q101
 INST(SM3TT1A,                "SM3TT1A",                                   "11001110010mmmmm10ii00nnnnnddddd")
 INST(SM3TT1B,                "SM3TT1B",                                   "11001110010mmmmm10ii01nnnnnddddd")
 INST(SM3TT2A,                "SM3TT2A",                                   "11001110010mmmmm10ii10nnnnnddddd")
-//INST(SM3TT2B,                "SM3TT2B",                                   "11001110010mmmmm10ii11nnnnnddddd")
+INST(SM3TT2B,                "SM3TT2B",                                   "11001110010mmmmm10ii11nnnnnddddd")
 
 // Data Processing - FP and SIMD - SHA512 three register
 //INST(SHA512H,                "SHA512H",                                   "11001110011mmmmm100000nnnnnddddd")

@@ -47,7 +47,7 @@ static void SM3TT1(TranslatorVisitor& v, Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd, SM
     v.ir.SetQ(Vd, result);
 }
 
-static void SM3TT2(TranslatorVisitor& v, Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd, [[maybe_unused]] SM3TTVariant behavior) {
+static void SM3TT2(TranslatorVisitor& v, Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd, SM3TTVariant behavior) {
     const IR::U128 d = v.ir.GetQ(Vd);
     const IR::U128 m = v.ir.GetQ(Vm);
     const IR::U128 n = v.ir.GetQ(Vn);
@@ -60,7 +60,14 @@ static void SM3TT2(TranslatorVisitor& v, Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd, [[
     const IR::U32 top_n = v.ir.VectorGetElement(32, n, 3);
 
     const IR::U32 wj = v.ir.VectorGetElement(32, m, index);
-    const IR::U32 tt2 = v.ir.Eor(after_low_d, v.ir.Eor(top_d, before_top_d));
+    const IR::U32 tt2 = [&] {
+        if (behavior == SM3TTVariant::A) {
+            return v.ir.Eor(after_low_d, v.ir.Eor(top_d, before_top_d));
+        }
+        const IR::U32 tmp1 = v.ir.And(top_d, before_top_d);
+        const IR::U32 tmp2 = v.ir.And(v.ir.Not(top_d), after_low_d);
+        return v.ir.Or(tmp1, tmp2);
+    }();
     const IR::U32 final_tt2 = v.ir.Add(tt2, v.ir.Add(low_d, v.ir.Add(top_n, wj)));
     const IR::U32 top_result = v.ir.Eor(final_tt2, v.ir.Eor(v.ir.RotateRight(final_tt2, v.ir.Imm8(23)),
                                                             v.ir.RotateRight(final_tt2, v.ir.Imm8(15))));
@@ -86,6 +93,11 @@ bool TranslatorVisitor::SM3TT1B(Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd) {
 
 bool TranslatorVisitor::SM3TT2A(Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd) {
     SM3TT2(*this, Vm, imm2, Vn, Vd, SM3TTVariant::A);
+    return true;
+}
+
+bool TranslatorVisitor::SM3TT2B(Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd) {
+    SM3TT2(*this, Vm, imm2, Vn, Vd, SM3TTVariant::B);
     return true;
 }
 
