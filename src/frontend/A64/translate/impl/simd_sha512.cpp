@@ -20,4 +20,27 @@ bool TranslatorVisitor::RAX1(Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SM3PARTW2(Vec Vm, Vec Vn, Vec Vd) {
+    const IR::U128 d = ir.GetQ(Vd);
+    const IR::U128 m = ir.GetQ(Vm);
+    const IR::U128 n = ir.GetQ(Vn);
+
+    const IR::U128 temp = ir.VectorEor(n, ir.VectorRotateLeft(32, m, 7));
+    const IR::U128 temp_result = ir.VectorEor(d, temp);
+    const IR::U32 temp2 = [&] {
+        const IR::U32 rotate1 = ir.RotateRight(ir.VectorGetElement(32, temp, 0), ir.Imm8(17));
+        const IR::U32 rotate2 = ir.RotateRight(rotate1, ir.Imm8(17));
+        const IR::U32 rotate3 = ir.RotateRight(rotate1, ir.Imm8(9));
+
+        return ir.Eor(rotate1, ir.Eor(rotate2, rotate3));
+    }();
+
+    const IR::U32 high_temp_result = ir.VectorGetElement(32, temp_result, 3);
+    const IR::U32 replacement = ir.Eor(high_temp_result, temp2);
+    const IR::U128 result = ir.VectorSetElement(32, temp_result, 3, replacement);
+
+    ir.SetQ(Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64
