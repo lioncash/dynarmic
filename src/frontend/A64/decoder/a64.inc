@@ -862,7 +862,7 @@ INST(SM3TT2B,                "SM3TT2B",                                   "11001
 //INST(SHA512H2,               "SHA512H2",                                  "11001110011mmmmm100001nnnnnddddd")
 //INST(SHA512SU1,              "SHA512SU1",                                 "11001110011mmmmm100010nnnnnddddd")
 INST(RAX1,                   "RAX1",                                      "11001110011mmmmm100011nnnnnddddd")
-//INST(SM3PARTW1,              "SM3PARTW1",                                 "11001110011mmmmm110000nnnnnddddd")
+INST(SM3PARTW1,              "SM3PARTW1",                                 "11001110011mmmmm110000nnnnnddddd")
 INST(SM3PARTW2,              "SM3PARTW2",                                 "11001110011mmmmm110001nnnnnddddd")
 //INST(SM4EKEY,                "SM4EKEY",                                   "11001110011mmmmm110010nnnnnddddd")
 
