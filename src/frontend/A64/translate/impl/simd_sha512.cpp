@@ -12,8 +12,7 @@ bool TranslatorVisitor::RAX1(Vec Vm, Vec Vn, Vec Vd) {
     const IR::U128 m = ir.GetQ(Vm);
     const IR::U128 n = ir.GetQ(Vn);
 
-    const IR::U128 rotated_m = ir.VectorOr(ir.VectorLogicalShiftLeft(64, m, 1),
-                                           ir.VectorLogicalShiftRight(64, m, 63));
+    const IR::U128 rotated_m = ir.VectorRotateLeft(64, m, 1);
     const IR::U128 result = ir.VectorEor(n, rotated_m);
 
     ir.SetQ(Vd, result);
