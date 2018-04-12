@@ -471,7 +471,7 @@ INST(SUB_1,                  "SUB (vector)",                              "01111
 //INST(SSRA_1,                 "SSRA",                                      "010111110IIIIiii000101nnnnnddddd")
 //INST(SRSHR_1,                "SRSHR",                                     "010111110IIIIiii001001nnnnnddddd")
 //INST(SRSRA_1,                "SRSRA",                                     "010111110IIIIiii001101nnnnnddddd")
-//INST(SHL_1,                  "SHL",                                       "010111110IIIIiii010101nnnnnddddd")
+INST(SHL_1,                  "SHL",                                       "010111110IIIIiii010101nnnnnddddd")
 //INST(SQSHL_imm_1,            "SQSHL (immediate)",                         "010111110IIIIiii011101nnnnnddddd")
 //INST(SQSHRN_1,               "SQSHRN, SQSHRN2",                           "010111110IIIIiii100101nnnnnddddd")
 //INST(SQRSHRN_1,              "SQRSHRN, SQRSHRN2",                         "010111110IIIIiii100111nnnnnddddd")
