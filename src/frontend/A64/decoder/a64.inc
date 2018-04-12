@@ -467,7 +467,7 @@ INST(SUB_1,                  "SUB (vector)",                              "01111
 //INST(SQRDMULH_vec_1,         "SQRDMULH (vector)",                         "01111110zz1mmmmm101101nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Scalar shift by immediate
-//INST(SSHR_1,                 "SSHR",                                      "010111110IIIIiii000001nnnnnddddd")
+INST(SSHR_1,                 "SSHR",                                      "010111110IIIIiii000001nnnnnddddd")
 //INST(SSRA_1,                 "SSRA",                                      "010111110IIIIiii000101nnnnnddddd")
 //INST(SRSHR_1,                "SRSHR",                                     "010111110IIIIiii001001nnnnnddddd")
 //INST(SRSRA_1,                "SRSRA",                                     "010111110IIIIiii001101nnnnnddddd")

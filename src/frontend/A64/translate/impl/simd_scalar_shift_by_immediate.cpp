@@ -13,15 +13,20 @@ enum class ShiftExtraBehavior {
     Accumulate,
 };
 
+enum class Signedness {
+    Signed,
+    Unsigned,
+};
+
 static void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
-                       ShiftExtraBehavior behavior) {
+                       ShiftExtraBehavior behavior, Signedness signedness) {
     const size_t esize = 64;
     const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
 
     const IR::U64 operand = v.V_scalar(esize, Vn);
-    IR::U64 result = [&] {
-        if (shift_amount == esize) {
-            return v.ir.Imm64(0);
+    IR::U64 result = [&]() -> IR::U64 {
+        if (signedness == Signedness::Signed) {
+            return v.ir.ArithmeticShiftRight(operand, v.ir.Imm8(shift_amount));
         }
         return v.ir.LogicalShiftRight(operand, v.ir.Imm8(shift_amount));
     }();
@@ -32,6 +37,15 @@ static void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, V
     }
 
     v.V_scalar(esize, Vd, result);
+}
+
+bool TranslatorVisitor::SSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (!immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Signed);
+    return true;
 }
 
 bool TranslatorVisitor::SHL_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
@@ -54,7 +68,7 @@ bool TranslatorVisitor::USHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None);
+    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Unsigned);
     return true;
 }
 
@@ -63,7 +77,7 @@ bool TranslatorVisitor::USRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate);
+    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Unsigned);
     return true;
 }
 
