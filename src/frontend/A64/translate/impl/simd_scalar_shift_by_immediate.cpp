@@ -8,17 +8,28 @@
 
 namespace Dynarmic::A64 {
 
-static void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+enum class ShiftExtraBehavior {
+    None,
+    Accumulate,
+};
+
+static void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+                       ShiftExtraBehavior behavior) {
     const size_t esize = 64;
     const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
 
     const IR::U64 operand = v.V_scalar(esize, Vn);
-    const IR::U64 result = [&] {
+    IR::U64 result = [&] {
         if (shift_amount == esize) {
             return v.ir.Imm64(0);
         }
         return v.ir.LogicalShiftRight(operand, v.ir.Imm8(shift_amount));
     }();
+
+    if (behavior == ShiftExtraBehavior::Accumulate) {
+        const IR::U64 addend = v.V_scalar(esize, Vd);
+        result = v.ir.Add(result, addend);
+    }
 
     v.V_scalar(esize, Vd, result);
 }
@@ -43,7 +54,16 @@ bool TranslatorVisitor::USHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    ShiftRight(*this, immh, immb, Vn, Vd);
+    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None);
+    return true;
+}
+
+bool TranslatorVisitor::USRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (!immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate);
     return true;
 }
 
