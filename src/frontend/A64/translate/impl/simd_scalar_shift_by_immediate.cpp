@@ -48,6 +48,15 @@ bool TranslatorVisitor::SSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (!immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Signed);
+    return true;
+}
+
 bool TranslatorVisitor::SHL_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     if (!immh.Bit<3>()) {
         return ReservedValue();
