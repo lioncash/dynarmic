@@ -518,7 +518,7 @@ INST(USRA_1,                 "USRA",                                      "01111
 INST(TRN1,                   "TRN1",                                      "0Q001110zz0mmmmm001010nnnnnddddd")
 INST(ZIP1,                   "ZIP1",                                      "0Q001110zz0mmmmm001110nnnnnddddd")
 //INST(UZP2,                   "UZP2",                                      "0Q001110zz0mmmmm010110nnnnnddddd")
-//INST(TRN2,                   "TRN2",                                      "0Q001110zz0mmmmm011010nnnnnddddd")
+INST(TRN2,                   "TRN2",                                      "0Q001110zz0mmmmm011010nnnnnddddd")
 INST(ZIP2,                   "ZIP2",                                      "0Q001110zz0mmmmm011110nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Extract
