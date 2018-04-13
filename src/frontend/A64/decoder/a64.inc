@@ -515,7 +515,7 @@ INST(USRA_1,                 "USRA",                                      "01111
 
 // Data Processing - FP and SIMD - SIMD Permute
 //INST(UZP1,                   "UZP1",                                      "0Q001110zz0mmmmm000110nnnnnddddd")
-//INST(TRN1,                   "TRN1",                                      "0Q001110zz0mmmmm001010nnnnnddddd")
+INST(TRN1,                   "TRN1",                                      "0Q001110zz0mmmmm001010nnnnnddddd")
 INST(ZIP1,                   "ZIP1",                                      "0Q001110zz0mmmmm001110nnnnnddddd")
 //INST(UZP2,                   "UZP2",                                      "0Q001110zz0mmmmm010110nnnnnddddd")
 //INST(TRN2,                   "TRN2",                                      "0Q001110zz0mmmmm011010nnnnnddddd")
