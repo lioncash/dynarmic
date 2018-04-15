@@ -481,7 +481,7 @@ INST(USHR_1,                 "USHR",                                      "01111
 INST(USRA_1,                 "USRA",                                      "011111110IIIIiii000101nnnnnddddd")
 //INST(URSHR_1,                "URSHR",                                     "011111110IIIIiii001001nnnnnddddd")
 //INST(URSRA_1,                "URSRA",                                     "011111110IIIIiii001101nnnnnddddd")
-//INST(SRI_1,                  "SRI",                                       "011111110IIIIiii010001nnnnnddddd")
+INST(SRI_1,                  "SRI",                                       "011111110IIIIiii010001nnnnnddddd")
 //INST(SLI_1,                  "SLI",                                       "011111110IIIIiii010101nnnnnddddd")
 //INST(SQSHLU_1,               "SQSHLU",                                    "011111110IIIIiii011001nnnnnddddd")
 //INST(UQSHL_imm_1,            "UQSHL (immediate)",                         "011111110IIIIiii011101nnnnnddddd")

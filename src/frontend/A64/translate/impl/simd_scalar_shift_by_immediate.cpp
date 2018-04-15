@@ -39,6 +39,25 @@ static void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, V
     v.V_scalar(esize, Vd, result);
 }
 
+bool TranslatorVisitor::SRI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (!immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 64;
+    const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
+    const u64 mask = shift_amount == esize ? 0 : Common::Ones<u64>(esize) >> shift_amount;
+
+    const IR::U64 operand1 = V_scalar(esize, Vn);
+    const IR::U64 operand2 = V_scalar(esize, Vd);
+
+    const IR::U64 shifted = ir.LogicalShiftRight(operand1, ir.Imm8(shift_amount));
+    const IR::U64 result = ir.Or(ir.And(operand2, ir.Not(ir.Imm64(mask))), shifted);
+
+    V_scalar(esize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     if (!immh.Bit<3>()) {
         return ReservedValue();
