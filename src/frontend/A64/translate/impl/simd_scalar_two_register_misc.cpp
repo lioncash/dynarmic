@@ -8,6 +8,18 @@
 
 namespace Dynarmic::A64 {
 
+bool TranslatorVisitor::NEG_1(Imm<2> size, Vec Vn, Vec Vd) {
+    if (size != 0b11) {
+        return ReservedValue();
+    }
+
+    const IR::U64 operand = V_scalar(64, Vn);
+    const IR::U64 result = ir.Sub(ir.Imm64(0), operand);
+
+    V_scalar(64, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::UCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     const auto esize = sz ? 64 : 32;
 

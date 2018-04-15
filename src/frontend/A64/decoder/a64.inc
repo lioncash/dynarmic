@@ -416,7 +416,7 @@ INST(UCVTF_int_2,            "UCVTF (vector, integer)",                   "01111
 //INST(SQNEG_1,                "SQNEG",                                     "01111110zz100000011110nnnnnddddd")
 //INST(CMGE_zero_1,            "CMGE (zero)",                               "01111110zz100000100010nnnnnddddd")
 //INST(CMLE_1,                 "CMLE (zero)",                               "01111110zz100000100110nnnnnddddd")
-//INST(NEG_1,                  "NEG (vector)",                              "01111110zz100000101110nnnnnddddd")
+INST(NEG_1,                  "NEG (vector)",                              "01111110zz100000101110nnnnnddddd")
 //INST(SQXTUN_1,               "SQXTUN, SQXTUN2",                           "01111110zz100001001010nnnnnddddd")
 //INST(UQXTN_1,                "UQXTN, UQXTN2",                             "01111110zz100001010010nnnnnddddd")
 //INST(FCVTXN_1,               "FCVTXN, FCVTXN2",                           "011111100z100001011010nnnnnddddd")
