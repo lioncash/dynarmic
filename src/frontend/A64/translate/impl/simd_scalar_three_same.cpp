@@ -8,6 +8,37 @@
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
+namespace {
+enum class ComparisonType {
+    GE,
+    GT,
+};
+
+bool ScalarCompare(TranslatorVisitor& v, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, ComparisonType type) {
+    if (size != 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 64;
+    const size_t datasize = 64;
+
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = v.V(datasize, Vm);
+
+    const IR::U128 result = [&] {
+        switch (type) {
+        case ComparisonType::GE:
+            return v.ir.VectorGreaterEqualSigned(esize, operand1, operand2);
+        case ComparisonType::GT:
+        default:
+            return v.ir.VectorGreaterSigned(esize, operand1, operand2);
+        }
+    }();
+
+    v.V_scalar(datasize, Vd, v.ir.VectorGetElement(esize, result, 0));
+    return true;
+}
+} // Anonymous namespace
 
 bool TranslatorVisitor::ADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size != 0b11) {
@@ -23,20 +54,12 @@ bool TranslatorVisitor::ADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::CMGE_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return ScalarCompare(*this, size, Vm, Vn, Vd, ComparisonType::GE);
+}
+
 bool TranslatorVisitor::CMGT_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size != 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t datasize = 128;
-
-    const IR::U128 operand1 = V(datasize, Vn);
-    const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.VectorGreaterSigned(esize, operand1, operand2);
-
-    V_scalar(esize, Vd, ir.VectorGetElement(esize, result, 0));
-    return true;
+    return ScalarCompare(*this, size, Vm, Vn, Vd, ComparisonType::GT);
 }
 
 bool TranslatorVisitor::SUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
