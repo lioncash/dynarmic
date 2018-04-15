@@ -10,6 +10,7 @@
 namespace Dynarmic::A64 {
 namespace {
 enum class ComparisonType {
+    EQ,
     GE,
     GT,
     HI,
@@ -29,6 +30,8 @@ bool ScalarCompare(TranslatorVisitor& v, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, Co
 
     const IR::U128 result = [&] {
         switch (type) {
+        case ComparisonType::EQ:
+            return v.ir.VectorEqual(esize, operand1, operand2);
         case ComparisonType::GE:
             return v.ir.VectorGreaterEqualSigned(esize, operand1, operand2);
         case ComparisonType::GT:
@@ -58,6 +61,10 @@ bool TranslatorVisitor::ADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     const IR::U64 result = ir.Add(operand1, operand2);
     V_scalar(datasize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::CMEQ_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return ScalarCompare(*this, size, Vm, Vn, Vd, ComparisonType::EQ);
 }
 
 bool TranslatorVisitor::CMGE_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
