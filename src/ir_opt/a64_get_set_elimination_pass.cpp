@@ -47,7 +47,7 @@ void A64GetSetElimination(IR::Block& block) {
         info.last_set_instruction = set_inst;
     };
 
-    const auto do_get = [&block](RegisterInfo& info, Iterator get_inst, TrackingType tracking_type) {
+    const auto do_get = [](RegisterInfo& info, Iterator get_inst, TrackingType tracking_type) {
         const auto do_nothing = [&] {
             info = {};
             info.register_value = IR::Value(&*get_inst);

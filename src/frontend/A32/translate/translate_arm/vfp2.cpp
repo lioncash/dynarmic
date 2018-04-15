@@ -95,7 +95,7 @@ bool ArmTranslatorVisitor::vfp2_VADD(Cond cond, bool D, size_t Vn, size_t Vd, bo
     ExtReg m = ToExtReg(sz, Vm, M);
     // VADD.{F32,F64} <{S,D}d>, <{S,D}n>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, n, m, [this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto result = ir.FPAdd(reg_n, reg_m, true);
@@ -111,7 +111,7 @@ bool ArmTranslatorVisitor::vfp2_VSUB(Cond cond, bool D, size_t Vn, size_t Vd, bo
     ExtReg m = ToExtReg(sz, Vm, M);
     // VSUB.{F32,F64} <{S,D}d>, <{S,D}n>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, n, m, [this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto result = ir.FPSub(reg_n, reg_m, true);
@@ -127,7 +127,7 @@ bool ArmTranslatorVisitor::vfp2_VMUL(Cond cond, bool D, size_t Vn, size_t Vd, bo
     ExtReg m = ToExtReg(sz, Vm, M);
     // VMUL.{F32,F64} <{S,D}d>, <{S,D}n>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, n, m, [this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto result = ir.FPMul(reg_n, reg_m, true);
@@ -143,7 +143,7 @@ bool ArmTranslatorVisitor::vfp2_VMLA(Cond cond, bool D, size_t Vn, size_t Vd, bo
     ExtReg m = ToExtReg(sz, Vm, M);
     // VMLA.{F32,F64} <{S,D}d>, <{S,D}n>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, n, m, [this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto reg_d = ir.GetExtendedRegister(d);
@@ -160,7 +160,7 @@ bool ArmTranslatorVisitor::vfp2_VMLS(Cond cond, bool D, size_t Vn, size_t Vd, bo
     ExtReg m = ToExtReg(sz, Vm, M);
     // VMLS.{F32,F64} <{S,D}d>, <{S,D}n>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, n, m, [this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto reg_d = ir.GetExtendedRegister(d);
@@ -177,7 +177,7 @@ bool ArmTranslatorVisitor::vfp2_VNMUL(Cond cond, bool D, size_t Vn, size_t Vd, b
     ExtReg m = ToExtReg(sz, Vm, M);
     // VNMUL.{F32,F64} <{S,D}d>, <{S,D}n>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, n, m, [this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto result = ir.FPNeg(ir.FPMul(reg_n, reg_m, true));
@@ -193,7 +193,7 @@ bool ArmTranslatorVisitor::vfp2_VNMLA(Cond cond, bool D, size_t Vn, size_t Vd, b
     ExtReg m = ToExtReg(sz, Vm, M);
     // VNMLA.{F32,F64} <{S,D}d>, <{S,D}n>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, n, m, [this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto reg_d = ir.GetExtendedRegister(d);
@@ -210,7 +210,7 @@ bool ArmTranslatorVisitor::vfp2_VNMLS(Cond cond, bool D, size_t Vn, size_t Vd, b
     ExtReg m = ToExtReg(sz, Vm, M);
     // VNMLS.{F32,F64} <{S,D}d>, <{S,D}n>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, n, m, [this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto reg_d = ir.GetExtendedRegister(d);
@@ -227,7 +227,7 @@ bool ArmTranslatorVisitor::vfp2_VDIV(Cond cond, bool D, size_t Vn, size_t Vd, bo
     ExtReg m = ToExtReg(sz, Vm, M);
     // VDIV.{F32,F64} <{S,D}d>, <{S,D}n>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, n, m, [sz, this](ExtReg d, ExtReg n, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, n, m, [this](ExtReg d, ExtReg n, ExtReg m) {
             auto reg_n = ir.GetExtendedRegister(n);
             auto reg_m = ir.GetExtendedRegister(m);
             auto result = ir.FPDiv(reg_n, reg_m, true);
@@ -356,7 +356,7 @@ bool ArmTranslatorVisitor::vfp2_VABS(Cond cond, bool D, size_t Vd, bool sz, bool
     ExtReg m = ToExtReg(sz, Vm, M);
     // VABS.{F32,F64} <{S,D}d>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, m, [sz, this](ExtReg d, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, m, [this](ExtReg d, ExtReg m) {
             auto reg_m = ir.GetExtendedRegister(m);
             auto result = ir.FPAbs(reg_m);
             ir.SetExtendedRegister(d, result);
@@ -370,7 +370,7 @@ bool ArmTranslatorVisitor::vfp2_VNEG(Cond cond, bool D, size_t Vd, bool sz, bool
     ExtReg m = ToExtReg(sz, Vm, M);
     // VNEG.{F32,F64} <{S,D}d>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, m, [sz, this](ExtReg d, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, m, [this](ExtReg d, ExtReg m) {
             auto reg_m = ir.GetExtendedRegister(m);
             auto result = ir.FPNeg(reg_m);
             ir.SetExtendedRegister(d, result);
@@ -384,7 +384,7 @@ bool ArmTranslatorVisitor::vfp2_VSQRT(Cond cond, bool D, size_t Vd, bool sz, boo
     ExtReg m = ToExtReg(sz, Vm, M);
     // VSQRT.{F32,F64} <{S,D}d>, <{S,D}m>
     if (ConditionPassed(cond)) {
-        return EmitVfpVectorOperation(sz, d, m, [sz, this](ExtReg d, ExtReg m) {
+        return EmitVfpVectorOperation(sz, d, m, [this](ExtReg d, ExtReg m) {
             auto reg_m = ir.GetExtendedRegister(m);
             auto result = ir.FPSqrt(reg_m);
             ir.SetExtendedRegister(d, result);
