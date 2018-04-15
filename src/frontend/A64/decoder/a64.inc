@@ -456,7 +456,7 @@ INST(ADD_1,                  "ADD (vector)",                              "01011
 //INST(SQDMULH_vec_1,          "SQDMULH (vector)",                          "01011110zz1mmmmm101101nnnnnddddd")
 //INST(UQADD_1,                "UQADD",                                     "01111110zz1mmmmm000011nnnnnddddd")
 //INST(UQSUB_1,                "UQSUB",                                     "01111110zz1mmmmm001011nnnnnddddd")
-//INST(CMHI_1,                 "CMHI (register)",                           "01111110zz1mmmmm001101nnnnnddddd")
+INST(CMHI_1,                 "CMHI (register)",                           "01111110zz1mmmmm001101nnnnnddddd")
 //INST(CMHS_1,                 "CMHS (register)",                           "01111110zz1mmmmm001111nnnnnddddd")
 //INST(USHL_1,                 "USHL",                                      "01111110zz1mmmmm010001nnnnnddddd")
 //INST(UQSHL_reg_1,            "UQSHL (register)",                          "01111110zz1mmmmm010011nnnnnddddd")

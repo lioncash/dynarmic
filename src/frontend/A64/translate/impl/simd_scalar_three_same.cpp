@@ -12,6 +12,7 @@ namespace {
 enum class ComparisonType {
     GE,
     GT,
+    HI,
 };
 
 bool ScalarCompare(TranslatorVisitor& v, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, ComparisonType type) {
@@ -30,8 +31,10 @@ bool ScalarCompare(TranslatorVisitor& v, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, Co
         case ComparisonType::GE:
             return v.ir.VectorGreaterEqualSigned(esize, operand1, operand2);
         case ComparisonType::GT:
-        default:
             return v.ir.VectorGreaterSigned(esize, operand1, operand2);
+        case ComparisonType::HI:
+        default:
+            return v.ir.VectorGreaterUnsigned(esize, operand1, operand2);
         }
     }();
 
@@ -60,6 +63,10 @@ bool TranslatorVisitor::CMGE_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 
 bool TranslatorVisitor::CMGT_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return ScalarCompare(*this, size, Vm, Vn, Vd, ComparisonType::GT);
+}
+
+bool TranslatorVisitor::CMHI_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return ScalarCompare(*this, size, Vm, Vn, Vd, ComparisonType::HI);
 }
 
 bool TranslatorVisitor::SUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
