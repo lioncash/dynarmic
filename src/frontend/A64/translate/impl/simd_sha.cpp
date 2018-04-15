@@ -7,6 +7,38 @@
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
+namespace {
+IR::U32 SHAchoose(IREmitter& ir, IR::U32 x, IR::U32 y, IR::U32 z) {
+    return ir.Eor(ir.And(ir.Eor(y, z), x), z);
+}
+}
+
+bool TranslatorVisitor::SHA1C(Vec Vm, Vec Vn, Vec Vd) {
+    IR::U128 x = ir.GetQ(Vd);
+    IR::U32 y = ir.VectorGetElement(32, ir.GetQ(Vn), 0);
+    const IR::U128 w = ir.GetQ(Vm);
+
+    for (size_t i = 0; i < 4; i++) {
+        const IR::U32 low_x = ir.VectorGetElement(32, x, 0);
+        const IR::U32 after_low_x = ir.VectorGetElement(32, x, 1);
+        const IR::U32 before_high_x = ir.VectorGetElement(32, x, 2);
+        const IR::U32 high_x = ir.VectorGetElement(32, x, 3);
+        const IR::U32 t = SHAchoose(ir, after_low_x, before_high_x, high_x);
+        const IR::U32 w_segment = ir.VectorGetElement(32, w, i);
+
+        y = ir.Add(ir.Add(ir.Add(y, ir.RotateRight(low_x, ir.Imm8(27))), t), w_segment);
+        x = ir.VectorSetElement(32, x, 1, ir.RotateRight(after_low_x, ir.Imm8(2)));
+
+        // Move each 32-bit element to the left once
+        // e.g. [3, 2, 1, 0], becomes [2, 1, 0, 3]
+        const IR::U128 shuffled_x = ir.VectorShuffleWords(x, 0b10010011);
+        x = ir.VectorSetElement(32, shuffled_x, 0, y);
+        y = high_x;
+    }
+
+    ir.SetQ(Vd, x);
+    return true;
+}
 
 bool TranslatorVisitor::SHA1SU0(Vec Vm, Vec Vn, Vec Vd) {
     const IR::U128 d = ir.GetQ(Vd);
