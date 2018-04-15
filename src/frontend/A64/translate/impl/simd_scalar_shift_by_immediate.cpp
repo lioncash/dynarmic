@@ -39,22 +39,61 @@ static void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, V
     v.V_scalar(esize, Vd, result);
 }
 
+enum class ShiftDirection {
+    Left,
+    Right,
+};
+
+static void ShiftAndInsert(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+                           ShiftDirection direction) {
+    const size_t esize = 64;
+
+    const u8 shift_amount = [&] {
+        if (direction == ShiftDirection::Right) {
+            return static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
+        }
+
+        return static_cast<u8>(concatenate(immh, immb).ZeroExtend() - esize);
+    }();
+
+    const u64 mask = [&] {
+        if (direction == ShiftDirection::Right) {
+             return shift_amount == esize ? 0 : Common::Ones<u64>(esize) >> shift_amount;
+        }
+
+        return Common::Ones<u64>(esize) << shift_amount;
+    }();
+
+    const IR::U64 operand1 = v.V_scalar(esize, Vn);
+    const IR::U64 operand2 = v.V_scalar(esize, Vd);
+
+    const IR::U64 shifted = [&] {
+        if (direction == ShiftDirection::Right) {
+            return v.ir.LogicalShiftRight(operand1, v.ir.Imm8(shift_amount));
+        }
+
+        return v.ir.LogicalShiftLeft(operand1, v.ir.Imm8(shift_amount));
+    }();
+
+    const IR::U64 result = v.ir.Or(v.ir.And(operand2, v.ir.Not(v.ir.Imm64(mask))), shifted);
+    v.V_scalar(esize, Vd, result);
+}
+
+bool TranslatorVisitor::SLI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (!immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    ShiftAndInsert(*this, immh, immb, Vn, Vd, ShiftDirection::Left);
+    return true;
+}
+
 bool TranslatorVisitor::SRI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     if (!immh.Bit<3>()) {
         return ReservedValue();
     }
 
-    const size_t esize = 64;
-    const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
-    const u64 mask = shift_amount == esize ? 0 : Common::Ones<u64>(esize) >> shift_amount;
-
-    const IR::U64 operand1 = V_scalar(esize, Vn);
-    const IR::U64 operand2 = V_scalar(esize, Vd);
-
-    const IR::U64 shifted = ir.LogicalShiftRight(operand1, ir.Imm8(shift_amount));
-    const IR::U64 result = ir.Or(ir.And(operand2, ir.Not(ir.Imm64(mask))), shifted);
-
-    V_scalar(esize, Vd, result);
+    ShiftAndInsert(*this, immh, immb, Vn, Vd, ShiftDirection::Right);
     return true;
 }
 
