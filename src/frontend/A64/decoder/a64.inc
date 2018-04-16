@@ -331,7 +331,7 @@ INST(SHA1SU0,                "SHA1SU0",                                   "01011
 //INST(SHA256SU1,              "SHA256SU1",                                 "01011110000mmmmm011000nnnnnddddd")
 INST(SHA1H,                  "SHA1H",                                     "0101111000101000000010nnnnnddddd")
 INST(SHA1SU1,                "SHA1SU1",                                   "0101111000101000000110nnnnnddddd")
-//INST(SHA256SU0,              "SHA256SU0",                                 "0101111000101000001010nnnnnddddd")
+INST(SHA256SU0,              "SHA256SU0",                                 "0101111000101000001010nnnnnddddd")
 
 // Data Processing - FP and SIMD - Scalar copy
 INST(DUP_elt_1,              "DUP (element)",                             "01011110000iiiii000001nnnnnddddd")

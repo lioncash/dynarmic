@@ -114,4 +114,34 @@ bool TranslatorVisitor::SHA1H(Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SHA256SU0(Vec Vn, Vec Vd) {
+    const IR::U128 d = ir.GetQ(Vd);
+    const IR::U128 n = ir.GetQ(Vn);
+
+    const IR::U128 t = [&] {
+        // Shuffle the upper three elements down: [3, 2, 1, 0] -> [0, 3, 2, 1]
+        const IR::U128 shuffled = ir.VectorShuffleWords(d, 0b00111001);
+
+        return ir.VectorSetElement(32, shuffled, 3, ir.VectorGetElement(32, n, 0));
+    }();
+
+    IR::U128 result = ir.ZeroVector();
+    for (size_t i = 0; i < 4; i++) {
+        const IR::U32 modified_element = [&] {
+            const IR::U32 element = ir.VectorGetElement(32, t, i);
+            const IR::U32 tmp1 = ir.RotateRight(element, ir.Imm8(7));
+            const IR::U32 tmp2 = ir.RotateRight(element, ir.Imm8(18));
+            const IR::U32 tmp3 = ir.LogicalShiftRight(element, ir.Imm8(3));
+
+            return ir.Eor(tmp1, ir.Eor(tmp2, tmp3));
+        }();
+
+        const IR::U32 d_element = ir.VectorGetElement(32, d, i);
+        result = ir.VectorSetElement(32, result, i, ir.Add(modified_element, d_element));
+    }
+
+    ir.SetQ(Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64
