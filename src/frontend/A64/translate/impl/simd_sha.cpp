@@ -11,6 +11,11 @@ namespace {
 IR::U32 SHAchoose(IREmitter& ir, IR::U32 x, IR::U32 y, IR::U32 z) {
     return ir.Eor(ir.And(ir.Eor(y, z), x), z);
 }
+
+IR::U32 SHAmajority(IREmitter& ir, IR::U32 x, IR::U32 y, IR::U32 z) {
+    return ir.Or(ir.And(x, y), ir.And(ir.Or(x, y), z)) ;
+}
+
 IR::U32 SHAparity(IREmitter& ir, IR::U32 x, IR::U32 y, IR::U32 z) {
     return ir.Eor(ir.Eor(y, z), x);
 }
@@ -46,6 +51,12 @@ IR::U128 SHA1HashUpdate(IREmitter& ir, Vec Vm, Vec Vn, Vec Vd, SHA1HashUpdateFun
 
 bool TranslatorVisitor::SHA1C(Vec Vm, Vec Vn, Vec Vd) {
     const IR::U128 result = SHA1HashUpdate(ir, Vm, Vn, Vd, SHAchoose);
+    ir.SetQ(Vd, result);
+    return true;
+}
+
+bool TranslatorVisitor::SHA1M(Vec Vm, Vec Vn, Vec Vd) {
+    const IR::U128 result = SHA1HashUpdate(ir, Vm, Vn, Vd, SHAmajority);
     ir.SetQ(Vd, result);
     return true;
 }
