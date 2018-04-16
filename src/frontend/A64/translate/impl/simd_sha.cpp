@@ -11,9 +11,13 @@ namespace {
 IR::U32 SHAchoose(IREmitter& ir, IR::U32 x, IR::U32 y, IR::U32 z) {
     return ir.Eor(ir.And(ir.Eor(y, z), x), z);
 }
+IR::U32 SHAparity(IREmitter& ir, IR::U32 x, IR::U32 y, IR::U32 z) {
+    return ir.Eor(ir.Eor(y, z), x);
 }
 
-bool TranslatorVisitor::SHA1C(Vec Vm, Vec Vn, Vec Vd) {
+using SHA1HashUpdateFunction = IR::U32(IREmitter&, IR::U32, IR::U32, IR::U32);
+
+IR::U128 SHA1HashUpdate(IREmitter& ir, Vec Vm, Vec Vn, Vec Vd, SHA1HashUpdateFunction fn) {
     IR::U128 x = ir.GetQ(Vd);
     IR::U32 y = ir.VectorGetElement(32, ir.GetQ(Vn), 0);
     const IR::U128 w = ir.GetQ(Vm);
@@ -23,7 +27,7 @@ bool TranslatorVisitor::SHA1C(Vec Vm, Vec Vn, Vec Vd) {
         const IR::U32 after_low_x = ir.VectorGetElement(32, x, 1);
         const IR::U32 before_high_x = ir.VectorGetElement(32, x, 2);
         const IR::U32 high_x = ir.VectorGetElement(32, x, 3);
-        const IR::U32 t = SHAchoose(ir, after_low_x, before_high_x, high_x);
+        const IR::U32 t = fn(ir, after_low_x, before_high_x, high_x);
         const IR::U32 w_segment = ir.VectorGetElement(32, w, i);
 
         y = ir.Add(ir.Add(ir.Add(y, ir.RotateRight(low_x, ir.Imm8(27))), t), w_segment);
@@ -36,7 +40,19 @@ bool TranslatorVisitor::SHA1C(Vec Vm, Vec Vn, Vec Vd) {
         y = high_x;
     }
 
-    ir.SetQ(Vd, x);
+    return x;
+}
+} // Anonymous namespace
+
+bool TranslatorVisitor::SHA1C(Vec Vm, Vec Vn, Vec Vd) {
+    const IR::U128 result = SHA1HashUpdate(ir, Vm, Vn, Vd, SHAchoose);
+    ir.SetQ(Vd, result);
+    return true;
+}
+
+bool TranslatorVisitor::SHA1P(Vec Vm, Vec Vn, Vec Vd) {
+    const IR::U128 result = SHA1HashUpdate(ir, Vm, Vn, Vd, SHAparity);
+    ir.SetQ(Vd, result);
     return true;
 }
 

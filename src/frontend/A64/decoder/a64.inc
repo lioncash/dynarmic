@@ -323,7 +323,7 @@ INST(AESIMC,                 "AESIMC",                                    "01001
 
 // Data Processing - FP and SIMD - SHA
 INST(SHA1C,                  "SHA1C",                                     "01011110000mmmmm000000nnnnnddddd")
-//INST(SHA1P,                  "SHA1P",                                     "01011110000mmmmm000100nnnnnddddd")
+INST(SHA1P,                  "SHA1P",                                     "01011110000mmmmm000100nnnnnddddd")
 //INST(SHA1M,                  "SHA1M",                                     "01011110000mmmmm001000nnnnnddddd")
 INST(SHA1SU0,                "SHA1SU0",                                   "01011110000mmmmm001100nnnnnddddd")
 //INST(SHA256H,                "SHA256H",                                   "01011110000mmmmm010000nnnnnddddd")
