@@ -818,7 +818,7 @@ INST(USHLL,                  "USHLL, USHLL2",                             "0Q101
 //INST(UCVTF_fix_2,            "UCVTF (vector, fixed-point)",               "0Q1011110IIIIiii111001nnnnnddddd")
 //INST(FCVTZU_fix_2,           "FCVTZU (vector, fixed-point)",              "0Q1011110IIIIiii111111nnnnnddddd")
 
-// Data Processing - FP and SIMD - SIMD x indexed element
+// Data Processing - FP and SIMD - SIMD vector x indexed element
 //INST(SMLAL_elt,              "SMLAL, SMLAL2 (by element)",                "0Q001111zzLMmmmm0010H0nnnnnddddd")
 //INST(SQDMLAL_elt_2,          "SQDMLAL, SQDMLAL2 (by element)",            "0Q001111zzLMmmmm0011H0nnnnnddddd")
 //INST(SMLSL_elt,              "SMLSL, SMLSL2 (by element)",                "0Q001111zzLMmmmm0110H0nnnnnddddd")
@@ -839,7 +839,7 @@ INST(USHLL,                  "USHLL, USHLL2",                             "0Q101
 //INST(FMLAL_elt_2,            "FMLAL, FMLAL2 (by element)",                "0Q1011111zLMmmmm1000H0nnnnnddddd")
 //INST(FMLSL_elt_1,            "FMLSL, FMLSL2 (by element)",                "0Q0011111zLMmmmm0100H0nnnnnddddd")
 //INST(FMLSL_elt_2,            "FMLSL, FMLSL2 (by element)",                "0Q1011111zLMmmmm1100H0nnnnnddddd")
-//INST(MLA_elt,                "MLA (by element)",                          "0Q101111zzLMmmmm0000H0nnnnnddddd")
+INST(MLA_elt,                "MLA (by element)",                          "0Q101111zzLMmmmm0000H0nnnnnddddd")
 //INST(UMLAL_elt,              "UMLAL, UMLAL2 (by element)",                "0Q101111zzLMmmmm0010H0nnnnnddddd")
 //INST(MLS_elt,                "MLS (by element)",                          "0Q101111zzLMmmmm0100H0nnnnnddddd")
 //INST(UMLSL_elt,              "UMLSL, UMLSL2 (by element)",                "0Q101111zzLMmmmm0110H0nnnnnddddd")
