@@ -49,7 +49,11 @@ bool TranslatorVisitor::CMGT_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
 
     const IR::U128 operand = V(datasize, Vn);
     const IR::U128 zero = ir.ZeroVector();
-    const IR::U128 result = ir.VectorGreaterSigned(esize, operand, zero);
+    IR::U128 result = ir.VectorGreaterSigned(esize, operand, zero);
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
+
     V(datasize, Vd, result);
     return true;
 }
@@ -95,7 +99,11 @@ bool TranslatorVisitor::CMLT_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
 
     const IR::U128 operand = V(datasize, Vn);
     const IR::U128 zero = ir.ZeroVector();
-    const IR::U128 result = ir.VectorLessSigned(esize, operand, zero);
+    IR::U128 result = ir.VectorLessSigned(esize, operand, zero);
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
+
     V(datasize, Vd, result);
     return true;
 }
