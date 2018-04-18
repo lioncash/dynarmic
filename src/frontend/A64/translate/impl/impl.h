@@ -910,7 +910,7 @@ struct TranslatorVisitor final {
     bool FMLSL_elt_2(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool MLA_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool UMLAL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool MLS_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool MLS_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool UMLSL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool UMULL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool UDOT_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);

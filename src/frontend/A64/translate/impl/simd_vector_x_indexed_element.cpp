@@ -20,6 +20,7 @@ std::pair<size_t, Vec> Combine(Imm<2> size, Imm<1> H, Imm<1> L, Imm<1> M, Imm<4>
 enum class ExtraBehavior {
     None,
     Accumulate,
+    Subtract,
 };
 
 void MultiplyByElement(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd,
@@ -36,6 +37,8 @@ void MultiplyByElement(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<
     IR::U128 result = v.ir.VectorMultiply(esize, operand1, operand2);
     if (extra_behavior == ExtraBehavior::Accumulate) {
         result = v.ir.VectorAdd(esize, operand3, result);
+    } else if (extra_behavior == ExtraBehavior::Subtract) {
+        result = v.ir.VectorSub(esize, operand3, result);
     }
 
     v.V(datasize, Vd, result);
@@ -48,6 +51,15 @@ bool TranslatorVisitor::MLA_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> 
     }
 
     MultiplyByElement(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Accumulate);
+    return true;
+}
+
+bool TranslatorVisitor::MLS_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    if (size != 0b01 && size != 0b10) {
+        return UnallocatedEncoding();
+    }
+
+    MultiplyByElement(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Subtract);
     return true;
 }
 
