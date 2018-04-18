@@ -8,6 +8,19 @@
 
 namespace Dynarmic::A64 {
 
+bool TranslatorVisitor::ABS_1(Imm<2> size, Vec Vn, Vec Vd) {
+    if (size != 0b11) {
+        return ReservedValue();
+    }
+
+    const IR::U64 operand1 = V_scalar(64, Vn);
+    const IR::U64 operand2 = ir.ArithmeticShiftRight(operand1, ir.Imm8(63));
+    const IR::U64 result = ir.Sub(ir.Eor(operand1, operand2), operand2);
+
+    V_scalar(64, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::NEG_1(Imm<2> size, Vec Vn, Vec Vd) {
     if (size != 0b11) {
         return ReservedValue();
