@@ -126,12 +126,7 @@ if (DYNARMIC_USE_LLVM)
 endif()
 
 if (DYNARMIC_TESTS_USE_UNICORN)
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package(Threads REQUIRED)
     find_package(Unicorn REQUIRED)
-    add_library(Unicorn INTERFACE)
-    target_link_libraries(Unicorn INTERFACE "${LIBUNICORN_LIBRARY}" Threads::Threads)
-    target_include_directories(Unicorn INTERFACE "${LIBUNICORN_INCLUDE_DIR}")
 endif()
 
 # Pull in externals CMakeLists for libs where available
