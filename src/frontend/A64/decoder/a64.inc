@@ -823,7 +823,7 @@ INST(USHLL,                  "USHLL, USHLL2",                             "0Q101
 //INST(SQDMLAL_elt_2,          "SQDMLAL, SQDMLAL2 (by element)",            "0Q001111zzLMmmmm0011H0nnnnnddddd")
 //INST(SMLSL_elt,              "SMLSL, SMLSL2 (by element)",                "0Q001111zzLMmmmm0110H0nnnnnddddd")
 //INST(SQDMLSL_elt_2,          "SQDMLSL, SQDMLSL2 (by element)",            "0Q001111zzLMmmmm0111H0nnnnnddddd")
-//INST(MUL_elt,                "MUL (by element)",                          "0Q001111zzLMmmmm1000H0nnnnnddddd")
+INST(MUL_elt,                "MUL (by element)",                          "0Q001111zzLMmmmm1000H0nnnnnddddd")
 //INST(SMULL_elt,              "SMULL, SMULL2 (by element)",                "0Q001111zzLMmmmm1010H0nnnnnddddd")
 //INST(SQDMULL_elt_2,          "SQDMULL, SQDMULL2 (by element)",            "0Q001111zzLMmmmm1011H0nnnnnddddd")
 //INST(SQDMULH_elt_2,          "SQDMULH (by element)",                      "0Q001111zzLMmmmm1100H0nnnnnddddd")
