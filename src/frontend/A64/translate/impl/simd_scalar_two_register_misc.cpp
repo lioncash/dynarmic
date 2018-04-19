@@ -33,6 +33,19 @@ bool TranslatorVisitor::NEG_1(Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
+    const auto esize = sz ? 64 : 32;
+
+    IR::U32U64 element = V_scalar(esize, Vn);
+    if (esize == 32) {
+        element = ir.FPS32ToSingle(element, false, true);
+    } else {
+        return InterpretThisInstruction();
+    }
+    V_scalar(esize, Vd, element);
+    return true;
+}
+
 bool TranslatorVisitor::UCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     const auto esize = sz ? 64 : 32;
 

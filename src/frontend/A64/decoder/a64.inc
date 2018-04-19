@@ -364,7 +364,7 @@ INST(DUP_elt_1,              "DUP (element)",                             "01011
 //INST(FCVTAS_1,               "FCVTAS (vector)",                           "0101111001111001110010nnnnnddddd")
 //INST(FCVTAS_2,               "FCVTAS (vector)",                           "010111100z100001110010nnnnnddddd")
 //INST(SCVTF_int_1,            "SCVTF (vector, integer)",                   "0101111001111001110110nnnnnddddd")
-//INST(SCVTF_int_2,            "SCVTF (vector, integer)",                   "010111100z100001110110nnnnnddddd")
+INST(SCVTF_int_2,            "SCVTF (vector, integer)",                   "010111100z100001110110nnnnnddddd")
 //INST(FCMGT_zero_1,           "FCMGT (zero)",                              "0101111011111000110010nnnnnddddd")
 //INST(FCMGT_zero_2,           "FCMGT (zero)",                              "010111101z100000110010nnnnnddddd")
 //INST(FCMEQ_zero_1,           "FCMEQ (zero)",                              "0101111011111000110110nnnnnddddd")
