@@ -144,4 +144,46 @@ bool TranslatorVisitor::SHA256SU0(Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SHA256SU1(Vec Vm, Vec Vn, Vec Vd) {
+    const IR::U128 d = ir.GetQ(Vd);
+    const IR::U128 m = ir.GetQ(Vm);
+    const IR::U128 n = ir.GetQ(Vn);
+
+    const IR::U128 T0 = [&] {
+        const IR::U32 low_m = ir.VectorGetElement(32, m, 0);
+        const IR::U128 shuffled_n = ir.VectorShuffleWords(n, 0b00111001);
+
+        return ir.VectorSetElement(32, shuffled_n, 3, low_m);
+    }();
+
+    const IR::U128 lower_half = [&] {
+        const IR::U128 T = ir.VectorShuffleWords(m, 0b01001110);
+        const IR::U128 tmp1 = ir.VectorRotateRight(32, T, 17);
+        const IR::U128 tmp2 = ir.VectorRotateRight(32, T, 19);
+        const IR::U128 tmp3 = ir.VectorLogicalShiftRight(32, T, 10);
+        const IR::U128 tmp4 = ir.VectorEor(tmp1, ir.VectorEor(tmp2, tmp3));
+        const IR::U128 tmp5 = ir.VectorAdd(32, tmp4, ir.VectorAdd(32, d, T0));
+        return ir.VectorZeroUpper(tmp5);
+    }();
+
+    const IR::U64 upper_half = [&] {
+        const IR::U128 tmp1 = ir.VectorRotateRight(32, lower_half, 17);
+        const IR::U128 tmp2 = ir.VectorRotateRight(32, lower_half, 19);
+        const IR::U128 tmp3 = ir.VectorLogicalShiftRight(32, lower_half, 10);
+        const IR::U128 tmp4 = ir.VectorEor(tmp1, ir.VectorEor(tmp2, tmp3));
+
+        // Shuffle the top two 32-bit elements downwards [3, 2, 1, 0] -> [1, 0, 3, 2]
+        const IR::U128 shuffled_d = ir.VectorShuffleWords(d, 0b01001110);
+        const IR::U128 shuffled_T0 = ir.VectorShuffleWords(T0, 0b01001110);
+
+        const IR::U128 tmp5 = ir.VectorAdd(32, tmp4, ir.VectorAdd(32, shuffled_d, shuffled_T0));
+        return ir.VectorGetElement(64, tmp5, 0);
+    }();
+
+    const IR::U128 result = ir.VectorSetElement(64, lower_half, 1, upper_half);
+
+    ir.SetQ(Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64
