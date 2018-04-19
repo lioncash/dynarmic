@@ -15,6 +15,14 @@ IR::U64 MakeSig(IREmitter& ir, IR::U64 data, u8 first_rot_amount, u8 second_rot_
 
     return ir.Eor(tmp1, ir.Eor(tmp2, tmp3));
 }
+
+IR::U64 MakeMNSig(IREmitter& ir, IR::U64 data, u8 first_rot_amount, u8 second_rot_amount, u8 third_rot_amount) {
+    const IR::U64 tmp1 = ir.RotateRight(data, ir.Imm8(first_rot_amount));
+    const IR::U64 tmp2 = ir.RotateRight(data, ir.Imm8(second_rot_amount));
+    const IR::U64 tmp3 = ir.RotateRight(data, ir.Imm8(third_rot_amount));
+
+     return ir.Eor(tmp1, ir.Eor(tmp2, tmp3));
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::SHA512SU0(Vec Vn, Vec Vd) {
@@ -55,6 +63,50 @@ bool TranslatorVisitor::SHA512SU1(Vec Vm, Vec Vn, Vec Vd) {
     }();
 
     const IR::U128 result = ir.VectorAdd(64, w, ir.VectorAdd(64, y, sig_vector));
+
+    ir.SetQ(Vd, result);
+    return true;
+}
+
+bool TranslatorVisitor::SHA512H(Vec Vm, Vec Vn, Vec Vd) {
+    const IR::U128 x = ir.GetQ(Vn);
+    const IR::U128 y = ir.GetQ(Vm);
+    const IR::U128 w = ir.GetQ(Vd);
+
+    const IR::U64 lower_x = ir.VectorGetElement(64, x, 0);
+    const IR::U64 upper_x = ir.VectorGetElement(64, x, 1);
+
+    const IR::U64 lower_y = ir.VectorGetElement(64, y, 0);
+    const IR::U64 upper_y = ir.VectorGetElement(64, y, 1);
+
+    const auto make_msigma = [&](IR::U64 data) {
+        return MakeMNSig(ir, data, 14, 18, 41);
+    };
+
+    const auto make_partial_half = [](IREmitter& ir, IR::U64 a, IR::U64 b, IR::U64 c) {
+        const IR::U64 tmp1 = ir.And(a, b);
+        const IR::U64 tmp2 = ir.And(ir.Not(a), c);
+        return ir.Eor(tmp1, tmp2);
+    };
+
+    const IR::U64 Vtmp = [&]  {
+        const IR::U64 upper_w = ir.VectorGetElement(64, w, 1);
+        const IR::U64 partial = make_partial_half(ir, upper_y, lower_x, upper_x);
+        const IR::U64 sig = make_msigma(upper_y);
+
+        return ir.Add(partial, ir.Add(sig, upper_w));
+    }();
+    const IR::U64 tmp = ir.Add(Vtmp, lower_y);
+
+    const IR::U128 low_result = [&] {
+        const IR::U64 lower_w = ir.VectorGetElement(64, w, 0);
+        const IR::U64 partial = make_partial_half(ir, tmp, upper_y, lower_x);
+        const IR::U64 sig = make_msigma(tmp);
+
+        return ir.ZeroExtendToQuad(ir.Add(partial, ir.Add(sig, lower_w)));
+    }();
+
+    const IR::U128 result = ir.VectorSetElement(64, low_result, 1, Vtmp);
 
     ir.SetQ(Vd, result);
     return true;
