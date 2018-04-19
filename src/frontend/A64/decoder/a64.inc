@@ -872,7 +872,7 @@ INST(BCAX,                   "BCAX",                                      "11001
 INST(SM3SS1,                 "SM3SS1",                                    "11001110010mmmmm0aaaaannnnnddddd")
 
 // Data Processing - FP and SIMD - SHA512 two register
-//INST(SHA512SU0,              "SHA512SU0",                                 "1100111011000000100000nnnnnddddd")
+INST(SHA512SU0,              "SHA512SU0",                                 "1100111011000000100000nnnnnddddd")
 //INST(SM4E,                   "SM4E",                                      "1100111011000000100001nnnnnddddd")
 
 // Data Processing - FP and SIMD - Conversion between floating point and fixed point
