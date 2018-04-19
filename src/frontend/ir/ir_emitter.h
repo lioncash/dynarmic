@@ -264,6 +264,7 @@ public:
     U128 FPVectorDiv(size_t esize, const U128& a, const U128& b);
     U128 FPVectorMul(size_t esize, const U128& a, const U128& b);
     U128 FPVectorSub(size_t esize, const U128& a, const U128& b);
+    U128 FPVectorS32ToSingle(const U128& a);
 
     void Breakpoint();
 

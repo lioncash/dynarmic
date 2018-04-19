@@ -363,6 +363,7 @@ OPCODE(FPVectorDiv32,                       T::U128,        T::U128,        T::U
 OPCODE(FPVectorDiv64,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorMul32,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorMul64,                       T::U128,        T::U128,        T::U128                         )
+OPCODE(FPVectorS32ToSingle,                 T::U128,        T::U128                                         )
 OPCODE(FPVectorSub32,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorSub64,                       T::U128,        T::U128,        T::U128                         )
 

@@ -203,6 +203,15 @@ void EmitX64::EmitFPVectorMul64(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation64(code, ctx, inst, &Xbyak::CodeGenerator::mulpd);
 }
 
+void EmitX64::EmitFPVectorS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    code.cvtdq2ps(xmm, xmm);
+
+    ctx.reg_alloc.DefineValue(inst, xmm);
+}
+
 void EmitX64::EmitFPVectorSub32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::subps);
 }
