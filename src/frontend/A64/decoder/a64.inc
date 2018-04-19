@@ -592,7 +592,7 @@ INST(XTN,                    "XTN, XTN2",                                 "0Q001
 //INST(FCVTAS_3,               "FCVTAS (vector)",                           "0Q00111001111001110010nnnnnddddd")
 //INST(FCVTAS_4,               "FCVTAS (vector)",                           "0Q0011100z100001110010nnnnnddddd")
 //INST(SCVTF_int_3,            "SCVTF (vector, integer)",                   "0Q00111001111001110110nnnnnddddd")
-//INST(SCVTF_int_4,            "SCVTF (vector, integer)",                   "0Q0011100z100001110110nnnnnddddd")
+INST(SCVTF_int_4,            "SCVTF (vector, integer)",                   "0Q0011100z100001110110nnnnnddddd")
 //INST(FCMGT_zero_3,           "FCMGT (zero)",                              "0Q00111011111000110010nnnnnddddd")
 //INST(FCMGT_zero_4,           "FCMGT (zero)",                              "0Q0011101z100000110010nnnnnddddd")
 //INST(FCMEQ_zero_3,           "FCMEQ (zero)",                              "0Q00111011111000110110nnnnnddddd")
