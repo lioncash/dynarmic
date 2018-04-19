@@ -7,26 +7,54 @@
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
+namespace {
+IR::U64 MakeSig(IREmitter& ir, IR::U64 data, u8 first_rot_amount, u8 second_rot_amount, u8 shift_amount) {
+    const IR::U64 tmp1 = ir.RotateRight(data, ir.Imm8(first_rot_amount));
+    const IR::U64 tmp2 = ir.RotateRight(data, ir.Imm8(second_rot_amount));
+    const IR::U64 tmp3 = ir.LogicalShiftRight(data, ir.Imm8(shift_amount));
+
+    return ir.Eor(tmp1, ir.Eor(tmp2, tmp3));
+}
+} // Anonymous namespace
 
 bool TranslatorVisitor::SHA512SU0(Vec Vn, Vec Vd) {
     const IR::U128 x = ir.GetQ(Vn);
     const IR::U128 w = ir.GetQ(Vd);
 
-    const auto make_sig = [](IREmitter& ir, IR::U64 data) {
-        const IR::U64 tmp1 = ir.RotateRight(data, ir.Imm8(1));
-        const IR::U64 tmp2 = ir.RotateRight(data, ir.Imm8(8));
-        const IR::U64 tmp3 = ir.LogicalShiftRight(data, ir.Imm8(7));
-
-        return ir.Eor(tmp1, ir.Eor(tmp2, tmp3));
-    };
-
     const IR::U64 lower_x = ir.VectorGetElement(64, x, 0);
     const IR::U64 lower_w = ir.VectorGetElement(64, w, 0);
     const IR::U64 upper_w = ir.VectorGetElement(64, w, 1);
 
-    const IR::U128 low_result = ir.ZeroExtendToQuad(ir.Add(lower_w, make_sig(ir, upper_w)));
-    const IR::U64 high_result = ir.Add(upper_w, make_sig(ir, lower_x));
+    const auto make_sig0 = [&](IR::U64 data) {
+        return MakeSig(ir, data, 1, 8, 7);
+    };
+
+    const IR::U128 low_result = ir.ZeroExtendToQuad(ir.Add(lower_w, make_sig0(upper_w)));
+    const IR::U64 high_result = ir.Add(upper_w, make_sig0(lower_x));
     const IR::U128 result = ir.VectorSetElement(64, low_result, 1, high_result);
+
+    ir.SetQ(Vd, result);
+    return true;
+}
+
+bool TranslatorVisitor::SHA512SU1(Vec Vm, Vec Vn, Vec Vd) {
+    const IR::U128 x = ir.GetQ(Vn);
+    const IR::U128 y = ir.GetQ(Vm);
+    const IR::U128 w = ir.GetQ(Vd);
+
+    const auto make_sig1 = [&](IR::U64 data) {
+        return MakeSig(ir, data, 19, 61, 6);
+    };
+
+    const IR::U128 sig_vector = [&] {
+        const IR::U64 lower_x = ir.VectorGetElement(64, x, 0);
+        const IR::U64 upper_x = ir.VectorGetElement(64, x, 1);
+
+        const IR::U128 low_result = ir.ZeroExtendToQuad(make_sig1(lower_x));
+        return ir.VectorSetElement(64, low_result, 1, make_sig1(upper_x));
+    }();
+
+    const IR::U128 result = ir.VectorAdd(64, w, ir.VectorAdd(64, y, sig_vector));
 
     ir.SetQ(Vd, result);
     return true;
