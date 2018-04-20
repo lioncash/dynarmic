@@ -7,6 +7,31 @@
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
+namespace {
+enum class HighNarrowingOp {
+    Add,
+    Subtract,
+};
+
+static void HighNarrowingOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                                   HighNarrowingOp op) {
+    const size_t part = Q;
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::U128 operand1 = v.ir.GetQ(Vn);
+    const IR::U128 operand2 = v.ir.GetQ(Vm);
+    const IR::U128 wide = [&] {
+        if (op == HighNarrowingOp::Add) {
+            return v.ir.VectorAdd(2 * esize, operand1, operand2);
+        }
+        return v.ir.VectorSub(2 * esize, operand1, operand2);
+    }();
+    const IR::U128 result = v.ir.VectorNarrow(2 * esize,
+                                              v.ir.VectorLogicalShiftRight(2 * esize, wide, static_cast<u8>(esize)));
+
+    v.Vpart(64, Vd, part, result);
+}
+} // Anonymous namespace
 
 bool TranslatorVisitor::CMGT_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11 && !Q) return ReservedValue();
@@ -106,6 +131,24 @@ bool TranslatorVisitor::MUL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 
     V(datasize, Vd, result);
 
+    return true;
+}
+
+bool TranslatorVisitor::ADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Add);
+    return true;
+}
+
+bool TranslatorVisitor::SUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Subtract);
     return true;
 }
 
