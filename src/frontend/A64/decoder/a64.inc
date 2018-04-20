@@ -409,7 +409,7 @@ INST(UCVTF_int_2,            "UCVTF (vector, integer)",                   "01111
 //INST(SQABS_1,                "SQABS",                                     "01011110zz100000011110nnnnnddddd")
 INST(CMGT_zero_1,            "CMGT (zero)",                               "01011110zz100000100010nnnnnddddd")
 INST(CMEQ_zero_1,            "CMEQ (zero)",                               "01011110zz100000100110nnnnnddddd")
-//INST(CMLT_1,                 "CMLT (zero)",                               "01011110zz100000101010nnnnnddddd")
+INST(CMLT_1,                 "CMLT (zero)",                               "01011110zz100000101010nnnnnddddd")
 INST(ABS_1,                  "ABS",                                       "01011110zz100000101110nnnnnddddd")
 //INST(SQXTN_1,                "SQXTN, SQXTN2",                             "01011110zz100001010010nnnnnddddd")
 //INST(USQADD_1,               "USQADD",                                    "01111110zz100000001110nnnnnddddd")
