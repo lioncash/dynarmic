@@ -879,6 +879,11 @@ void EmitX64::EmitVectorMaxU16(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorMaxU32(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pmaxud);
+        return;
+    }
+
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b){
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::max(x, y); });
     });
