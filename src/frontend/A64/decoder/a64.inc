@@ -415,7 +415,7 @@ INST(ABS_1,                  "ABS",                                       "01011
 //INST(USQADD_1,               "USQADD",                                    "01111110zz100000001110nnnnnddddd")
 //INST(SQNEG_1,                "SQNEG",                                     "01111110zz100000011110nnnnnddddd")
 INST(CMGE_zero_1,            "CMGE (zero)",                               "01111110zz100000100010nnnnnddddd")
-//INST(CMLE_1,                 "CMLE (zero)",                               "01111110zz100000100110nnnnnddddd")
+INST(CMLE_1,                 "CMLE (zero)",                               "01111110zz100000100110nnnnnddddd")
 INST(NEG_1,                  "NEG (vector)",                              "01111110zz100000101110nnnnnddddd")
 //INST(SQXTUN_1,               "SQXTUN, SQXTUN2",                           "01111110zz100001001010nnnnnddddd")
 //INST(UQXTN_1,                "UQXTN, UQXTN2",                             "01111110zz100001010010nnnnnddddd")
