@@ -5,6 +5,7 @@
  */
 
 #include <algorithm>
+#include <functional>
 
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
@@ -604,7 +605,7 @@ void EmitX64::EmitVectorGreaterS64(EmitContext& ctx, IR::Inst* inst) {
     }
 
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<s64, 2>& a, const std::array<s64, 2>& b){
-        for (size_t i = 0; i < 2; ++i) {
+        for (size_t i = 0; i < result.size(); ++i) {
             result[i] = (a[i] > b[i]) ? ~u64(0) : 0;
         }
     });
@@ -975,9 +976,7 @@ void EmitX64::EmitVectorMultiply32(EmitContext& ctx, IR::Inst* inst) {
     }
 
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b){
-        for (size_t i = 0; i < 4; ++i) {
-            result[i] = a[i] * b[i];
-        }
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), std::multiplies<>());
     });
 }
 
@@ -1002,10 +1001,8 @@ void EmitX64::EmitVectorMultiply64(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
-        for (size_t i = 0; i < 2; ++i) {
-            result[i] = a[i] * b[i];
-        }
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b) {
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), std::multiplies<>());
     });
 }
 
@@ -1250,9 +1247,9 @@ void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
     }
 
     EmitOneArgumentFallback(code, ctx, inst, [](std::array<u8, 16>& result, const std::array<u8, 16>& a){
-        for (size_t i = 0; i < 16; ++i) {
-            result[i] = static_cast<u8>(Common::BitCount(a[i]));
-        }
+        std::transform(a.begin(), a.end(), result.begin(), [](u8 val) {
+            return static_cast<u8>(Common::BitCount(val));
+        });
     });
 }
 
@@ -1377,7 +1374,7 @@ void EmitX64::EmitVectorSignExtend32(EmitContext& ctx, IR::Inst* inst) {
     }
 
     EmitOneArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u32, 4>& a){
-        for (size_t i = 0; i < 2; ++i) {
+        for (size_t i = 0; i < result.size(); ++i) {
             result[i] = Common::SignExtend<32, u64>(a[i]);
         }
     });
