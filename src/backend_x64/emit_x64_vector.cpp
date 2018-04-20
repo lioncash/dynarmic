@@ -906,6 +906,11 @@ void EmitX64::EmitVectorMinS16(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorMinS32(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pminsd);
+        return;
+    }
+
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s32, 4>& result, const std::array<s32, 4>& a, const std::array<s32, 4>& b){
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
     });
