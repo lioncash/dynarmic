@@ -174,6 +174,15 @@ bool TranslatorVisitor::SUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::RSUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Subtract, ExtraBehavior::Round);
+    return true;
+}
+
 bool TranslatorVisitor::ADDP_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11 && !Q) return ReservedValue();
     const size_t esize = 8 << size.ZeroExtend<size_t>();
