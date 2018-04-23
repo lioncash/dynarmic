@@ -167,6 +167,17 @@ bool TranslatorVisitor::RAX1(Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::XAR(Vec Vm, Imm<6> imm6, Vec Vn, Vec Vd) {
+    const IR::U128 m = ir.GetQ(Vm);
+    const IR::U128 n = ir.GetQ(Vn);
+
+    const IR::U128 tmp = ir.VectorEor(m, n);
+    const IR::U128 result = ir.VectorRotateRight(64, tmp, imm6.ZeroExtend<u8>());
+
+    ir.SetQ(Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SM3PARTW1(Vec Vm, Vec Vn, Vec Vd) {
     const IR::U128 d = ir.GetQ(Vd);
     const IR::U128 m = ir.GetQ(Vm);

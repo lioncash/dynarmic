@@ -865,6 +865,7 @@ INST(RAX1,                   "RAX1",                                      "11001
 INST(SM3PARTW1,              "SM3PARTW1",                                 "11001110011mmmmm110000nnnnnddddd")
 INST(SM3PARTW2,              "SM3PARTW2",                                 "11001110011mmmmm110001nnnnnddddd")
 //INST(SM4EKEY,                "SM4EKEY",                                   "11001110011mmmmm110010nnnnnddddd")
+INST(XAR,                    "XAR",                                       "11001110100mmmmmiiiiiinnnnnddddd")
 
 // Data Processing - FP and SIMD - Cryptographic four register
 INST(EOR3,                   "EOR3",                                      "11001110000mmmmm0aaaaannnnnddddd")

@@ -933,6 +933,7 @@ struct TranslatorVisitor final {
     bool SHA512H2(Vec Vm, Vec Vn, Vec Vd);
     bool SHA512SU1(Vec Vm, Vec Vn, Vec Vd);
     bool RAX1(Vec Vm, Vec Vn, Vec Vd);
+    bool XAR(Vec Vm, Imm<6> imm6, Vec Vn, Vec Vd);
     bool SM3PARTW1(Vec Vm, Vec Vn, Vec Vd);
     bool SM3PARTW2(Vec Vm, Vec Vn, Vec Vd);
     bool SM4EKEY(Vec Vm, Vec Vn, Vec Vd);
