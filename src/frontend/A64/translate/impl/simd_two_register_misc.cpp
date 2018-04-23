@@ -7,6 +7,49 @@
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
+namespace {
+enum class ComparisonType {
+    EQ,
+    GE,
+    GT,
+    LE,
+    LT,
+};
+
+bool CompareAgainstZero(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vn, Vec Vd, ComparisonType type) {
+    if (size == 0b11 && !Q) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = v.V(datasize, Vn);
+    const IR::U128 zero = v.ir.ZeroVector();
+    IR::U128 result = [&] {
+        switch (type) {
+        case ComparisonType::EQ:
+            return v.ir.VectorEqual(esize, operand, zero);
+        case ComparisonType::GE:
+            return v.ir.VectorGreaterEqualSigned(esize, operand, zero);
+        case ComparisonType::GT:
+            return v.ir.VectorGreaterSigned(esize, operand, zero);
+        case ComparisonType::LE:
+            return v.ir.VectorLessEqualSigned(esize, operand, zero);
+        case ComparisonType::LT:
+        default:
+            return v.ir.VectorLessSigned(esize, operand, zero);
+        }
+    }();
+
+    if (datasize == 64) {
+        result = v.ir.VectorZeroUpper(result);
+    }
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+} // Anonymous namespace
 
 bool TranslatorVisitor::CNT(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     if (size != 0b00) {
@@ -22,77 +65,23 @@ bool TranslatorVisitor::CNT(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::CMGE_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
-    if (size == 0b11 && !Q) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 zero = ir.ZeroVector();
-    IR::U128 result = ir.VectorGreaterEqualSigned(esize, operand, zero);
-    if (datasize == 64) {
-        result = ir.VectorZeroUpper(result);
-    }
-
-    V(datasize, Vd, result);
-    return true;
+    return CompareAgainstZero(*this, Q, size, Vn, Vd, ComparisonType::GE);
 }
 
 bool TranslatorVisitor::CMGT_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
-    if (size == 0b11 && !Q) {
-        return ReservedValue();
-    }
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 zero = ir.ZeroVector();
-    IR::U128 result = ir.VectorGreaterSigned(esize, operand, zero);
-    if (datasize == 64) {
-        result = ir.VectorZeroUpper(result);
-    }
-
-    V(datasize, Vd, result);
-    return true;
+    return CompareAgainstZero(*this, Q, size, Vn, Vd, ComparisonType::GT);
 }
 
 bool TranslatorVisitor::CMEQ_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
-    if (size == 0b11 && !Q) {
-        return ReservedValue();
-    }
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 zero = ir.ZeroVector();
-    IR::U128 result = ir.VectorEqual(esize, operand, zero);
-    if (datasize == 64) {
-        result = ir.VectorZeroUpper(result);
-    }
-    V(datasize, Vd, result);
-    return true;
+    return CompareAgainstZero(*this, Q, size, Vn, Vd, ComparisonType::EQ);
 }
 
 bool TranslatorVisitor::CMLE_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
-    if (size == 0b11 && !Q) {
-        return ReservedValue();
-    }
+    return CompareAgainstZero(*this, Q, size, Vn, Vd, ComparisonType::LE);
+}
 
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 zero = ir.ZeroVector();
-
-    IR::U128 result = ir.VectorLessEqualSigned(esize, operand, zero);
-    if (datasize == 64) {
-        result = ir.VectorZeroUpper(result);
-    }
-
-    V(datasize, Vd, result);
-    return true;
+bool TranslatorVisitor::CMLT_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    return CompareAgainstZero(*this, Q, size, Vn, Vd, ComparisonType::LT);
 }
 
 bool TranslatorVisitor::ABS_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
@@ -105,24 +94,6 @@ bool TranslatorVisitor::ABS_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
 
     const IR::U128 data = V(datasize, Vn);
     const IR::U128 result = ir.VectorAbs(esize, data);
-
-    V(datasize, Vd, result);
-    return true;
-}
-
-bool TranslatorVisitor::CMLT_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
-    if (size == 0b11 && !Q) {
-        return ReservedValue();
-    }
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 zero = ir.ZeroVector();
-    IR::U128 result = ir.VectorLessSigned(esize, operand, zero);
-    if (datasize == 64) {
-        result = ir.VectorZeroUpper(result);
-    }
 
     V(datasize, Vd, result);
     return true;
