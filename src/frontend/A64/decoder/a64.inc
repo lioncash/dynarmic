@@ -691,7 +691,7 @@ INST(UADDL,                  "UADDL, UADDL2",                             "0Q101
 INST(UADDW,                  "UADDW, UADDW2",                             "0Q101110zz1mmmmm000100nnnnnddddd")
 INST(USUBL,                  "USUBL, USUBL2",                             "0Q101110zz1mmmmm001000nnnnnddddd")
 INST(USUBW,                  "USUBW, USUBW2",                             "0Q101110zz1mmmmm001100nnnnnddddd")
-//INST(RADDHN,                 "RADDHN, RADDHN2",                           "0Q101110zz1mmmmm010000nnnnnddddd")
+INST(RADDHN,                 "RADDHN, RADDHN2",                           "0Q101110zz1mmmmm010000nnnnnddddd")
 //INST(UABAL,                  "UABAL, UABAL2",                             "0Q101110zz1mmmmm010100nnnnnddddd")
 //INST(RSUBHN,                 "RSUBHN, RSUBHN2",                           "0Q101110zz1mmmmm011000nnnnnddddd")
 //INST(UABDL,                  "UABDL, UABDL2",                             "0Q101110zz1mmmmm011100nnnnnddddd")

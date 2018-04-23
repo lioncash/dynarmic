@@ -13,21 +13,34 @@ enum class HighNarrowingOp {
     Subtract,
 };
 
+enum class ExtraBehavior {
+    None,
+    Round
+};
+
 static void HighNarrowingOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
-                                   HighNarrowingOp op) {
+                                   HighNarrowingOp op, ExtraBehavior behavior) {
     const size_t part = Q;
     const size_t esize = 8 << size.ZeroExtend();
+    const size_t doubled_esize = 2 * esize;
 
     const IR::U128 operand1 = v.ir.GetQ(Vn);
     const IR::U128 operand2 = v.ir.GetQ(Vm);
-    const IR::U128 wide = [&] {
+    IR::U128 wide = [&] {
         if (op == HighNarrowingOp::Add) {
-            return v.ir.VectorAdd(2 * esize, operand1, operand2);
+            return v.ir.VectorAdd(doubled_esize, operand1, operand2);
         }
-        return v.ir.VectorSub(2 * esize, operand1, operand2);
+        return v.ir.VectorSub(doubled_esize, operand1, operand2);
     }();
-    const IR::U128 result = v.ir.VectorNarrow(2 * esize,
-                                              v.ir.VectorLogicalShiftRight(2 * esize, wide, static_cast<u8>(esize)));
+
+    if (behavior == ExtraBehavior::Round) {
+        const u64 round_const = 1ULL << (esize - 1);
+        const IR::U128 round_operand = v.ir.VectorBroadcast(doubled_esize, v.I(doubled_esize, round_const));
+        wide = v.ir.VectorAdd(doubled_esize, wide, round_operand);
+    }
+
+    const IR::U128 result = v.ir.VectorNarrow(doubled_esize,
+                                              v.ir.VectorLogicalShiftRight(doubled_esize, wide, static_cast<u8>(esize)));
 
     v.Vpart(64, Vd, part, result);
 }
@@ -139,7 +152,16 @@ bool TranslatorVisitor::ADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Add);
+    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Add, ExtraBehavior::None);
+    return true;
+}
+
+bool TranslatorVisitor::RADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Add, ExtraBehavior::Round);
     return true;
 }
 
@@ -148,7 +170,7 @@ bool TranslatorVisitor::SUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Subtract);
+    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Subtract, ExtraBehavior::None);
     return true;
 }
 
