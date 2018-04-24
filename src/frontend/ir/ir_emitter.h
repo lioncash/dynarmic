@@ -197,6 +197,8 @@ public:
     U128 VectorBroadcast(size_t esize, const UAny& a);
     U128 VectorBroadcastLower(size_t esize, const UAny& a);
     U128 VectorEor(const U128& a, const U128& b);
+    U128 VectorDeinterleaveEven(size_t esize, const U128& a, const U128& b);
+    U128 VectorDeinterleaveOdd(size_t esize, const U128& a, const U128& b);
     U128 VectorEqual(size_t esize, const U128& a, const U128& b);
     U128 VectorExtract(const U128& a, const U128& b, size_t position);
     U128 VectorExtractLower(const U128& a, const U128& b, size_t position);

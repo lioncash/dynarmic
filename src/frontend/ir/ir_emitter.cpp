@@ -794,6 +794,36 @@ U128 IREmitter::VectorBroadcast(size_t esize, const UAny& a) {
     return {};
 }
 
+U128 IREmitter::VectorDeinterleaveEven(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorDeinterleaveEven8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorDeinterleaveEven16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorDeinterleaveEven32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorDeinterleaveEven64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
+U128 IREmitter::VectorDeinterleaveOdd(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorDeinterleaveOdd8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorDeinterleaveOdd16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorDeinterleaveOdd32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorDeinterleaveOdd64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorEor(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorEor, a, b);
 }

@@ -491,6 +491,116 @@ void EmitX64::EmitVectorBroadcast64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+void EmitX64::EmitVectorDeinterleaveEven8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm lhs = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm rhs = ctx.reg_alloc.UseScratchXmm(args[1]);
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp, code.MConst(xword, 0x00FF00FF00FF00FF, 0x00FF00FF00FF00FF));
+    code.pand(lhs, tmp);
+    code.pand(rhs, tmp);
+    code.packuswb(lhs, rhs);
+
+    ctx.reg_alloc.DefineValue(inst, lhs);
+}
+
+void EmitX64::EmitVectorDeinterleaveEven16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm lhs = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm rhs = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.pslld(lhs, 16);
+    code.psrad(lhs, 16);
+
+    code.pslld(rhs, 16);
+    code.psrad(rhs, 16);
+
+    code.packssdw(lhs, rhs);
+
+    ctx.reg_alloc.DefineValue(inst, lhs);
+}
+
+void EmitX64::EmitVectorDeinterleaveEven32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm lhs = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm rhs = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.pshufd(lhs, lhs, 0b10001000);
+    code.pshufd(rhs, rhs, 0b10001000);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pblendw(lhs, rhs, 0b11110000);
+    } else {
+        code.punpcklqdq(lhs, rhs);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, lhs);
+}
+
+void EmitX64::EmitVectorDeinterleaveEven64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm lhs = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm rhs = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.movq(lhs, lhs);
+    code.pslldq(rhs, 8);
+    code.por(lhs, rhs);
+
+    ctx.reg_alloc.DefineValue(inst, lhs);
+}
+
+void EmitX64::EmitVectorDeinterleaveOdd8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm lhs = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm rhs = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.psraw(lhs, 8);
+    code.psraw(rhs, 8);
+    code.packsswb(lhs, rhs);
+
+    ctx.reg_alloc.DefineValue(inst, lhs);
+}
+
+void EmitX64::EmitVectorDeinterleaveOdd16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm lhs = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm rhs = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.psrad(lhs, 16);
+    code.psrad(rhs, 16);
+    code.packssdw(lhs, rhs);
+
+    ctx.reg_alloc.DefineValue(inst, lhs);
+}
+
+void EmitX64::EmitVectorDeinterleaveOdd32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm lhs = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm rhs = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.pshufd(lhs, lhs, 0b11011101);
+    code.pshufd(rhs, rhs, 0b11011101);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pblendw(lhs, rhs, 0b11110000);
+    } else {
+        code.punpcklqdq(lhs, rhs);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, lhs);
+}
+
+void EmitX64::EmitVectorDeinterleaveOdd64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm lhs = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm rhs = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.punpckhqdq(lhs, rhs);
+
+    ctx.reg_alloc.DefineValue(inst, lhs);
+}
+
 void EmitX64::EmitVectorEor(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pxor);
 }
