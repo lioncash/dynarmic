@@ -514,10 +514,10 @@ INST(SLI_1,                  "SLI",                                       "01111
 //INST(TBX,                    "TBX",                                       "0Q001110000mmmmm0LL100nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Permute
-//INST(UZP1,                   "UZP1",                                      "0Q001110zz0mmmmm000110nnnnnddddd")
+INST(UZP1,                   "UZP1",                                      "0Q001110zz0mmmmm000110nnnnnddddd")
 INST(TRN1,                   "TRN1",                                      "0Q001110zz0mmmmm001010nnnnnddddd")
 INST(ZIP1,                   "ZIP1",                                      "0Q001110zz0mmmmm001110nnnnnddddd")
-//INST(UZP2,                   "UZP2",                                      "0Q001110zz0mmmmm010110nnnnnddddd")
+INST(UZP2,                   "UZP2",                                      "0Q001110zz0mmmmm010110nnnnnddddd")
 INST(TRN2,                   "TRN2",                                      "0Q001110zz0mmmmm011010nnnnnddddd")
 INST(ZIP2,                   "ZIP2",                                      "0Q001110zz0mmmmm011110nnnnnddddd")
 

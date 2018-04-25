@@ -8,14 +8,14 @@
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
-
+namespace {
 enum class Transposition {
     TRN1,
     TRN2,
 };
 
-static void VectorTranspose(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
-                            Transposition type) {
+void VectorTranspose(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                     Transposition type) {
     const size_t datasize = Q ? 128 : 64;
     const u8 esize = static_cast<u8>(8 << size.ZeroExtend());
 
@@ -63,6 +63,32 @@ static void VectorTranspose(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, V
     v.V(datasize, Vd, result);
 }
 
+enum class UnzipType {
+    Even,
+    Odd,
+};
+
+void VectorUnzip(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, UnzipType type) {
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::U128 n = v.V(datasize, Vn);
+    const IR::U128 m = v.V(datasize, Vm);
+    IR::U128 result = [&] {
+        if (type == UnzipType::Even) {
+            return v.ir.VectorDeinterleaveEven(esize, n, m);
+        }
+        return v.ir.VectorDeinterleaveOdd(esize, n, m);
+    }();
+
+    if (datasize == 64) {
+        result = v.ir.VectorShuffleWords(result, 0b11011000);
+    }
+
+    v.V(datasize, Vd, result);
+}
+} // Anonymous namespace
+
 bool TranslatorVisitor::TRN1(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (!Q && size == 0b11) {
         return ReservedValue();
@@ -78,6 +104,24 @@ bool TranslatorVisitor::TRN2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     }
 
     VectorTranspose(*this, Q, size, Vm, Vn, Vd, Transposition::TRN2);
+    return true;
+}
+
+bool TranslatorVisitor::UZP1(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11 && !Q) {
+        return ReservedValue();
+    }
+
+    VectorUnzip(*this, Q, size, Vm, Vn, Vd, UnzipType::Even);
+    return true;
+}
+
+bool TranslatorVisitor::UZP2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11 && !Q) {
+        return ReservedValue();
+    }
+
+    VectorUnzip(*this, Q, size, Vm, Vn, Vd, UnzipType::Odd);
     return true;
 }
 
