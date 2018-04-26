@@ -114,6 +114,17 @@ bool TranslatorVisitor::XTN(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FNEG_1(bool Q, Vec Vn, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = V(datasize, Vn);
+    const IR::U128 mask = ir.VectorBroadcast(64, I(64, 0x8000800080008000));
+    const IR::U128 result = ir.VectorEor(operand, mask);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FNEG_2(bool Q, bool sz, Vec Vn, Vec Vd) {
     if (sz && !Q) {
         return ReservedValue();
