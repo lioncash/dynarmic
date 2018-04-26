@@ -407,7 +407,10 @@ void EmitX64::EmitVectorBroadcastLower8(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
+        code.vpbroadcastb(a, a);
+        code.movq(a, a);
+    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
         Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
         code.pxor(tmp, tmp);
@@ -446,7 +449,9 @@ void EmitX64::EmitVectorBroadcast8(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
+        code.vpbroadcastb(a, a);
+    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
         Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
         code.pxor(tmp, tmp);
@@ -465,8 +470,12 @@ void EmitX64::EmitVectorBroadcast16(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code.pshuflw(a, a, 0);
-    code.punpcklqdq(a, a);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
+        code.vpbroadcastw(a, a);
+    } else {
+        code.pshuflw(a, a, 0);
+        code.punpcklqdq(a, a);
+    }
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
@@ -476,7 +485,11 @@ void EmitX64::EmitVectorBroadcast32(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code.pshufd(a, a, 0);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
+        code.vpbroadcastd(a, a);
+    } else {
+        code.pshufd(a, a, 0);
+    }
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
@@ -486,7 +499,11 @@ void EmitX64::EmitVectorBroadcast64(EmitContext& ctx, IR::Inst* inst) {
 
     Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    code.punpcklqdq(a, a);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
+        code.vpbroadcastq(a, a);
+    } else {
+        code.punpcklqdq(a, a);
+    }
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
