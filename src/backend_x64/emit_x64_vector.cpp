@@ -1117,9 +1117,21 @@ void EmitX64::EmitVectorMultiply32(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b){
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), std::multiplies<>());
-    });
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp, a);
+    code.psrlq(a, 32);
+    code.pmuludq(tmp, b);
+    code.psrlq(b, 32);
+    code.pmuludq(a, b);
+    code.pshufd(tmp, tmp, 0b00001000);
+    code.pshufd(b, a, 0b00001000);
+    code.punpckldq(tmp, b);
+
+    ctx.reg_alloc.DefineValue(inst, tmp);
 }
 
 void EmitX64::EmitVectorMultiply64(EmitContext& ctx, IR::Inst* inst) {
