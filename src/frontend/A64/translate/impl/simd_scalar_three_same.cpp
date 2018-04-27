@@ -116,6 +116,20 @@ bool TranslatorVisitor::CMHS_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return ScalarCompare(*this, size, Vm, Vn, Vd, ComparisonType::HS, ComparisonVariant::Register);
 }
 
+bool TranslatorVisitor::CMTST_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size != 0b11) {
+        return ReservedValue();
+    }
+
+    const IR::U128 operand1 = V(64, Vn);
+    const IR::U128 operand2 = V(64, Vm);
+    const IR::U128 anded = ir.VectorAnd(operand1, operand2);
+    const IR::U128 result = ir.VectorNot(ir.VectorEqual(64, anded, ir.ZeroVector()));
+
+    V(64, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size != 0b11) {
         return ReservedValue();
