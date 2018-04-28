@@ -1145,9 +1145,27 @@ void EmitX64::EmitVectorMinU32(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b){
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
-    });
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
+
+    const Xbyak::Xmm sint_max_plus_one = ctx.reg_alloc.ScratchXmm();
+    code.movdqa(sint_max_plus_one, code.MConst(xword, 0x8000000080000000, 0x8000000080000000));
+
+    const Xbyak::Xmm tmp_a = ctx.reg_alloc.ScratchXmm();
+    code.movdqa(tmp_a, a);
+    code.psubd(tmp_a, sint_max_plus_one);
+
+    const Xbyak::Xmm tmp_b = ctx.reg_alloc.ScratchXmm();
+    code.movdqa(tmp_b, b);
+    code.psubd(tmp_b, sint_max_plus_one);
+
+    code.pcmpgtd(tmp_b, tmp_a);
+    code.pand(a, tmp_b);
+    code.pandn(tmp_b, b);
+    code.por(a, tmp_b);
+
+    ctx.reg_alloc.DefineValue(inst, a);
 }
 
 void EmitX64::EmitVectorMinU64(EmitContext& ctx, IR::Inst* inst) {
