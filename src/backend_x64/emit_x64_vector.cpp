@@ -1095,9 +1095,19 @@ void EmitX64::EmitVectorMinS32(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s32, 4>& result, const std::array<s32, 4>& a, const std::array<s32, 4>& b){
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
-    });
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
+
+    const Xbyak::Xmm tmp_b = ctx.reg_alloc.ScratchXmm();
+    code.movdqa(tmp_b, b);
+
+    code.pcmpgtd(tmp_b, a);
+    code.pand(a, tmp_b);
+    code.pandn(tmp_b, b);
+    code.por(a, tmp_b);
+
+    ctx.reg_alloc.DefineValue(inst, a);
 }
 
 void EmitX64::EmitVectorMinS64(EmitContext& ctx, IR::Inst* inst) {
