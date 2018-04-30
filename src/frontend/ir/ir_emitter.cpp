@@ -958,16 +958,31 @@ U128 IREmitter::VectorLogicalShiftRight(size_t esize, const U128& a, u8 shift_am
     return {};
 }
 
-U128 IREmitter::VectorLogicalVShift(size_t esize, const U128& a, const U128& b) {
+U128 IREmitter::VectorLogicalVShiftSigned(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 8:
-        return Inst<U128>(Opcode::VectorLogicalVShift8, a, b);
+        return Inst<U128>(Opcode::VectorLogicalVShiftS8, a, b);
     case 16:
-        return Inst<U128>(Opcode::VectorLogicalVShift16, a, b);
+        return Inst<U128>(Opcode::VectorLogicalVShiftS16, a, b);
     case 32:
-        return Inst<U128>(Opcode::VectorLogicalVShift32, a, b);
+        return Inst<U128>(Opcode::VectorLogicalVShiftS32, a, b);
     case 64:
-        return Inst<U128>(Opcode::VectorLogicalVShift64, a, b);
+        return Inst<U128>(Opcode::VectorLogicalVShiftS64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
+U128 IREmitter::VectorLogicalVShiftUnsigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorLogicalVShiftU8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorLogicalVShiftU16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorLogicalVShiftU32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorLogicalVShiftU64, a, b);
     }
     UNREACHABLE();
     return {};

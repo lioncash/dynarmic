@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <type_traits>
 
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
@@ -923,8 +924,21 @@ static constexpr T LogicalVShift(T x, T y) {
     const s8 shift_amount = static_cast<s8>(static_cast<u8>(y));
     const s64 bit_size = static_cast<s64>(Common::BitSize<T>());
 
-    if (shift_amount <= -bit_size || shift_amount >= bit_size) {
+    if constexpr (std::is_signed_v<T>) {
+        if (shift_amount >= bit_size) {
+            return 0;
+        }
+    } else if (shift_amount <= -bit_size || shift_amount >= bit_size) {
         return 0;
+    }
+
+    if constexpr (std::is_signed_v<T>) {
+        if (shift_amount <= -bit_size) {
+            // Parentheses necessary, as MSVC doesn't appear to consider cast parentheses
+            // as a grouping in terms of precedence, causing warning C4554 to fire. See:
+            // https://developercommunity.visualstudio.com/content/problem/144783/msvc-2017-does-not-understand-that-static-cast-cou.html
+            return x >> (T(bit_size - 1));
+        }
     }
 
     if (shift_amount < 0) {
@@ -934,25 +948,49 @@ static constexpr T LogicalVShift(T x, T y) {
     return x << T(shift_amount);
 }
 
-void EmitX64::EmitVectorLogicalVShift8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLogicalVShiftS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s8, 16>& result, const std::array<s8, 16>& a, const std::array<s8, 16>& b) {
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s8>);
+    });
+}
+
+void EmitX64::EmitVectorLogicalVShiftS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s16, 8>& result, const std::array<s16, 8>& a, const std::array<s16, 8>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s16>);
+    });
+}
+
+void EmitX64::EmitVectorLogicalVShiftS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s32, 4>& result, const std::array<s32, 4>& a, const std::array<s32, 4>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s32>);
+    });
+}
+
+void EmitX64::EmitVectorLogicalVShiftS64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s64, 2>& result, const std::array<s64, 2>& a, const std::array<s64, 2>& b){
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s64>);
+    });
+}
+
+void EmitX64::EmitVectorLogicalVShiftU8(EmitContext& ctx, IR::Inst* inst) {
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u8, 16>& result, const std::array<u8, 16>& a, const std::array<u8, 16>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u8>);
     });
 }
 
-void EmitX64::EmitVectorLogicalVShift16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLogicalVShiftU16(EmitContext& ctx, IR::Inst* inst) {
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u16, 8>& result, const std::array<u16, 8>& a, const std::array<u16, 8>& b){
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u16>);
     });
 }
 
-void EmitX64::EmitVectorLogicalVShift32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLogicalVShiftU32(EmitContext& ctx, IR::Inst* inst) {
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b){
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u32>);
     });
 }
 
-void EmitX64::EmitVectorLogicalVShift64(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLogicalVShiftU64(EmitContext& ctx, IR::Inst* inst) {
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u64>);
     });

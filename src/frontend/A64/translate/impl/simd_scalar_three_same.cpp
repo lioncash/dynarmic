@@ -151,7 +151,7 @@ bool TranslatorVisitor::USHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 
     const IR::U128 operand1 = V(64, Vn);
     const IR::U128 operand2 = V(64, Vm);
-    const IR::U128 result = ir.VectorLogicalVShift(64, operand1, operand2);
+    const IR::U128 result = ir.VectorLogicalVShiftUnsigned(64, operand1, operand2);
 
     V(64, Vd, result);
     return true;

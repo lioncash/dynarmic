@@ -299,7 +299,7 @@ bool TranslatorVisitor::USHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 
     const IR::U128 operand1 = V(datasize, Vn);
     const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.VectorLogicalVShift(esize, operand1, operand2);
+    const IR::U128 result = ir.VectorLogicalVShiftUnsigned(esize, operand1, operand2);
     V(datasize, Vd, result);
     return true;
 }
