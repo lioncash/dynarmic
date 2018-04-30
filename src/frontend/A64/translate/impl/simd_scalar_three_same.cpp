@@ -130,6 +130,19 @@ bool TranslatorVisitor::CMTST_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size != 0b11) {
+        return ReservedValue();
+    }
+
+    const IR::U128 operand1 = V(64, Vn);
+    const IR::U128 operand2 = V(64, Vm);
+    const IR::U128 result = ir.VectorLogicalVShiftSigned(64, operand1, operand2);
+
+    V(64, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size != 0b11) {
         return ReservedValue();
