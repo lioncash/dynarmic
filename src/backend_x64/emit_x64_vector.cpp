@@ -1026,9 +1026,19 @@ void EmitX64::EmitVectorMaxS32(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s32, 4>& result, const std::array<s32, 4>& a, const std::array<s32, 4>& b){
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::max(x, y); });
-    });
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    const Xbyak::Xmm tmp_b = ctx.reg_alloc.ScratchXmm();
+    code.movdqa(tmp_b, b);
+
+    code.pcmpgtd(tmp_b, a);
+    code.pand(b, tmp_b);
+    code.pandn(tmp_b, a);
+    code.por(tmp_b, b);
+
+    ctx.reg_alloc.DefineValue(inst, tmp_b);
 }
 
 void EmitX64::EmitVectorMaxS64(EmitContext& ctx, IR::Inst* inst) {
