@@ -9,6 +9,8 @@
 
 namespace Dynarmic::BackendX64 {
 
+Callback::~Callback() = default;
+
 void SimpleCallback::EmitCall(BlockOfCode& code, std::function<void(RegList)> l) const {
     l({code.ABI_PARAM1, code.ABI_PARAM2, code.ABI_PARAM3, code.ABI_PARAM4});
     code.CallFunction(fn);

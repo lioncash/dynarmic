@@ -21,7 +21,7 @@ class BlockOfCode;
 
 class Callback {
 public:
-    virtual ~Callback() = default;
+    virtual ~Callback();
 
     virtual void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) const = 0;
     virtual void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) const = 0;
@@ -31,8 +31,6 @@ class SimpleCallback final : public Callback {
 public:
     template <typename Function>
     SimpleCallback(Function fn) : fn(reinterpret_cast<void(*)()>(fn)) {}
-
-    ~SimpleCallback() override = default;
 
     void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) const override;
     void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) const override;
@@ -45,8 +43,6 @@ class ArgCallback final : public Callback {
 public:
     template <typename Function>
     ArgCallback(Function fn, u64 arg) : fn(reinterpret_cast<void(*)()>(fn)), arg(arg) {}
-
-    ~ArgCallback() override = default;
 
     void EmitCall(BlockOfCode& code, std::function<void(RegList)> fn = [](RegList){}) const override;
     void EmitCallWithReturnPointer(BlockOfCode& code, std::function<void(Xbyak::Reg64, RegList)> fn) const override;
