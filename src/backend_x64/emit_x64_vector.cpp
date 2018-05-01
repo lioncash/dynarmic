@@ -945,7 +945,8 @@ static constexpr T LogicalVShift(T x, T y) {
         return x >> T(-shift_amount);
     }
 
-    return x << T(shift_amount);
+    using unsigned_type = std::make_unsigned_t<T>;
+    return static_cast<T>(static_cast<unsigned_type>(x) << static_cast<unsigned_type>(shift_amount));
 }
 
 void EmitX64::EmitVectorLogicalVShiftS8(EmitContext& ctx, IR::Inst* inst) {
