@@ -177,7 +177,7 @@ public:
 
 private:
     static CodePtr GetCurrentBlockThunk(void* thisptr) {
-        Jit::Impl* this_ = reinterpret_cast<Jit::Impl*>(thisptr);
+        Jit::Impl* this_ = static_cast<Jit::Impl*>(thisptr);
         return this_->GetCurrentBlock();
     }
 

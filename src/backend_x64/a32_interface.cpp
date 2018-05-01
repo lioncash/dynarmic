@@ -107,8 +107,8 @@ struct Jit::Impl {
 private:
     Jit* jit_interface;
 
-    static CodePtr GetCurrentBlock(void *this_voidptr) {
-        Jit::Impl& this_ = *reinterpret_cast<Jit::Impl*>(this_voidptr);
+    static CodePtr GetCurrentBlock(void* this_voidptr) {
+        Jit::Impl& this_ = *static_cast<Jit::Impl*>(this_voidptr);
         A32JitState& jit_state = this_.jit_state;
 
         u32 pc = jit_state.Reg[15];
