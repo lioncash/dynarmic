@@ -928,17 +928,15 @@ static constexpr T LogicalVShift(T x, T y) {
         if (shift_amount >= bit_size) {
             return 0;
         }
-    } else if (shift_amount <= -bit_size || shift_amount >= bit_size) {
-        return 0;
-    }
 
-    if constexpr (std::is_signed_v<T>) {
         if (shift_amount <= -bit_size) {
             // Parentheses necessary, as MSVC doesn't appear to consider cast parentheses
             // as a grouping in terms of precedence, causing warning C4554 to fire. See:
             // https://developercommunity.visualstudio.com/content/problem/144783/msvc-2017-does-not-understand-that-static-cast-cou.html
             return x >> (T(bit_size - 1));
         }
+    } else if (shift_amount <= -bit_size || shift_amount >= bit_size) {
+        return 0;
     }
 
     if (shift_amount < 0) {
