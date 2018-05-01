@@ -27,8 +27,8 @@ struct A64JitState {
     A64JitState() { ResetRSB(); }
 
     std::array<u64, 31> reg{};
-    u64 sp;
-    u64 pc;
+    u64 sp = 0;
+    u64 pc = 0;
 
     u32 CPSR_nzcv = 0;
 
