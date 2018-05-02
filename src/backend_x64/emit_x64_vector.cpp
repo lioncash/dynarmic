@@ -385,20 +385,24 @@ void EmitX64::EmitVectorArithmeticShiftRight32(EmitContext& ctx, IR::Inst* inst)
 
 void EmitX64::EmitVectorArithmeticShiftRight64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
-    Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     const u8 shift_amount = std::min(args[1].GetImmediateU8(), u8(63));
 
-    const u64 sign_bit = 0x80000000'00000000u >> shift_amount;
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        code.vpsraq(result, result, shift_amount);
+    } else {
+        const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
 
-    code.pxor(tmp2, tmp2);
-    code.psrlq(result, shift_amount);
-    code.movdqa(tmp1, code.MConst(xword, sign_bit, sign_bit));
-    code.pand(tmp1, result);
-    code.psubq(tmp2, tmp1);
-    code.por(result, tmp2);
+        const u64 sign_bit = 0x80000000'00000000u >> shift_amount;
+
+        code.pxor(tmp2, tmp2);
+        code.psrlq(result, shift_amount);
+        code.movdqa(tmp1, code.MConst(xword, sign_bit, sign_bit));
+        code.pand(tmp1, result);
+        code.psubq(tmp2, tmp1);
+        code.por(result, tmp2);
+    }
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
