@@ -293,14 +293,17 @@ static void EmitVectorAbs(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockO
             code.psubd(data, temp);
         }
         break;
-    case 64: {
-        const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
-        code.pshufd(temp, data, 0b11110101);
-        code.psrad(temp, 31);
-        code.pxor(data, temp);
-        code.psubq(data, temp);
+    case 64:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+            code.vpabsq(data, data);
+        } else {
+            const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
+            code.pshufd(temp, data, 0b11110101);
+            code.psrad(temp, 31);
+            code.pxor(data, temp);
+            code.psubq(data, temp);
+        }
         break;
-    }
     }
 
     ctx.reg_alloc.DefineValue(inst, data);
