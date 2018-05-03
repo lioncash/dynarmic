@@ -4,9 +4,12 @@
  * General Public License version 2 or any later version.
  */
 
+#include <type_traits>
+
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
+#include "common/bit_util.h"
 #include "common/fp_util.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
@@ -14,6 +17,74 @@
 namespace Dynarmic::BackendX64 {
 
 using namespace Xbyak::util;
+
+template <typename T>
+struct NaNWrapper;
+
+template <>
+struct NaNWrapper<u32> {
+    static constexpr u32 value = 0x7fc00000;
+};
+
+template <>
+struct NaNWrapper<u64> {
+    static constexpr u64 value = 0x7ff8'0000'0000'0000;
+};
+
+template <typename T>
+static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& xmm_a,
+                       const Xbyak::Xmm& xmm_b, const Xbyak::Xmm& result, const Xbyak::Xmm& nan_mask) {
+    static_assert(std::is_same_v<T, u32> || std::is_same_v<T, u64>, "T must be either u32 or u64");
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.ptest(nan_mask, nan_mask);
+    } else {
+        const Xbyak::Reg32 bitmask = ctx.reg_alloc.ScratchGpr().cvt32();
+        code.movmskps(bitmask, nan_mask);
+        code.cmp(bitmask, 0);
+    }
+
+    Xbyak::Label end;
+    Xbyak::Label nan;
+
+    code.jz(end);
+    code.jmp(nan, code.T_NEAR);
+    code.L(end);
+
+    code.SwitchToFarCode();
+    code.L(nan);
+    code.sub(rsp, 8);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+    const size_t stack_space = 3 * 16;
+    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
+    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+    code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
+    code.movaps(xword[code.ABI_PARAM1], result);
+    code.movaps(xword[code.ABI_PARAM2], xmm_a);
+    code.movaps(xword[code.ABI_PARAM3], xmm_b);
+
+    using Elements = std::integral_constant<size_t, 128 / Common::BitSize<T>()>;
+    using RegArray = std::array<T, Elements::value>;
+    code.CallFunction(static_cast<void(*)(RegArray&, const RegArray&, const RegArray&)>(
+        [](RegArray& result, const RegArray& a, const RegArray& b) {
+            for (size_t i = 0; i < result.size(); ++i) {
+                if (auto r = Common::ProcessNaNs(a[i], b[i])) {
+                    result[i] = *r;
+                } else if (Common::IsNaN(result[i])) {
+                    result[i] = NaNWrapper<T>::value;
+                }
+            }
+        }
+    ));
+
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.add(rsp, stack_space + ABI_SHADOW_SPACE);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+    code.add(rsp, 8);
+    code.jmp(end, code.T_NEAR);
+    code.SwitchToNearCode();
+}
 
 template <typename Function>
 static void EmitVectorOperation32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
@@ -42,7 +113,6 @@ static void EmitVectorOperation32(BlockOfCode& code, EmitContext& ctx, IR::Inst*
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Label end, nan;
     Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     Xbyak::Xmm xmm_a = ctx.reg_alloc.UseXmm(args[0]);
     Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
@@ -53,46 +123,8 @@ static void EmitVectorOperation32(BlockOfCode& code, EmitContext& ctx, IR::Inst*
     code.cmpunordps(nan_mask, xmm_a);
     (code.*fn)(result, xmm_b);
     code.cmpunordps(nan_mask, result);
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        code.ptest(nan_mask, nan_mask);
-    } else {
-        Xbyak::Reg32 bitmask = ctx.reg_alloc.ScratchGpr().cvt32();
-        code.movmskps(bitmask, nan_mask);
-        code.cmp(bitmask, 0);
-    }
-    code.jz(end);
-    code.jmp(nan, code.T_NEAR);
-    code.L(end);
 
-    code.SwitchToFarCode();
-    code.L(nan);
-    code.sub(rsp, 8);
-    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
-    const size_t stack_space = 3 * 16;
-    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
-    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
-    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
-    code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
-    code.movaps(xword[code.ABI_PARAM1], result);
-    code.movaps(xword[code.ABI_PARAM2], xmm_a);
-    code.movaps(xword[code.ABI_PARAM3], xmm_b);
-    code.CallFunction(static_cast<void(*)(std::array<u32, 4>&, const std::array<u32, 4>&, const std::array<u32, 4>&)>(
-        [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b) {
-            for (size_t i = 0; i < result.size(); ++i) {
-                if (auto r = Common::ProcessNaNs(a[i], b[i])) {
-                    result[i] = *r;
-                } else if (Common::IsNaN(result[i])) {
-                    result[i] = 0x7fc00000;
-                }
-            }
-        }
-    ));
-    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
-    code.add(rsp, stack_space + ABI_SHADOW_SPACE);
-    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
-    code.add(rsp, 8);
-    code.jmp(end, code.T_NEAR);
-    code.SwitchToNearCode();
+    HandleNaNs<u32>(code, ctx, xmm_a, xmm_b, result, nan_mask);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -135,46 +167,8 @@ static void EmitVectorOperation64(BlockOfCode& code, EmitContext& ctx, IR::Inst*
     code.cmpunordpd(nan_mask, xmm_a);
     (code.*fn)(result, xmm_b);
     code.cmpunordpd(nan_mask, result);
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        code.ptest(nan_mask, nan_mask);
-    } else {
-        Xbyak::Reg32 bitmask = ctx.reg_alloc.ScratchGpr().cvt32();
-        code.movmskps(bitmask, nan_mask);
-        code.cmp(bitmask, 0);
-    }
-    code.jz(end);
-    code.jmp(nan, code.T_NEAR);
-    code.L(end);
 
-    code.SwitchToFarCode();
-    code.L(nan);
-    code.sub(rsp, 8);
-    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
-    const size_t stack_space = 3 * 16;
-    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
-    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
-    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
-    code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
-    code.movaps(xword[code.ABI_PARAM1], result);
-    code.movaps(xword[code.ABI_PARAM2], xmm_a);
-    code.movaps(xword[code.ABI_PARAM3], xmm_b);
-    code.CallFunction(static_cast<void(*)(std::array<u64, 2>&, const std::array<u64, 2>&, const std::array<u64, 2>&)>(
-        [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b) {
-            for (size_t i = 0; i < result.size(); ++i) {
-                if (auto r = Common::ProcessNaNs(a[i], b[i])) {
-                    result[i] = *r;
-                } else if (Common::IsNaN(result[i])) {
-                    result[i] = 0x7ff8'0000'0000'0000;
-                }
-            }
-        }
-    ));
-    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
-    code.add(rsp, stack_space + ABI_SHADOW_SPACE);
-    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
-    code.add(rsp, 8);
-    code.jmp(end, code.T_NEAR);
-    code.SwitchToNearCode();
+    HandleNaNs<u64>(code, ctx, xmm_a, xmm_b, result, nan_mask);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
