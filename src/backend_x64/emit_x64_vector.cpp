@@ -1160,6 +1160,11 @@ void EmitX64::EmitVectorMinS32(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorMinS64(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        EmitAVXVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::vpminsq);
+        return;
+    }
+
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s64, 2>& result, const std::array<s64, 2>& a, const std::array<s64, 2>& b){
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
     });
@@ -1218,6 +1223,11 @@ void EmitX64::EmitVectorMinU32(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorMinU64(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        EmitAVXVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::vpminuq);
+        return;
+    }
+
     EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
     });
