@@ -741,7 +741,7 @@ INST(FSUB_2,                 "FSUB (vector)",                             "0Q001
 //INST(FRSQRTS_4,              "FRSQRTS",                                   "0Q0011101z1mmmmm111111nnnnnddddd")
 INST(ORR_asimd_reg,          "ORR (vector, register)",                    "0Q001110101mmmmm000111nnnnnddddd")
 INST(ORN_asimd,              "ORN (vector)",                              "0Q001110111mmmmm000111nnnnnddddd")
-//INST(UHADD,                  "UHADD",                                     "0Q101110zz1mmmmm000001nnnnnddddd")
+INST(UHADD,                  "UHADD",                                     "0Q101110zz1mmmmm000001nnnnnddddd")
 //INST(UQADD_2,                "UQADD",                                     "0Q101110zz1mmmmm000011nnnnnddddd")
 //INST(URHADD,                 "URHADD",                                    "0Q101110zz1mmmmm000101nnnnnddddd")
 //INST(UHSUB,                  "UHSUB",                                     "0Q101110zz1mmmmm001001nnnnnddddd")
