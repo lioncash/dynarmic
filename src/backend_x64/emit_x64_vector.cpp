@@ -1613,6 +1613,16 @@ void EmitX64::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512_BITALG)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        const Xbyak::Xmm data = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+        code.vpopcntb(data, data);
+
+        ctx.reg_alloc.DefineValue(inst, data);
+        return;
+    }
+
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
