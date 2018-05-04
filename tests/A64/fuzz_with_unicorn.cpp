@@ -124,6 +124,8 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
         std::vector<InstructionGenerator> result;
 
         for (const auto& [fn, name, bitstring] : list) {
+            (void)name;
+
             if (fn[0] != 'F') {
                 continue;
             } else if (std::find(do_not_test.begin(), do_not_test.end(), fn) != do_not_test.end()) {
