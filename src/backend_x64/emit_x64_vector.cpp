@@ -357,12 +357,8 @@ void EmitX64::EmitVectorAnd(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pand);
 }
 
-void EmitX64::EmitVectorArithmeticShiftRight8(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
-    const u8 shift_amount = args[1].GetImmediateU8();
+static void ArithmeticShiftRightByte(EmitContext& ctx, BlockOfCode& code, const Xbyak::Xmm& result, u8 shift_amount) {
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
     // TODO: Optimize
     code.movdqa(tmp, result);
@@ -372,6 +368,15 @@ void EmitX64::EmitVectorArithmeticShiftRight8(EmitContext& ctx, IR::Inst* inst) 
     code.psllw(result, 8);
     code.psrlw(tmp, 8);
     code.por(result, tmp);
+}
+
+void EmitX64::EmitVectorArithmeticShiftRight8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const u8 shift_amount = args[1].GetImmediateU8();
+
+    ArithmeticShiftRightByte(ctx, code, result, shift_amount);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -756,6 +761,92 @@ void EmitX64::EmitVectorGreaterS64(EmitContext& ctx, IR::Inst* inst) {
             result[i] = (a[i] > b[i]) ? ~u64(0) : 0;
         }
     });
+}
+
+static void EmitVectorHalvingAddSigned(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp, b);
+    code.pand(tmp, a);
+    code.pxor(a, b);
+
+    switch (esize) {
+    case 8:
+        ArithmeticShiftRightByte(ctx, code, a, 1);
+        code.paddb(a, tmp);
+        break;
+    case 16:
+        code.psraw(a, 1);
+        code.paddw(a, tmp);
+        break;
+    case 32:
+        code.psrad(a, 1);
+        code.paddd(a, tmp);
+        break;
+    }
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorHalvingAddS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingAddSigned(8, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorHalvingAddS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingAddSigned(16, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorHalvingAddS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingAddSigned(32, ctx, inst, code);
+}
+
+static void EmitVectorHalvingAddUnsigned(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp, b);
+
+    switch (esize) {
+    case 8:
+        code.pavgb(tmp, a);
+        code.pxor(a, b);
+        code.pand(a, code.MConst(xword, 0x0101010101010101, 0x0101010101010101));
+        code.psubb(tmp, a);
+        break;
+    case 16:
+        code.pavgw(tmp, a);
+        code.pxor(a, b);
+        code.pand(a, code.MConst(xword, 0x0001000100010001, 0x0001000100010001));
+        code.psubw(tmp, a);
+        break;
+    case 32:
+        code.pand(tmp, a);
+        code.pxor(a, b);
+        code.psrld(a, 1);
+        code.paddd(tmp, a);
+        break;
+    }
+
+    ctx.reg_alloc.DefineValue(inst, tmp);
+}
+
+void EmitX64::EmitVectorHalvingAddU8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingAddUnsigned(8, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorHalvingAddU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingAddUnsigned(16, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorHalvingAddU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingAddUnsigned(32, ctx, inst, code);
 }
 
 static void EmitVectorInterleaveLower(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int size) {
