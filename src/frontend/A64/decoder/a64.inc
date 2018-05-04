@@ -700,7 +700,7 @@ INST(RSUBHN,                 "RSUBHN, RSUBHN2",                           "0Q101
 //INST(UMULL_vec,              "UMULL, UMULL2 (vector)",                    "0Q101110zz1mmmmm110000nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD three same
-//INST(SHADD,                  "SHADD",                                     "0Q001110zz1mmmmm000001nnnnnddddd")
+INST(SHADD,                  "SHADD",                                     "0Q001110zz1mmmmm000001nnnnnddddd")
 //INST(SQADD_2,                "SQADD",                                     "0Q001110zz1mmmmm000011nnnnnddddd")
 //INST(SRHADD,                 "SRHADD",                                    "0Q001110zz1mmmmm000101nnnnnddddd")
 //INST(SHSUB,                  "SHSUB",                                     "0Q001110zz1mmmmm001001nnnnnddddd")
