@@ -874,7 +874,7 @@ INST(SM3SS1,                 "SM3SS1",                                    "11001
 
 // Data Processing - FP and SIMD - SHA512 two register
 INST(SHA512SU0,              "SHA512SU0",                                 "1100111011000000100000nnnnnddddd")
-//INST(SM4E,                   "SM4E",                                      "1100111011000000100001nnnnnddddd")
+INST(SM4E,                   "SM4E",                                      "1100111011000000100001nnnnnddddd")
 
 // Data Processing - FP and SIMD - Conversion between floating point and fixed point
 //INST(SCVTF_float_fix,        "SCVTF (scalar, fixed-point)",               "z0011110yy000010ppppppnnnnnddddd")
