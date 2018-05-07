@@ -683,6 +683,10 @@ U128 IREmitter::AESMixColumns(const U128& a) {
     return Inst<U128>(Opcode::AESMixColumns, a);
 }
 
+U8 IREmitter::SM4AccessSubstitutionBox(const U8& a) {
+    return Inst<U8>(Opcode::SM4AccessSubstitutionBox, a);
+}
+
 UAny IREmitter::VectorGetElement(size_t esize, const U128& a, size_t index) {
     ASSERT_MSG(esize * index < 128, "Invalid index");
     switch (esize) {

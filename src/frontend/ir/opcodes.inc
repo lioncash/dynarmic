@@ -202,6 +202,10 @@ OPCODE(AESDecryptSingleRound,               T::U128,        T::U128             
 OPCODE(AESEncryptSingleRound,               T::U128,        T::U128                                         )
 OPCODE(AESInverseMixColumns,                T::U128,        T::U128                                         )
 OPCODE(AESMixColumns,                       T::U128,        T::U128                                         )
+
+// SM4 instructions
+OPCODE(SM4AccessSubstitutionBox,            T::U8,          T::U8                                           )
+
 // Vector instructions
 OPCODE(VectorGetElement8,                   T::U8,          T::U128,        T::U8                           )
 OPCODE(VectorGetElement16,                  T::U16,         T::U128,        T::U8                           )

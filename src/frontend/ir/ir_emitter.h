@@ -188,6 +188,8 @@ public:
     U128 AESInverseMixColumns(const U128& a);
     U128 AESMixColumns(const U128& a);
 
+    U8 SM4AccessSubstitutionBox(const U8& a);
+
     UAny VectorGetElement(size_t esize, const U128& a, size_t index);
     U128 VectorSetElement(size_t esize, const U128& a, size_t index, const UAny& elem);
     U128 VectorAbs(size_t esize, const U128& a);

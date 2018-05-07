@@ -24,6 +24,8 @@ add_library(dynarmic
     common/memory_pool.h
     common/mp.h
     common/scope_exit.h
+    common/sm4.cpp
+    common/sm4.h
     common/string_util.h
     common/variant_util.h
     frontend/A32/decoder/arm.h
@@ -182,6 +184,7 @@ if (ARCHITECTURE_x86_64)
          backend_x64/emit_x64_floating_point.cpp
          backend_x64/emit_x64_packed.cpp
          backend_x64/emit_x64_saturation.cpp
+         backend_x64/emit_x64_sm4.cpp
          backend_x64/emit_x64_vector.cpp
          backend_x64/emit_x64_vector_floating_point.cpp
          backend_x64/hostloc.cpp
