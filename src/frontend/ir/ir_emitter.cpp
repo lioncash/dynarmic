@@ -912,6 +912,32 @@ U128 IREmitter::VectorHalvingAddUnsigned(size_t esize, const U128& a, const U128
     return {};
 }
 
+U128 IREmitter::VectorHalvingSubSigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorHalvingSubS8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorHalvingSubS16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorHalvingSubS32, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
+U128 IREmitter::VectorHalvingSubUnsigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorHalvingSubU8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorHalvingSubU16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorHalvingSubU32, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorInterleaveLower(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 8:

@@ -849,6 +849,92 @@ void EmitX64::EmitVectorHalvingAddU32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorHalvingAddUnsigned(32, ctx, inst, code);
 }
 
+static void EmitVectorHalvingSubSigned(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    switch (esize) {
+    case 8: {
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(tmp, code.MConst(xword, 0x8080808080808080, 0x8080808080808080));
+        code.pxor(a, tmp);
+        code.pxor(b, tmp);
+        code.pavgb(b, a);
+        code.psubb(a, b);
+        break;
+    }
+    case 16: {
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(tmp, code.MConst(xword, 0x8000800080008000, 0x8000800080008000));
+        code.pxor(a, tmp);
+        code.pxor(b, tmp);
+        code.pavgw(b, a);
+        code.psubw(a, b);
+        break;
+    }
+    case 32:
+        code.pxor(a, b);
+        code.pand(b, a);
+        code.psrad(a, 1);
+        code.psubd(a, b);
+        break;
+    }
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorHalvingSubS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingSubSigned(8, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorHalvingSubS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingSubSigned(16, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorHalvingSubS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingSubSigned(32, ctx, inst, code);
+}
+
+static void EmitVectorHalvingSubUnsigned(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    switch (esize) {
+    case 8:
+        code.pavgb(b, a);
+        code.psubb(a, b);
+        break;
+    case 16:
+        code.pavgw(b, a);
+        code.psubw(a, b);
+        break;
+    case 32:
+        code.pxor(a, b);
+        code.pand(b, a);
+        code.psrld(a, 1);
+        code.psubd(a, b);
+        break;
+    }
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorHalvingSubU8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingSubUnsigned(8, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorHalvingSubU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingSubUnsigned(16, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorHalvingSubU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorHalvingSubUnsigned(32, ctx, inst, code);
+}
+
 static void EmitVectorInterleaveLower(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int size) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

@@ -210,6 +210,8 @@ public:
     U128 VectorGreaterUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorHalvingAddSigned(size_t esize, const U128& a, const U128& b);
     U128 VectorHalvingAddUnsigned(size_t esize, const U128& a, const U128& b);
+    U128 VectorHalvingSubSigned(size_t esize, const U128& a, const U128& b);
+    U128 VectorHalvingSubUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorInterleaveLower(size_t esize, const U128& a, const U128& b);
     U128 VectorInterleaveUpper(size_t esize, const U128& a, const U128& b);
     U128 VectorLessEqualSigned(size_t esize, const U128& a, const U128& b);
