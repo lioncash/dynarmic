@@ -703,7 +703,7 @@ INST(RSUBHN,                 "RSUBHN, RSUBHN2",                           "0Q101
 INST(SHADD,                  "SHADD",                                     "0Q001110zz1mmmmm000001nnnnnddddd")
 //INST(SQADD_2,                "SQADD",                                     "0Q001110zz1mmmmm000011nnnnnddddd")
 //INST(SRHADD,                 "SRHADD",                                    "0Q001110zz1mmmmm000101nnnnnddddd")
-//INST(SHSUB,                  "SHSUB",                                     "0Q001110zz1mmmmm001001nnnnnddddd")
+INST(SHSUB,                  "SHSUB",                                     "0Q001110zz1mmmmm001001nnnnnddddd")
 //INST(SQSUB_2,                "SQSUB",                                     "0Q001110zz1mmmmm001011nnnnnddddd")
 INST(CMGT_reg_2,             "CMGT (register)",                           "0Q001110zz1mmmmm001101nnnnnddddd")
 INST(CMGE_reg_2,             "CMGE (register)",                           "0Q001110zz1mmmmm001111nnnnnddddd")
