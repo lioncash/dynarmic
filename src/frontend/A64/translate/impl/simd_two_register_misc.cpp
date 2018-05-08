@@ -281,4 +281,18 @@ bool TranslatorVisitor::SCVTF_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SHLL(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::U128 operand = ir.VectorZeroExtend(esize, Vpart(64, Vn, Q));
+    const IR::U128 result = ir.VectorLogicalShiftLeft(esize * 2, operand, static_cast<u8>(esize));
+
+    V(128, Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64
