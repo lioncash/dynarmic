@@ -267,15 +267,10 @@ bool TranslatorVisitor::SCVTF_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    if (sz) {
-        // TODO: Implement
-        return InterpretThisInstruction();
-    }
-
     const size_t datasize = Q ? 128 : 64;
 
     const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 result = ir.FPVectorS32ToSingle(operand);
+    const IR::U128 result = sz ? ir.FPVectorS64ToDouble(operand) : ir.FPVectorS32ToSingle(operand);
 
     V(datasize, Vd, result);
     return true;
