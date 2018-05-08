@@ -206,6 +206,47 @@ void EmitX64::EmitFPVectorS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, xmm);
 }
 
+void EmitX64::EmitFPVectorS64ToDouble(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ)) {
+        code.vcvtqq2pd(xmm, xmm);
+    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        const Xbyak::Xmm xmm_tmp = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
+
+        // First quadword
+        code.movq(tmp, xmm);
+        code.cvtsi2sd(xmm, tmp);
+
+        // Second quadword
+        code.pextrq(tmp, xmm, 1);
+        code.cvtsi2sd(xmm_tmp, tmp);
+
+        // Combine
+        code.unpcklpd(xmm, xmm_tmp);
+    } else {
+        const Xbyak::Xmm high_xmm = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm xmm_tmp = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
+
+        // First quadword
+        code.movhlps(high_xmm, xmm);
+        code.movq(tmp, xmm);
+        code.cvtsi2sd(xmm, tmp);
+
+        // Second quadword
+        code.movq(tmp, high_xmm);
+        code.cvtsi2sd(xmm_tmp, tmp);
+
+        // Combine
+        code.unpcklpd(xmm, xmm_tmp);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, xmm);
+}
+
 void EmitX64::EmitFPVectorSub32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::subps);
 }
