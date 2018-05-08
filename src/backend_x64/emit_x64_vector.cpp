@@ -1875,6 +1875,55 @@ void EmitX64::EmitVectorSignExtend64(EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
+static void EmitVectorSignedAbsoluteDifference(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+    const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(mask, x);
+    code.movdqa(tmp1, y);
+
+    switch (esize) {
+    case 8:
+        code.pcmpgtb(mask, y);
+        code.psubb(tmp1, x);
+        code.psubb(x, y);
+        break;
+    case 16:
+        code.pcmpgtw(mask, y);
+        code.psubw(tmp1, x);
+        code.psubw(x, y);
+        break;
+    case 32:
+        code.pcmpgtd(mask, y);
+        code.psubd(tmp1, x);
+        code.psubd(x, y);
+        break;
+    }
+
+    code.movdqa(tmp2, mask);
+    code.pand(x, mask);
+    code.pandn(tmp2, tmp1);
+    code.por(x, tmp2);
+
+    ctx.reg_alloc.DefineValue(inst, x);
+}
+
+void EmitX64::EmitVectorSignedAbsoluteDifference8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedAbsoluteDifference(8, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorSignedAbsoluteDifference16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedAbsoluteDifference(16, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorSignedAbsoluteDifference32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedAbsoluteDifference(32, ctx, inst, code);
+}
+
 void EmitX64::EmitVectorSub8(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubb);
 }
