@@ -715,7 +715,7 @@ INST(SSHL_2,                 "SSHL",                                      "0Q001
 INST(SMAX,                   "SMAX",                                      "0Q001110zz1mmmmm011001nnnnnddddd")
 INST(SMIN,                   "SMIN",                                      "0Q001110zz1mmmmm011011nnnnnddddd")
 INST(SABD,                   "SABD",                                      "0Q001110zz1mmmmm011101nnnnnddddd")
-//INST(SABA,                   "SABA",                                      "0Q001110zz1mmmmm011111nnnnnddddd")
+INST(SABA,                   "SABA",                                      "0Q001110zz1mmmmm011111nnnnnddddd")
 INST(ADD_vector,             "ADD (vector)",                              "0Q001110zz1mmmmm100001nnnnnddddd")
 INST(CMTST_2,                "CMTST",                                     "0Q001110zz1mmmmm100011nnnnnddddd")
 INST(MLA_vec,                "MLA (vector)",                              "0Q001110zz1mmmmm100101nnnnnddddd")

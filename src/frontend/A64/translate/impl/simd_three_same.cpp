@@ -44,6 +44,37 @@ static void HighNarrowingOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Ve
 
     v.Vpart(64, Vd, part, result);
 }
+
+enum class AbsDiffExtraBehavior {
+    None,
+    Accumulate
+};
+
+bool SignedAbsoluteDifference(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, AbsDiffExtraBehavior behavior) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = v.V(datasize, Vm);
+    const IR::U128 result = [&] {
+        const IR::U128 tmp = v.ir.VectorSignedAbsoluteDifference(esize, operand1, operand2);
+
+        if (behavior == AbsDiffExtraBehavior::Accumulate) {
+            const IR::U128 d = v.V(datasize, Vd);
+            return v.ir.VectorAdd(esize, d, tmp);
+        }
+
+        return tmp;
+    }();
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 } // Anonymous namespace
 
 bool TranslatorVisitor::CMGT_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -73,20 +104,12 @@ bool TranslatorVisitor::CMGE_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) 
     return true;
 }
 
+bool TranslatorVisitor::SABA(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return SignedAbsoluteDifference(*this, Q, size, Vm, Vn, Vd, AbsDiffExtraBehavior::Accumulate);
+}
+
 bool TranslatorVisitor::SABD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t datasize = Q ? 128 : 64;
-    const size_t esize = 8 << size.ZeroExtend();
-
-    const IR::U128 operand1 = V(datasize, Vn);
-    const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.VectorSignedAbsoluteDifference(esize, operand1, operand2);
-
-    V(datasize, Vd, result);
-    return true;
+    return SignedAbsoluteDifference(*this, Q, size, Vm, Vn, Vd, AbsDiffExtraBehavior::None);
 }
 
 bool TranslatorVisitor::SMAX(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
