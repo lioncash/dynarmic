@@ -40,14 +40,21 @@ static void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, V
 }
 
 static void RoundingShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
-                               ShiftExtraBehavior behavior) {
+                               ShiftExtraBehavior behavior, Signedness signedness) {
     const size_t esize = 64;
     const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
 
     const IR::U64 operand = v.V_scalar(esize, Vn);
     const IR::U64 round_bit = v.ir.LogicalShiftRight(v.ir.LogicalShiftLeft(operand, v.ir.Imm8(64 - shift_amount)), v.ir.Imm8(63));
     const IR::U64 result = [&] {
-        IR::U64 tmp = v.ir.Add(v.ir.ArithmeticShiftRight(operand, v.ir.Imm8(shift_amount)), round_bit);
+        const IR::U64 shifted = [&]() -> IR::U64 {
+            if (signedness == Signedness::Signed) {
+                return v.ir.ArithmeticShiftRight(operand, v.ir.Imm8(shift_amount));
+            }
+            return v.ir.LogicalShiftRight(operand, v.ir.Imm8(shift_amount));
+        }();
+
+        IR::U64 tmp = v.ir.Add(shifted, round_bit);
 
         if (behavior == ShiftExtraBehavior::Accumulate) {
             tmp = v.ir.Add(tmp, v.V_scalar(esize, Vd));
@@ -122,7 +129,7 @@ bool TranslatorVisitor::SRSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None);
+    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Signed);
     return true;
 }
 
@@ -131,7 +138,7 @@ bool TranslatorVisitor::SRSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate);
+    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Signed);
     return true;
 }
 
@@ -165,6 +172,24 @@ bool TranslatorVisitor::SHL_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     const IR::U64 result = ir.LogicalShiftLeft(operand, ir.Imm8(shift_amount));
 
     V_scalar(esize, Vd, result);
+    return true;
+}
+
+bool TranslatorVisitor::URSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (!immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Unsigned);
+    return true;
+}
+
+bool TranslatorVisitor::URSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (!immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Unsigned);
     return true;
 }
 
