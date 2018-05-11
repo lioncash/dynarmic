@@ -97,6 +97,22 @@ bool TranslatorVisitor::SRI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SRSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (!immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 64;
+    const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
+
+    const IR::U64 operand = V_scalar(esize, Vn);
+    const IR::U64 round_bit = ir.LogicalShiftRight(ir.LogicalShiftLeft(operand, ir.Imm8(64 - shift_amount)), ir.Imm8(63));
+    const IR::U64 result = ir.Add(ir.ArithmeticShiftRight(operand, ir.Imm8(shift_amount)), round_bit);
+
+    V_scalar(esize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     if (!immh.Bit<3>()) {
         return ReservedValue();
