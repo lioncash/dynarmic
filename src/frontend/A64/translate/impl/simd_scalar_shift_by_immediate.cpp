@@ -39,6 +39,26 @@ static void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, V
     v.V_scalar(esize, Vd, result);
 }
 
+static void RoundingShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+                               ShiftExtraBehavior behavior) {
+    const size_t esize = 64;
+    const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
+
+    const IR::U64 operand = v.V_scalar(esize, Vn);
+    const IR::U64 round_bit = v.ir.LogicalShiftRight(v.ir.LogicalShiftLeft(operand, v.ir.Imm8(64 - shift_amount)), v.ir.Imm8(63));
+    const IR::U64 result = [&] {
+        IR::U64 tmp = v.ir.Add(v.ir.ArithmeticShiftRight(operand, v.ir.Imm8(shift_amount)), round_bit);
+
+        if (behavior == ShiftExtraBehavior::Accumulate) {
+            tmp = v.ir.Add(tmp, v.V_scalar(esize, Vd));
+        }
+
+        return tmp;
+    }();
+
+    v.V_scalar(esize, Vd, result);
+}
+
 enum class ShiftDirection {
     Left,
     Right,
@@ -102,14 +122,16 @@ bool TranslatorVisitor::SRSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    const size_t esize = 64;
-    const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
+    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None);
+    return true;
+}
 
-    const IR::U64 operand = V_scalar(esize, Vn);
-    const IR::U64 round_bit = ir.LogicalShiftRight(ir.LogicalShiftLeft(operand, ir.Imm8(64 - shift_amount)), ir.Imm8(63));
-    const IR::U64 result = ir.Add(ir.ArithmeticShiftRight(operand, ir.Imm8(shift_amount)), round_bit);
+bool TranslatorVisitor::SRSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (!immh.Bit<3>()) {
+        return ReservedValue();
+    }
 
-    V_scalar(esize, Vd, result);
+    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate);
     return true;
 }
 
