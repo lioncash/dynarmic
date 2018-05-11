@@ -601,7 +601,7 @@ INST(SCVTF_int_4,            "SCVTF (vector, integer)",                   "0Q001
 //INST(FCMLT_3,                "FCMLT (zero)",                              "0Q00111011111000111010nnnnnddddd")
 //INST(FCMLT_4,                "FCMLT (zero)",                              "0Q0011101z100000111010nnnnnddddd")
 //INST(FABS_1,                 "FABS (vector)",                             "0Q00111011111000111110nnnnnddddd")
-//INST(FABS_2,                 "FABS (vector)",                             "0Q0011101z100000111110nnnnnddddd")
+INST(FABS_2,                 "FABS (vector)",                             "0Q0011101z100000111110nnnnnddddd")
 //INST(FRINTP_1,               "FRINTP (vector)",                           "0Q00111011111001100010nnnnnddddd")
 //INST(FRINTP_2,               "FRINTP (vector)",                           "0Q0011101z100001100010nnnnnddddd")
 //INST(FRINTZ_1,               "FRINTZ (vector)",                           "0Q00111011111001100110nnnnnddddd")
