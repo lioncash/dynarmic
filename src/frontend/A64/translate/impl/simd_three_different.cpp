@@ -7,6 +7,29 @@
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
+namespace {
+enum class AbsoluteDifferenceBehavior {
+    None,
+    Accumulate
+};
+
+void UnsignedAbsoluteDifferenceLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                                    AbsoluteDifferenceBehavior behavior) {
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = 64;
+
+    const IR::U128 operand1 = v.ir.VectorZeroExtend(esize, v.Vpart(datasize, Vn, Q));
+    const IR::U128 operand2 = v.ir.VectorZeroExtend(esize, v.Vpart(datasize, Vm, Q));
+    IR::U128 result = v.ir.VectorUnsignedAbsoluteDifference(esize, operand1, operand2);
+
+    if (behavior == AbsoluteDifferenceBehavior::Accumulate) {
+        const IR::U128 data = v.V(2 * datasize, Vd);
+        result = v.ir.VectorAdd(2 * esize, result, data);
+    }
+
+    v.V(2 * datasize, Vd, result);
+}
+} // Anonymous namespace
 
 bool TranslatorVisitor::SADDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11) {
@@ -88,19 +111,21 @@ bool TranslatorVisitor::UADDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::UABAL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+    
+    UnsignedAbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::Accumulate);
+    return true;
+}
+
 bool TranslatorVisitor::UABDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11) {
         return ReservedValue();
     }
 
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t datasize = 64;
-
-    const IR::U128 operand1 = ir.VectorZeroExtend(esize, Vpart(datasize, Vn, Q));
-    const IR::U128 operand2 = ir.VectorZeroExtend(esize, Vpart(datasize, Vm, Q));
-    const IR::U128 result = ir.VectorUnsignedAbsoluteDifference(esize, operand1, operand2);
-
-    V(2 * datasize, Vd, result);
+    UnsignedAbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::None);
     return true;
 }
 
