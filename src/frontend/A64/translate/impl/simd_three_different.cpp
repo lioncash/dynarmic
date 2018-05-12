@@ -13,14 +13,20 @@ enum class AbsoluteDifferenceBehavior {
     Accumulate
 };
 
-void UnsignedAbsoluteDifferenceLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
-                                    AbsoluteDifferenceBehavior behavior) {
+enum class Signedness {
+    Signed,
+    Unsigned
+};
+
+void AbsoluteDifferenceLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                            AbsoluteDifferenceBehavior behavior, Signedness sign) {
     const size_t esize = 8 << size.ZeroExtend();
     const size_t datasize = 64;
 
     const IR::U128 operand1 = v.ir.VectorZeroExtend(esize, v.Vpart(datasize, Vn, Q));
     const IR::U128 operand2 = v.ir.VectorZeroExtend(esize, v.Vpart(datasize, Vm, Q));
-    IR::U128 result = v.ir.VectorUnsignedAbsoluteDifference(esize, operand1, operand2);
+    IR::U128 result = sign == Signedness::Signed ? v.ir.VectorSignedAbsoluteDifference(esize, operand1, operand2)
+                                                 : v.ir.VectorUnsignedAbsoluteDifference(esize, operand1, operand2);
 
     if (behavior == AbsoluteDifferenceBehavior::Accumulate) {
         const IR::U128 data = v.V(2 * datasize, Vd);
@@ -30,6 +36,24 @@ void UnsignedAbsoluteDifferenceLong(TranslatorVisitor& v, bool Q, Imm<2> size, V
     v.V(2 * datasize, Vd, result);
 }
 } // Anonymous namespace
+
+bool TranslatorVisitor::SABAL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::Accumulate, Signedness::Signed);
+    return true;
+}
+
+bool TranslatorVisitor::SABDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::None, Signedness::Signed);
+    return true;
+}
 
 bool TranslatorVisitor::SADDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11) {
@@ -116,7 +140,7 @@ bool TranslatorVisitor::UABAL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
     
-    UnsignedAbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::Accumulate);
+    AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::Accumulate, Signedness::Unsigned);
     return true;
 }
 
@@ -125,7 +149,7 @@ bool TranslatorVisitor::UABDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    UnsignedAbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::None);
+    AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::None, Signedness::Unsigned);
     return true;
 }
 
