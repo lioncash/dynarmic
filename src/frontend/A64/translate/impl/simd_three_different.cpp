@@ -88,6 +88,22 @@ bool TranslatorVisitor::UADDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::UABDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = 64;
+
+    const IR::U128 operand1 = ir.VectorZeroExtend(esize, Vpart(datasize, Vn, Q));
+    const IR::U128 operand2 = ir.VectorZeroExtend(esize, Vpart(datasize, Vm, Q));
+    const IR::U128 result = ir.VectorUnsignedAbsoluteDifference(esize, operand1, operand2);
+
+    V(2 * datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::UADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11) {
         return ReservedValue();

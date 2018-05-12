@@ -695,7 +695,7 @@ INST(USUBW,                  "USUBW, USUBW2",                             "0Q101
 INST(RADDHN,                 "RADDHN, RADDHN2",                           "0Q101110zz1mmmmm010000nnnnnddddd")
 //INST(UABAL,                  "UABAL, UABAL2",                             "0Q101110zz1mmmmm010100nnnnnddddd")
 INST(RSUBHN,                 "RSUBHN, RSUBHN2",                           "0Q101110zz1mmmmm011000nnnnnddddd")
-//INST(UABDL,                  "UABDL, UABDL2",                             "0Q101110zz1mmmmm011100nnnnnddddd")
+INST(UABDL,                  "UABDL, UABDL2",                             "0Q101110zz1mmmmm011100nnnnnddddd")
 //INST(UMLAL_vec,              "UMLAL, UMLAL2 (vector)",                    "0Q101110zz1mmmmm100000nnnnnddddd")
 //INST(UMLSL_vec,              "UMLSL, UMLSL2 (vector)",                    "0Q101110zz1mmmmm101000nnnnnddddd")
 //INST(UMULL_vec,              "UMULL, UMULL2 (vector)",                    "0Q101110zz1mmmmm110000nnnnnddddd")
