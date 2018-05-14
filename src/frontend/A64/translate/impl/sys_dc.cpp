@@ -14,7 +14,7 @@ static bool DataCacheInstruction(TranslatorVisitor& tv, IREmitter& ir, DataCache
 }
 
 bool TranslatorVisitor::DC_IVAC(Reg Rt) {
-    return DataCacheInstruction(*this, ir, DataCacheOperation::InvaldiateByVAToPoC, Rt);
+    return DataCacheInstruction(*this, ir, DataCacheOperation::InvalidateByVAToPoC, Rt);
 }
 
 bool TranslatorVisitor::DC_ISW(Reg Rt) {

@@ -56,7 +56,7 @@ enum class DataCacheOperation {
     /// DC ISW
     InvalidateBySetWay,
     /// DC IVAC
-    InvaldiateByVAToPoC,
+    InvalidateByVAToPoC,
     /// DC ZVA
     ZeroByVA,
 };
