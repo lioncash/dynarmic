@@ -1459,6 +1459,17 @@ void EmitX64::EmitVectorMultiply32(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorMultiply64(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
+
+        code.vpmullq(a, a, b);
+
+        ctx.reg_alloc.DefineValue(inst, a);
+        return;
+    }
+
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
