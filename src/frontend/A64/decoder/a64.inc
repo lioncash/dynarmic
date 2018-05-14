@@ -156,7 +156,7 @@ INST(LDAR,                   "LDARB, LDARH, LDAR",                        "zz001
 INST(LDR_lit_gen,            "LDR (literal)",                             "0z011000iiiiiiiiiiiiiiiiiiittttt")
 INST(LDRSW_lit,              "LDRSW (literal)",                           "10011000iiiiiiiiiiiiiiiiiiittttt")
 INST(PRFM_lit,               "PRFM (literal)",                            "11011000iiiiiiiiiiiiiiiiiiittttt")
-//INST(LDR_lit_fpsimd,         "LDR (literal, SIMD&FP)",                    "oo011100iiiiiiiiiiiiiiiiiiittttt")
+INST(LDR_lit_fpsimd,         "LDR (literal, SIMD&FP)",                    "oo011100iiiiiiiiiiiiiiiiiiittttt")
 
 // Loads and stores - Load/Store no-allocate pair
 //INST(STNP_gen,               "STNP",                                      "-010100000iiiiiiiuuuuunnnnnttttt")

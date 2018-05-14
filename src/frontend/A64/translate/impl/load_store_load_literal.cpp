@@ -20,6 +20,24 @@ bool TranslatorVisitor::LDR_lit_gen(bool opc_0, Imm<19> imm19, Reg Rt) {
     return true;
 }
 
+bool TranslatorVisitor::LDR_lit_fpsimd(Imm<2> opc, Imm<19> imm19, Vec Vt) {
+    if (opc == 0b11) {
+        return UnallocatedEncoding();
+    }
+
+    const u64 size = 4 << opc.ZeroExtend();
+    const u64 offset = imm19.SignExtend<u64>() << 2;
+    const IR::U64 address = ir.Imm64(ir.PC() + offset);
+    const IR::UAnyU128 data = Mem(address, size, AccType::VEC);
+
+    if (size == 16) {
+        V(128, Vt, data);
+    } else {
+        V(128, Vt, ir.ZeroExtendToQuad(data));
+    }
+    return true;
+}
+
 bool TranslatorVisitor::LDRSW_lit(Imm<19> imm19, Reg Rt) {
     s64 offset = concatenate(imm19, Imm<2>{0}).SignExtend<s64>();
 
