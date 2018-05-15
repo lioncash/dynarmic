@@ -36,15 +36,28 @@ void AbsoluteDifferenceLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, V
     v.V(2 * datasize, Vd, result);
 }
 
-void MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+enum class MultiplyLongBehavior {
+    None,
+    Accumulate,
+};
+
+void MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                  MultiplyLongBehavior behavior) {
     const size_t esize = 8 << size.ZeroExtend();
+    const size_t doubled_esize = 2 * esize;
     const size_t datasize = 64;
+    const size_t doubled_datasize = datasize * 2;
 
     const IR::U128 operand1 = v.ir.VectorSignExtend(esize, v.Vpart(datasize, Vn, Q));
     const IR::U128 operand2 = v.ir.VectorSignExtend(esize, v.Vpart(datasize, Vm, Q));
-    const IR::U128 product = v.ir.VectorMultiply(2 * esize, operand1, operand2);
+    IR::U128 result = v.ir.VectorMultiply(doubled_esize, operand1, operand2);
 
-    v.V(2 * datasize, Vd, product);
+    if (behavior == MultiplyLongBehavior::Accumulate) {
+        const IR::U128 addend = v.V(doubled_datasize, Vd);
+        result = v.ir.VectorAdd(doubled_esize, addend, result);
+    }
+
+    v.V(doubled_datasize, Vd, result);
 }
 } // Anonymous namespace
 
@@ -98,12 +111,21 @@ bool TranslatorVisitor::SADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SMLAL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Accumulate);
+    return true;
+}
+
 bool TranslatorVisitor::SMULL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11) {
         return ReservedValue();
     }
 
-    MultiplyLong(*this, Q, size, Vm, Vn, Vd);
+    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::None);
     return true;
 }
 
