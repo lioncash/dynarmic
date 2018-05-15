@@ -39,6 +39,7 @@ void AbsoluteDifferenceLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, V
 enum class MultiplyLongBehavior {
     None,
     Accumulate,
+    Subtract
 };
 
 void MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
@@ -55,6 +56,9 @@ void MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec
     if (behavior == MultiplyLongBehavior::Accumulate) {
         const IR::U128 addend = v.V(doubled_datasize, Vd);
         result = v.ir.VectorAdd(doubled_esize, addend, result);
+    } else if (behavior == MultiplyLongBehavior::Subtract) {
+        const IR::U128 minuend = v.V(doubled_datasize, Vd);
+        result = v.ir.VectorSub(doubled_esize, minuend, result);
     }
 
     v.V(doubled_datasize, Vd, result);
@@ -117,6 +121,15 @@ bool TranslatorVisitor::SMLAL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     }
 
     MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Accumulate);
+    return true;
+}
+
+bool TranslatorVisitor::SMLSL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Subtract);
     return true;
 }
 
