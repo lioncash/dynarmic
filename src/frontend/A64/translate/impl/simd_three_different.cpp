@@ -43,14 +43,26 @@ enum class MultiplyLongBehavior {
 };
 
 void MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
-                  MultiplyLongBehavior behavior) {
+                  MultiplyLongBehavior behavior, Signedness sign) {
     const size_t esize = 8 << size.ZeroExtend();
     const size_t doubled_esize = 2 * esize;
     const size_t datasize = 64;
     const size_t doubled_datasize = datasize * 2;
 
-    const IR::U128 operand1 = v.ir.VectorSignExtend(esize, v.Vpart(datasize, Vn, Q));
-    const IR::U128 operand2 = v.ir.VectorSignExtend(esize, v.Vpart(datasize, Vm, Q));
+    const auto get_operands = [&] {
+        const auto p1 = v.Vpart(datasize, Vn, Q);
+        const auto p2 = v.Vpart(datasize, Vm, Q);
+
+        if (sign == Signedness::Signed) {
+            return std::make_pair(v.ir.VectorSignExtend(esize, p1),
+                                  v.ir.VectorSignExtend(esize, p2));
+        }
+
+        return std::make_pair(v.ir.VectorZeroExtend(esize, p1),
+                              v.ir.VectorZeroExtend(esize, p2));
+    };
+
+    const auto [operand1, operand2] = get_operands();
     IR::U128 result = v.ir.VectorMultiply(doubled_esize, operand1, operand2);
 
     if (behavior == MultiplyLongBehavior::Accumulate) {
@@ -120,7 +132,7 @@ bool TranslatorVisitor::SMLAL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Accumulate);
+    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Accumulate, Signedness::Signed);
     return true;
 }
 
@@ -129,7 +141,7 @@ bool TranslatorVisitor::SMLSL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Subtract);
+    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Subtract, Signedness::Signed);
     return true;
 }
 
@@ -138,7 +150,7 @@ bool TranslatorVisitor::SMULL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
         return ReservedValue();
     }
 
-    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::None);
+    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::None, Signedness::Signed);
     return true;
 }
 
@@ -222,6 +234,33 @@ bool TranslatorVisitor::UADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 
     V(128, Vd, result);
 
+    return true;
+}
+
+bool TranslatorVisitor::UMLAL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Accumulate, Signedness::Unsigned);
+    return true;
+}
+
+bool TranslatorVisitor::UMLSL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Subtract, Signedness::Unsigned);
+    return true;
+}
+
+bool TranslatorVisitor::UMULL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::None, Signedness::Unsigned);
     return true;
 }
 
