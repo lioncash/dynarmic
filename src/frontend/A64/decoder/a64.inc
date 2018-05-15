@@ -686,7 +686,7 @@ INST(SUBHN,                  "SUBHN, SUBHN2",                             "0Q001
 INST(SABDL,                  "SABDL, SABDL2",                             "0Q001110zz1mmmmm011100nnnnnddddd")
 //INST(SMLAL_vec,              "SMLAL, SMLAL2 (vector)",                    "0Q001110zz1mmmmm100000nnnnnddddd")
 //INST(SMLSL_vec,              "SMLSL, SMLSL2 (vector)",                    "0Q001110zz1mmmmm101000nnnnnddddd")
-//INST(SMULL_vec,              "SMULL, SMULL2 (vector)",                    "0Q001110zz1mmmmm110000nnnnnddddd")
+INST(SMULL_vec,              "SMULL, SMULL2 (vector)",                    "0Q001110zz1mmmmm110000nnnnnddddd")
 //INST(PMULL,                  "PMULL, PMULL2",                             "0Q001110zz1mmmmm111000nnnnnddddd")
 INST(UADDL,                  "UADDL, UADDL2",                             "0Q101110zz1mmmmm000000nnnnnddddd")
 INST(UADDW,                  "UADDW, UADDW2",                             "0Q101110zz1mmmmm000100nnnnnddddd")
