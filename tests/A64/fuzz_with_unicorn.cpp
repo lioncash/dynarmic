@@ -90,10 +90,6 @@ static u32 GenRandomInst(u64 pc, bool is_last_inst) {
             result.emplace_back(InstructionGenerator{bitstring});
         }
 
-        // Manually added exceptions:
-        // FMOV_float_imm for half-precision floats (QEMU doesn't have half-precision support yet).
-        InstructionGenerator::AddInvalidInstruction("00011110111iiiiiiii10000000ddddd");
-
         return result;
     }();
 
