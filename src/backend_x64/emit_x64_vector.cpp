@@ -1789,6 +1789,105 @@ void EmitX64::EmitVectorReverseBits(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, data);
 }
 
+static void EmitVectorRoundingHalvingAddSigned(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    switch (esize) {
+    case 8: {
+        const Xbyak::Xmm vec_128 = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(vec_128, code.MConst(xword, 0x8080808080808080, 0x8080808080808080));
+
+        code.paddb(a, vec_128);
+        code.paddb(b, vec_128);
+        code.pavgb(a, b);
+        code.paddb(a, vec_128);
+        break;
+    }
+    case 16: {
+        const Xbyak::Xmm vec_32768 = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(vec_32768, code.MConst(xword, 0x8000800080008000, 0x8000800080008000));
+        
+        code.paddw(a, vec_32768);
+        code.paddw(b, vec_32768);
+        code.pavgw(a, b);
+        code.paddw(a, vec_32768);
+        break;
+    }
+    case 32: {
+        const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(tmp1, a);
+
+        code.por(a, b);
+        code.psrad(tmp1, 1);
+        code.psrad(b, 1);
+        code.pslld(a, 31);
+        code.paddd(b, tmp1);
+        code.psrld(a, 31);
+        code.paddd(a, b);
+        break;
+    }
+    }
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorRoundingHalvingAddS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorRoundingHalvingAddSigned(8, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorRoundingHalvingAddS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorRoundingHalvingAddSigned(16, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorRoundingHalvingAddS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorRoundingHalvingAddSigned(32, ctx, inst, code);
+}
+
+static void EmitVectorRoundingHalvingAddUnsigned(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+    switch (esize) {
+    case 8:
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pavgb);
+        return;
+    case 16:
+        EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::pavgw);
+        return;
+    case 32: {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+        const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+
+        code.movdqa(tmp1, a);
+
+        code.por(a, b);
+        code.psrld(tmp1, 1);
+        code.psrld(b, 1);
+        code.pslld(a, 31);
+        code.paddd(b, tmp1);
+        code.psrld(a, 31);
+        code.paddd(a, b);
+
+        ctx.reg_alloc.DefineValue(inst, a);
+    }
+    }
+}
+
+void EmitX64::EmitVectorRoundingHalvingAddU8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorRoundingHalvingAddUnsigned(8, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorRoundingHalvingAddU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorRoundingHalvingAddUnsigned(16, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorRoundingHalvingAddU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorRoundingHalvingAddUnsigned(32, ctx, inst, code);
+}
+
 enum class ShuffleType {
     LowHalfwords,
     HighHalfwords,

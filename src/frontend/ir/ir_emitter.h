@@ -236,6 +236,8 @@ public:
     U128 VectorReverseBits(const U128& a);
     U128 VectorRotateLeft(size_t esize, const U128& a, u8 amount);
     U128 VectorRotateRight(size_t esize, const U128& a, u8 amount);
+    U128 VectorRoundingHalvingAddSigned(size_t esize, const U128& a, const U128& b);
+    U128 VectorRoundingHalvingAddUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorShuffleHighHalfwords(const U128& a, u8 mask);
     U128 VectorShuffleLowHalfwords(const U128& a, u8 mask);
     U128 VectorShuffleWords(const U128& a, u8 mask);
