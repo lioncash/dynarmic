@@ -1464,8 +1464,9 @@ void EmitX64::EmitVectorMultiply64(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
         Xbyak::Reg64 tmp1 = ctx.reg_alloc.ScratchGpr();
@@ -1484,9 +1485,28 @@ void EmitX64::EmitVectorMultiply64(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b) {
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), std::multiplies<>());
-    });
+    const Xbyak::Xmm a = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+    const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm tmp3 = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp1, a);
+    code.movdqa(tmp2, a);
+    code.movdqa(tmp3, b);
+
+    code.psrlq(tmp1, 32);
+    code.psrlq(tmp3, 32);
+
+    code.pmuludq(tmp2, b);
+    code.pmuludq(tmp3, a);
+    code.pmuludq(b, tmp1);
+
+    code.paddq(b, tmp3);
+    code.psllq(b, 32);
+    code.paddq(tmp2, b);
+
+    ctx.reg_alloc.DefineValue(inst, tmp2);
 }
 
 void EmitX64::EmitVectorNarrow16(EmitContext& ctx, IR::Inst* inst) {
