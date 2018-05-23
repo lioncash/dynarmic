@@ -703,7 +703,7 @@ INST(UMULL_vec,              "UMULL, UMULL2 (vector)",                    "0Q101
 // Data Processing - FP and SIMD - SIMD three same
 INST(SHADD,                  "SHADD",                                     "0Q001110zz1mmmmm000001nnnnnddddd")
 //INST(SQADD_2,                "SQADD",                                     "0Q001110zz1mmmmm000011nnnnnddddd")
-//INST(SRHADD,                 "SRHADD",                                    "0Q001110zz1mmmmm000101nnnnnddddd")
+INST(SRHADD,                 "SRHADD",                                    "0Q001110zz1mmmmm000101nnnnnddddd")
 INST(SHSUB,                  "SHSUB",                                     "0Q001110zz1mmmmm001001nnnnnddddd")
 //INST(SQSUB_2,                "SQSUB",                                     "0Q001110zz1mmmmm001011nnnnnddddd")
 INST(CMGT_reg_2,             "CMGT (register)",                           "0Q001110zz1mmmmm001101nnnnnddddd")
@@ -744,7 +744,7 @@ INST(ORR_asimd_reg,          "ORR (vector, register)",                    "0Q001
 INST(ORN_asimd,              "ORN (vector)",                              "0Q001110111mmmmm000111nnnnnddddd")
 INST(UHADD,                  "UHADD",                                     "0Q101110zz1mmmmm000001nnnnnddddd")
 //INST(UQADD_2,                "UQADD",                                     "0Q101110zz1mmmmm000011nnnnnddddd")
-//INST(URHADD,                 "URHADD",                                    "0Q101110zz1mmmmm000101nnnnnddddd")
+INST(URHADD,                 "URHADD",                                    "0Q101110zz1mmmmm000101nnnnnddddd")
 INST(UHSUB,                  "UHSUB",                                     "0Q101110zz1mmmmm001001nnnnnddddd")
 //INST(UQSUB_2,                "UQSUB",                                     "0Q101110zz1mmmmm001011nnnnnddddd")
 INST(CMHI_2,                 "CMHI (register)",                           "0Q101110zz1mmmmm001101nnnnnddddd")

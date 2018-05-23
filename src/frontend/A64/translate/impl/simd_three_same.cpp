@@ -75,6 +75,27 @@ bool SignedAbsoluteDifference(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm,
     return true;
 }
 
+enum class Signedness {
+    Signed,
+    Unsigned
+};
+
+bool RoundingHalvingAdd(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, Signedness sign) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = v.V(datasize, Vm);
+    const IR::U128 operand2 = v.V(datasize, Vn);
+    const IR::U128 result = sign == Signedness::Signed ? v.ir.VectorRoundingHalvingAddSigned(esize, operand1, operand2)
+                                                       : v.ir.VectorRoundingHalvingAddUnsigned(esize, operand1, operand2);
+
+    v.V(datasize, Vd, result);
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::CMGT_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -254,6 +275,10 @@ bool TranslatorVisitor::SHSUB(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SRHADD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return RoundingHalvingAdd(*this, Q, size, Vm, Vn, Vd, Signedness::Signed);
+}
+
 bool TranslatorVisitor::UHADD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11) {
         return ReservedValue();
@@ -284,6 +309,10 @@ bool TranslatorVisitor::UHSUB(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 
     V(datasize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::URHADD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return RoundingHalvingAdd(*this, Q, size, Vm, Vn, Vd, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::ADDP_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
