@@ -254,7 +254,7 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
 }
 
 TEST_CASE("A64: Floating point instructions", "[a64]") {
-    std::array<u64, 80> float_numbers {
+    static constexpr std::array<u64, 80> float_numbers {
         0x00000000, // positive zero
         0x00000001, // smallest positive denormal
         0x00000076, //
