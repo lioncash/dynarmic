@@ -1872,6 +1872,7 @@ static void EmitVectorRoundingHalvingAddUnsigned(size_t esize, EmitContext& ctx,
         code.paddd(a, b);
 
         ctx.reg_alloc.DefineValue(inst, a);
+        break;
     }
     }
 }
