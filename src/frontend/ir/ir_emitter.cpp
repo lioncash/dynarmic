@@ -1503,6 +1503,17 @@ U128 IREmitter::FPVectorDiv(size_t esize, const U128& a, const U128& b) {
     return {};
 }
 
+U128 IREmitter::FPVectorEqual(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 32:
+        return Inst<U128>(Opcode::FPVectorEqual32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::FPVectorEqual64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::FPVectorMul(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 32:

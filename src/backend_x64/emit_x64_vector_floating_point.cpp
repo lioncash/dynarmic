@@ -189,6 +189,26 @@ void EmitX64::EmitFPVectorDiv64(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation64(code, ctx, inst, &Xbyak::CodeGenerator::divpd);
 }
 
+void EmitX64::EmitFPVectorEqual32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
+
+    code.cmpeqps(a, b);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitFPVectorEqual64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
+
+    code.cmpeqpd(a, b);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
 void EmitX64::EmitFPVectorMul32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::mulps);
 }
