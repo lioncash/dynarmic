@@ -597,7 +597,7 @@ INST(SCVTF_int_4,            "SCVTF (vector, integer)",                   "0Q001
 //INST(FCMGT_zero_3,           "FCMGT (zero)",                              "0Q00111011111000110010nnnnnddddd")
 //INST(FCMGT_zero_4,           "FCMGT (zero)",                              "0Q0011101z100000110010nnnnnddddd")
 //INST(FCMEQ_zero_3,           "FCMEQ (zero)",                              "0Q00111011111000110110nnnnnddddd")
-//INST(FCMEQ_zero_4,           "FCMEQ (zero)",                              "0Q0011101z100000110110nnnnnddddd")
+INST(FCMEQ_zero_4,           "FCMEQ (zero)",                              "0Q0011101z100000110110nnnnnddddd")
 //INST(FCMLT_3,                "FCMLT (zero)",                              "0Q00111011111000111010nnnnnddddd")
 //INST(FCMLT_4,                "FCMLT (zero)",                              "0Q0011101z100000111010nnnnnddddd")
 INST(FABS_1,                 "FABS (vector)",                             "0Q00111011111000111110nnnnnddddd")
