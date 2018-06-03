@@ -49,6 +49,38 @@ bool CompareAgainstZero(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vn, Vec V
     v.V(datasize, Vd, result);
     return true;
 }
+
+bool FPCompareAgainstZero(TranslatorVisitor& v, bool Q, bool sz, Vec Vn, Vec Vd, ComparisonType type) {
+    if (sz && !Q) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = sz ? 64 : 32;
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = v.V(datasize, Vn);
+    const IR::U128 zero = v.ir.ZeroVector();
+    const IR::U128 result = [&] {
+        switch (type) {
+        case ComparisonType::EQ:
+            return v.ir.FPVectorEqual(esize, operand, zero);
+        case ComparisonType::GE:
+            return v.ir.FPVectorGreaterEqual(esize, operand, zero);
+        case ComparisonType::GT:
+            return v.ir.FPVectorGreater(esize, operand, zero);
+        case ComparisonType::LE:
+            return v.ir.FPVectorGreaterEqual(esize, zero, operand);
+        case ComparisonType::LT:
+            return v.ir.FPVectorGreater(esize, zero, operand);
+        }
+
+        UNREACHABLE();
+        return IR::U128{};
+    }();
+
+    v.V(datasize, Vd, result);
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::CNT(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
@@ -143,18 +175,23 @@ bool TranslatorVisitor::FABS_2(bool Q, bool sz, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::FCMEQ_zero_4(bool Q, bool sz, Vec Vn, Vec Vd) {
-    if (sz && !Q) {
-        return ReservedValue();
-    }
+    return FPCompareAgainstZero(*this, Q, sz, Vn, Vd, ComparisonType::EQ);
+}
 
-    const size_t esize = sz ? 64 : 32;
-    const size_t datasize = Q ? 128 : 64;
+bool TranslatorVisitor::FCMGE_zero_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FPCompareAgainstZero(*this, Q, sz, Vn, Vd, ComparisonType::GE);
+}
 
-    const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 result = ir.FPVectorEqual(esize, operand, ir.ZeroVector());
+bool TranslatorVisitor::FCMGT_zero_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FPCompareAgainstZero(*this, Q, sz, Vn, Vd, ComparisonType::GT);
+}
 
-    V(datasize, Vd, result);
-    return true;
+bool TranslatorVisitor::FCMLE_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FPCompareAgainstZero(*this, Q, sz, Vn, Vd, ComparisonType::LE);
+}
+
+bool TranslatorVisitor::FCMLT_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FPCompareAgainstZero(*this, Q, sz, Vn, Vd, ComparisonType::LT);
 }
 
 bool TranslatorVisitor::FNEG_1(bool Q, Vec Vn, Vec Vd) {
