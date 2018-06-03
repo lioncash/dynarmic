@@ -209,6 +209,46 @@ void EmitX64::EmitFPVectorEqual64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+void EmitX64::EmitFPVectorGreater32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.cmpltps(b, a);
+
+    ctx.reg_alloc.DefineValue(inst, b);
+}
+
+void EmitX64::EmitFPVectorGreater64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.cmpltpd(b, a);
+
+    ctx.reg_alloc.DefineValue(inst, b);
+}
+
+void EmitX64::EmitFPVectorGreaterEqual32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.cmpleps(b, a);
+
+    ctx.reg_alloc.DefineValue(inst, b);
+}
+
+void EmitX64::EmitFPVectorGreaterEqual64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm b = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.cmplepd(b, a);
+
+    ctx.reg_alloc.DefineValue(inst, b);
+}
+
 void EmitX64::EmitFPVectorMul32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::mulps);
 }
