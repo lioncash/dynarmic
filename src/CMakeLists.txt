@@ -4,6 +4,8 @@ add_library(dynarmic
     ../include/dynarmic/A32/coprocessor.h
     ../include/dynarmic/A32/coprocessor_util.h
     ../include/dynarmic/A32/disassembler.h
+    ../include/dynarmic/A64/a64.h
+    ../include/dynarmic/A64/config.h
     common/address_range.h
     common/aes.cpp
     common/aes.h
@@ -84,10 +86,10 @@ add_library(dynarmic
     frontend/A64/translate/impl/data_processing_shift.cpp
     frontend/A64/translate/impl/exception_generating.cpp
     frontend/A64/translate/impl/floating_point_compare.cpp
-    frontend/A64/translate/impl/floating_point_conversion_fixed_point.cpp
-    frontend/A64/translate/impl/floating_point_conversion_integer.cpp
     frontend/A64/translate/impl/floating_point_conditional_compare.cpp
     frontend/A64/translate/impl/floating_point_conditional_select.cpp
+    frontend/A64/translate/impl/floating_point_conversion_fixed_point.cpp
+    frontend/A64/translate/impl/floating_point_conversion_integer.cpp
     frontend/A64/translate/impl/floating_point_data_processing_one_register.cpp
     frontend/A64/translate/impl/floating_point_data_processing_two_register.cpp
     frontend/A64/translate/impl/impl.cpp
