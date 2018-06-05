@@ -6,6 +6,7 @@
 
 #include <initializer_list>
 
+#include <dynarmic/A64/exclusive_monitor.h>
 #include <fmt/ostream.h>
 
 #include "backend_x64/a64_emit_x64.h"
@@ -567,6 +568,21 @@ void A64EmitX64::EmitA64ClearExclusive(A64EmitContext&, IR::Inst*) {
 }
 
 void A64EmitX64::EmitA64SetExclusive(A64EmitContext& ctx, IR::Inst* inst) {
+    if (conf.global_monitor) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
+
+        code.mov(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(1));
+        code.mov(code.ABI_PARAM1, reinterpret_cast<u64>(&conf));
+        code.CallFunction(static_cast<void(*)(A64::UserConfig&, u64, u8)>(
+            [](A64::UserConfig& conf, u64 vaddr, u8 size) {
+                conf.global_monitor->Mark(conf.processor_id, vaddr, size);
+            }
+        ));
+
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[1].IsImmediate());
     Xbyak::Reg64 address = ctx.reg_alloc.UseGpr(args[0]);
@@ -818,6 +834,82 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize) {
+    if (conf.global_monitor) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        if (bitsize != 128) {
+            ctx.reg_alloc.HostCall(inst, {}, args[0], args[1]);
+        } else {
+            ctx.reg_alloc.Use(args[0], ABI_PARAM2);
+            ctx.reg_alloc.Use(args[1], HostLoc::XMM0);
+            ctx.reg_alloc.EndOfAllocScope();
+            ctx.reg_alloc.HostCall(inst);
+        }
+
+        Xbyak::Label end;
+
+        code.mov(code.ABI_RETURN, u32(1));
+        code.cmp(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(0));
+        code.je(end);
+        code.mov(code.ABI_PARAM1, reinterpret_cast<u64>(&conf));
+        switch (bitsize) {
+        case 8:
+            code.CallFunction(static_cast<u32(*)(A64::UserConfig&, u64, u8)>(
+                [](A64::UserConfig& conf, u64 vaddr, u8 value) -> u32 {
+                    return conf.global_monitor->DoExclusiveOperation(conf.processor_id, vaddr, 1, [&]{
+                        conf.callbacks->MemoryWrite8(vaddr, value);
+                    }) ? 0 : 1;
+                }
+            ));
+            break;
+        case 16:
+            code.CallFunction(static_cast<u32(*)(A64::UserConfig&, u64, u16)>(
+                [](A64::UserConfig& conf, u64 vaddr, u16 value) -> u32 {
+                    return conf.global_monitor->DoExclusiveOperation(conf.processor_id, vaddr, 2, [&]{
+                        conf.callbacks->MemoryWrite16(vaddr, value);
+                    }) ? 0 : 1;
+                }
+            ));
+            break;
+        case 32:
+            code.CallFunction(static_cast<u32(*)(A64::UserConfig&, u64, u32)>(
+                [](A64::UserConfig& conf, u64 vaddr, u32 value) -> u32 {
+                    return conf.global_monitor->DoExclusiveOperation(conf.processor_id, vaddr, 4, [&]{
+                        conf.callbacks->MemoryWrite32(vaddr, value);
+                    }) ? 0 : 1;
+                }
+            ));
+            break;
+        case 64:
+            code.CallFunction(static_cast<u32(*)(A64::UserConfig&, u64, u64)>(
+                [](A64::UserConfig& conf, u64 vaddr, u64 value) -> u32 {
+                    return conf.global_monitor->DoExclusiveOperation(conf.processor_id, vaddr, 8, [&]{
+                        conf.callbacks->MemoryWrite64(vaddr, value);
+                    }) ? 0 : 1;
+                }
+            ));
+            break;
+        case 128:
+            code.sub(rsp, 8 + 16 + ABI_SHADOW_SPACE);
+            code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE]);
+            code.movaps(xword[code.ABI_PARAM3], xmm0);
+            code.CallFunction(static_cast<u32(*)(A64::UserConfig&, u64, A64::Vector&)>(
+                [](A64::UserConfig& conf, u64 vaddr, A64::Vector& value) -> u32 {
+                    return conf.global_monitor->DoExclusiveOperation(conf.processor_id, vaddr, 16, [&]{
+                        conf.callbacks->MemoryWrite128(vaddr, value);
+                    }) ? 0 : 1;
+                }
+            ));
+            code.add(rsp, 8 + 16 + ABI_SHADOW_SPACE);
+            break;
+        default:
+            UNREACHABLE();
+        }
+        code.L(end);
+
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
     int value_idx = bitsize != 128

@@ -6,6 +6,7 @@ add_library(dynarmic
     ../include/dynarmic/A32/disassembler.h
     ../include/dynarmic/A64/a64.h
     ../include/dynarmic/A64/config.h
+    ../include/dynarmic/A64/exclusive_monitor.h
     common/address_range.h
     common/aes.cpp
     common/aes.h
@@ -164,6 +165,7 @@ if (ARCHITECTURE_x86_64)
          backend_x64/a32_jitstate.h
          backend_x64/a64_emit_x64.cpp
          backend_x64/a64_emit_x64.h
+         backend_x64/a64_exclusive_monitor.cpp
          backend_x64/a64_interface.cpp
          backend_x64/a64_jitstate.cpp
          backend_x64/a64_jitstate.h

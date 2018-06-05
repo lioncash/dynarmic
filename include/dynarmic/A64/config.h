@@ -106,8 +106,13 @@ struct UserCallbacks {
     virtual std::uint64_t GetCNTPCT() = 0;
 };
 
+class ExclusiveMonitor;
+
 struct UserConfig {
     UserCallbacks* callbacks;
+
+    size_t processor_id = 0;
+    ExclusiveMonitor* global_monitor = nullptr;
 
     /// When set to true, UserCallbacks::DataCacheOperationRaised will be called when any
     /// data cache instruction is executed. Notably DC ZVA will not implicitly do anything.
