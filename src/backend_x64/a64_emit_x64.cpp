@@ -486,6 +486,8 @@ void A64EmitX64::EmitA64CallSupervisor(A64EmitContext& ctx, IR::Inst* inst) {
     DEVIRT(conf.callbacks, &A64::UserCallbacks::CallSVC).EmitCall(code, [&](RegList param) {
         code.mov(param[0], imm);
     });
+    // The kernel would have to execute ERET to get here, which would clear exclusive state.
+    code.mov(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(0));
 }
 
 void A64EmitX64::EmitA64ExceptionRaised(A64EmitContext& ctx, IR::Inst* inst) {
