@@ -817,7 +817,13 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
     code.CallFunction(memory_write_128);
 }
 
-void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize, Xbyak::Reg64 vaddr, int value_idx) {
+void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
+    int value_idx = bitsize != 128
+                  ? ctx.reg_alloc.UseGpr(args[1]).getIdx()
+                  : ctx.reg_alloc.UseXmm(args[1]).getIdx();
+
     Xbyak::Label end;
     Xbyak::Reg32 passed = ctx.reg_alloc.ScratchGpr().cvt32();
     Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
@@ -838,38 +844,23 @@ void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t 
 }
 
 void A64EmitX64::EmitA64ExclusiveWriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
-    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
-    EmitExclusiveWrite(ctx, inst, 8, vaddr, value.getIdx());
+    EmitExclusiveWrite(ctx, inst, 8);
 }
 
 void A64EmitX64::EmitA64ExclusiveWriteMemory16(A64EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
-    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
-    EmitExclusiveWrite(ctx, inst, 16, vaddr, value.getIdx());
+    EmitExclusiveWrite(ctx, inst, 16);
 }
 
 void A64EmitX64::EmitA64ExclusiveWriteMemory32(A64EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
-    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
-    EmitExclusiveWrite(ctx, inst, 32, vaddr, value.getIdx());
+    EmitExclusiveWrite(ctx, inst, 32);
 }
 
 void A64EmitX64::EmitA64ExclusiveWriteMemory64(A64EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
-    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[1]);
-    EmitExclusiveWrite(ctx, inst, 64, vaddr, value.getIdx());
+    EmitExclusiveWrite(ctx, inst, 64);
 }
 
 void A64EmitX64::EmitA64ExclusiveWriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 vaddr = ctx.reg_alloc.UseGpr(args[0]);
-    Xbyak::Xmm value = ctx.reg_alloc.UseXmm(args[1]);
-    EmitExclusiveWrite(ctx, inst, 128, vaddr, value.getIdx());
+    EmitExclusiveWrite(ctx, inst, 128);
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor) {
