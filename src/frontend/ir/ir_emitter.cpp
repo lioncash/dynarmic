@@ -1405,6 +1405,16 @@ U32U64 IREmitter::FPMul(const U32U64& a, const U32U64& b, bool fpscr_controlled)
     }
 }
 
+U32U64 IREmitter::FPMulAdd(const U32U64& a, const U32U64& b, const U32U64& c, bool fpscr_controlled) {
+    ASSERT(fpscr_controlled);
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPMulAdd32, a, b, c);
+    } else {
+        return Inst<U64>(Opcode::FPMulAdd64, a, b, c);
+    }
+}
+
 U32U64 IREmitter::FPNeg(const U32U64& a) {
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPNeg32, a);

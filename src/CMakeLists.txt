@@ -89,6 +89,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/floating_point_conditional_compare.cpp
     frontend/A64/translate/impl/floating_point_conditional_select.cpp
     frontend/A64/translate/impl/floating_point_data_processing_one_register.cpp
+    frontend/A64/translate/impl/floating_point_data_processing_three_register.cpp
     frontend/A64/translate/impl/floating_point_data_processing_two_register.cpp
     frontend/A64/translate/impl/impl.cpp
     frontend/A64/translate/impl/impl.h

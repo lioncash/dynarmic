@@ -130,6 +130,35 @@ static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.SwitchToNearCode();
 }
 
+static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end) {
+    Xbyak::Label nan;
+
+    code.ucomiss(a, b);
+    code.jp(nan, code.T_NEAR);
+    code.ucomiss(c, c);
+    code.jp(nan, code.T_NEAR);
+    code.SwitchToFarCode();
+    code.L(nan);
+
+    code.sub(rsp, 8);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
+    code.xor_(code.ABI_PARAM1.cvt32(), code.ABI_PARAM1.cvt32());
+    code.xor_(code.ABI_PARAM2.cvt32(), code.ABI_PARAM2.cvt32());
+    code.xor_(code.ABI_PARAM3.cvt32(), code.ABI_PARAM3.cvt32());
+    code.movd(code.ABI_PARAM1.cvt32(), a);
+    code.movd(code.ABI_PARAM2.cvt32(), b);
+    code.movd(code.ABI_PARAM3.cvt32(), c);
+    code.CallFunction(static_cast<u32(*)(u32, u32, u32)>([](u32 a, u32 b, u32 c) -> u32 {
+        return *Common::ProcessNaNs(a, b, c);
+    }));
+    code.movd(a, code.ABI_RETURN.cvt32());
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
+    code.add(rsp, 8);
+
+    code.jmp(end, code.T_NEAR);
+    code.SwitchToNearCode();
+}
+
 static void PostProcessNaNs32(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm tmp) {
     code.movaps(tmp, result);
     code.cmpunordps(tmp, tmp);
@@ -159,6 +188,32 @@ static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.movq(code.ABI_PARAM2, b);
     code.CallFunction(static_cast<u64(*)(u64, u64)>([](u64 a, u64 b) -> u64 {
         return *Common::ProcessNaNs(a, b);
+    }));
+    code.movq(a, code.ABI_RETURN);
+    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
+    code.add(rsp, 8);
+
+    code.jmp(end, code.T_NEAR);
+    code.SwitchToNearCode();
+}
+
+static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end) {
+    Xbyak::Label nan;
+
+    code.ucomisd(a, b);
+    code.jp(nan, code.T_NEAR);
+    code.ucomisd(c, c);
+    code.jp(nan, code.T_NEAR);
+    code.SwitchToFarCode();
+    code.L(nan);
+
+    code.sub(rsp, 8);
+    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
+    code.movq(code.ABI_PARAM1, a);
+    code.movq(code.ABI_PARAM2, b);
+    code.movq(code.ABI_PARAM3, c);
+    code.CallFunction(static_cast<u64(*)(u64, u64, u64)>([](u64 a, u64 b, u64 c) -> u64 {
+        return *Common::ProcessNaNs(a, b, c);
     }));
     code.movq(a, code.ABI_RETURN);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
@@ -359,6 +414,72 @@ static void FPTwoOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Funct
         DefaultNaN64(code, result);
     } else if (ctx.AccurateNaN()) {
         PostProcessNaNs64(code, result, ctx.reg_alloc.ScratchXmm());
+    }
+    code.L(end);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+template <typename Function>
+static void FPFourOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Label end;
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm operand2 = ctx.reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Xmm operand3 = ctx.reg_alloc.UseScratchXmm(args[2]);
+    Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
+
+    if (ctx.FPSCR_FTZ()) {
+        DenormalsAreZero32(code, result, gpr_scratch);
+        DenormalsAreZero32(code, operand2, gpr_scratch);
+        DenormalsAreZero32(code, operand3, gpr_scratch);
+    }
+    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
+        PreProcessNaNs32(code, result, operand2, operand3, end);
+    }
+    fn(result, operand2, operand3);
+    if (ctx.FPSCR_FTZ()) {
+        FlushToZero32(code, result, gpr_scratch);
+    }
+    if (ctx.FPSCR_DN()) {
+        DefaultNaN32(code, result);
+    } else if (ctx.AccurateNaN()) {
+        PostProcessNaNs32(code, result, operand2);
+    }
+    code.L(end);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+template <typename Function>
+static void FPFourOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Label end;
+
+    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm operand2 = ctx.reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Xmm operand3 = ctx.reg_alloc.UseScratchXmm(args[2]);
+    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
+
+    if (ctx.FPSCR_FTZ()) {
+        DenormalsAreZero64(code, result, gpr_scratch);
+        DenormalsAreZero64(code, operand2, gpr_scratch);
+        DenormalsAreZero64(code, operand3, gpr_scratch);
+    }
+    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
+        PreProcessNaNs64(code, result, operand2, operand3, end);
+    }
+    fn(result, operand2, operand3);
+    if (ctx.FPSCR_FTZ()) {
+        FlushToZero64(code, result, gpr_scratch);
+    }
+    if (ctx.FPSCR_DN()) {
+        DefaultNaN64(code, result);
+    } else if (ctx.AccurateNaN()) {
+        PostProcessNaNs64(code, result, operand2);
     }
     code.L(end);
 
@@ -626,6 +747,36 @@ void EmitX64::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPMul64(EmitContext& ctx, IR::Inst* inst) {
     FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::mulsd);
+}
+
+void EmitX64::EmitFPMulAdd32(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
+        FPFourOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
+            code.vfmadd231ss(result, operand2, operand3);
+        });
+        return;
+    }
+
+    // TODO: Improve accuracy.
+    FPFourOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
+        code.mulss(operand2, operand3);
+        code.addss(result, operand2);
+    });
+}
+
+void EmitX64::EmitFPMulAdd64(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
+        FPFourOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
+            code.vfmadd231sd(result, operand2, operand3);
+        });
+        return;
+    }
+
+    // TODO: Improve accuracy.
+    FPFourOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
+        code.mulsd(operand2, operand3);
+        code.addsd(result, operand2);
+    });
 }
 
 void EmitX64::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
