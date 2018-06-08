@@ -273,6 +273,7 @@ public:
     U64 FPS32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_controlled);
     U64 FPU32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_controlled);
 
+    U128 FPVectorAbsoluteDifference(size_t esize, const U128& a, const U128& b);
     U128 FPVectorAdd(size_t esize, const U128& a, const U128& b);
     U128 FPVectorDiv(size_t esize, const U128& a, const U128& b);
     U128 FPVectorEqual(size_t esize, const U128& a, const U128& b);

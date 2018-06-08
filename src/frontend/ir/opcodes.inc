@@ -396,6 +396,8 @@ OPCODE(FPU32ToDouble,                       T::U64,         T::U32,         T::U
 OPCODE(FPS32ToDouble,                       T::U64,         T::U32,         T::U1                           )
 
 // Floating-point vector instructions
+OPCODE(FPVectorAbsoluteDifference32,        T::U128,        T::U128,        T::U128                         )
+OPCODE(FPVectorAbsoluteDifference64,        T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorAdd32,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorAdd64,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorDiv32,                       T::U128,        T::U128,        T::U128                         )
