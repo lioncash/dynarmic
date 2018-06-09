@@ -364,6 +364,22 @@ bool TranslatorVisitor::ADDP_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FABD_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    if (sz && !Q) {
+        return ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = sz ? 64 : 32;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+    const IR::U128 result = ir.FPVectorAbsoluteDifference(esize, operand1, operand2);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FADD_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
     if (sz && !Q) {
         return ReservedValue();
