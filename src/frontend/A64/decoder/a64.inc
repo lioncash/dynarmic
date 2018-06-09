@@ -351,7 +351,7 @@ INST(DUP_elt_1,              "DUP (element)",                             "01011
 //INST(FACGE_1,                "FACGE",                                     "01111110010mmmmm001011nnnnnddddd")
 //INST(FACGE_2,                "FACGE",                                     "011111100z1mmmmm111011nnnnnddddd")
 //INST(FABD_1,                 "FABD",                                      "01111110110mmmmm000101nnnnnddddd")
-//INST(FABD_2,                 "FABD",                                      "011111101z1mmmmm110101nnnnnddddd")
+INST(FABD_2,                 "FABD",                                      "011111101z1mmmmm110101nnnnnddddd")
 //INST(FCMGT_reg_1,            "FCMGT (register)",                          "01111110110mmmmm001001nnnnnddddd")
 //INST(FCMGT_reg_2,            "FCMGT (register)",                          "011111101z1mmmmm111001nnnnnddddd")
 //INST(FACGT_1,                "FACGT",                                     "01111110110mmmmm001011nnnnnddddd")
