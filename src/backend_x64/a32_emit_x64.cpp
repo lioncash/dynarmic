@@ -59,7 +59,7 @@ A32::LocationDescriptor A32EmitContext::Location() const {
 }
 
 bool A32EmitContext::FPSCR_RoundTowardsZero() const {
-    return Location().FPSCR().RMode() != A32::FPSCR::RoundingMode::TowardsZero;
+    return Location().FPSCR().RMode() != FP::RoundingMode::TowardsZero;
 }
 
 bool A32EmitContext::FPSCR_FTZ() const {

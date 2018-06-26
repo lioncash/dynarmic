@@ -10,6 +10,7 @@
 
 #include "common/bit_util.h"
 #include "common/common_types.h"
+#include "common/fp/rounding_mode.h"
 
 namespace Dynarmic::A64 {
 
@@ -19,13 +20,6 @@ namespace Dynarmic::A64 {
 class FPCR final
 {
 public:
-    enum class RoundingMode {
-        ToNearest,
-        TowardsPlusInfinity,
-        TowardsMinusInfinity,
-        TowardsZero
-    };
-
     FPCR() = default;
     FPCR(const FPCR&) = default;
     FPCR(FPCR&&) = default;
@@ -54,8 +48,8 @@ public:
     }
 
     /// Rounding mode control field.
-    RoundingMode RMode() const {
-        return static_cast<RoundingMode>(Common::Bits<22, 23>(value));
+    FP::RoundingMode RMode() const {
+        return static_cast<FP::RoundingMode>(Common::Bits<22, 23>(value));
     }
 
     /// Input denormal exception trap enable flag.

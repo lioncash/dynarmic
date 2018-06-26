@@ -41,7 +41,7 @@ A64::LocationDescriptor A64EmitContext::Location() const {
 }
 
 bool A64EmitContext::FPSCR_RoundTowardsZero() const {
-    return Location().FPCR().RMode() != A64::FPCR::RoundingMode::TowardsZero;
+    return Location().FPCR().RMode() != FP::RoundingMode::TowardsZero;
 }
 
 bool A64EmitContext::FPSCR_FTZ() const {

@@ -10,6 +10,7 @@
 
 #include "common/bit_util.h"
 #include "common/common_types.h"
+#include "common/fp/rounding_mode.h"
 
 namespace Dynarmic::A32 {
 
@@ -19,13 +20,6 @@ namespace Dynarmic::A32 {
 class FPSCR final
 {
 public:
-    enum class RoundingMode {
-        ToNearest,
-        TowardsPlusInfinity,
-        TowardsMinusInfinity,
-        TowardsZero
-    };
-
     FPSCR() = default;
     FPSCR(const FPSCR&) = default;
     FPSCR(FPSCR&&) = default;
@@ -79,8 +73,8 @@ public:
     }
 
     /// Rounding mode control field.
-    RoundingMode RMode() const {
-        return static_cast<RoundingMode>(Common::Bits<22, 23>(value));
+    FP::RoundingMode RMode() const {
+        return static_cast<FP::RoundingMode>(Common::Bits<22, 23>(value));
     }
 
     /// Indicates the stride of a vector.
