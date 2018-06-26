@@ -37,19 +37,51 @@ constexpr T Bits(const T value) {
 #pragma warning(disable:4554)
 #endif
 /// Extracts a single bit at bit_position from value of type T.
-template<size_t bit_position, typename T>
-constexpr bool Bit(const T value) {
-    static_assert(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
-
-    return ((value >> bit_position) & 1) != 0;
-}
-
-/// Extracts a single bit at bit_position from value of type T.
 template<typename T>
 inline bool Bit(size_t bit_position, const T value) {
     ASSERT_MSG(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
 
     return ((value >> bit_position) & 1) != 0;
+}
+
+/// Extracts a single bit at bit_position from value of type T.
+template<size_t bit_position, typename T>
+constexpr bool Bit(const T value) {
+    static_assert(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
+
+    return Bit<T>(bit_position, value);
+}
+
+/// Clears a single bit at bit_position from value of type T.
+template<typename T>
+inline T ClearBit(size_t bit_position, const T value) {
+    ASSERT_MSG(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
+
+    return value & ~(static_cast<T>(1) << bit_position);
+}
+
+/// Clears a single bit at bit_position from value of type T.
+template<size_t bit_position, typename T>
+constexpr T ClearBit(const T value) {
+    static_assert(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
+
+    return ClearBit<T>(bit_position, value);
+}
+
+/// Modifies a single bit at bit_position from value of type T.
+template<typename T>
+inline T ModifyBit(size_t bit_position, const T value, bool new_bit) {
+    ASSERT_MSG(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
+
+    return ClearBit<T>(bit_position, value) | (static_cast<T>(new_bit) << bit_position);
+}
+
+/// Modifies a single bit at bit_position from value of type T.
+template<size_t bit_position, typename T>
+constexpr T ModifyBit(const T value, bool new_bit) {
+    static_assert(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
+
+    return ModifyBit<T>(bit_position, value, new_bit);
 }
 #ifdef _MSC_VER
 #pragma warning(pop)
