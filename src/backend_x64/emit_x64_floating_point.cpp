@@ -11,7 +11,7 @@
 #include "backend_x64/emit_x64.h"
 #include "common/assert.h"
 #include "common/common_types.h"
-#include "common/fp_util.h"
+#include "common/fp/util.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/opcodes.h"
@@ -120,7 +120,7 @@ static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.movd(code.ABI_PARAM1.cvt32(), a);
     code.movd(code.ABI_PARAM2.cvt32(), b);
     code.CallFunction(static_cast<u32(*)(u32, u32)>([](u32 a, u32 b) -> u32 {
-        return *Common::ProcessNaNs(a, b);
+        return *FP::ProcessNaNs(a, b);
     }));
     code.movd(a, code.ABI_RETURN.cvt32());
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
@@ -149,7 +149,7 @@ static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.movd(code.ABI_PARAM2.cvt32(), b);
     code.movd(code.ABI_PARAM3.cvt32(), c);
     code.CallFunction(static_cast<u32(*)(u32, u32, u32)>([](u32 a, u32 b, u32 c) -> u32 {
-        return *Common::ProcessNaNs(a, b, c);
+        return *FP::ProcessNaNs(a, b, c);
     }));
     code.movd(a, code.ABI_RETURN.cvt32());
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
@@ -187,7 +187,7 @@ static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.movq(code.ABI_PARAM1, a);
     code.movq(code.ABI_PARAM2, b);
     code.CallFunction(static_cast<u64(*)(u64, u64)>([](u64 a, u64 b) -> u64 {
-        return *Common::ProcessNaNs(a, b);
+        return *FP::ProcessNaNs(a, b);
     }));
     code.movq(a, code.ABI_RETURN);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
@@ -213,7 +213,7 @@ static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.movq(code.ABI_PARAM2, b);
     code.movq(code.ABI_PARAM3, c);
     code.CallFunction(static_cast<u64(*)(u64, u64, u64)>([](u64 a, u64 b, u64 c) -> u64 {
-        return *Common::ProcessNaNs(a, b, c);
+        return *FP::ProcessNaNs(a, b, c);
     }));
     code.movq(a, code.ABI_RETURN);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));

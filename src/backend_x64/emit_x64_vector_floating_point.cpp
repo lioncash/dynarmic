@@ -10,7 +10,7 @@
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
 #include "common/bit_util.h"
-#include "common/fp_util.h"
+#include "common/fp/util.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
 
@@ -69,9 +69,9 @@ static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& xm
     code.CallFunction(static_cast<void(*)(RegArray&, const RegArray&, const RegArray&)>(
         [](RegArray& result, const RegArray& a, const RegArray& b) {
             for (size_t i = 0; i < result.size(); ++i) {
-                if (auto r = Common::ProcessNaNs(a[i], b[i])) {
+                if (auto r = FP::ProcessNaNs(a[i], b[i])) {
                     result[i] = *r;
-                } else if (Common::IsNaN(result[i])) {
+                } else if (FP::IsNaN(result[i])) {
                     result[i] = NaNWrapper<T>::value;
                 }
             }

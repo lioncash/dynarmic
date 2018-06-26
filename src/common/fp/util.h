@@ -8,8 +8,7 @@
 
 #include <boost/optional.hpp>
 
-namespace Dynarmic {
-namespace Common {
+namespace Dynarmic::FP {
 
 /// Is 32-bit floating point value a QNaN?
 constexpr bool IsQNaN(u32 value) {
@@ -110,5 +109,4 @@ inline boost::optional<u64> ProcessNaNs(u64 a, u64 b, u64 c) {
     return boost::none;
 }
 
-} // namespace Common
-} // namespace Dynarmic
+} // namespace Dynarmic::FP
