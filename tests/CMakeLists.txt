@@ -29,6 +29,7 @@ add_executable(dynarmic_tests
     A64/inst_gen.cpp
     A64/inst_gen.h
     A64/testenv.h
+    fp/unpacked_tests.cpp
     main.cpp
     rand_int.h
 )

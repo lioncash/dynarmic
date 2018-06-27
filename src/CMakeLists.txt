@@ -21,6 +21,8 @@ add_library(dynarmic
     common/fp/process_exception.cpp
     common/fp/process_exception.h
     common/fp/rounding_mode.h
+    common/fp/unpacked.cpp
+    common/fp/unpacked.h
     common/fp/util.h
     common/intrusive_list.h
     common/iterator_util.h
