@@ -21,15 +21,23 @@ constexpr size_t BitSize() {
     return sizeof(T) * CHAR_BIT;
 }
 
+template <typename T>
+inline T Ones(size_t count) {
+    ASSERT_MSG(count <= BitSize<T>(), "count larger than bitsize of T");
+    if (count == BitSize<T>())
+        return static_cast<T>(~static_cast<T>(0));
+    return ~(static_cast<T>(~static_cast<T>(0)) << count);
+}
+
 /// Extract bits [begin_bit, end_bit] inclusive from value of type T.
 template<size_t begin_bit, size_t end_bit, typename T>
 constexpr T Bits(const T value) {
     static_assert(begin_bit <= end_bit,
                   "invalid bit range (position of beginning bit cannot be greater than that of end bit)");
     static_assert(begin_bit < BitSize<T>(), "begin_bit must be smaller than size of T");
-    static_assert(end_bit < BitSize<T>(), "begin_bit must be smaller than size of T");
+    static_assert(end_bit < BitSize<T>(), "end_bit must be smaller than size of T");
 
-    return (value >> begin_bit) & ((1 << (end_bit - begin_bit + 1)) - 1);
+    return (value >> begin_bit) & Ones<T>(end_bit - begin_bit + 1);
 }
 
 #ifdef _MSC_VER
@@ -141,14 +149,6 @@ inline size_t LowestSetBit(T value) {
         result++;
     }
     return result;
-}
-
-template <typename T>
-inline T Ones(size_t count) {
-    ASSERT_MSG(count <= BitSize<T>(), "count larger than bitsize of T");
-    if (count == BitSize<T>())
-        return ~static_cast<T>(0);
-    return ~(~static_cast<T>(0) << count);
 }
 
 template <typename T>
