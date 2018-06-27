@@ -172,6 +172,8 @@ std::string DumpBlock(const IR::Block& block) {
             return fmt::format("#{}", arg.GetU1() ? '1' : '0');
         case Type::U8:
             return fmt::format("#{}", arg.GetU8());
+        case Type::U16:
+            return fmt::format("#{:#x}", arg.GetU16());
         case Type::U32:
             return fmt::format("#{:#x}", arg.GetU32());
         case Type::U64:
