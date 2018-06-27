@@ -44,11 +44,20 @@ if (DYNARMIC_TESTS_USE_UNICORN)
     target_link_libraries(dynarmic_tests PRIVATE Unicorn::Unicorn)
 endif()
 
+add_executable(dynarmic_print_info
+    print_info.cpp
+)
+
 include(CreateDirectoryGroups)
 create_target_directory_groups(dynarmic_tests)
+create_target_directory_groups(dynarmic_print_info)
 
 target_link_libraries(dynarmic_tests PRIVATE dynarmic boost catch fmt)
 target_include_directories(dynarmic_tests PRIVATE . ../src)
 target_compile_options(dynarmic_tests PRIVATE ${DYNARMIC_CXX_FLAGS})
+
+target_link_libraries(dynarmic_print_info PRIVATE dynarmic boost catch fmt)
+target_include_directories(dynarmic_print_info PRIVATE . ../src)
+target_compile_options(dynarmic_print_info PRIVATE ${DYNARMIC_CXX_FLAGS})
 
 add_test(dynarmic_tests dynarmic_tests)
