@@ -67,8 +67,7 @@ std::string DisassembleAArch64([[maybe_unused]] u32 instruction, [[maybe_unused]
 
     char buffer[80];
     size_t inst_size = LLVMDisasmInstruction(llvm_ctx, (u8*)&instruction, sizeof(instruction), pc, buffer, sizeof(buffer));
-    ASSERT(inst_size);
-    result = buffer;
+    result = inst_size > 0 ? buffer : "<invalid instruction>";
     result += '\n';
 
     LLVMDisasmDispose(llvm_ctx);
