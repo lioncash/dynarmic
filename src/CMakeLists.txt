@@ -27,6 +27,7 @@ add_library(dynarmic
     common/memory_pool.cpp
     common/memory_pool.h
     common/mp.h
+    common/safe_ops.h
     common/scope_exit.h
     common/sm4.cpp
     common/sm4.h
