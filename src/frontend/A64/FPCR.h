@@ -37,6 +37,11 @@ public:
         return Common::Bit<26>(value);
     }
 
+    /// Alternate half-precision control flag.
+    void AHP(bool AHP_) {
+        value = Common::ModifyBit<26>(value, AHP_);
+    }
+
     /// Default NaN mode control bit.
     bool DN() const {
         return Common::Bit<25>(value);
@@ -50,6 +55,10 @@ public:
     /// Rounding mode control field.
     FP::RoundingMode RMode() const {
         return static_cast<FP::RoundingMode>(Common::Bits<22, 23>(value));
+    }
+
+    bool FZ16() const {
+        return Common::Bit<19>(value);
     }
 
     /// Input denormal exception trap enable flag.
