@@ -152,6 +152,11 @@ inline size_t LowestSetBit(T value) {
 }
 
 template <typename T>
+inline bool MostSignificantBit(T value) {
+    return Bit<BitSize<T>() - 1, T>(value);
+}
+
+template <typename T>
 inline T Replicate(T value, size_t element_size) {
     ASSERT_MSG(BitSize<T>() % element_size == 0, "bitsize of T not divisible by element_size");
     if (element_size == BitSize<T>())
