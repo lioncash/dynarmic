@@ -40,4 +40,18 @@ inline bool operator==(const FPUnpacked<MantissaT>& a, const FPUnpacked<Mantissa
 template<typename FPT>
 std::tuple<FPType, bool, FPUnpacked<u64>> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr);
 
+template<typename FPT, typename MantissaT>
+FPT FPRoundBase(FPUnpacked<MantissaT> op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
+
+template<typename FPT, typename MantissaT>
+FPT FPRound(FPUnpacked<MantissaT> op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
+    fpcr.AHP(false);
+    return FPRoundBase<FPT, MantissaT>(op, fpcr, rounding, fpsr);
+}
+
+template<typename FPT, typename MantissaT>
+FPT FPRound(FPUnpacked<MantissaT> op, FPCR fpcr, FPSR& fpsr) {
+    return FPRound<FPT, MantissaT>(op, fpcr, fpcr.RMode(), fpsr);
+}
+
 } // namespace Dynarmic::FP
