@@ -222,4 +222,8 @@ bool TranslatorVisitor::FCVTPU_float(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
     return FloaingPointConvertUnsignedInteger(*this, sf, type, Vn, Rd, FP::RoundingMode::TowardsPlusInfinity);
 }
 
+bool TranslatorVisitor::FCVTMS_float(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
+    return FloaingPointConvertSignedInteger(*this, sf, type, Vn, Rd, FP::RoundingMode::TowardsMinusInfinity);
+}
+
 } // namespace Dynarmic::A64
