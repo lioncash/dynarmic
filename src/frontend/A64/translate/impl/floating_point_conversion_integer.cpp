@@ -206,4 +206,8 @@ bool TranslatorVisitor::FCVTZU_float_int(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
     return FloaingPointConvertUnsignedInteger(*this, sf, type, Vn, Rd, FP::RoundingMode::TowardsZero);
 }
 
+bool TranslatorVisitor::FCVTAS_float(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
+    return FloaingPointConvertSignedInteger(*this, sf, type, Vn, Rd, FP::RoundingMode::ToNearest_TieAwayFromZero);
+}
+
 } // namespace Dynarmic::A64
