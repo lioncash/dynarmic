@@ -6,6 +6,7 @@
 
 #include <boost/optional.hpp>
 
+#include "common/fp/rounding_mode.h"
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
@@ -135,58 +136,66 @@ bool TranslatorVisitor::FMOV_float_gen(bool sf, Imm<2> type, Imm<1> rmode_0, Imm
     return true;
 }
 
-bool TranslatorVisitor::FCVTZS_float_int(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
+static bool FloaingPointConvertSignedInteger(TranslatorVisitor& v, bool sf, Imm<2> type, Vec Vn, Reg Rd, FP::RoundingMode rounding_mode) {
     const size_t intsize = sf ? 64 : 32;
     const auto fltsize = GetDataSize(type);
     if (!fltsize || *fltsize == 16) {
-        return UnallocatedEncoding();
+        return v.UnallocatedEncoding();
     }
 
-    const IR::U32U64 fltval = V_scalar(*fltsize, Vn);
+    const IR::U32U64 fltval = v.V_scalar(*fltsize, Vn);
     IR::U32U64 intval;
 
     if (intsize == 32 && *fltsize == 32) {
-        intval = ir.FPSingleToFixedS32(fltval, 0, FP::RoundingMode::TowardsZero);
+        intval = v.ir.FPSingleToFixedS32(fltval, 0, rounding_mode);
     } else if (intsize == 32 && *fltsize == 64) {
-        intval = ir.FPDoubleToFixedS32(fltval, 0, FP::RoundingMode::TowardsZero);
+        intval = v.ir.FPDoubleToFixedS32(fltval, 0, rounding_mode);
     } else if (intsize == 64 && *fltsize == 32) {
-        intval = ir.FPSingleToFixedS64(fltval, 0, FP::RoundingMode::TowardsZero);
+        intval = v.ir.FPSingleToFixedS64(fltval, 0, rounding_mode);
     } else if (intsize == 64 && *fltsize == 64) {
-        intval = ir.FPDoubleToFixedS64(fltval, 0, FP::RoundingMode::TowardsZero);
+        intval = v.ir.FPDoubleToFixedS64(fltval, 0, rounding_mode);
     } else {
         UNREACHABLE();
     }
 
-    X(intsize, Rd, intval);
+    v.X(intsize, Rd, intval);
 
     return true;
 }
 
-bool TranslatorVisitor::FCVTZU_float_int(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
+static bool FloaingPointConvertUnsignedInteger(TranslatorVisitor& v, bool sf, Imm<2> type, Vec Vn, Reg Rd, FP::RoundingMode rounding_mode) {
     const size_t intsize = sf ? 64 : 32;
     const auto fltsize = GetDataSize(type);
     if (!fltsize || *fltsize == 16) {
-        return UnallocatedEncoding();
+        return v.UnallocatedEncoding();
     }
 
-    const IR::U32U64 fltval = V_scalar(*fltsize, Vn);
+    const IR::U32U64 fltval = v.V_scalar(*fltsize, Vn);
     IR::U32U64 intval;
 
     if (intsize == 32 && *fltsize == 32) {
-        intval = ir.FPSingleToFixedU32(fltval, 0, FP::RoundingMode::TowardsZero);
+        intval = v.ir.FPSingleToFixedU32(fltval, 0, rounding_mode);
     } else if (intsize == 32 && *fltsize == 64) {
-        intval = ir.FPDoubleToFixedU32(fltval, 0, FP::RoundingMode::TowardsZero);
+        intval = v.ir.FPDoubleToFixedU32(fltval, 0, rounding_mode);
     } else if (intsize == 64 && *fltsize == 32) {
-        intval = ir.FPSingleToFixedU64(fltval, 0, FP::RoundingMode::TowardsZero);
+        intval = v.ir.FPSingleToFixedU64(fltval, 0, rounding_mode);
     } else if (intsize == 64 && *fltsize == 64) {
-        intval = ir.FPDoubleToFixedU64(fltval, 0, FP::RoundingMode::TowardsZero);
+        intval = v.ir.FPDoubleToFixedU64(fltval, 0, rounding_mode);
     } else {
         UNREACHABLE();
     }
 
-    X(intsize, Rd, intval);
+    v.X(intsize, Rd, intval);
 
     return true;
+}
+
+bool TranslatorVisitor::FCVTZS_float_int(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
+    return FloaingPointConvertSignedInteger(*this, sf, type, Vn, Rd, FP::RoundingMode::TowardsZero);
+}
+
+bool TranslatorVisitor::FCVTZU_float_int(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
+    return FloaingPointConvertUnsignedInteger(*this, sf, type, Vn, Rd, FP::RoundingMode::TowardsZero);
 }
 
 } // namespace Dynarmic::A64
