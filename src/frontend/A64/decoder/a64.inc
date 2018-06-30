@@ -892,7 +892,7 @@ INST(FCVTAS_float,           "FCVTAS (scalar)",                           "z0011
 INST(FCVTAU_float,           "FCVTAU (scalar)",                           "z0011110yy100101000000nnnnnddddd")
 INST(FMOV_float_gen,         "FMOV (general)",                            "z0011110yy10r11o000000nnnnnddddd")
 INST(FCVTPS_float,           "FCVTPS (scalar)",                           "z0011110yy101000000000nnnnnddddd")
-//INST(FCVTPU_float,           "FCVTPU (scalar)",                           "z0011110yy101001000000nnnnnddddd")
+INST(FCVTPU_float,           "FCVTPU (scalar)",                           "z0011110yy101001000000nnnnnddddd")
 //INST(FCVTMS_float,           "FCVTMS (scalar)",                           "z0011110yy110000000000nnnnnddddd")
 //INST(FCVTMU_float,           "FCVTMU (scalar)",                           "z0011110yy110001000000nnnnnddddd")
 INST(FCVTZS_float_int,       "FCVTZS (scalar, integer)",                  "z0011110yy111000000000nnnnnddddd")
