@@ -190,6 +190,10 @@ static bool FloaingPointConvertUnsignedInteger(TranslatorVisitor& v, bool sf, Im
     return true;
 }
 
+bool TranslatorVisitor::FCVTNS_float(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
+    return FloaingPointConvertSignedInteger(*this, sf, type, Vn, Rd, FP::RoundingMode::ToNearest_TieEven);
+}
+
 bool TranslatorVisitor::FCVTZS_float_int(bool sf, Imm<2> type, Vec Vn, Reg Rd) {
     return FloaingPointConvertSignedInteger(*this, sf, type, Vn, Rd, FP::RoundingMode::TowardsZero);
 }
