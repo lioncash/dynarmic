@@ -12,6 +12,10 @@
 #include "frontend/ir/terminal.h"
 #include "frontend/ir/value.h"
 
+namespace Dynarmic::FP {
+enum class RoundingMode;
+} // namespace Dynarmic::FP
+
 // ARM JIT Microinstruction Intermediate Representation
 //
 // This intermediate representation is an SSA IR. It is designed primarily for analysis,
@@ -264,10 +268,14 @@ public:
     U32U64 FPSub(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32 FPDoubleToSingle(const U64& a, bool fpscr_controlled);
     U64 FPSingleToDouble(const U32& a, bool fpscr_controlled);
-    U32 FPSingleToS32(const U32& a, bool round_towards_zero, bool fpscr_controlled);
-    U32 FPSingleToU32(const U32& a, bool round_towards_zero, bool fpscr_controlled);
-    U32 FPDoubleToS32(const U64& a, bool round_towards_zero, bool fpscr_controlled);
-    U32 FPDoubleToU32(const U64& a, bool round_towards_zero, bool fpscr_controlled);
+    U32 FPDoubleToFixedS32(const U64& a, size_t fbits, FP::RoundingMode rounding);
+    U64 FPDoubleToFixedS64(const U64& a, size_t fbits, FP::RoundingMode rounding);
+    U32 FPDoubleToFixedU32(const U64& a, size_t fbits, FP::RoundingMode rounding);
+    U64 FPDoubleToFixedU64(const U64& a, size_t fbits, FP::RoundingMode rounding);
+    U32 FPSingleToFixedS32(const U32& a, size_t fbits, FP::RoundingMode rounding);
+    U64 FPSingleToFixedS64(const U32& a, size_t fbits, FP::RoundingMode rounding);
+    U32 FPSingleToFixedU32(const U32& a, size_t fbits, FP::RoundingMode rounding);
+    U64 FPSingleToFixedU64(const U32& a, size_t fbits, FP::RoundingMode rounding);
     U32 FPS32ToSingle(const U32& a, bool round_to_nearest, bool fpscr_controlled);
     U32 FPU32ToSingle(const U32& a, bool round_to_nearest, bool fpscr_controlled);
     U64 FPS32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_controlled);

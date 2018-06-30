@@ -38,13 +38,13 @@ bool TranslatorVisitor::FCVTZS_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec
 
     IR::U32U64 intval;
     if (intsize == 32 && *fltsize == 32) {
-        intval = ir.FPSingleToS32(fltval, true, true);
+        intval = ir.FPSingleToFixedS32(fltval, 0, FP::RoundingMode::TowardsZero);
     } else if (intsize == 32 && *fltsize == 64) {
-        intval = ir.FPDoubleToS32(fltval, true, true);
+        intval = ir.FPDoubleToFixedS32(fltval, 0, FP::RoundingMode::TowardsZero);
     } else if (intsize == 64 && *fltsize == 32) {
-        return InterpretThisInstruction();
+        intval = ir.FPSingleToFixedS64(fltval, 0, FP::RoundingMode::TowardsZero);
     } else if (intsize == 64 && *fltsize == 64) {
-        return InterpretThisInstruction();
+        intval = ir.FPDoubleToFixedS64(fltval, 0, FP::RoundingMode::TowardsZero);
     } else {
         UNREACHABLE();
     }
@@ -69,13 +69,13 @@ bool TranslatorVisitor::FCVTZU_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec
 
     IR::U32U64 intval;
     if (intsize == 32 && *fltsize == 32) {
-        intval = ir.FPSingleToU32(fltval, true, true);
+        intval = ir.FPSingleToFixedU32(fltval, 0, FP::RoundingMode::TowardsZero);
     } else if (intsize == 32 && *fltsize == 64) {
-        intval = ir.FPDoubleToU32(fltval, true, true);
+        intval = ir.FPDoubleToFixedU32(fltval, 0, FP::RoundingMode::TowardsZero);
     } else if (intsize == 64 && *fltsize == 32) {
-        return InterpretThisInstruction();
+        intval = ir.FPSingleToFixedU64(fltval, 0, FP::RoundingMode::TowardsZero);
     } else if (intsize == 64 && *fltsize == 64) {
-        return InterpretThisInstruction();
+        intval = ir.FPDoubleToFixedU64(fltval, 0, FP::RoundingMode::TowardsZero);
     } else {
         UNREACHABLE();
     }

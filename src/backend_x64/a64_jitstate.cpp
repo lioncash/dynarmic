@@ -105,16 +105,15 @@ u32 A64JitState::GetFpsr() const {
     fpsr |= (guest_MXCSR & 0b0000000111100) >> 1;  // IXC, UFC, OFC, DZC = PE, UE, OE, ZE
     fpsr |= FPSCR_IDC;
     fpsr |= FPSCR_UFC;
+    fpsr |= fpsr_exc;
     return fpsr;
 }
 
 void A64JitState::SetFpsr(u32 value) {
     guest_MXCSR &= ~0x0000003D;
-    guest_MXCSR |= ( value     ) & 0b0000000000001;  // IE = IOC
-    guest_MXCSR |= ( value << 1) & 0b0000000111100;  // PE, UE, OE, ZE = IXC, UFC, OFC, DZC
-
-    FPSCR_IDC = value & (1 << 7);
-    FPSCR_UFC = value & (1 << 3);
+    FPSCR_IDC = 0;
+    FPSCR_UFC = 0;
+    fpsr_exc = value & 0x9F;
 }
 
 } // namespace Dynarmic::BackendX64

@@ -5,13 +5,22 @@
  */
 
 #include <type_traits>
+#include <utility>
 
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
 #include "common/assert.h"
 #include "common/common_types.h"
+#include "common/fp/op.h"
 #include "common/fp/util.h"
+#include "common/mp/cartesian_product.h"
+#include "common/mp/integer.h"
+#include "common/mp/list.h"
+#include "common/mp/lut.h"
+#include "common/mp/to_tuple.h"
+#include "common/mp/vlift.h"
+#include "common/mp/vllift.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/opcodes.h"
@@ -19,6 +28,7 @@
 namespace Dynarmic::BackendX64 {
 
 using namespace Xbyak::util;
+namespace mp = Dynarmic::Common::mp;
 
 constexpr u64 f32_negative_zero = 0x80000000u;
 constexpr u64 f32_nan = 0x7fc00000u;
@@ -29,10 +39,6 @@ constexpr u64 f64_nan = 0x7ff8000000000000u;
 constexpr u64 f64_non_sign_mask = 0x7fffffffffffffffu;
 
 constexpr u64 f64_penultimate_positive_denormal = 0x000ffffffffffffeu;
-constexpr u64 f64_min_s32 = 0xc1e0000000000000u; // -2147483648 as a double
-constexpr u64 f64_max_s32 = 0x41dfffffffc00000u; // 2147483647 as a double
-constexpr u64 f64_min_u32 = 0x0000000000000000u; // 0 as a double
-constexpr u64 f64_max_u32 = 0x41efffffffe00000u; // 4294967295 as a double
 
 static void DenormalsAreZero32(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;
@@ -97,12 +103,6 @@ static void FlushToZero64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 
     code.pxor(xmm_value, xmm_value);
     code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_UFC], u32(1 << 3));
     code.L(end);
-}
-
-static void ZeroIfNaN64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_scratch) {
-    code.pxor(xmm_scratch, xmm_scratch);
-    code.cmpordsd(xmm_scratch, xmm_value); // true mask when ordered (i.e.: when not an NaN)
-    code.pand(xmm_value, xmm_scratch);
 }
 
 static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Label& end) {
@@ -892,129 +892,82 @@ void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPSingleToS32(EmitContext& ctx, IR::Inst* inst) {
+static void EmitFPToFixedFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, size_t fsize, bool unsigned_, size_t isize) {
+    using fsize_list = mp::list<mp::vlift<size_t(32)>, mp::vlift<size_t(64)>>;
+    using unsigned_list = mp::list<mp::vlift<true>, mp::vlift<false>>;
+    using isize_list = mp::list<mp::vlift<size_t(32)>, mp::vlift<size_t(64)>>;
+    using rounding_list = mp::list<
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieEven>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsPlusInfinity>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsMinusInfinity>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsZero>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieAwayFromZero>
+    >;
+
+    using key_type = std::tuple<size_t, bool, size_t, FP::RoundingMode>;
+    using value_type = u64(*)(u64, u8, FP::FPSR&, A64::FPCR);
+
+    static const auto lut = mp::GenerateLookupTableFromList<key_type, value_type>(
+        [](auto args) {
+            return std::pair<key_type, value_type>{
+                mp::to_tuple<decltype(args)>,
+                static_cast<value_type>(
+                    [](u64 input, u8 fbits, FP::FPSR& fpsr, A64::FPCR fpcr) {
+                        constexpr auto t = mp::to_tuple<decltype(args)>;
+                        constexpr size_t fsize = std::get<0>(t);
+                        constexpr bool unsigned_ = std::get<1>(t);
+                        constexpr size_t isize = std::get<2>(t);
+                        constexpr FP::RoundingMode rounding_mode = std::get<3>(t);
+                        using InputSize = mp::unsigned_integer_of_size<fsize>;
+
+                        return FP::FPToFixed<InputSize>(isize, static_cast<InputSize>(input), fbits, unsigned_, fpcr, rounding_mode, fpsr);
+                    }
+                )
+            };
+        },
+        mp::cartesian_product<fsize_list, unsigned_list, isize_list, rounding_list>{}
+    );
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Xmm xmm_scratch = ctx.reg_alloc.ScratchXmm();
-    bool round_towards_zero = args[1].GetImmediateU1();
 
-    // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
-    // Conversion to double is lossless, and allows for clamping.
+    const auto rounding = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
 
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32(code, from, to);
-    }
-    code.cvtss2sd(from, from);
-    // First time is to set flags
-    if (round_towards_zero) {
-        code.cvttsd2si(to, from); // 32 bit gpr
-    } else {
-        code.cvtsd2si(to, from); // 32 bit gpr
-    }
-    // Clamp to output range
-    ZeroIfNaN64(code, from, xmm_scratch);
-    code.minsd(from, code.MConst(xword, f64_max_s32));
-    code.maxsd(from, code.MConst(xword, f64_min_s32));
-    // Second time is for real
-    if (round_towards_zero) {
-        code.cvttsd2si(to, from); // 32 bit gpr
-    } else {
-        code.cvtsd2si(to, from); // 32 bit gpr
-    }
-
-    ctx.reg_alloc.DefineValue(inst, to);
+    ctx.reg_alloc.HostCall(inst, args[0], args[1]);
+    code.lea(code.ABI_PARAM3, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
+    code.CallFunction(lut.at(std::make_tuple(fsize, unsigned_, isize, rounding)));
 }
 
-void EmitX64::EmitFPSingleToU32(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg64 to = ctx.reg_alloc.ScratchGpr().cvt64();
-    Xbyak::Xmm xmm_scratch = ctx.reg_alloc.ScratchXmm();
-    bool round_towards_zero = args[1].GetImmediateU1();
-
-    // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
-    // Conversion to double is lossless, and allows for accurate clamping.
-    //
-    // Since SSE2 doesn't provide an unsigned conversion, we use a 64-bit signed conversion.
-    //
-    // FIXME: None of the FPSR exception bits are correctly signalled with the below code
-
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, from, to);
-    }
-    code.cvtss2sd(from, from);
-    // Clamp to output range
-    ZeroIfNaN64(code, from, xmm_scratch);
-    code.minsd(from, code.MConst(xword, f64_max_u32));
-    code.maxsd(from, code.MConst(xword, f64_min_u32));
-    if (round_towards_zero) {
-        code.cvttsd2si(to, from); // 64 bit gpr
-    } else {
-        code.cvtsd2si(to, from); // 64 bit gpr
-    }
-
-    ctx.reg_alloc.DefineValue(inst, to);
+void EmitX64::EmitFPDoubleToFixedS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixedFallback(code, ctx, inst, 64, false, 32);
 }
 
-void EmitX64::EmitFPDoubleToS32(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg32 to = ctx.reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Xmm xmm_scratch = ctx.reg_alloc.ScratchXmm();
-    Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
-    bool round_towards_zero = args[1].GetImmediateU1();
-
-    // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
-
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, from, gpr_scratch.cvt64());
-    }
-    // First time is to set flags
-    if (round_towards_zero) {
-        code.cvttsd2si(gpr_scratch, from); // 32 bit gpr
-    } else {
-        code.cvtsd2si(gpr_scratch, from); // 32 bit gpr
-    }
-    // Clamp to output range
-    ZeroIfNaN64(code, from, xmm_scratch);
-    code.minsd(from, code.MConst(xword, f64_max_s32));
-    code.maxsd(from, code.MConst(xword, f64_min_s32));
-    // Second time is for real
-    if (round_towards_zero) {
-        code.cvttsd2si(to, from); // 32 bit gpr
-    } else {
-        code.cvtsd2si(to, from); // 32 bit gpr
-    }
-
-    ctx.reg_alloc.DefineValue(inst, to);
+void EmitX64::EmitFPDoubleToFixedS64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixedFallback(code, ctx, inst, 64, false, 64);
 }
 
-void EmitX64::EmitFPDoubleToU32(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm from = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg64 to = ctx.reg_alloc.ScratchGpr().cvt64();
-    Xbyak::Xmm xmm_scratch = ctx.reg_alloc.ScratchXmm();
-    bool round_towards_zero = args[1].GetImmediateU1();
+void EmitX64::EmitFPDoubleToFixedU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixedFallback(code, ctx, inst, 64, true, 32);
+}
 
-    // ARM saturates on conversion; this differs from x64 which returns a sentinel value.
-    // TODO: Use VCVTPD2UDQ when AVX512VL is available.
-    // FIXME: None of the FPSR exception bits are correctly signalled with the below code
+void EmitX64::EmitFPDoubleToFixedU64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixedFallback(code, ctx, inst, 64, true, 64);
+}
 
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, from, to);
-    }
-    // Clamp to output range
-    ZeroIfNaN64(code, from, xmm_scratch);
-    code.minsd(from, code.MConst(xword, f64_max_u32));
-    code.maxsd(from, code.MConst(xword, f64_min_u32));
-    if (round_towards_zero) {
-        code.cvttsd2si(to, from); // 64 bit gpr
-    } else {
-        code.cvtsd2si(to, from); // 64 bit gpr
-    }
+void EmitX64::EmitFPSingleToFixedS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixedFallback(code, ctx, inst, 32, false, 32);
+}
 
-    ctx.reg_alloc.DefineValue(inst, to);
+void EmitX64::EmitFPSingleToFixedS64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixedFallback(code, ctx, inst, 32, false, 64);
+}
+
+void EmitX64::EmitFPSingleToFixedU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixedFallback(code, ctx, inst, 32, true, 32);
+}
+
+void EmitX64::EmitFPSingleToFixedU64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixedFallback(code, ctx, inst, 32, true, 64);
 }
 
 void EmitX64::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {

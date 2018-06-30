@@ -1451,24 +1451,44 @@ U64 IREmitter::FPSingleToDouble(const U32& a, bool fpscr_controlled) {
     return Inst<U64>(Opcode::FPSingleToDouble, a);
 }
 
-U32 IREmitter::FPSingleToS32(const U32& a, bool round_towards_zero, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
-    return Inst<U32>(Opcode::FPSingleToS32, a, Imm1(round_towards_zero));
+U32 IREmitter::FPDoubleToFixedS32(const U64& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= 32);
+    return Inst<U32>(Opcode::FPDoubleToFixedS32, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
 }
 
-U32 IREmitter::FPSingleToU32(const U32& a, bool round_towards_zero, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
-    return Inst<U32>(Opcode::FPSingleToU32, a, Imm1(round_towards_zero));
+U64 IREmitter::FPDoubleToFixedS64(const U64& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= 64);
+    return Inst<U64>(Opcode::FPDoubleToFixedS64, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
 }
 
-U32 IREmitter::FPDoubleToS32(const U64& a, bool round_towards_zero, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
-    return Inst<U32>(Opcode::FPDoubleToS32, a, Imm1(round_towards_zero));
+U32 IREmitter::FPDoubleToFixedU32(const U64& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= 32);
+    return Inst<U32>(Opcode::FPDoubleToFixedU32, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
 }
 
-U32 IREmitter::FPDoubleToU32(const U64& a, bool round_towards_zero, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
-    return Inst<U32>(Opcode::FPDoubleToU32, a, Imm1(round_towards_zero));
+U64 IREmitter::FPDoubleToFixedU64(const U64& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= 64);
+    return Inst<U64>(Opcode::FPDoubleToFixedU64, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
+}
+
+U32 IREmitter::FPSingleToFixedS32(const U32& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= 32);
+    return Inst<U32>(Opcode::FPSingleToFixedS32, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
+}
+
+U64 IREmitter::FPSingleToFixedS64(const U32& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= 64);
+    return Inst<U64>(Opcode::FPSingleToFixedS64, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
+}
+
+U32 IREmitter::FPSingleToFixedU32(const U32& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= 32);
+    return Inst<U32>(Opcode::FPSingleToFixedU32, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
+}
+
+U64 IREmitter::FPSingleToFixedU64(const U32& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= 64);
+    return Inst<U64>(Opcode::FPSingleToFixedU64, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
 }
 
 U32 IREmitter::FPS32ToSingle(const U32& a, bool round_to_nearest, bool fpscr_controlled) {
