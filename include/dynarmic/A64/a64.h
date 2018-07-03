@@ -100,6 +100,9 @@ public:
     /// Modify PSTATE
     void SetPstate(std::uint32_t value);
 
+    /// Clears exclusive state for this core.
+    void ClearExclusiveState();
+
     /**
      * Returns true if Jit::Run was called but hasn't returned yet.
      * i.e.: We're in a callback.

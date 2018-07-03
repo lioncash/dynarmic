@@ -167,6 +167,10 @@ public:
         jit_state.SetPstate(value);
     }
 
+    void ClearExclusiveState() {
+        jit_state.exclusive_state = 0;
+    }
+
     bool IsExecuting() const {
         return is_executing;
     }
@@ -336,6 +340,10 @@ u32 Jit::GetPstate() const {
 
 void Jit::SetPstate(u32 value) {
     impl->SetPstate(value);
+}
+
+void Jit::ClearExclusiveState() {
+    impl->ClearExclusiveState();
 }
 
 bool Jit::IsExecuting() const {
