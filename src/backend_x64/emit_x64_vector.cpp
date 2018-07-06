@@ -97,22 +97,21 @@ static void EmitTwoArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Ins
 void EmitX64::EmitVectorGetElement8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[1].IsImmediate());
-    u8 index = args[1].GetImmediateU8();
+    const u8 index = args[1].GetImmediateU8();
 
-    Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Reg32 dest = ctx.reg_alloc.ScratchGpr().cvt32();
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        Xbyak::Reg32 dest = ctx.reg_alloc.ScratchGpr().cvt32();
         code.pextrb(dest, source, index);
-        ctx.reg_alloc.DefineValue(inst, dest);
     } else {
-        Xbyak::Reg32 dest = ctx.reg_alloc.ScratchGpr().cvt32();
         code.pextrw(dest, source, index / 2);
         if (index % 2 == 1) {
             code.shr(dest, 8);
         }
-        ctx.reg_alloc.DefineValue(inst, dest);
     }
+
+    ctx.reg_alloc.DefineValue(inst, dest);
 }
 
 void EmitX64::EmitVectorGetElement16(EmitContext& ctx, IR::Inst* inst) {
