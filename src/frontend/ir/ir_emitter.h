@@ -280,6 +280,7 @@ public:
     U128 FPVectorEqual(size_t esize, const U128& a, const U128& b);
     U128 FPVectorGreater(size_t esize, const U128& a, const U128& b);
     U128 FPVectorGreaterEqual(size_t esize, const U128& a, const U128& b);
+    U128 FPVectorMax(size_t esize, const U128& a, const U128& b);
     U128 FPVectorMin(size_t esize, const U128& a, const U128& b);
     U128 FPVectorMul(size_t esize, const U128& a, const U128& b);
     U128 FPVectorSub(size_t esize, const U128& a, const U128& b);

@@ -293,6 +293,14 @@ void EmitX64::EmitFPVectorGreaterEqual64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, b);
 }
 
+void EmitX64::EmitFPVectorMax32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::maxps);
+}
+
+void EmitX64::EmitFPVectorMax64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation64(code, ctx, inst, &Xbyak::CodeGenerator::maxpd);
+}
+
 void EmitX64::EmitFPVectorMin32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::minps);
 }
