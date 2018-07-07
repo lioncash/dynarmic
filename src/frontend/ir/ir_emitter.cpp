@@ -1491,6 +1491,17 @@ U64 IREmitter::FPU32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_con
     return Inst<U64>(Opcode::FPU32ToDouble, a, Imm1(round_to_nearest));
 }
 
+U128 IREmitter::FPVectorAbs(size_t esize, const U128& a) {
+    switch (esize) {
+    case 32:
+        return Inst<U128>(Opcode::FPVectorAbs32, a);
+    case 64:
+        return Inst<U128>(Opcode::FPVectorAbs64, a);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::FPVectorAbsoluteDifference(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 32:
