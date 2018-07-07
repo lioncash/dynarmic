@@ -195,6 +195,17 @@ void EmitX64::EmitFPVectorAbsoluteDifference64(EmitContext& ctx, IR::Inst* inst)
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+void EmitX64::EmitFPVectorAbs16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Address mask = code.MConst(xword, 0x7FFF7FFF7FFF7FFF, 0x7FFF7FFF7FFF7FFF);
+
+    code.pand(a, mask);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
 void EmitX64::EmitFPVectorAbs32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

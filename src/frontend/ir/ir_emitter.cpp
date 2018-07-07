@@ -1493,6 +1493,8 @@ U64 IREmitter::FPU32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_con
 
 U128 IREmitter::FPVectorAbs(size_t esize, const U128& a) {
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorAbs16, a);
     case 32:
         return Inst<U128>(Opcode::FPVectorAbs32, a);
     case 64:
