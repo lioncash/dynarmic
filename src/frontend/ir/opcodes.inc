@@ -410,6 +410,8 @@ OPCODE(FPVectorGreater32,                   T::U128,        T::U128,        T::U
 OPCODE(FPVectorGreater64,                   T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorGreaterEqual32,              T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorGreaterEqual64,              T::U128,        T::U128,        T::U128                         )
+OPCODE(FPVectorMin32,                       T::U128,        T::U128,        T::U128                         )
+OPCODE(FPVectorMin64,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorMul32,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorMul64,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorS32ToSingle,                 T::U128,        T::U128                                         )
