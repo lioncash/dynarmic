@@ -1699,6 +1699,28 @@ U128 IREmitter::FPVectorGreaterEqual(size_t esize, const U128& a, const U128& b)
     return {};
 }
 
+U128 IREmitter::FPVectorMax(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 32:
+        return Inst<U128>(Opcode::FPVectorMax32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::FPVectorMax64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
+U128 IREmitter::FPVectorMin(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 32:
+        return Inst<U128>(Opcode::FPVectorMin32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::FPVectorMin64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::FPVectorMul(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 32:

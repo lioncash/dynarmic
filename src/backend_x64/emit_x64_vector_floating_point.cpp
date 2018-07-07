@@ -502,6 +502,68 @@ void EmitX64::EmitFPVectorGreaterEqual64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, b);
 }
 
+template<size_t fsize>
+static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, const Xbyak::Xmm& xmm_b){
+        const Xbyak::Xmm neq_mask = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm anded = ctx.reg_alloc.ScratchXmm();
+
+        // What we are doing here is handling the case when the inputs are differently signed zeros.
+        // x86-64 treats differently signed zeros as equal while ARM does not.
+        // Thus if we AND together things that x86-64 thinks are equal we'll get the positive zero.
+
+        code.movaps(neq_mask, result);
+        code.movaps(anded, result);
+        FCODE(cmpneqp)(neq_mask, xmm_b);
+
+        code.andps(anded, xmm_b);
+        FCODE(maxp)(result, xmm_b);
+
+        code.andps(result, neq_mask);
+        code.andnps(neq_mask, anded);
+        code.orps(result, neq_mask);
+    });
+}
+
+void EmitX64::EmitFPVectorMax32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorMax<32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPVectorMax64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorMax<64>(code, ctx, inst);
+}
+
+template<size_t fsize>
+static void EmitFPVectorMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, const Xbyak::Xmm& xmm_b){
+        const Xbyak::Xmm neq_mask = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm ored = ctx.reg_alloc.ScratchXmm();
+
+        // What we are doing here is handling the case when the inputs are differently signed zeros.
+        // x86-64 treats differently signed zeros as equal while ARM does not.
+        // Thus if we OR together things that x86-64 thinks are equal we'll get the negative zero.
+
+        code.movaps(neq_mask, result);
+        code.movaps(ored, result);
+        FCODE(cmpneqp)(neq_mask, xmm_b);
+
+        code.orps(ored, xmm_b);
+        FCODE(minp)(result, xmm_b);
+
+        code.andps(result, neq_mask);
+        code.andnps(neq_mask, ored);
+        code.orps(result, neq_mask);
+    });
+}
+
+void EmitX64::EmitFPVectorMin32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorMin<32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPVectorMin64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorMin<64>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPVectorMul32(EmitContext& ctx, IR::Inst* inst) {
     EmitThreeOpVectorOperation<32, DefaultIndexer>(code, ctx, inst, &Xbyak::CodeGenerator::mulps);
 }
