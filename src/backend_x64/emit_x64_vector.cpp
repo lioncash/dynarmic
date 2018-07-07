@@ -172,19 +172,18 @@ void EmitX64::EmitVectorGetElement64(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorSetElement8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[1].IsImmediate());
-    u8 index = args[1].GetImmediateU8();
+    const u8 index = args[1].GetImmediateU8();
+    const Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Reg8 source_elem = ctx.reg_alloc.UseGpr(args[2]).cvt8();
+        const Xbyak::Reg8 source_elem = ctx.reg_alloc.UseGpr(args[2]).cvt8();
 
         code.pinsrb(source_vector, source_elem.cvt32(), index);
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     } else {
-        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Reg32 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]).cvt32();
-        Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
+        const Xbyak::Reg32 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]).cvt32();
+        const Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
 
         code.pextrw(tmp, source_vector, index / 2);
         if (index % 2 == 0) {
@@ -218,18 +217,17 @@ void EmitX64::EmitVectorSetElement16(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorSetElement32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[1].IsImmediate());
-    u8 index = args[1].GetImmediateU8();
+    const u8 index = args[1].GetImmediateU8();
+    const Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Reg32 source_elem = ctx.reg_alloc.UseGpr(args[2]).cvt32();
+        const Xbyak::Reg32 source_elem = ctx.reg_alloc.UseGpr(args[2]).cvt32();
 
         code.pinsrd(source_vector, source_elem, index);
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     } else {
-        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Reg32 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]).cvt32();
+        const Xbyak::Reg32 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]).cvt32();
 
         code.pinsrw(source_vector, source_elem, index * 2);
         code.shr(source_elem, 16);
@@ -242,18 +240,17 @@ void EmitX64::EmitVectorSetElement32(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorSetElement64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[1].IsImmediate());
-    u8 index = args[1].GetImmediateU8();
+    const u8 index = args[1].GetImmediateU8();
+    const Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Reg64 source_elem = ctx.reg_alloc.UseGpr(args[2]);
+        const Xbyak::Reg64 source_elem = ctx.reg_alloc.UseGpr(args[2]);
 
         code.pinsrq(source_vector, source_elem, index);
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     } else {
-        Xbyak::Xmm source_vector = ctx.reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Reg64 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]);
+        const Xbyak::Reg64 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]);
 
         code.pinsrw(source_vector, source_elem.cvt32(), index * 4);
         code.shr(source_elem, 16);
