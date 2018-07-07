@@ -130,6 +130,32 @@ bool FPCompareRegister(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Ve
     v.V(datasize, Vd, result);
     return true;
 }
+
+enum class AbsoluteComparison {
+    GE,
+    GT,
+};
+
+bool FPAbsoluteComparison(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd, AbsoluteComparison type) {
+    if (sz && !Q) {
+        return v.ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = sz ? 64 : 32;
+
+    const IR::U128 operand1 = v.ir.FPVectorAbs(esize, v.V(datasize, Vn));
+    const IR::U128 operand2 = v.ir.FPVectorAbs(esize, v.V(datasize, Vm));
+    const IR::U128 result = [&] {
+        if (type == AbsoluteComparison::GT)
+            return v.ir.FPVectorGreater(esize, operand1, operand2);
+        
+        return v.ir.FPVectorGreaterEqual(esize, operand1, operand2);
+    }();
+
+    v.V(datasize, Vd, result);
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::CMGT_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -380,20 +406,12 @@ bool TranslatorVisitor::FABD_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FACGE_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    return FPAbsoluteComparison(*this, Q, sz, Vm, Vn, Vd, AbsoluteComparison::GE);
+}
+
 bool TranslatorVisitor::FACGT_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
-    if (sz && !Q) {
-        return ReservedValue();
-    }
-
-    const size_t datasize = Q ? 128 : 64;
-    const size_t esize = sz ? 64 : 32;
-
-    const IR::U128 operand1 = ir.FPVectorAbs(esize, V(datasize, Vn));
-    const IR::U128 operand2 = ir.FPVectorAbs(esize, V(datasize, Vm));
-    const IR::U128 result = ir.FPVectorGreater(esize, operand1, operand2);
-
-    V(datasize, Vd, result);
-    return true;
+    return FPAbsoluteComparison(*this, Q, sz, Vm, Vn, Vd, AbsoluteComparison::GT);
 }
 
 bool TranslatorVisitor::FADD_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
