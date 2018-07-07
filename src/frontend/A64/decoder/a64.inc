@@ -778,7 +778,7 @@ INST(BSL,                    "BSL",                                       "0Q101
 //INST(FMLSL_vec_2,            "FMLSL, FMLSL2 (vector)",                    "0Q1011101z1mmmmm110011nnnnnddddd")
 INST(FABD_4,                 "FABD",                                      "0Q1011101z1mmmmm110101nnnnnddddd")
 INST(FCMGT_reg_4,            "FCMGT (register)",                          "0Q1011101z1mmmmm111001nnnnnddddd")
-//INST(FACGT_4,                "FACGT",                                     "0Q1011101z1mmmmm111011nnnnnddddd")
+INST(FACGT_4,                "FACGT",                                     "0Q1011101z1mmmmm111011nnnnnddddd")
 //INST(FMINP_vec_2,            "FMINP (vector)",                            "0Q1011101z1mmmmm111101nnnnnddddd")
 INST(BIT,                    "BIT",                                       "0Q101110101mmmmm000111nnnnnddddd")
 INST(BIF,                    "BIF",                                       "0Q101110111mmmmm000111nnnnnddddd")
