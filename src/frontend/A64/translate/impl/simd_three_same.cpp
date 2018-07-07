@@ -145,6 +145,34 @@ bool FPCompareRegister(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Ve
     v.V(datasize, Vd, result);
     return true;
 }
+
+enum class MinMaxOperation {
+    Min,
+    Max,
+};
+
+bool FPMinMaxOperation(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd, MinMaxOperation operation) {
+    if (sz && !Q) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = sz ? 64 : 32;
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = v.V(datasize, Vm);
+    const IR::U128 result = [&] {
+        if (operation == MinMaxOperation::Min) {
+            return v.ir.FPVectorMin(esize, operand1, operand2);
+        }
+
+        return v.ir.FPVectorMax(esize, operand1, operand2);
+    }();
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 } // Anonymous namespace
 
 bool TranslatorVisitor::CMGT_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -743,19 +771,12 @@ bool TranslatorVisitor::EOR_asimd(bool Q, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FMAX_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    return FPMinMaxOperation(*this, Q, sz, Vm, Vn, Vd, MinMaxOperation::Max);
+}
+
 bool TranslatorVisitor::FMIN_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
-    if (sz && !Q) {
-        return ReservedValue();
-    }
-
-    const size_t esize = sz ? 64 : 32;
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand1 = V(datasize, Vn);
-    const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.FPVectorMin(esize, operand1, operand2);
-    V(datasize, Vd, result);
-    return true;
+    return FPMinMaxOperation(*this, Q, sz, Vm, Vn, Vd, MinMaxOperation::Min);
 }
 
 bool TranslatorVisitor::FADDP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
