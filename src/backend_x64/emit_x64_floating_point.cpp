@@ -1055,6 +1055,19 @@ void EmitX64::EmitFPS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
+void EmitX64::EmitFPS64ToDouble(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const bool round_to_nearest = args[1].GetImmediateU1();
+    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
+
+    code.cvtsi2sd(result, from);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void EmitX64::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
@@ -1069,4 +1082,26 @@ void EmitX64::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
+void EmitX64::EmitFPU64ToDouble(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const bool round_to_nearest = args[1].GetImmediateU1();
+    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
+        code.vcvtusi2sd(result, result, from);
+    } else {
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code.movq(tmp, from);
+        code.punpckldq(tmp, code.MConst(xword, 0x4530000043300000, 0));
+        code.subpd(tmp, code.MConst(xword, 0x4330000000000000, 0x4530000000000000));
+        code.pshufd(result, tmp, 0b01001110);
+        code.addpd(result, tmp);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
 } // namespace Dynarmic::BackendX64
