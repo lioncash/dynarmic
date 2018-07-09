@@ -40,7 +40,7 @@ bool TranslatorVisitor::SCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     if (esize == 32) {
         element = ir.FPS32ToSingle(element, false, true);
     } else {
-        return InterpretThisInstruction();
+        element = ir.FPS64ToDouble(element, false, true);
     }
     V_scalar(esize, Vd, element);
     return true;
@@ -53,7 +53,7 @@ bool TranslatorVisitor::UCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     if (esize == 32) {
         element = ir.FPU32ToSingle(element, false, true);
     } else {
-        return InterpretThisInstruction();
+        element = ir.FPU64ToDouble(element, false, true);
     }
     V_scalar(esize, Vd, element);
     return true;
