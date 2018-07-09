@@ -1074,6 +1074,19 @@ void EmitX64::EmitFPS64ToDouble(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+void EmitX64::EmitFPS64ToSingle(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const bool round_to_nearest = args[1].GetImmediateU1();
+    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
+
+    code.cvtsi2ss(result, from);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void EmitX64::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -1115,6 +1128,44 @@ void EmitX64::EmitFPU64ToDouble(EmitContext& ctx, IR::Inst* inst) {
         if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
             code.pand(result, code.MConst(xword, f64_non_sign_mask));
         }
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitFPU64ToSingle(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const bool round_to_nearest = args[1].GetImmediateU1();
+    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
+        const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
+        code.vcvtusi2ss(result, result, from);
+    } else {
+        const Xbyak::Reg64 from = ctx.reg_alloc.UseScratchGpr(args[0]);
+        code.pxor(result, result);
+
+        Xbyak::Label negative;
+        Xbyak::Label end;
+
+        code.test(from, from);
+        code.js(negative);
+
+        code.cvtsi2ss(result, from);
+        code.jmp(end);
+
+        code.L(negative);
+        const Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
+        code.mov(tmp, from);
+        code.shr(tmp, 1);
+        code.and_(from.cvt32(), 1);
+        code.or_(from, tmp);
+        code.cvtsi2ss(result, from);
+        code.addss(result, result);
+
+        code.L(end);
     }
 
     ctx.reg_alloc.DefineValue(inst, result);

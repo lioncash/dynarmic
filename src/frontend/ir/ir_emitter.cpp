@@ -1481,6 +1481,11 @@ U64 IREmitter::FPS64ToDouble(const U64& a, bool round_to_nearest, bool fpscr_con
     return Inst<U64>(Opcode::FPS64ToDouble, a, Imm1(round_to_nearest));
 }
 
+U32 IREmitter::FPS64ToSingle(const U64& a, bool round_to_nearest, bool fpscr_controlled) {
+    ASSERT(fpscr_controlled);
+    return Inst<U32>(Opcode::FPS64ToSingle, a, Imm1(round_to_nearest));
+}
+
 U32 IREmitter::FPU32ToSingle(const U32& a, bool round_to_nearest, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
     return Inst<U32>(Opcode::FPU32ToSingle, a, Imm1(round_to_nearest));
@@ -1499,6 +1504,11 @@ U64 IREmitter::FPU32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_con
 U64 IREmitter::FPU64ToDouble(const U64& a, bool round_to_nearest, bool fpscr_controlled) {
     ASSERT(fpscr_controlled);
     return Inst<U64>(Opcode::FPU64ToDouble, a, Imm1(round_to_nearest));
+}
+
+U32 IREmitter::FPU64ToSingle(const U64& a, bool round_to_nearest, bool fpscr_controlled) {
+    ASSERT(fpscr_controlled);
+    return Inst<U32>(Opcode::FPU64ToSingle, a, Imm1(round_to_nearest));
 }
 
 U128 IREmitter::FPVectorAbs(size_t esize, const U128& a) {
