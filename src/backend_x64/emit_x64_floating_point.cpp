@@ -1031,14 +1031,19 @@ void EmitX64::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
-    Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
-    bool round_to_nearest = args[1].GetImmediateU1();
+
+    const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
+    const bool round_to_nearest = args[1].GetImmediateU1();
     ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
-    // We are using a 64-bit GPR register to ensure we don't end up treating the input as signed
-    code.mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
-    code.cvtsi2ss(to, from);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
+        code.vcvtusi2ss(to, to, from.cvt32());
+    } else {
+        // We are using a 64-bit GPR register to ensure we don't end up treating the input as signed
+        code.mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
+        code.cvtsi2ss(to, from);
+    }
 
     ctx.reg_alloc.DefineValue(inst, to);
 }
@@ -1070,14 +1075,19 @@ void EmitX64::EmitFPS64ToDouble(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
-    Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
-    bool round_to_nearest = args[1].GetImmediateU1();
+
+    const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
+    const bool round_to_nearest = args[1].GetImmediateU1();
     ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
-    // We are using a 64-bit GPR register to ensure we don't end up treating the input as signed
-    code.mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
-    code.cvtsi2sd(to, from);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
+        code.vcvtusi2sd(to, to, from.cvt32());
+    } else {
+        // We are using a 64-bit GPR register to ensure we don't end up treating the input as signed
+        code.mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
+        code.cvtsi2sd(to, from);
+    }
 
     ctx.reg_alloc.DefineValue(inst, to);
 }
