@@ -39,7 +39,7 @@ bool TranslatorVisitor::SCVTF_float_int(bool sf, Imm<2> type, Reg Rn, Vec Vd) {
     } else if (intsize == 64 && *fltsize == 32) {
         return InterpretThisInstruction();
     } else if (intsize == 64 && *fltsize == 64) {
-        return InterpretThisInstruction();
+        fltval = ir.FPS64ToDouble(intval, false, true);
     } else {
         UNREACHABLE();
     }
@@ -66,7 +66,7 @@ bool TranslatorVisitor::UCVTF_float_int(bool sf, Imm<2> type, Reg Rn, Vec Vd) {
     } else if (intsize == 64 && *fltsize == 32) {
         return InterpretThisInstruction();
     } else if (intsize == 64 && *fltsize == 64) {
-        return InterpretThisInstruction();
+        fltval = ir.FPU64ToDouble(intval, false, true);
     } else {
         UNREACHABLE();
     }
