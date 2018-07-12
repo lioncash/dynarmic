@@ -421,6 +421,8 @@ OPCODE(FPVectorS32ToSingle,                 T::U128,        T::U128             
 OPCODE(FPVectorS64ToDouble,                 T::U128,        T::U128                                         )
 OPCODE(FPVectorSub32,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorSub64,                       T::U128,        T::U128,        T::U128                         )
+OPCODE(FPVectorU32ToSingle,                 T::U128,        T::U128                                         )
+OPCODE(FPVectorU64ToDouble,                 T::U128,        T::U128                                         )
 
 // A32 Memory access
 A32OPC(ClearExclusive,                      T::Void,                                                        )

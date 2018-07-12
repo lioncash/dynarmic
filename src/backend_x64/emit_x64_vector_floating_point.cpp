@@ -370,4 +370,101 @@ void EmitX64::EmitFPVectorSub64(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation64(code, ctx, inst, &Xbyak::CodeGenerator::subpd);
 }
 
+void EmitX64::EmitFPVectorU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        code.vcvtudq2ps(xmm, xmm);
+    } else {
+        const Xbyak::Address mem_4B000000 = code.MConst(xword, 0x4B0000004B000000, 0x4B0000004B000000);
+        const Xbyak::Address mem_53000000 = code.MConst(xword, 0x5300000053000000, 0x5300000053000000);
+        const Xbyak::Address mem_D3000080 = code.MConst(xword, 0xD3000080D3000080, 0xD3000080D3000080);
+
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpblendw(tmp, xmm, mem_4B000000, 0b10101010);
+            code.vpsrld(xmm, xmm, 16);
+            code.vpblendw(xmm, xmm, mem_53000000, 0b10101010);
+            code.vaddps(xmm, xmm, mem_D3000080);
+            code.vaddps(xmm, tmp, xmm);
+        } else {
+            const Xbyak::Address mem_0xFFFF = code.MConst(xword, 0x0000FFFF0000FFFF, 0x0000FFFF0000FFFF);
+
+            code.movdqa(tmp, mem_0xFFFF);
+
+            code.pand(tmp, xmm);
+            code.por(tmp, mem_4B000000);
+            code.psrld(xmm, 16);
+            code.por(xmm, mem_53000000);
+            code.addps(xmm, mem_D3000080);
+            code.addps(xmm, tmp);
+        }
+    }
+
+    if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
+        code.pand(xmm, code.MConst(xword, 0x7FFFFFFF7FFFFFFF, 0x7FFFFFFF7FFFFFFF));
+    }
+
+    ctx.reg_alloc.DefineValue(inst, xmm);
+}
+
+void EmitX64::EmitFPVectorU64ToDouble(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        code.vcvtuqq2pd(xmm, xmm);
+    } else {
+        const Xbyak::Address unpack = code.MConst(xword, 0x4530000043300000, 0);
+        const Xbyak::Address subtrahend = code.MConst(xword, 0x4330000000000000, 0x4530000000000000);
+
+        const Xbyak::Xmm unpack_reg = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm subtrahend_reg = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vmovapd(unpack_reg, unpack);
+            code.vmovapd(subtrahend_reg, subtrahend);
+
+            code.vunpcklps(tmp1, xmm, unpack_reg);
+            code.vsubpd(tmp1, tmp1, subtrahend_reg);
+
+            code.vpermilps(xmm, xmm, 0b01001110);
+
+            code.vunpcklps(xmm, xmm, unpack_reg);
+            code.vsubpd(xmm, xmm, subtrahend_reg);
+
+            code.vhaddpd(xmm, tmp1, xmm);
+        } else {
+            const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+
+            code.movapd(unpack_reg, unpack);
+            code.movapd(subtrahend_reg, subtrahend);
+
+            code.pshufd(tmp1, xmm, 0b01001110);
+
+            code.punpckldq(xmm, unpack_reg);
+            code.subpd(xmm, subtrahend_reg);
+            code.pshufd(tmp2, xmm, 0b01001110);
+            code.addpd(xmm, tmp2);
+
+            code.punpckldq(tmp1, unpack_reg);
+            code.subpd(tmp1, subtrahend_reg);
+
+            code.pshufd(unpack_reg, tmp1, 0b01001110);
+            code.addpd(unpack_reg, tmp1);
+
+            code.unpcklpd(xmm, unpack_reg);
+        }
+    }
+
+    if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
+        code.pand(xmm, code.MConst(xword, 0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF));
+    }
+
+    ctx.reg_alloc.DefineValue(inst, xmm);
+}
+
 } // namespace Dynarmic::BackendX64

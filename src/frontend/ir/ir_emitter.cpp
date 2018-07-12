@@ -1620,6 +1620,14 @@ U128 IREmitter::FPVectorS64ToDouble(const U128& a) {
     return Inst<U128>(Opcode::FPVectorS64ToDouble, a);
 }
 
+U128 IREmitter::FPVectorU32ToSingle(const U128& a) {
+    return Inst<U128>(Opcode::FPVectorU32ToSingle, a);
+}
+
+U128 IREmitter::FPVectorU64ToDouble(const U128& a) {
+    return Inst<U128>(Opcode::FPVectorU64ToDouble, a);
+}
+
 void IREmitter::Breakpoint() {
     Inst(Opcode::Breakpoint);
 }
