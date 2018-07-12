@@ -637,7 +637,7 @@ INST(SHLL,                   "SHLL, SHLL2",                               "0Q101
 //INST(FCVTAU_3,               "FCVTAU (vector)",                           "0Q10111001111001110010nnnnnddddd")
 //INST(FCVTAU_4,               "FCVTAU (vector)",                           "0Q1011100z100001110010nnnnnddddd")
 //INST(UCVTF_int_3,            "UCVTF (vector, integer)",                   "0Q10111001111001110110nnnnnddddd")
-//INST(UCVTF_int_4,            "UCVTF (vector, integer)",                   "0Q1011100z100001110110nnnnnddddd")
+INST(UCVTF_int_4,            "UCVTF (vector, integer)",                   "0Q1011100z100001110110nnnnnddddd")
 INST(NOT,                    "NOT",                                       "0Q10111000100000010110nnnnnddddd")
 INST(RBIT_asimd,             "RBIT (vector)",                             "0Q10111001100000010110nnnnnddddd")
 INST(FNEG_1,                 "FNEG (vector)",                             "0Q10111011111000111110nnnnnddddd")

@@ -81,6 +81,31 @@ bool FPCompareAgainstZero(TranslatorVisitor& v, bool Q, bool sz, Vec Vn, Vec Vd,
     v.V(datasize, Vd, result);
     return true;
 }
+
+enum class Signedness {
+    Signed,
+    Unsigned
+};
+
+bool IntegerConvertToFloat(TranslatorVisitor& v, bool Q, bool sz, Vec Vn, Vec Vd, Signedness signedness) {
+    if (sz && !Q) {
+        return v.ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = v.V(datasize, Vn);
+    const IR::U128 result = [&] {
+        if (signedness == Signedness::Signed) {
+            return sz ? v.ir.FPVectorS64ToDouble(operand) : v.ir.FPVectorS32ToSingle(operand);
+        }
+
+        return sz ? v.ir.FPVectorU64ToDouble(operand) : v.ir.FPVectorU32ToSingle(operand);
+    }();
+
+    v.V(datasize, Vd, result);
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::CNT(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
@@ -341,17 +366,11 @@ bool TranslatorVisitor::REV64_asimd(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::SCVTF_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
-    if (sz && !Q) {
-        return ReservedValue();
-    }
+    return IntegerConvertToFloat(*this, Q, sz, Vn, Vd, Signedness::Signed);
+}
 
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 result = sz ? ir.FPVectorS64ToDouble(operand) : ir.FPVectorS32ToSingle(operand);
-
-    V(datasize, Vd, result);
-    return true;
+bool TranslatorVisitor::UCVTF_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return IntegerConvertToFloat(*this, Q, sz, Vn, Vd, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::SHLL(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
