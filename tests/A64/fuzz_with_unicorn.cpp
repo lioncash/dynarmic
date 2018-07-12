@@ -146,7 +146,7 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
     }
 }
 
-static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Vector, 32>& vecs, const size_t instructions_offset, const std::vector<u32>& instructions, const u32 pstate) {
+static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Vector, 32>& vecs, const size_t instructions_offset, const std::vector<u32>& instructions, const u32 pstate, const u32 fpcr) {
     static TestEnv jit_env;
     static TestEnv uni_env;
 
@@ -164,14 +164,14 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Ve
     jit.SetVectors(vecs);
     jit.SetPC(instructions_offset * 4);
     jit.SetSP(0x08000000);
-    jit.SetFpcr(0);
+    jit.SetFpcr(fpcr);
     jit.SetPstate(pstate);
     jit.ClearCache();
     uni.SetRegisters(regs);
     uni.SetVectors(vecs);
     uni.SetPC(instructions_offset * 4);
     uni.SetSP(0x08000000);
-    uni.SetFpcr(0);
+    uni.SetFpcr(fpcr);
     uni.SetPstate(pstate);
     uni.ClearPageCache();
 
@@ -252,7 +252,7 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
-        RunTestInstance(regs, vecs, 100, instructions, pstate);
+        RunTestInstance(regs, vecs, 100, instructions, pstate, 0);
     }
 }
 
@@ -361,9 +361,10 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
         std::generate(vecs.begin(), vecs.end(), gen_vector);
         instructions[0] = GenFloatInst(0, true);
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
+        u32 fpcr = RandInt<u32>(0, 0x3) << 22; // randomize RMode
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
-        RunTestInstance(regs, vecs, 100, instructions, pstate);
+        RunTestInstance(regs, vecs, 100, instructions, pstate, fpcr);
     }
 }
