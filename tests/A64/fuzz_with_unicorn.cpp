@@ -118,6 +118,8 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
             "FCVT_float",
             // Approximation. Produces incorrect results.
             "FMADD_float", "FMSUB_float", "FNMADD_float", "FNMSUB_float",
+            // Requires investigation (temporarily disabled).
+            "FDIV_2",
         };
 
         std::vector<InstructionGenerator> result;
