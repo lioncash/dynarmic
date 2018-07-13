@@ -60,6 +60,46 @@ bool ScalarCompare(TranslatorVisitor& v, Imm<2> size, boost::optional<Vec> Vm, V
     v.V_scalar(datasize, Vd, v.ir.VectorGetElement(esize, result, 0));
     return true;
 }
+
+enum class FPComparisonType {
+    EQ,
+    GE,
+    AbsoluteGE,
+    GT,
+    AbsoluteGT
+};
+
+bool ScalarFPCompareRegister(TranslatorVisitor& v, bool sz, Vec Vm, Vec Vn, Vec Vd, FPComparisonType type) {
+    const size_t esize = sz ? 64 : 32;
+    const size_t datasize = esize;
+
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = v.V(datasize, Vm);
+    const IR::U128 result = [&] {
+        switch (type) {
+        case FPComparisonType::EQ:
+            return v.ir.FPVectorEqual(esize, operand1, operand2);
+        case FPComparisonType::GE:
+            return v.ir.FPVectorGreaterEqual(esize, operand1, operand2);
+        case FPComparisonType::AbsoluteGE:
+            return v.ir.FPVectorGreaterEqual(esize,
+                                             v.ir.FPVectorAbs(esize, operand1),
+                                             v.ir.FPVectorAbs(esize, operand2));
+        case FPComparisonType::GT:
+            return v.ir.FPVectorGreater(esize, operand1, operand2);
+        case FPComparisonType::AbsoluteGT:
+            return v.ir.FPVectorGreater(esize,
+                                        v.ir.FPVectorAbs(esize, operand1),
+                                        v.ir.FPVectorAbs(esize, operand2));
+        }
+
+        UNREACHABLE();
+        return IR::U128{};
+    }();
+
+    v.V_scalar(datasize, Vd, v.ir.VectorGetElement(esize, result, 0));
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::ADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -140,6 +180,26 @@ bool TranslatorVisitor::FABD_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
 
     V(128, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::FACGE_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    return ScalarFPCompareRegister(*this, sz, Vm, Vn, Vd, FPComparisonType::AbsoluteGE);
+}
+
+bool TranslatorVisitor::FACGT_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    return ScalarFPCompareRegister(*this, sz, Vm, Vn, Vd, FPComparisonType::AbsoluteGT);
+}
+
+bool TranslatorVisitor::FCMEQ_reg_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    return ScalarFPCompareRegister(*this, sz, Vm, Vn, Vd, FPComparisonType::EQ);
+}
+
+bool TranslatorVisitor::FCMGE_reg_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    return ScalarFPCompareRegister(*this, sz, Vm, Vn, Vd, FPComparisonType::GE);
+}
+
+bool TranslatorVisitor::FCMGT_reg_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    return ScalarFPCompareRegister(*this, sz, Vm, Vn, Vd, FPComparisonType::GT);
 }
 
 bool TranslatorVisitor::SSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
