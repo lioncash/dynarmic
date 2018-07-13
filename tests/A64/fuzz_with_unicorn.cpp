@@ -372,17 +372,20 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
 }
 
 TEST_CASE("A64: Small random block", "[a64]") {
+    std::array<u64, 31> regs;
+    std::array<Vector, 32> vecs;
+    std::vector<u32> instructions(5);
+
     for (size_t iteration = 0; iteration < 100000; ++iteration) {
-        std::array<u64, 31> regs;
-        std::generate_n(regs.begin(), 31, []{ return RandInt<u64>(0, ~u64(0)); });
-        std::array<Vector, 32> vecs;
-        std::generate_n(vecs.begin(), 32, []{ return RandomVector(); });
-        std::vector<u32> instructions;
-        instructions.push_back(GenRandomInst(0, false));
-        instructions.push_back(GenRandomInst(4, false));
-        instructions.push_back(GenRandomInst(8, false));
-        instructions.push_back(GenRandomInst(12, false));
-        instructions.push_back(GenRandomInst(16, true));
+        std::generate(regs.begin(), regs.end(), [] { return RandInt<u64>(0, ~u64(0)); });
+        std::generate(vecs.begin(), vecs.end(), RandomVector);
+
+        instructions[0] = GenRandomInst(0, false);
+        instructions[1] = GenRandomInst(4, false);
+        instructions[2] = GenRandomInst(8, false);
+        instructions[3] = GenRandomInst(12, false);
+        instructions[4] = GenRandomInst(16, true);
+
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
         u32 fpcr = RandInt<u32>(0, 0x3) << 22; // randomize RMode
 
