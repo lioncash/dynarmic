@@ -60,18 +60,17 @@ void Unicorn::SetPC(u64 value) {
     CHECKED(uc_reg_write(uc, UC_ARM64_REG_PC, &value));
 }
 
-constexpr size_t num_gprs = 31;
-static const std::array<int, num_gprs> gpr_ids {
+constexpr std::array<int, Unicorn::num_gprs> gpr_ids{
     UC_ARM64_REG_X0, UC_ARM64_REG_X1, UC_ARM64_REG_X2, UC_ARM64_REG_X3, UC_ARM64_REG_X4, UC_ARM64_REG_X5, UC_ARM64_REG_X6, UC_ARM64_REG_X7,
     UC_ARM64_REG_X8, UC_ARM64_REG_X9, UC_ARM64_REG_X10, UC_ARM64_REG_X11, UC_ARM64_REG_X12, UC_ARM64_REG_X13, UC_ARM64_REG_X14, UC_ARM64_REG_X15,
     UC_ARM64_REG_X16, UC_ARM64_REG_X17, UC_ARM64_REG_X18, UC_ARM64_REG_X19, UC_ARM64_REG_X20, UC_ARM64_REG_X21, UC_ARM64_REG_X22, UC_ARM64_REG_X23,
     UC_ARM64_REG_X24, UC_ARM64_REG_X25, UC_ARM64_REG_X26, UC_ARM64_REG_X27, UC_ARM64_REG_X28, UC_ARM64_REG_X29, UC_ARM64_REG_X30
 };
 
-std::array<u64, 31> Unicorn::GetRegisters() const {
-    std::array<u64, num_gprs> regs;
-    std::array<u64*, num_gprs> ptrs;
-    for (size_t i = 0; i < num_gprs; ++i)
+Unicorn::RegisterArray Unicorn::GetRegisters() const {
+    RegisterArray regs;
+    RegisterPtrArray ptrs;
+    for (size_t i = 0; i < ptrs.size(); ++i)
         ptrs[i] = &regs[i];
 
     CHECKED(uc_reg_read_batch(uc, const_cast<int*>(gpr_ids.data()),
@@ -79,28 +78,26 @@ std::array<u64, 31> Unicorn::GetRegisters() const {
     return regs;
 }
 
-void Unicorn::SetRegisters(const std::array<u64, 31>& value) {
-    std::array<const u64*, num_gprs> ptrs;
-    for (size_t i = 0; i < num_gprs; ++i)
+void Unicorn::SetRegisters(const RegisterArray& value) {
+    RegisterConstPtrArray ptrs;
+    for (size_t i = 0; i < ptrs.size(); ++i)
         ptrs[i] = &value[i];
 
     CHECKED(uc_reg_write_batch(uc, const_cast<int*>(gpr_ids.data()),
                                reinterpret_cast<void**>(const_cast<u64**>(ptrs.data())), num_gprs));
 }
 
-using Vector = Unicorn::Vector;
-constexpr size_t num_vecs = 32;
-static const std::array<int, num_vecs> vec_ids {
+constexpr std::array<int, Unicorn::num_vecs> vec_ids{
     UC_ARM64_REG_Q0, UC_ARM64_REG_Q1, UC_ARM64_REG_Q2, UC_ARM64_REG_Q3, UC_ARM64_REG_Q4, UC_ARM64_REG_Q5, UC_ARM64_REG_Q6, UC_ARM64_REG_Q7,
     UC_ARM64_REG_Q8, UC_ARM64_REG_Q9, UC_ARM64_REG_Q10, UC_ARM64_REG_Q11, UC_ARM64_REG_Q12, UC_ARM64_REG_Q13, UC_ARM64_REG_Q14, UC_ARM64_REG_Q15,
     UC_ARM64_REG_Q16, UC_ARM64_REG_Q17, UC_ARM64_REG_Q18, UC_ARM64_REG_Q19, UC_ARM64_REG_Q20, UC_ARM64_REG_Q21, UC_ARM64_REG_Q22, UC_ARM64_REG_Q23,
     UC_ARM64_REG_Q24, UC_ARM64_REG_Q25, UC_ARM64_REG_Q26, UC_ARM64_REG_Q27, UC_ARM64_REG_Q28, UC_ARM64_REG_Q29, UC_ARM64_REG_Q30, UC_ARM64_REG_Q31
 };
 
-std::array<Vector, 32> Unicorn::GetVectors() const {
-    std::array<Vector, num_vecs> vecs;
-    std::array<Vector*, num_vecs> ptrs;
-    for (size_t i = 0; i < num_vecs; ++i)
+Unicorn::VectorArray Unicorn::GetVectors() const {
+    VectorArray vecs;
+    VectorPtrArray ptrs;
+    for (size_t i = 0; i < ptrs.size(); ++i)
         ptrs[i] = &vecs[i];
 
     CHECKED(uc_reg_read_batch(uc, const_cast<int*>(vec_ids.data()),
@@ -109,9 +106,9 @@ std::array<Vector, 32> Unicorn::GetVectors() const {
     return vecs;
 }
 
-void Unicorn::SetVectors(const std::array<Vector, 32>& value) {
-    std::array<const Vector*, num_vecs> ptrs;
-    for (size_t i = 0; i < num_vecs; ++i)
+void Unicorn::SetVectors(const VectorArray& value) {
+    VectorConstPtrArray ptrs;
+    for (size_t i = 0; i < ptrs.size(); ++i)
         ptrs[i] = &value[i];
 
     CHECKED(uc_reg_write_batch(uc, const_cast<int*>(vec_ids.data()),

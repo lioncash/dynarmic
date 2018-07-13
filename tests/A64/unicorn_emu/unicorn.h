@@ -16,6 +16,16 @@
 
 class Unicorn final {
 public:
+    static constexpr size_t num_gprs = 31;
+    using RegisterArray = std::array<u64, num_gprs>;
+    using RegisterPtrArray = std::array<RegisterArray::pointer, num_gprs>;
+    using RegisterConstPtrArray = std::array<RegisterArray::const_pointer, num_gprs>;
+
+    static constexpr size_t num_vecs = 32;
+    using VectorArray = std::array<Vector, num_vecs>;
+    using VectorPtrArray = std::array<VectorArray::pointer, num_vecs>;
+    using VectorConstPtrArray = std::array<VectorArray::const_pointer, num_vecs>;
+
     explicit Unicorn(TestEnv& testenv);
     ~Unicorn();
 
@@ -27,14 +37,11 @@ public:
     u64 GetPC() const;
     void SetPC(u64 value);
 
-    std::array<u64, 31> GetRegisters() const;
-    void SetRegisters(const std::array<u64, 31>& value);
+    RegisterArray GetRegisters() const;
+    void SetRegisters(const RegisterArray& value);
 
-    using Vector = std::array<u64, 2>;
-    static_assert(sizeof(Vector) == sizeof(u64) * 2);
-
-    std::array<Vector, 32> GetVectors() const;
-    void SetVectors(const std::array<Vector, 32>& value);
+    VectorArray GetVectors() const;
+    void SetVectors(const VectorArray& value);
 
     u32 GetFpcr() const;
     void SetFpcr(u32 value);

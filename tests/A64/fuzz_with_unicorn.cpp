@@ -148,7 +148,8 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
     }
 }
 
-static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Vector, 32>& vecs, const size_t instructions_offset, const std::vector<u32>& instructions, const u32 pstate, const u32 fpcr) {
+static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::VectorArray& vecs, const size_t instructions_offset,
+                            const std::vector<u32>& instructions, const u32 pstate, const u32 fpcr) {
     static TestEnv jit_env;
     static TestEnv uni_env;
 
@@ -243,8 +244,8 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Ve
 }
 
 TEST_CASE("A64: Single random instruction", "[a64]") {
-    std::array<u64, 31> regs;
-    std::array<Vector, 32> vecs;
+    Unicorn::RegisterArray regs;
+    Unicorn::VectorArray vecs;
     std::vector<u32> instructions(1);
 
     for (size_t iteration = 0; iteration < 100000; ++iteration) {
@@ -356,8 +357,8 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
         return Vector{lower, upper};
     };
 
-    std::array<u64, 31> regs;
-    std::array<Vector, 32> vecs;
+    Unicorn::RegisterArray regs;
+    Unicorn::VectorArray vecs;
     std::vector<u32> instructions(1);
 
     for (size_t iteration = 0; iteration < 100000; ++iteration) {
@@ -374,8 +375,8 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
 }
 
 TEST_CASE("A64: Small random block", "[a64]") {
-    std::array<u64, 31> regs;
-    std::array<Vector, 32> vecs;
+    Unicorn::RegisterArray regs;
+    Unicorn::VectorArray vecs;
     std::vector<u32> instructions(5);
 
     for (size_t iteration = 0; iteration < 100000; ++iteration) {

@@ -19,7 +19,7 @@ TEST_CASE("Unicorn: Sanity test", "[a64]") {
     env.code_mem[0] = 0x8b020020; // ADD X0, X1, X2
     env.code_mem[1] = 0x14000000; // B .
 
-    std::array<u64, 31> regs {
+    constexpr Unicorn::RegisterArray regs{
         0, 1, 2, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -46,7 +46,7 @@ TEST_CASE("Unicorn: Ensure 0xFFFF'FFFF'FFFF'FFFF is readable", "[a64]") {
     env.code_mem[0] = 0x385fed99; // LDRB W25, [X12, #0xfffffffffffffffe]!
     env.code_mem[1] = 0x14000000; // B .
 
-    std::array<u64, 31> regs{};
+    Unicorn::RegisterArray regs{};
     regs[12] = 1;
 
     Unicorn unicorn{env};
@@ -66,7 +66,7 @@ TEST_CASE("Unicorn: Ensure is able to read across page boundaries", "[a64]") {
     env.code_mem[0] = 0xb85f93d9; // LDUR W25, [X30, #0xfffffffffffffff9]
     env.code_mem[1] = 0x14000000; // B .
 
-    std::array<u64, 31> regs{};
+    Unicorn::RegisterArray regs{};
     regs[30] = 4;
 
     Unicorn unicorn{env};
