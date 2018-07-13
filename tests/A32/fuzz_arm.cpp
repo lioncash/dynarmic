@@ -126,12 +126,13 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
 
         u32 initial_cpsr = 0x000001D0;
 
-        std::array<u32, 16> initial_regs;
+        ArmTestEnv::RegisterArray initial_regs;
         std::generate_n(initial_regs.begin(), 15, []{ return RandInt<u32>(0, 0xFFFFFFFF); });
         initial_regs[15] = 0;
 
-        std::array<u32, 64> initial_extregs;
-        std::generate_n(initial_extregs.begin(), 64, []{ return RandInt<u32>(0, 0xFFFFFFFF); });
+        ArmTestEnv::ExtRegsArray initial_extregs;
+        std::generate(initial_extregs.begin(), initial_extregs.end(),
+                      []{ return RandInt<u32>(0, 0xFFFFFFFF); });
 
         u32 initial_fpscr = 0x01000000 | (RandInt<u32>(0, 3) << 22);
 

@@ -86,7 +86,8 @@ static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Ji
             && interp_write_records == jit_write_records;
 }
 
-static void RunInstance(size_t run_number, ThumbTestEnv& test_env, ARMul_State& interp, Dynarmic::A32::Jit& jit, const std::array<u32, 16>& initial_regs, size_t instruction_count, size_t instructions_to_execute_count) {
+static void RunInstance(size_t run_number, ThumbTestEnv& test_env, ARMul_State& interp, Dynarmic::A32::Jit& jit, const ThumbTestEnv::RegisterArray& initial_regs,
+                        size_t instruction_count, size_t instructions_to_execute_count) {
     interp.instruction_cache.clear();
     InterpreterClearCache();
     jit.ClearCache();
@@ -182,7 +183,7 @@ void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_e
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
 
     for (size_t run_number = 0; run_number < run_count; run_number++) {
-        std::array<u32, 16> initial_regs;
+        ThumbTestEnv::RegisterArray initial_regs;
         std::generate_n(initial_regs.begin(), 15, []{ return RandInt<u32>(0, 0xFFFFFFFF); });
         initial_regs[15] = 0;
 
@@ -284,7 +285,7 @@ TEST_CASE("Verify fix for off by one error in MemoryRead32 worked", "[Thumb]") {
     interp.user_callbacks = &test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
 
-    std::array<u32, 16> initial_regs {
+    constexpr ThumbTestEnv::RegisterArray initial_regs {
         0xe90ecd70,
         0x3e3b73c3,
         0x571616f9,

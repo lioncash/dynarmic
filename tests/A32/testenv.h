@@ -18,6 +18,9 @@
 template <typename InstructionType, u32 infinite_loop>
 class A32TestEnv final : public Dynarmic::A32::UserCallbacks {
 public:
+    using RegisterArray = std::array<u32, 16>;
+    using ExtRegsArray = std::array<u32, 64>;
+
     u64 ticks_left = 0;
     bool code_mem_modified_by_guest = false;
     std::array<InstructionType, 2048> code_mem{};
