@@ -4,6 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
+#include <algorithm>
 #include <cstring>
 #include <vector>
 
@@ -23,10 +24,8 @@ public:
     }
 
     static bool IsInvalidInstruction(u32 inst) {
-        for (const auto& invalid : invalid_instructions)
-            if (invalid.Match(inst))
-                return true;
-        return false;
+        return std::any_of(invalid_instructions.begin(), invalid_instructions.end(),
+                           [inst](const auto& invalid) { return invalid.Match(inst); });
     }
 
 private:
