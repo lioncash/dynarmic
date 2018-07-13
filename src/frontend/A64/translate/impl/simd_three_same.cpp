@@ -100,7 +100,9 @@ bool RoundingHalvingAdd(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec V
 enum class ComparisonType {
     EQ,
     GE,
-    GT
+    AbsoluteGE,
+    GT,
+    AbsoluteGT
 };
 
 bool FPCompareRegister(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd, ComparisonType type) {
@@ -119,38 +121,20 @@ bool FPCompareRegister(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Ve
             return v.ir.FPVectorEqual(esize, operand1, operand2);
         case ComparisonType::GE:
             return v.ir.FPVectorGreaterEqual(esize, operand1, operand2);
+        case ComparisonType::AbsoluteGE:
+            return v.ir.FPVectorGreaterEqual(esize,
+                                             v.ir.FPVectorAbs(esize, operand1),
+                                             v.ir.FPVectorAbs(esize, operand2));
         case ComparisonType::GT:
             return v.ir.FPVectorGreater(esize, operand1, operand2);
+        case ComparisonType::AbsoluteGT:
+            return v.ir.FPVectorGreater(esize,
+                                        v.ir.FPVectorAbs(esize, operand1),
+                                        v.ir.FPVectorAbs(esize, operand2));
         }
 
         UNREACHABLE();
         return IR::U128{};
-    }();
-
-    v.V(datasize, Vd, result);
-    return true;
-}
-
-enum class AbsoluteComparison {
-    GE,
-    GT,
-};
-
-bool FPAbsoluteComparison(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd, AbsoluteComparison type) {
-    if (sz && !Q) {
-        return v.ReservedValue();
-    }
-
-    const size_t datasize = Q ? 128 : 64;
-    const size_t esize = sz ? 64 : 32;
-
-    const IR::U128 operand1 = v.ir.FPVectorAbs(esize, v.V(datasize, Vn));
-    const IR::U128 operand2 = v.ir.FPVectorAbs(esize, v.V(datasize, Vm));
-    const IR::U128 result = [&] {
-        if (type == AbsoluteComparison::GT)
-            return v.ir.FPVectorGreater(esize, operand1, operand2);
-        
-        return v.ir.FPVectorGreaterEqual(esize, operand1, operand2);
     }();
 
     v.V(datasize, Vd, result);
@@ -407,11 +391,11 @@ bool TranslatorVisitor::FABD_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::FACGE_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
-    return FPAbsoluteComparison(*this, Q, sz, Vm, Vn, Vd, AbsoluteComparison::GE);
+    return FPCompareRegister(*this, Q, sz, Vm, Vn, Vd, ComparisonType::AbsoluteGE);
 }
 
 bool TranslatorVisitor::FACGT_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
-    return FPAbsoluteComparison(*this, Q, sz, Vm, Vn, Vd, AbsoluteComparison::GT);
+    return FPCompareRegister(*this, Q, sz, Vm, Vn, Vd, ComparisonType::AbsoluteGT);
 }
 
 bool TranslatorVisitor::FADD_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
