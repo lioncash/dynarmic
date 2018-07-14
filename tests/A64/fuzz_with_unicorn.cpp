@@ -160,7 +160,12 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
     jit_env.modified_memory.clear();
     uni_env.modified_memory.clear();
 
-    static Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&jit_env}};
+    Dynarmic::A64::UserConfig jit_user_config{&jit_env};
+    // The below corresponds to the settings for qemu's aarch64_max_initfn
+    jit_user_config.dczid_el0 = 7;
+    jit_user_config.ctr_el0 = 0x80038003;
+
+    static Dynarmic::A64::Jit jit{jit_user_config};
     static Unicorn uni{uni_env};
 
     jit.SetRegisters(regs);
