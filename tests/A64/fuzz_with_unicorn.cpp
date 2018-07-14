@@ -197,6 +197,7 @@ static void RunTestInstance(const std::array<u64, 31>& regs, const std::array<Ve
         fmt::print("sp : 08000000\n");
         fmt::print("pc : {:016x}\n", instructions_offset * 4);
         fmt::print("p  : {:08x}\n", pstate);
+        fmt::print("fpcr {:08x}\n", fpcr);
         fmt::print("\n");
 
         fmt::print("Final register listing:\n");
@@ -251,10 +252,11 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
         std::generate(vecs.begin(), vecs.end(), RandomVector);
         instructions[0] = GenRandomInst(0, true);
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
+        u32 fpcr = RandInt<u32>(0, 0x3) << 22; // randomize RMode
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
-        RunTestInstance(regs, vecs, 100, instructions, pstate, 0);
+        RunTestInstance(regs, vecs, 100, instructions, pstate, fpcr);
     }
 }
 
