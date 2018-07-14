@@ -1112,6 +1112,9 @@ void EmitX64::EmitFPU64ToDouble(EmitContext& ctx, IR::Inst* inst) {
         code.subpd(tmp, code.MConst(xword, 0x4330000000000000, 0x4530000000000000));
         code.pshufd(result, tmp, 0b01001110);
         code.addpd(result, tmp);
+        if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
+            code.pand(result, code.MConst(xword, f64_non_sign_mask));
+        }
     }
 
     ctx.reg_alloc.DefineValue(inst, result);
