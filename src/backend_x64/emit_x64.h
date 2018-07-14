@@ -16,6 +16,7 @@
 
 #include "backend_x64/reg_alloc.h"
 #include "common/address_range.h"
+#include "common/fp/rounding_mode.h"
 #include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/terminal.h"
 
@@ -33,6 +34,7 @@ struct EmitContext {
 
     void EraseInstruction(IR::Inst* inst);
 
+    virtual FP::RoundingMode FPSCR_RMode() const = 0;
     virtual bool FPSCR_RoundTowardsZero() const = 0;
     virtual bool FPSCR_FTZ() const = 0;
     virtual bool FPSCR_DN() const = 0;

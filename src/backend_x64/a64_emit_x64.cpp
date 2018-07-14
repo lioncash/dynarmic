@@ -40,6 +40,10 @@ A64::LocationDescriptor A64EmitContext::Location() const {
     return A64::LocationDescriptor{block.Location()};
 }
 
+FP::RoundingMode A64EmitContext::FPSCR_RMode() const {
+    return Location().FPCR().RMode();
+}
+
 bool A64EmitContext::FPSCR_RoundTowardsZero() const {
     return Location().FPCR().RMode() != FP::RoundingMode::TowardsZero;
 }
