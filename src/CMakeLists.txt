@@ -106,6 +106,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/load_store_register_unprivileged.cpp
     frontend/A64/translate/impl/load_store_single_structure.cpp
     frontend/A64/translate/impl/move_wide.cpp
+    frontend/A64/translate/impl/simd_across_lanes.cpp
     frontend/A64/translate/impl/simd_aes.cpp
     frontend/A64/translate/impl/simd_copy.cpp
     frontend/A64/translate/impl/simd_crypto_four_register.cpp

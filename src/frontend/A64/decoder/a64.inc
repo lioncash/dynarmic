@@ -662,7 +662,7 @@ INST(FCMLE_4,                "FCMLE (zero)",                              "0Q101
 //INST(SADDLV,                 "SADDLV",                                    "0Q001110zz110000001110nnnnnddddd")
 //INST(SMAXV,                  "SMAXV",                                     "0Q001110zz110000101010nnnnnddddd")
 //INST(SMINV,                  "SMINV",                                     "0Q001110zz110001101010nnnnnddddd")
-//INST(ADDV,                   "ADDV",                                      "0Q001110zz110001101110nnnnnddddd")
+INST(ADDV,                   "ADDV",                                      "0Q001110zz110001101110nnnnnddddd")
 //INST(FMAXNMV_1,              "FMAXNMV",                                   "0Q00111000110000110010nnnnnddddd")
 //INST(FMAXNMV_2,              "FMAXNMV",                                   "0Q1011100z110000110010nnnnnddddd")
 //INST(FMAXV_1,                "FMAXV",                                     "0Q00111000110000111110nnnnnddddd")
