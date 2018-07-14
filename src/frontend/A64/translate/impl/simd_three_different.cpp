@@ -18,8 +18,12 @@ enum class Signedness {
     Unsigned
 };
 
-void AbsoluteDifferenceLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+bool AbsoluteDifferenceLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
                             AbsoluteDifferenceBehavior behavior, Signedness sign) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
     const size_t esize = 8 << size.ZeroExtend();
     const size_t datasize = 64;
 
@@ -34,6 +38,7 @@ void AbsoluteDifferenceLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, V
     }
 
     v.V(2 * datasize, Vd, result);
+    return true;
 }
 
 enum class MultiplyLongBehavior {
@@ -42,8 +47,12 @@ enum class MultiplyLongBehavior {
     Subtract
 };
 
-void MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+bool MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
                   MultiplyLongBehavior behavior, Signedness sign) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
     const size_t esize = 8 << size.ZeroExtend();
     const size_t doubled_esize = 2 * esize;
     const size_t datasize = 64;
@@ -74,227 +83,154 @@ void MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec
     }
 
     v.V(doubled_datasize, Vd, result);
+    return true;
+}
+
+enum class LongOperationBehavior {
+    Addition,
+    Subtraction
+};
+    
+bool LongOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                   LongOperationBehavior behavior, Signedness sign) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t part = Q ? 1 : 0;
+
+    const auto get_operand = [&](Vec vec) {
+        const IR::U128 tmp = v.Vpart(64, vec, part);
+
+        if (sign == Signedness::Signed) {
+            return v.ir.VectorSignExtend(esize, tmp);
+        }
+
+        return v.ir.VectorZeroExtend(esize, tmp);
+    };
+
+    const IR::U128 operand1 = get_operand(Vn);
+    const IR::U128 operand2 = get_operand(Vm);
+    const IR::U128 result = [&] {
+        if (behavior == LongOperationBehavior::Addition) {
+            return v.ir.VectorAdd(esize * 2, operand1, operand2);
+        }
+
+        return v.ir.VectorSub(esize * 2, operand1, operand2);
+    }();
+
+    v.V(128, Vd, result);
+    return true;
+}
+
+enum class WideOperationBehavior {
+    Addition,
+    Subtraction
+};
+
+bool WideOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                   WideOperationBehavior behavior, Signedness sign) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t part = Q ? 1 : 0;
+
+    const IR::U128 operand1 = v.V(128, Vn);
+    const IR::U128 operand2 = [&] {
+        const IR::U128 tmp = v.Vpart(64, Vm, part);
+
+        if (sign == Signedness::Signed) {
+            return v.ir.VectorSignExtend(esize, tmp);
+        }
+
+        return v.ir.VectorZeroExtend(esize, tmp);
+    }();
+    const IR::U128 result = [&] {
+        if (behavior == WideOperationBehavior::Addition) {
+            return v.ir.VectorAdd(esize * 2, operand1, operand2);
+        }
+
+        return v.ir.VectorSub(esize * 2, operand1, operand2);
+    }();
+
+    v.V(128, Vd, result);
+    return true;
 }
 } // Anonymous namespace
 
 bool TranslatorVisitor::SABAL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::Accumulate, Signedness::Signed);
-    return true;
+    return AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::Accumulate, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SABDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::None, Signedness::Signed);
-    return true;
+    return AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::None, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SADDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t part = Q ? 1 : 0;
-
-    const IR::U128 operand1 = ir.VectorSignExtend(esize, Vpart(64, Vn, part));
-    const IR::U128 operand2 = ir.VectorSignExtend(esize, Vpart(64, Vm, part));
-    const IR::U128 result = ir.VectorAdd(esize * 2, operand1, operand2);
-
-    V(128, Vd, result);
-    return true;
+    return LongOperation(*this, Q, size, Vm, Vn, Vd, LongOperationBehavior::Addition, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t part = Q ? 1 : 0;
-
-    const IR::U128 operand1 = V(128, Vn);
-    const IR::U128 operand2 = ir.VectorSignExtend(esize, Vpart(64, Vm, part));
-    const IR::U128 result = ir.VectorAdd(esize * 2, operand1, operand2);
-
-    V(128, Vd, result);
-    return true;
+    return WideOperation(*this, Q, size, Vm, Vn, Vd, WideOperationBehavior::Addition, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SMLAL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Accumulate, Signedness::Signed);
-    return true;
+    return MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Accumulate, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SMLSL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Subtract, Signedness::Signed);
-    return true;
+    return MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Subtract, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SMULL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::None, Signedness::Signed);
-    return true;
+    return MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::None, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SSUBW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t part = Q ? 1 : 0;
-
-    const IR::U128 operand1 = V(128, Vn);
-    const IR::U128 operand2 = ir.VectorSignExtend(esize, Vpart(64, Vm, part));
-    const IR::U128 result = ir.VectorSub(esize * 2, operand1, operand2);
-
-    V(128, Vd, result);
-    return true;
+    return WideOperation(*this, Q, size, Vm, Vn, Vd, WideOperationBehavior::Subtraction, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SSUBL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t part = Q ? 1 : 0;
-
-    const IR::U128 operand1 = ir.VectorSignExtend(esize, Vpart(64, Vn, part));
-    const IR::U128 operand2 = ir.VectorSignExtend(esize, Vpart(64, Vm, part));
-    const IR::U128 result = ir.VectorSub(esize * 2, operand1, operand2);
-
-    V(128, Vd, result);
-    return true;
+    return LongOperation(*this, Q, size, Vm, Vn, Vd, LongOperationBehavior::Subtraction, Signedness::Signed);
 }
 
 bool TranslatorVisitor::UADDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t part = Q ? 1 : 0;
-
-    const IR::U128 operand1 = ir.VectorZeroExtend(esize, Vpart(64, Vn, part));
-    const IR::U128 operand2 = ir.VectorZeroExtend(esize, Vpart(64, Vm, part));
-    const IR::U128 result = ir.VectorAdd(esize * 2, operand1, operand2);
-
-    V(128, Vd, result);
-    return true;
+    return LongOperation(*this, Q, size, Vm, Vn, Vd, LongOperationBehavior::Addition, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::UABAL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-    
-    AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::Accumulate, Signedness::Unsigned);
-    return true;
+    return AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::Accumulate, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::UABDL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::None, Signedness::Unsigned);
-    return true;
+    return AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::None, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::UADDW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t part = Q ? 1 : 0;
-
-    const IR::U128 operand1 = V(128, Vn);
-    const IR::U128 operand2 = ir.VectorZeroExtend(esize, Vpart(64, Vm, part));
-    const IR::U128 result = ir.VectorAdd(esize * 2, operand1, operand2);
-
-    V(128, Vd, result);
-
-    return true;
+    return WideOperation(*this, Q, size, Vm, Vn, Vd, WideOperationBehavior::Addition, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::UMLAL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Accumulate, Signedness::Unsigned);
-    return true;
+    return MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Accumulate, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::UMLSL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Subtract, Signedness::Unsigned);
-    return true;
+    return MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::Subtract, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::UMULL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::None, Signedness::Unsigned);
-    return true;
+    return MultiplyLong(*this, Q, size, Vm, Vn, Vd, MultiplyLongBehavior::None, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::USUBW(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t part = Q ? 1 : 0;
-
-    const IR::U128 operand1 = V(128, Vn);
-    const IR::U128 operand2 = ir.VectorZeroExtend(esize, Vpart(64, Vm, part));
-    const IR::U128 result = ir.VectorSub(esize * 2, operand1, operand2);
-
-    V(128, Vd, result);
-
-    return true;
+    return WideOperation(*this, Q, size, Vm, Vn, Vd, WideOperationBehavior::Subtraction, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::USUBL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t part = Q ? 1 : 0;
-
-    const IR::U128 operand1 = ir.VectorZeroExtend(esize, Vpart(64, Vn, part));
-    const IR::U128 operand2 = ir.VectorZeroExtend(esize, Vpart(64, Vm, part));
-    const IR::U128 result = ir.VectorSub(esize * 2, operand1, operand2);
-
-    V(128, Vd, result);
-    return true;
+    return LongOperation(*this, Q, size, Vm, Vn, Vd, LongOperationBehavior::Subtraction, Signedness::Unsigned);
 }
 
 } // namespace Dynarmic::A64
