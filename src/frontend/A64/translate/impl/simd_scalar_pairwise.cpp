@@ -21,5 +21,15 @@ bool TranslatorVisitor::ADDP_pair(Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FADDP_pair_2(bool size, Vec Vn, Vec Vd) {
+    const size_t esize = size ? 64 : 32;
+
+    const IR::U32U64 operand1 = ir.VectorGetElement(esize, V(128, Vn), 0);
+    const IR::U32U64 operand2 = ir.VectorGetElement(esize, V(128, Vn), 1);
+    const IR::U128 result = ir.ZeroExtendToQuad(ir.FPAdd(operand1, operand2, true));
+    V(128, Vd, result);
+    return true;
+}
+
 } // namespace A64
 } // namespace Dynarmic

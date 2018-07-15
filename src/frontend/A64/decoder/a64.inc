@@ -427,7 +427,7 @@ INST(ADDP_pair,              "ADDP (scalar)",                             "01011
 //INST(FMAXNMP_pair_1,         "FMAXNMP (scalar)",                          "0101111000110000110010nnnnnddddd")
 //INST(FMAXNMP_pair_2,         "FMAXNMP (scalar)",                          "011111100z110000110010nnnnnddddd")
 //INST(FADDP_pair_1,           "FADDP (scalar)",                            "0101111000110000110110nnnnnddddd")
-//INST(FADDP_pair_2,           "FADDP (scalar)",                            "011111100z110000110110nnnnnddddd")
+INST(FADDP_pair_2,           "FADDP (scalar)",                            "011111100z110000110110nnnnnddddd")
 //INST(FMAXP_pair_1,           "FMAXP (scalar)",                            "0101111000110000111110nnnnnddddd")
 //INST(FMAXP_pair_2,           "FMAXP (scalar)",                            "011111100z110000111110nnnnnddddd")
 //INST(FMINNMP_pair_1,         "FMINNMP (scalar)",                          "0101111010110000110010nnnnnddddd")
