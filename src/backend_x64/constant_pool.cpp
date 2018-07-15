@@ -16,7 +16,6 @@ ConstantPool::ConstantPool(BlockOfCode& code, size_t size) : code(code), pool_si
     code.int3();
     code.align(align_size);
     pool_begin = reinterpret_cast<u8*>(code.AllocateFromCodeSpace(size));
-    std::memset(pool_begin, 0, size);
     current_pool_ptr = pool_begin;
 }
 
