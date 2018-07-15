@@ -163,6 +163,7 @@ u32 A32JitState::Fpscr() const {
     FPSCR |= (guest_MXCSR & 0b0000000111100) >> 1;  // IXC, UFC, OFC, DZC = PE, UE, OE, ZE
     FPSCR |= FPSCR_IDC;
     FPSCR |= FPSCR_UFC;
+    FPSCR |= fpsr_exc;
 
     return FPSCR;
 }
@@ -183,13 +184,10 @@ void A32JitState::SetFpscr(u32 FPSCR) {
     const std::array<u32, 4> MXCSR_RMode {0x0, 0x4000, 0x2000, 0x6000};
     guest_MXCSR |= MXCSR_RMode[(FPSCR >> 22) & 0x3];
 
-    // Cumulative flags IOC, IXC, UFC, OFC, DZC
-    guest_MXCSR |= ( FPSCR     ) & 0b0000000000001;  // IE = IOC
-    guest_MXCSR |= ( FPSCR << 1) & 0b0000000111100;  // PE, UE, OE, ZE = IXC, UFC, OFC, DZC
-
-    // Cumulative flag IDC, UFC
-    FPSCR_IDC = FPSCR & (1 << 7);
-    FPSCR_UFC = FPSCR & (1 << 3);
+    // Cumulative flags IDC, IOC, IXC, UFC, OFC, DZC
+    FPSCR_IDC = 0;
+    FPSCR_UFC = 0;
+    fpsr_exc = FPSCR & 0x9F;
 
     if (Common::Bit<24>(FPSCR)) {
         // VFP Flush to Zero

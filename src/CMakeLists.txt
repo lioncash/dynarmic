@@ -16,8 +16,17 @@ add_library(dynarmic
     common/common_types.h
     common/crc32.cpp
     common/crc32.h
-    common/fp_util.h
+    common/fp/fpsr.h
+    common/fp/info.h
+    common/fp/mantissa_util.h
+    common/fp/op.cpp
+    common/fp/op.h
+    common/fp/process_exception.cpp
+    common/fp/process_exception.h
     common/fp/rounding_mode.h
+    common/fp/unpacked.cpp
+    common/fp/unpacked.h
+    common/fp/util.h
     common/intrusive_list.h
     common/iterator_util.h
     common/llvm_disassemble.cpp
@@ -27,10 +36,24 @@ add_library(dynarmic
     common/memory_pool.cpp
     common/memory_pool.h
     common/mp.h
+    common/mp/append.h
+    common/mp/bind.h
+    common/mp/cartesian_product.h
+    common/mp/concat.h
+    common/mp/fapply.h
+    common/mp/fmap.h
+    common/mp/list.h
+    common/mp/lut.h
+    common/mp/to_tuple.h
+    common/mp/vlift.h
+    common/mp/vllift.h
+    common/safe_ops.h
     common/scope_exit.h
     common/sm4.cpp
     common/sm4.h
     common/string_util.h
+    common/u128.cpp
+    common/u128.h
     common/variant_util.h
     frontend/A32/decoder/arm.h
     frontend/A32/decoder/thumb16.h

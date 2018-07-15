@@ -66,6 +66,7 @@ struct A32JitState {
     std::array<u64, RSBSize> rsb_codeptrs;
     void ResetRSB();
 
+    u32 fpsr_exc = 0;
     u32 FPSCR_IDC = 0;
     u32 FPSCR_UFC = 0;
     u32 FPSCR_mode = 0;

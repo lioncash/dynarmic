@@ -29,7 +29,11 @@ add_executable(dynarmic_tests
     A64/inst_gen.cpp
     A64/inst_gen.h
     A64/testenv.h
+    fp/FPToFixed.cpp
+    fp/mantissa_util_tests.cpp
+    fp/unpacked_tests.cpp
     main.cpp
+    mp.cpp
     rand_int.h
 )
 

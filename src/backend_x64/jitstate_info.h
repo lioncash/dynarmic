@@ -26,6 +26,7 @@ struct JitStateInfo {
         , offsetof_CPSR_nzcv(offsetof(JitStateType, CPSR_nzcv))
         , offsetof_FPSCR_IDC(offsetof(JitStateType, FPSCR_IDC))
         , offsetof_FPSCR_UFC(offsetof(JitStateType, FPSCR_UFC))
+        , offsetof_fpsr_exc(offsetof(JitStateType, fpsr_exc))
     {}
 
     const size_t offsetof_cycles_remaining;
@@ -39,6 +40,7 @@ struct JitStateInfo {
     const size_t offsetof_CPSR_nzcv;
     const size_t offsetof_FPSCR_IDC;
     const size_t offsetof_FPSCR_UFC;
+    const size_t offsetof_fpsr_exc;
 };
 
 } // namespace Dynarmic::BackendX64

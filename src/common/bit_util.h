@@ -21,15 +21,23 @@ constexpr size_t BitSize() {
     return sizeof(T) * CHAR_BIT;
 }
 
+template <typename T>
+inline T Ones(size_t count) {
+    ASSERT_MSG(count <= BitSize<T>(), "count larger than bitsize of T");
+    if (count == BitSize<T>())
+        return static_cast<T>(~static_cast<T>(0));
+    return ~(static_cast<T>(~static_cast<T>(0)) << count);
+}
+
 /// Extract bits [begin_bit, end_bit] inclusive from value of type T.
 template<size_t begin_bit, size_t end_bit, typename T>
 constexpr T Bits(const T value) {
     static_assert(begin_bit <= end_bit,
                   "invalid bit range (position of beginning bit cannot be greater than that of end bit)");
     static_assert(begin_bit < BitSize<T>(), "begin_bit must be smaller than size of T");
-    static_assert(end_bit < BitSize<T>(), "begin_bit must be smaller than size of T");
+    static_assert(end_bit < BitSize<T>(), "end_bit must be smaller than size of T");
 
-    return (value >> begin_bit) & ((1 << (end_bit - begin_bit + 1)) - 1);
+    return (value >> begin_bit) & Ones<T>(end_bit - begin_bit + 1);
 }
 
 #ifdef _MSC_VER
@@ -37,19 +45,51 @@ constexpr T Bits(const T value) {
 #pragma warning(disable:4554)
 #endif
 /// Extracts a single bit at bit_position from value of type T.
-template<size_t bit_position, typename T>
-constexpr bool Bit(const T value) {
-    static_assert(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
-
-    return ((value >> bit_position) & 1) != 0;
-}
-
-/// Extracts a single bit at bit_position from value of type T.
 template<typename T>
 inline bool Bit(size_t bit_position, const T value) {
     ASSERT_MSG(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
 
     return ((value >> bit_position) & 1) != 0;
+}
+
+/// Extracts a single bit at bit_position from value of type T.
+template<size_t bit_position, typename T>
+constexpr bool Bit(const T value) {
+    static_assert(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
+
+    return Bit<T>(bit_position, value);
+}
+
+/// Clears a single bit at bit_position from value of type T.
+template<typename T>
+inline T ClearBit(size_t bit_position, const T value) {
+    ASSERT_MSG(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
+
+    return value & ~(static_cast<T>(1) << bit_position);
+}
+
+/// Clears a single bit at bit_position from value of type T.
+template<size_t bit_position, typename T>
+constexpr T ClearBit(const T value) {
+    static_assert(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
+
+    return ClearBit<T>(bit_position, value);
+}
+
+/// Modifies a single bit at bit_position from value of type T.
+template<typename T>
+inline T ModifyBit(size_t bit_position, const T value, bool new_bit) {
+    ASSERT_MSG(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
+
+    return ClearBit<T>(bit_position, value) | (static_cast<T>(new_bit) << bit_position);
+}
+
+/// Modifies a single bit at bit_position from value of type T.
+template<size_t bit_position, typename T>
+constexpr T ModifyBit(const T value, bool new_bit) {
+    static_assert(bit_position < BitSize<T>(), "bit_position must be smaller than size of T");
+
+    return ModifyBit<T>(bit_position, value, new_bit);
 }
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -112,11 +152,8 @@ inline size_t LowestSetBit(T value) {
 }
 
 template <typename T>
-inline T Ones(size_t count) {
-    ASSERT_MSG(count <= BitSize<T>(), "count larger than bitsize of T");
-    if (count == BitSize<T>())
-        return ~static_cast<T>(0);
-    return ~(~static_cast<T>(0) << count);
+inline bool MostSignificantBit(T value) {
+    return Bit<BitSize<T>() - 1, T>(value);
 }
 
 template <typename T>
