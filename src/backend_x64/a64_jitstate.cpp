@@ -106,6 +106,7 @@ u32 A64JitState::GetFpsr() const {
     fpsr |= FPSCR_IDC;
     fpsr |= FPSCR_UFC;
     fpsr |= fpsr_exc;
+    fpsr |= (fpsr_qc & 1) << 27;
     return fpsr;
 }
 
@@ -113,6 +114,7 @@ void A64JitState::SetFpsr(u32 value) {
     guest_MXCSR &= ~0x0000003D;
     FPSCR_IDC = 0;
     FPSCR_UFC = 0;
+    fpsr_qc = (value >> 27) & 1;
     fpsr_exc = value & 0x9F;
 }
 
