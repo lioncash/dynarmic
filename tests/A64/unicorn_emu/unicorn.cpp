@@ -38,6 +38,9 @@ void Unicorn::Run() {
     while (testenv.ticks_left > 0) {
         CHECKED(uc_emu_start(uc, GetPC(), END_ADDRESS, 0, 1));
         testenv.ticks_left--;
+        if (!testenv.interrupts.empty() || testenv.code_mem_modified_by_guest) {
+            return;
+        }
     }
 }
 
@@ -168,7 +171,8 @@ void Unicorn::InterruptHook(uc_engine* uc, u32 int_number, void* user_data) {
         this_->testenv.CallSVC(iss);
         break;
     default:
-        ASSERT_MSG(false, "Unhandled interrupt: int_number: {:#x}, esr: {:#x} (ec: {:#x}, iss: {:#x})", int_number, esr, ec, iss);
+        this_->testenv.interrupts.emplace_back(fmt::format("Unhandled interrupt: int_number: {:#x}, esr: {:#x} (ec: {:#x}, iss: {:#x})", int_number, esr, ec, iss));
+        break;
     }
 }
 

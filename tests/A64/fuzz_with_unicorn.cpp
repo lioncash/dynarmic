@@ -119,7 +119,7 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
             // Approximation. Produces incorrect results.
             "FMADD_float", "FMSUB_float", "FNMADD_float", "FNMSUB_float",
             // Requires investigation (temporarily disabled).
-            "FDIV_2",
+            "FDIV_1", "FDIV_2",
         };
 
         std::vector<InstructionGenerator> result;
@@ -150,8 +150,8 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
 
 static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::VectorArray& vecs, const size_t instructions_offset,
                             const std::vector<u32>& instructions, const u32 pstate, const u32 fpcr) {
-    static TestEnv jit_env;
-    static TestEnv uni_env;
+    static TestEnv jit_env{};
+    static TestEnv uni_env{};
 
     std::copy(instructions.begin(), instructions.end(), jit_env.code_mem.begin() + instructions_offset);
     std::copy(instructions.begin(), instructions.end(), uni_env.code_mem.begin() + instructions_offset);
@@ -159,6 +159,8 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
     uni_env.code_mem[instructions.size() + instructions_offset] = 0x14000000; // B .
     jit_env.modified_memory.clear();
     uni_env.modified_memory.clear();
+    jit_env.interrupts.clear();
+    uni_env.interrupts.clear();
 
     Dynarmic::A64::UserConfig jit_user_config{&jit_env};
     // The below corresponds to the settings for qemu's aarch64_max_initfn
@@ -238,7 +240,17 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
 
         fmt::print("x86_64:\n");
         fmt::print("{}\n", jit.Disassemble());
+
+        fmt::print("Interrupts:\n");
+        for (auto& i : uni_env.interrupts) {
+            puts(i.c_str());
+        }
     };
+
+    REQUIRE(uni_env.code_mem_modified_by_guest == jit_env.code_mem_modified_by_guest);
+    if (uni_env.code_mem_modified_by_guest) {
+        return;
+    }
 
     REQUIRE(uni.GetPC() == jit.GetPC());
     REQUIRE(uni.GetRegisters() == jit.GetRegisters());
@@ -246,6 +258,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
     REQUIRE(uni.GetSP() == jit.GetSP());
     REQUIRE((uni.GetPstate() & 0xF0000000) == (jit.GetPstate() & 0xF0000000));
     REQUIRE(uni_env.modified_memory == jit_env.modified_memory);
+    REQUIRE(uni_env.interrupts.empty());
 }
 
 TEST_CASE("A64: Single random instruction", "[a64]") {

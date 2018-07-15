@@ -22,6 +22,7 @@ public:
     bool code_mem_modified_by_guest = false;
     std::array<u32, 1024> code_mem{};
     std::map<u64, u8> modified_memory;
+    std::vector<std::string> interrupts;
 
     std::uint32_t MemoryReadCode(u64 vaddr) override {
         if (vaddr < code_mem.size() * sizeof(u32)) {
