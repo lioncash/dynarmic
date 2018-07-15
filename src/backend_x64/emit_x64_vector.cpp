@@ -1735,6 +1735,66 @@ void EmitX64::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+void EmitX64::EmitVectorPairedAddSignedWiden32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(c, a);
+    code.psllq(a, 32);
+    code.psraq(c, 32);
+    code.psraq(a, 32);
+    code.paddq(a, c);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorPairedAddUnsignedWiden8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(c, a);
+    code.psllw(a, 8);
+    code.psrlw(c, 8);
+    code.psrlw(a, 8);
+    code.paddw(a, c);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorPairedAddUnsignedWiden16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(c, a);
+    code.pslld(a, 16);
+    code.psrld(c, 16);
+    code.psrld(a, 16);
+    code.paddd(a, c);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorPairedAddUnsignedWiden32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(c, a);
+    code.psllq(a, 32);
+    code.psrlq(c, 32);
+    code.psrlq(a, 32);
+    code.paddq(a, c);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
 void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512_BITALG)) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);

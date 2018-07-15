@@ -1140,6 +1140,21 @@ U128 IREmitter::VectorOr(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorOr, a, b);
 }
 
+U128 IREmitter::VectorPairedAdd(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorPairedAdd8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorPairedAdd16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorPairedAdd32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorPairedAdd64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorPairedAddLower(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 8:
@@ -1153,16 +1168,14 @@ U128 IREmitter::VectorPairedAddLower(size_t esize, const U128& a, const U128& b)
     return {};
 }
 
-U128 IREmitter::VectorPairedAdd(size_t esize, const U128& a, const U128& b) {
-    switch (esize) {
+U128 IREmitter::VectorPairedAddUnsignedWiden(size_t original_esize, const U128& a) {
+    switch (original_esize) {
     case 8:
-        return Inst<U128>(Opcode::VectorPairedAdd8, a, b);
+        return Inst<U128>(Opcode::VectorPairedAddUnsignedWiden8, a);
     case 16:
-        return Inst<U128>(Opcode::VectorPairedAdd16, a, b);
+        return Inst<U128>(Opcode::VectorPairedAddUnsignedWiden16, a);
     case 32:
-        return Inst<U128>(Opcode::VectorPairedAdd32, a, b);
-    case 64:
-        return Inst<U128>(Opcode::VectorPairedAdd64, a, b);
+        return Inst<U128>(Opcode::VectorPairedAddUnsignedWiden32, a);
     }
     UNREACHABLE();
     return {};

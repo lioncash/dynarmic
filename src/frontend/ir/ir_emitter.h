@@ -236,6 +236,7 @@ public:
     U128 VectorOr(const U128& a, const U128& b);
     U128 VectorPairedAdd(size_t esize, const U128& a, const U128& b);
     U128 VectorPairedAddLower(size_t esize, const U128& a, const U128& b);
+    U128 VectorPairedAddUnsignedWiden(size_t original_esize, const U128& a);
     U128 VectorPopulationCount(const U128& a);
     U128 VectorReverseBits(const U128& a);
     U128 VectorRotateLeft(size_t esize, const U128& a, u8 amount);
