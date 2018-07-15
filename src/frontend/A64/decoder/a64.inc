@@ -766,7 +766,7 @@ INST(MLS_vec,                "MLS (vector)",                              "0Q101
 //INST(SQRDMULH_vec_2,         "SQRDMULH (vector)",                         "0Q101110zz1mmmmm101101nnnnnddddd")
 //INST(FMAXNMP_vec_2,          "FMAXNMP (vector)",                          "0Q1011100z1mmmmm110001nnnnnddddd")
 //INST(FMLAL_vec_2,            "FMLAL, FMLAL2 (vector)",                    "0Q1011100z1mmmmm110011nnnnnddddd")
-//INST(FADDP_vec_2,            "FADDP (vector)",                            "0Q1011100z1mmmmm110101nnnnnddddd")
+INST(FADDP_vec_2,            "FADDP (vector)",                            "0Q1011100z1mmmmm110101nnnnnddddd")
 INST(FMUL_vec_2,             "FMUL (vector)",                             "0Q1011100z1mmmmm110111nnnnnddddd")
 INST(FCMGE_reg_4,            "FCMGE (register)",                          "0Q1011100z1mmmmm111001nnnnnddddd")
 INST(FACGE_4,                "FACGE",                                     "0Q1011100z1mmmmm111011nnnnnddddd")

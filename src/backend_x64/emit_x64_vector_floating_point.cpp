@@ -31,7 +31,7 @@ struct NaNWrapper<u64> {
     static constexpr u64 value = 0x7ff8'0000'0000'0000;
 };
 
-template <typename T>
+template <typename T, auto IndexFunction>
 static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& xmm_a,
                        const Xbyak::Xmm& xmm_b, const Xbyak::Xmm& result, const Xbyak::Xmm& nan_mask) {
     static_assert(std::is_same_v<T, u32> || std::is_same_v<T, u64>, "T must be either u32 or u64");
@@ -69,7 +69,8 @@ static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& xm
     code.CallFunction(static_cast<void(*)(RegArray&, const RegArray&, const RegArray&)>(
         [](RegArray& result, const RegArray& a, const RegArray& b) {
             for (size_t i = 0; i < result.size(); ++i) {
-                if (auto r = FP::ProcessNaNs(a[i], b[i])) {
+                auto [first, second] = IndexFunction(i, a, b);
+                if (auto r = FP::ProcessNaNs(first, second)) {
                     result[i] = *r;
                 } else if (FP::IsNaN(result[i])) {
                     result[i] = NaNWrapper<T>::value;
@@ -86,14 +87,52 @@ static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& xm
     code.SwitchToNearCode();
 }
 
-template <typename Function>
+static std::tuple<u32, u32> DefaultIndexFunction32(size_t i, const std::array<u32, 4>& a, const std::array<u32, 4>& b) {
+    return std::make_tuple(a[i], b[i]);
+}
+
+static std::tuple<u64, u64> DefaultIndexFunction64(size_t i, const std::array<u64, 2>& a, const std::array<u64, 2>& b) {
+    return std::make_tuple(a[i], b[i]);
+}
+
+static std::tuple<u32, u32> PairedIndexFunction32(size_t i, const std::array<u32, 4>& a, const std::array<u32, 4>& b) {
+    if (i < 2) {
+        return std::make_tuple(a[2 * i], a[2 * i + 1]);
+    }
+    return std::make_tuple(b[2 * (i - 2)], b[2 * (i - 2) + 1]);
+}
+
+static std::tuple<u64, u64> PairedIndexFunction64(size_t i, const std::array<u64, 2>& a, const std::array<u64, 2>& b) {
+    return i == 0 ? std::make_tuple(a[0], a[1]) : std::make_tuple(b[0], b[1]);
+}
+
+static std::tuple<u32, u32> PairedLowerIndexFunction32(size_t i, const std::array<u32, 4>& a, const std::array<u32, 4>& b) {
+    switch (i) {
+    case 0:
+        return std::make_tuple(a[0], a[1]);
+    case 1:
+        return std::make_tuple(b[0], b[1]);
+    default:
+        return std::make_tuple(u32(0), u32(0));
+    }
+}
+
+static std::tuple<u64, u64> PairedLowerIndexFunction64(size_t i, const std::array<u64, 2>& a, const std::array<u64, 2>& b) {
+    return i == 0 ? std::make_tuple(a[0], b[0]) : std::make_tuple(u64(0), u64(0));
+}
+
+template <auto IndexFunction, typename Function>
 static void EmitVectorOperation32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
-        (code.*fn)(xmm_a, xmm_b);
+        if constexpr (std::is_member_function_pointer_v<Function>) {
+            (code.*fn)(xmm_a, xmm_b);
+        } else {
+            fn(xmm_a, xmm_b);
+        }
 
         if (ctx.FPSCR_DN()) {
             Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
@@ -121,22 +160,30 @@ static void EmitVectorOperation32(BlockOfCode& code, EmitContext& ctx, IR::Inst*
     code.movaps(nan_mask, xmm_b);
     code.movaps(result, xmm_a);
     code.cmpunordps(nan_mask, xmm_a);
-    (code.*fn)(result, xmm_b);
+    if constexpr (std::is_member_function_pointer_v<Function>) {
+        (code.*fn)(result, xmm_b);
+    } else {
+        fn(result, xmm_b);
+    }
     code.cmpunordps(nan_mask, result);
 
-    HandleNaNs<u32>(code, ctx, xmm_a, xmm_b, result, nan_mask);
+    HandleNaNs<u32, IndexFunction>(code, ctx, xmm_a, xmm_b, result, nan_mask);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename Function>
+template <auto IndexFunction, typename Function>
 static void EmitVectorOperation64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
         Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
-        (code.*fn)(xmm_a, xmm_b);
+        if constexpr (std::is_member_function_pointer_v<Function>) {
+            (code.*fn)(xmm_a, xmm_b);
+        } else {
+            fn(xmm_a, xmm_b);
+        }
 
         if (ctx.FPSCR_DN()) {
             Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
@@ -165,10 +212,14 @@ static void EmitVectorOperation64(BlockOfCode& code, EmitContext& ctx, IR::Inst*
     code.movaps(nan_mask, xmm_b);
     code.movaps(result, xmm_a);
     code.cmpunordpd(nan_mask, xmm_a);
-    (code.*fn)(result, xmm_b);
+    if constexpr (std::is_member_function_pointer_v<Function>) {
+        (code.*fn)(result, xmm_b);
+    } else {
+        fn(result, xmm_b);
+    }
     code.cmpunordpd(nan_mask, result);
 
-    HandleNaNs<u64>(code, ctx, xmm_a, xmm_b, result, nan_mask);
+    HandleNaNs<u64, IndexFunction>(code, ctx, xmm_a, xmm_b, result, nan_mask);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -229,19 +280,19 @@ void EmitX64::EmitFPVectorAbs64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPVectorAdd32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::addps);
+    EmitVectorOperation32<DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::addps);
 }
 
 void EmitX64::EmitFPVectorAdd64(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation64(code, ctx, inst, &Xbyak::CodeGenerator::addpd);
+    EmitVectorOperation64<DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::addpd);
 }
 
 void EmitX64::EmitFPVectorDiv32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::divps);
+    EmitVectorOperation32<DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::divps);
 }
 
 void EmitX64::EmitFPVectorDiv64(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation64(code, ctx, inst, &Xbyak::CodeGenerator::divpd);
+    EmitVectorOperation64<DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::divpd);
 }
 
 void EmitX64::EmitFPVectorEqual32(EmitContext& ctx, IR::Inst* inst) {
@@ -305,11 +356,37 @@ void EmitX64::EmitFPVectorGreaterEqual64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPVectorMul32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::mulps);
+    EmitVectorOperation32<DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::mulps);
 }
 
 void EmitX64::EmitFPVectorMul64(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation64(code, ctx, inst, &Xbyak::CodeGenerator::mulpd);
+    EmitVectorOperation64<DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::mulpd);
+}
+
+void EmitX64::EmitFPVectorPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation32<PairedIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::haddps);
+}
+
+void EmitX64::EmitFPVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation64<PairedIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::haddpd);
+}
+
+void EmitX64::EmitFPVectorPairedAddLower32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation32<PairedLowerIndexFunction32>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm xmm_b) {
+        const Xbyak::Xmm zero = ctx.reg_alloc.ScratchXmm();
+        code.xorps(zero, zero);
+        code.punpcklqdq(result, xmm_b);
+        code.haddps(result, zero);
+    });
+}
+
+void EmitX64::EmitFPVectorPairedAddLower64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorOperation64<PairedLowerIndexFunction64>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm xmm_b) {
+        const Xbyak::Xmm zero = ctx.reg_alloc.ScratchXmm();
+        code.xorps(zero, zero);
+        code.punpcklqdq(result, xmm_b); 
+        code.haddpd(result, zero);
+    });
 }
 
 void EmitX64::EmitFPVectorS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
@@ -363,11 +440,11 @@ void EmitX64::EmitFPVectorS64ToDouble(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPVectorSub32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation32(code, ctx, inst, &Xbyak::CodeGenerator::subps);
+    EmitVectorOperation32<DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::subps);
 }
 
 void EmitX64::EmitFPVectorSub64(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation64(code, ctx, inst, &Xbyak::CodeGenerator::subpd);
+    EmitVectorOperation64<DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::subpd);
 }
 
 void EmitX64::EmitFPVectorU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
