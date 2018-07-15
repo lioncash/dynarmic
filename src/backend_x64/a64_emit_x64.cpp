@@ -44,6 +44,10 @@ FP::RoundingMode A64EmitContext::FPSCR_RMode() const {
     return Location().FPCR().RMode();
 }
 
+u32 A64EmitContext::FPCR() const {
+    return Location().FPCR().Value();
+}
+
 bool A64EmitContext::FPSCR_RoundTowardsZero() const {
     return Location().FPCR().RMode() != FP::RoundingMode::TowardsZero;
 }
