@@ -1168,6 +1168,19 @@ U128 IREmitter::VectorPairedAddLower(size_t esize, const U128& a, const U128& b)
     return {};
 }
 
+U128 IREmitter::VectorPairedAddSignedWiden(size_t original_esize, const U128& a) {
+    switch (original_esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorPairedAddSignedWiden8, a);
+    case 16:
+        return Inst<U128>(Opcode::VectorPairedAddSignedWiden16, a);
+    case 32:
+        return Inst<U128>(Opcode::VectorPairedAddSignedWiden32, a);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorPairedAddUnsignedWiden(size_t original_esize, const U128& a) {
     switch (original_esize) {
     case 8:

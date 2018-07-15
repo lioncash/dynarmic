@@ -384,6 +384,25 @@ bool TranslatorVisitor::UADDLP(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SADDLP(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = V(datasize, Vn);
+    IR::U128 result = ir.VectorPairedAddSignedWiden(esize, operand);
+
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SCVTF_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return IntegerConvertToFloat(*this, Q, sz, Vn, Vd, Signedness::Signed);
 }

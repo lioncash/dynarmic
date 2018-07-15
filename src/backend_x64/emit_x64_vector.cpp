@@ -1735,18 +1735,65 @@ void EmitX64::EmitVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+void EmitX64::EmitVectorPairedAddSignedWiden8(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(c, a);
+    code.psllw(a, 8);
+    code.psraw(c, 8);
+    code.psraw(a, 8);
+    code.paddw(a, c);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitVectorPairedAddSignedWiden16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(c, a);
+    code.pslld(a, 16);
+    code.psrad(c, 16);
+    code.psrad(a, 16);
+    code.paddd(a, c);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
 void EmitX64::EmitVectorPairedAddSignedWiden32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm c = ctx.reg_alloc.ScratchXmm();
 
-    code.movdqa(c, a);
-    code.psllq(a, 32);
-    code.psraq(c, 32);
-    code.psraq(a, 32);
-    code.paddq(a, c);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        code.vpsraq(c, a, 32);
+        code.vpsllq(a, a, 32);
+        code.vpsraq(a, a, 32);
+        code.vpaddq(a, a, c);
+    } else {
+        const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
 
+        code.movdqa(c, a);
+        code.psllq(a, 32);
+        code.movdqa(tmp1, code.MConst(xword, 0x80000000'00000000, 0x80000000'00000000));
+        code.movdqa(tmp2, tmp1);
+        code.pand(tmp1, a);
+        code.pand(tmp2, c);
+        code.psrlq(a, 32);
+        code.psrlq(c, 32);
+        code.psrad(tmp1, 31);
+        code.psrad(tmp2, 31);
+        code.por(a, tmp1);
+        code.por(c, tmp2);
+        code.paddq(a, c);
+    }
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
