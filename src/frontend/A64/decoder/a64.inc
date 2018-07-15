@@ -523,7 +523,7 @@ INST(TRN2,                   "TRN2",                                      "0Q001
 INST(ZIP2,                   "ZIP2",                                      "0Q001110zz0mmmmm011110nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Extract
-//INST(EXT,                    "EXT",                                       "0Q101110000mmmmm0iiii0nnnnnddddd")
+INST(EXT,                    "EXT",                                       "0Q101110000mmmmm0iiii0nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Copy
 INST(DUP_elt_2,              "DUP (element)",                             "0Q001110000iiiii000001nnnnnddddd")
