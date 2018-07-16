@@ -794,10 +794,38 @@ void EmitX64::EmitFPMulAdd64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, size_t fsize) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const auto rounding = static_cast<FP::RoundingMode>(inst->GetArg(1).GetU8());
+    const bool exact = inst->GetArg(2).GetU1();
 
-    const auto rounding = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
-    const bool exact = args[2].GetImmediateU1();
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && rounding != FP::RoundingMode::ToNearest_TieAwayFromZero && !exact) {
+        const int round_imm = [&]{
+            switch (rounding) {
+            case FP::RoundingMode::ToNearest_TieEven:
+                return 0b00;
+            case FP::RoundingMode::TowardsPlusInfinity:
+                return 0b10;
+            case FP::RoundingMode::TowardsMinusInfinity:
+                return 0b01;
+            case FP::RoundingMode::TowardsZero:
+                return 0b11;
+            default:
+                UNREACHABLE();
+            }
+            return 0;
+        }();
+
+        if (fsize == 64) {
+            FPTwoOp64(code, ctx, inst, [&](Xbyak::Xmm result) {
+                code.roundsd(result, result, round_imm);
+            });
+        } else {
+            FPTwoOp32(code, ctx, inst, [&](Xbyak::Xmm result) {
+                code.roundss(result, result, round_imm);
+            });
+        }
+
+        return;
+    }
 
     using fsize_list = mp::list<mp::vlift<size_t(32)>, mp::vlift<size_t(64)>>;
     using rounding_list = mp::list<
@@ -832,6 +860,7 @@ static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, siz
         mp::cartesian_product<fsize_list, rounding_list, exact_list>{}
     );
 
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.lea(code.ABI_PARAM2, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
