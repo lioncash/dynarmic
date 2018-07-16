@@ -1449,6 +1449,13 @@ U32U64 IREmitter::FPNeg(const U32U64& a) {
     }
 }
 
+U32U64 IREmitter::FPRoundInt(const U32U64& a, FP::RoundingMode rounding, bool exact) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPRoundInt32, a, static_cast<u8>(rounding), Imm1(exact));
+    }
+    return Inst<U64>(Opcode::FPRoundInt64, a, static_cast<u8>(rounding), Imm1(exact));
+}
+
 U32U64 IREmitter::FPSqrt(const U32U64& a) {
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPSqrt32, a);

@@ -43,7 +43,7 @@ u64 FPRoundInt(FPT op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr)
         return op;
     }
 
-    u64 int_result = value.mantissa;
+    u64 int_result = sign ? Safe::Negate<u64>(value.mantissa) : static_cast<u64>(value.mantissa);
     const ResidualError error = ResidualErrorOnRightShift(int_result, -value.exponent);
     int_result = Safe::ArithmeticShiftLeft(int_result, value.exponent);
 
@@ -72,9 +72,11 @@ u64 FPRoundInt(FPT op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr)
         int_result++;
     }
 
+    const u64 abs_int_result = Common::MostSignificantBit(int_result) ? Safe::Negate<u64>(int_result) : static_cast<u64>(int_result);
+
     const FPT result = int_result == 0
                      ? FPInfo<FPT>::Zero(sign)
-                     : FPRound<FPT>(FPUnpacked<u64>{sign, 0, int_result}, fpcr, RoundingMode::TowardsZero, fpsr);
+                     : FPRound<FPT>(FPUnpacked<u64>{sign, 0, abs_int_result}, fpcr, RoundingMode::TowardsZero, fpsr);
 
     if (error != ResidualError::Zero && exact) {
         FPProcessException(FPExc::Inexact, fpcr, fpsr);

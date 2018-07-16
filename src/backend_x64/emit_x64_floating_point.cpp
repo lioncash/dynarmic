@@ -793,6 +793,59 @@ void EmitX64::EmitFPMulAdd64(EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
+static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, size_t fsize) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const auto rounding = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
+    const bool exact = args[2].GetImmediateU1();
+
+    using fsize_list = mp::list<mp::vlift<size_t(32)>, mp::vlift<size_t(64)>>;
+    using rounding_list = mp::list<
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieEven>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsPlusInfinity>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsMinusInfinity>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsZero>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieAwayFromZero>
+    >;
+    using exact_list = mp::list<mp::vlift<true>, mp::vlift<false>>;
+
+    using key_type = std::tuple<size_t, FP::RoundingMode, bool>;
+    using value_type = u64(*)(u64, FP::FPSR&, A64::FPCR);
+
+    static const auto lut = mp::GenerateLookupTableFromList<key_type, value_type>(
+        [](auto args) {
+            return std::pair<key_type, value_type>{
+                mp::to_tuple<decltype(args)>,
+                static_cast<value_type>(
+                    [](u64 input, FP::FPSR& fpsr, A64::FPCR fpcr) {
+                        constexpr auto t = mp::to_tuple<decltype(args)>;
+                        constexpr size_t fsize = std::get<0>(t);
+                        constexpr FP::RoundingMode rounding_mode = std::get<1>(t);
+                        constexpr bool exact = std::get<2>(t);
+                        using InputSize = mp::unsigned_integer_of_size<fsize>;
+
+                        return FP::FPRoundInt<InputSize>(static_cast<InputSize>(input), fpcr, rounding_mode, exact, fpsr);
+                    }
+                )
+            };
+        },
+        mp::cartesian_product<fsize_list, rounding_list, exact_list>{}
+    );
+
+    ctx.reg_alloc.HostCall(inst, args[0]);
+    code.lea(code.ABI_PARAM2, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+    code.CallFunction(lut.at(std::make_tuple(fsize, rounding, exact)));
+}
+
+void EmitX64::EmitFPRoundInt32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRound(code, ctx, inst, 32);
+}
+
+void EmitX64::EmitFPRoundInt64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRound(code, ctx, inst, 64);
+}
+
 void EmitX64::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
     FPTwoOp32(code, ctx, inst, &Xbyak::CodeGenerator::sqrtss);
 }
