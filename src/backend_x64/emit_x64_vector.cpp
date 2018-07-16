@@ -2188,29 +2188,41 @@ static void EmitVectorUnsignedAbsoluteDifference(size_t esize, EmitContext& ctx,
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
-    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
-    const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
 
     switch (esize) {
-    case 8:
+    case 8: {
+        const Xbyak::Xmm x = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+
         code.movdqa(temp, x);
         code.psubusb(temp, y);
         code.psubusb(y, x);
         code.por(temp, y);
         break;
-    case 16:
+    }
+    case 16: {
+        const Xbyak::Xmm x = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+
         code.movdqa(temp, x);
         code.psubusw(temp, y);
         code.psubusw(y, x);
         code.por(temp, y);
         break;
+    }
     case 32:
         if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+            const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+            const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+
             code.movdqa(temp, x);
             code.pminud(x, y);
             code.pmaxud(temp, y);
             code.psubd(temp, x);
         } else {
+            const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+            const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+
             code.movdqa(temp, code.MConst(xword, 0x8000000080000000, 0x8000000080000000));
             code.pxor(x, temp);
             code.pxor(y, temp);
