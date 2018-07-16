@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -16,6 +17,7 @@
 
 #include "backend_x64/reg_alloc.h"
 #include "common/address_range.h"
+#include "common/bit_util.h"
 #include "common/fp/rounding_mode.h"
 #include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/terminal.h"
@@ -28,6 +30,14 @@ class Inst;
 namespace Dynarmic::BackendX64 {
 
 class BlockOfCode;
+
+using A64FullVectorWidth = std::integral_constant<size_t, 128>;
+
+// Array alias that always sizes itself according to the given type T
+// relative to the size of a vector register. e.g. T = u32 would result
+// in a std::array<u32, 4>.
+template <typename T>
+using VectorArray = std::array<T, A64FullVectorWidth::value / Common::BitSize<T>()>;
 
 struct EmitContext {
     EmitContext(RegAlloc& reg_alloc, IR::Block& block);

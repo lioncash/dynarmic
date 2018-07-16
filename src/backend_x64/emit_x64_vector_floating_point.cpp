@@ -64,10 +64,8 @@ static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& xm
     code.movaps(xword[code.ABI_PARAM2], xmm_a);
     code.movaps(xword[code.ABI_PARAM3], xmm_b);
 
-    using Elements = std::integral_constant<size_t, 128 / Common::BitSize<T>()>;
-    using RegArray = std::array<T, Elements::value>;
-    code.CallFunction(static_cast<void(*)(RegArray&, const RegArray&, const RegArray&)>(
-        [](RegArray& result, const RegArray& a, const RegArray& b) {
+    code.CallFunction(static_cast<void(*)(VectorArray<T>&, const VectorArray<T>&, const VectorArray<T>&)>(
+        [](VectorArray<T>& result, const VectorArray<T>& a, const VectorArray<T>& b) {
             for (size_t i = 0; i < result.size(); ++i) {
                 auto [first, second] = IndexFunction(i, a, b);
                 if (auto r = FP::ProcessNaNs(first, second)) {
@@ -87,26 +85,26 @@ static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& xm
     code.SwitchToNearCode();
 }
 
-static std::tuple<u32, u32> DefaultIndexFunction32(size_t i, const std::array<u32, 4>& a, const std::array<u32, 4>& b) {
+static std::tuple<u32, u32> DefaultIndexFunction32(size_t i, const VectorArray<u32>& a, const VectorArray<u32>& b) {
     return std::make_tuple(a[i], b[i]);
 }
 
-static std::tuple<u64, u64> DefaultIndexFunction64(size_t i, const std::array<u64, 2>& a, const std::array<u64, 2>& b) {
+static std::tuple<u64, u64> DefaultIndexFunction64(size_t i, const VectorArray<u64>& a, const VectorArray<u64>& b) {
     return std::make_tuple(a[i], b[i]);
 }
 
-static std::tuple<u32, u32> PairedIndexFunction32(size_t i, const std::array<u32, 4>& a, const std::array<u32, 4>& b) {
+static std::tuple<u32, u32> PairedIndexFunction32(size_t i, const VectorArray<u32>& a, const VectorArray<u32>& b) {
     if (i < 2) {
         return std::make_tuple(a[2 * i], a[2 * i + 1]);
     }
     return std::make_tuple(b[2 * (i - 2)], b[2 * (i - 2) + 1]);
 }
 
-static std::tuple<u64, u64> PairedIndexFunction64(size_t i, const std::array<u64, 2>& a, const std::array<u64, 2>& b) {
+static std::tuple<u64, u64> PairedIndexFunction64(size_t i, const VectorArray<u64>& a, const VectorArray<u64>& b) {
     return i == 0 ? std::make_tuple(a[0], a[1]) : std::make_tuple(b[0], b[1]);
 }
 
-static std::tuple<u32, u32> PairedLowerIndexFunction32(size_t i, const std::array<u32, 4>& a, const std::array<u32, 4>& b) {
+static std::tuple<u32, u32> PairedLowerIndexFunction32(size_t i, const VectorArray<u32>& a, const VectorArray<u32>& b) {
     switch (i) {
     case 0:
         return std::make_tuple(a[0], a[1]);
@@ -117,7 +115,7 @@ static std::tuple<u32, u32> PairedLowerIndexFunction32(size_t i, const std::arra
     }
 }
 
-static std::tuple<u64, u64> PairedLowerIndexFunction64(size_t i, const std::array<u64, 2>& a, const std::array<u64, 2>& b) {
+static std::tuple<u64, u64> PairedLowerIndexFunction64(size_t i, const VectorArray<u64>& a, const VectorArray<u64>& b) {
     return i == 0 ? std::make_tuple(a[0], b[0]) : std::make_tuple(u64(0), u64(0));
 }
 

@@ -752,7 +752,7 @@ void EmitX64::EmitVectorGreaterS64(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<s64, 2>& a, const std::array<s64, 2>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<s64>& a, const VectorArray<s64>& b) {
         for (size_t i = 0; i < result.size(); ++i) {
             result[i] = (a[i] > b[i]) ? ~u64(0) : 0;
         }
@@ -1140,49 +1140,49 @@ static constexpr T LogicalVShift(T x, T y) {
 }
 
 void EmitX64::EmitVectorLogicalVShiftS8(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s8, 16>& result, const std::array<s8, 16>& a, const std::array<s8, 16>& b) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s8>& result, const VectorArray<s8>& a, const VectorArray<s8>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s8>);
     });
 }
 
 void EmitX64::EmitVectorLogicalVShiftS16(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s16, 8>& result, const std::array<s16, 8>& a, const std::array<s16, 8>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s16>& result, const VectorArray<s16>& a, const VectorArray<s16>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s16>);
     });
 }
 
 void EmitX64::EmitVectorLogicalVShiftS32(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s32, 4>& result, const std::array<s32, 4>& a, const std::array<s32, 4>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s32>& a, const VectorArray<s32>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s32>);
     });
 }
 
 void EmitX64::EmitVectorLogicalVShiftS64(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s64, 2>& result, const std::array<s64, 2>& a, const std::array<s64, 2>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s64>& result, const VectorArray<s64>& a, const VectorArray<s64>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s64>);
     });
 }
 
 void EmitX64::EmitVectorLogicalVShiftU8(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u8, 16>& result, const std::array<u8, 16>& a, const std::array<u8, 16>& b) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u8>& a, const VectorArray<u8>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u8>);
     });
 }
 
 void EmitX64::EmitVectorLogicalVShiftU16(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u16, 8>& result, const std::array<u16, 8>& a, const std::array<u16, 8>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u16>& result, const VectorArray<u16>& a, const VectorArray<u16>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u16>);
     });
 }
 
 void EmitX64::EmitVectorLogicalVShiftU32(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u32, 4>& result, const std::array<u32, 4>& a, const std::array<u32, 4>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<u32>& a, const VectorArray<u32>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u32>);
     });
 }
 
 void EmitX64::EmitVectorLogicalVShiftU64(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& a, const VectorArray<u64>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u64>);
     });
 }
@@ -1239,7 +1239,7 @@ void EmitX64::EmitVectorMaxS64(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s64, 2>& result, const std::array<s64, 2>& a, const std::array<s64, 2>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s64>& result, const VectorArray<s64>& a, const VectorArray<s64>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::max(x, y); });
     });
 }
@@ -1297,7 +1297,7 @@ void EmitX64::EmitVectorMaxU64(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& a, const VectorArray<u64>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::max(x, y); });
     });
 }
@@ -1354,7 +1354,7 @@ void EmitX64::EmitVectorMinS64(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<s64, 2>& result, const std::array<s64, 2>& a, const std::array<s64, 2>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s64>& result, const VectorArray<s64>& a, const VectorArray<s64>& b){
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
     });
 }
@@ -1417,7 +1417,7 @@ void EmitX64::EmitVectorMinU64(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitTwoArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a, const std::array<u64, 2>& b){
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& a, const VectorArray<u64>& b){
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
     });
 }
@@ -1878,7 +1878,7 @@ void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitOneArgumentFallback(code, ctx, inst, [](std::array<u8, 16>& result, const std::array<u8, 16>& a){
+    EmitOneArgumentFallback(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u8>& a) {
         std::transform(a.begin(), a.end(), result.begin(), [](u8 val) {
             return static_cast<u8>(Common::BitCount(val));
         });
@@ -2105,7 +2105,7 @@ void EmitX64::EmitVectorSignExtend32(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    EmitOneArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u32, 4>& a){
+    EmitOneArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u32>& a) {
         for (size_t i = 0; i < result.size(); ++i) {
             result[i] = Common::SignExtend<32, u64>(a[i]);
         }
@@ -2113,7 +2113,7 @@ void EmitX64::EmitVectorSignExtend32(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorSignExtend64(EmitContext& ctx, IR::Inst* inst) {
-    EmitOneArgumentFallback(code, ctx, inst, [](std::array<u64, 2>& result, const std::array<u64, 2>& a){
+    EmitOneArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& a) {
         result[1] = (a[0] >> 63) ? ~u64(0) : 0;
         result[0] = a[0];
     });
