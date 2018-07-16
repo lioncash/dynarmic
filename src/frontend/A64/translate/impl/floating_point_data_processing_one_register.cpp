@@ -152,4 +152,16 @@ bool TranslatorVisitor::FCVT_float(Imm<2> type, Imm<2> opc, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FRINTA_float(Imm<2> type, Vec Vn, Vec Vd) {
+    const boost::optional<size_t> datasize = GetDataSize(type);
+    if (!datasize || *datasize == 16) {
+        return UnallocatedEncoding();
+    }
+
+    const IR::U32U64 operand = V_scalar(*datasize, Vn);
+    const IR::U32U64 result = ir.FPRoundInt(operand, FP::RoundingMode::ToNearest_TieAwayFromZero, false);
+    V_scalar(*datasize, Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64

@@ -909,7 +909,7 @@ INST(FCVT_float,             "FCVT",                                      "00011
 //INST(FRINTP_float,           "FRINTP (scalar)",                           "00011110yy100100110000nnnnnddddd")
 //INST(FRINTM_float,           "FRINTM (scalar)",                           "00011110yy100101010000nnnnnddddd")
 //INST(FRINTZ_float,           "FRINTZ (scalar)",                           "00011110yy100101110000nnnnnddddd")
-//INST(FRINTA_float,           "FRINTA (scalar)",                           "00011110yy100110010000nnnnnddddd")
+INST(FRINTA_float,           "FRINTA (scalar)",                           "00011110yy100110010000nnnnnddddd")
 //INST(FRINTX_float,           "FRINTX (scalar)",                           "00011110yy100111010000nnnnnddddd")
 //INST(FRINTI_float,           "FRINTI (scalar)",                           "00011110yy100111110000nnnnnddddd")
 
