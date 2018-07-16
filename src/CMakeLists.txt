@@ -24,6 +24,8 @@ add_library(dynarmic
     common/fp/op/FPToFixed.h
     common/fp/process_exception.cpp
     common/fp/process_exception.h
+    common/fp/process_nan.cpp
+    common/fp/process_nan.h
     common/fp/rounding_mode.h
     common/fp/unpacked.cpp
     common/fp/unpacked.h
