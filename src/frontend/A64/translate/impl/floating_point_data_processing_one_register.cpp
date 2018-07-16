@@ -168,6 +168,18 @@ bool TranslatorVisitor::FRINTN_float(Imm<2> type, Vec Vn, Vec Vd) {
     return FloatingPointRoundToIntegral(*this, type, Vn, Vd, FP::RoundingMode::ToNearest_TieEven, false);
 }
 
+bool TranslatorVisitor::FRINTP_float(Imm<2> type, Vec Vn, Vec Vd) {
+    return FloatingPointRoundToIntegral(*this, type, Vn, Vd, FP::RoundingMode::TowardsPlusInfinity, false);
+}
+
+bool TranslatorVisitor::FRINTM_float(Imm<2> type, Vec Vn, Vec Vd) {
+    return FloatingPointRoundToIntegral(*this, type, Vn, Vd, FP::RoundingMode::TowardsMinusInfinity, false);
+}
+
+bool TranslatorVisitor::FRINTZ_float(Imm<2> type, Vec Vn, Vec Vd) {
+    return FloatingPointRoundToIntegral(*this, type, Vn, Vd, FP::RoundingMode::TowardsZero, false);
+}
+
 bool TranslatorVisitor::FRINTA_float(Imm<2> type, Vec Vn, Vec Vd) {
     return FloatingPointRoundToIntegral(*this, type, Vn, Vd, FP::RoundingMode::ToNearest_TieAwayFromZero, false);
 }
