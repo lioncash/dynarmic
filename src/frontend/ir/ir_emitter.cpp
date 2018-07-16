@@ -1577,17 +1577,6 @@ U128 IREmitter::FPVectorAbs(size_t esize, const U128& a) {
     return {};
 }
 
-U128 IREmitter::FPVectorAbsoluteDifference(size_t esize, const U128& a, const U128& b) {
-    switch (esize) {
-    case 32:
-        return Inst<U128>(Opcode::FPVectorAbsoluteDifference32, a, b);
-    case 64:
-        return Inst<U128>(Opcode::FPVectorAbsoluteDifference64, a, b);
-    }
-    UNREACHABLE();
-    return {};
-}
-
 U128 IREmitter::FPVectorAdd(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 32:

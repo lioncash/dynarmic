@@ -224,28 +224,6 @@ static void EmitVectorOperation64(BlockOfCode& code, EmitContext& ctx, IR::Inst*
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPVectorAbsoluteDifference32(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
-    const Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
-
-    code.subps(a, b);
-    code.andps(a, code.MConst(xword, 0x7FFFFFFF7FFFFFFF, 0x7FFFFFFF7FFFFFFF));
-
-    ctx.reg_alloc.DefineValue(inst, a);
-}
-
-void EmitX64::EmitFPVectorAbsoluteDifference64(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
-    const Xbyak::Xmm b = ctx.reg_alloc.UseXmm(args[1]);
-
-    code.subpd(a, b);
-    code.andpd(a, code.MConst(xword, 0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF));
-
-    ctx.reg_alloc.DefineValue(inst, a);
-}
-
 void EmitX64::EmitFPVectorAbs16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

@@ -384,7 +384,7 @@ bool TranslatorVisitor::FABD_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
 
     const IR::U128 operand1 = V(datasize, Vn);
     const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.FPVectorAbsoluteDifference(esize, operand1, operand2);
+    const IR::U128 result = ir.FPVectorAbs(esize, ir.FPVectorSub(esize, operand1, operand2));
 
     V(datasize, Vd, result);
     return true;

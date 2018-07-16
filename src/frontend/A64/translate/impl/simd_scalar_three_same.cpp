@@ -173,12 +173,11 @@ bool TranslatorVisitor::CMTST_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 bool TranslatorVisitor::FABD_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
     const size_t esize = sz ? 64 : 32;
 
-    const IR::U128 operand1 = V(esize, Vn);
-    const IR::U128 operand2 = V(esize, Vm);
-    const IR::U128 difference = ir.FPVectorAbsoluteDifference(esize, operand1, operand2);
-    const IR::U128 result = ir.VectorZeroUpper(difference);
+    const IR::U32U64 operand1 = V_scalar(esize, Vn);
+    const IR::U32U64 operand2 = V_scalar(esize, Vm);
+    const IR::U32U64 result = ir.FPAbs(ir.FPSub(operand1, operand2, true));
 
-    V(128, Vd, result);
+    V_scalar(esize, Vd, result);
     return true;
 }
 

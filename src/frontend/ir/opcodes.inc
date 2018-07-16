@@ -415,8 +415,6 @@ OPCODE(FPS64ToSingle,                       T::U32,         T::U64,         T::U
 OPCODE(FPVectorAbs16,                       T::U128,        T::U128                                         )
 OPCODE(FPVectorAbs32,                       T::U128,        T::U128                                         )
 OPCODE(FPVectorAbs64,                       T::U128,        T::U128                                         )
-OPCODE(FPVectorAbsoluteDifference32,        T::U128,        T::U128,        T::U128                         )
-OPCODE(FPVectorAbsoluteDifference64,        T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorAdd32,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorAdd64,                       T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorDiv32,                       T::U128,        T::U128,        T::U128                         )
