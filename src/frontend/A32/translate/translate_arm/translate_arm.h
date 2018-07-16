@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common/bit_util.h"
 #include "frontend/A32/ir_emitter.h"
 #include "frontend/A32/location_descriptor.h"
 
@@ -37,14 +38,8 @@ struct ArmTranslatorVisitor final {
     bool UnpredictableInstruction();
     bool UndefinedInstruction();
 
-    static u32 rotr(u32 x, int shift) {
-        shift &= 31;
-        if (!shift) return x;
-        return (x >> shift) | (x << (32 - shift));
-    }
-
     static u32 ArmExpandImm(int rotate, Imm8 imm8) {
-        return rotr(static_cast<u32>(imm8), rotate*2);
+        return Common::RotateRight<u32>(imm8, rotate * 2);
     }
 
     struct ImmAndCarry {
@@ -56,8 +51,8 @@ struct ArmTranslatorVisitor final {
         u32 imm32 = imm8;
         auto carry_out = carry_in;
         if (rotate) {
-            imm32 = rotr(imm8, rotate * 2);
-            carry_out = ir.Imm1(imm32 >> 31 == 1);
+            imm32 = ArmExpandImm(rotate, static_cast<Imm8>(imm8));
+            carry_out = ir.Imm1(Common::Bit<31>(imm32));
         }
         return {imm32, carry_out};
     }
