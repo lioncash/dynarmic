@@ -152,16 +152,24 @@ bool TranslatorVisitor::FCVT_float(Imm<2> type, Imm<2> opc, Vec Vn, Vec Vd) {
     return true;
 }
 
-bool TranslatorVisitor::FRINTA_float(Imm<2> type, Vec Vn, Vec Vd) {
+bool FloatingPointRoundToIntegral(TranslatorVisitor& v, Imm<2> type, Vec Vn, Vec Vd, FP::RoundingMode rounding_mode, bool exact) {
     const boost::optional<size_t> datasize = GetDataSize(type);
     if (!datasize || *datasize == 16) {
-        return UnallocatedEncoding();
+        return v.UnallocatedEncoding();
     }
 
-    const IR::U32U64 operand = V_scalar(*datasize, Vn);
-    const IR::U32U64 result = ir.FPRoundInt(operand, FP::RoundingMode::ToNearest_TieAwayFromZero, false);
-    V_scalar(*datasize, Vd, result);
+    const IR::U32U64 operand = v.V_scalar(*datasize, Vn);
+    const IR::U32U64 result = v.ir.FPRoundInt(operand, rounding_mode, exact);
+    v.V_scalar(*datasize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::FRINTN_float(Imm<2> type, Vec Vn, Vec Vd) {
+    return FloatingPointRoundToIntegral(*this, type, Vn, Vd, FP::RoundingMode::ToNearest_TieEven, false);
+}
+
+bool TranslatorVisitor::FRINTA_float(Imm<2> type, Vec Vn, Vec Vd) {
+    return FloatingPointRoundToIntegral(*this, type, Vn, Vd, FP::RoundingMode::ToNearest_TieAwayFromZero, false);
 }
 
 } // namespace Dynarmic::A64
