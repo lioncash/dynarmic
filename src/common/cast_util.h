@@ -18,7 +18,7 @@ inline Dest BitCast(const Source& source) {
     static_assert(std::is_trivially_copyable_v<Dest>, "destination type must be trivially copyable.");
     static_assert(std::is_trivially_copyable_v<Source>, "source type must be trivially copyable");
 
-    typename std::aligned_storage_t<sizeof(Dest), alignof(Dest)> dest;
+    std::aligned_storage_t<sizeof(Dest), alignof(Dest)> dest;
     std::memcpy(&dest, &source, sizeof(dest));
     return reinterpret_cast<Dest&>(dest);
 }
@@ -30,7 +30,7 @@ inline Dest BitCastPointee(const SourcePtr source) {
     static_assert(sizeof(SourcePtr) == sizeof(void*), "source pointer must have size of a pointer");
     static_assert(std::is_trivially_copyable_v<Dest>, "destination type must be trivially copyable.");
 
-    typename std::aligned_storage_t<sizeof(Dest), alignof(Dest)> dest;
+    std::aligned_storage_t<sizeof(Dest), alignof(Dest)> dest;
     std::memcpy(&dest, BitCast<void*>(source), sizeof(dest));
     return reinterpret_cast<Dest&>(dest);    
 }
