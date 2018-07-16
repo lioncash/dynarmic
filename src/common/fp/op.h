@@ -6,4 +6,5 @@
 
 #pragma once
 
+#include "common/fp/op/FPRoundInt.h"
 #include "common/fp/op/FPToFixed.h"

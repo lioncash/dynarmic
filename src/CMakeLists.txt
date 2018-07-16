@@ -20,6 +20,8 @@ add_library(dynarmic
     common/fp/info.h
     common/fp/mantissa_util.h
     common/fp/op.h
+    common/fp/op/FPRoundInt.cpp
+    common/fp/op/FPRoundInt.h
     common/fp/op/FPToFixed.cpp
     common/fp/op/FPToFixed.h
     common/fp/process_exception.cpp
