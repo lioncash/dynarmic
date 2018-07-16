@@ -257,3 +257,20 @@ TEST_CASE("A64: TBZ", "[a64]") {
         REQUIRE(jit.GetPC() == 16);
     }
 }
+
+TEST_CASE("A64: FABD", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x6eb5d556; // FABD.4S V22, V10, V21
+    env.code_mem[1] = 0x14000000; // B .
+
+    jit.SetPC(0);
+    jit.SetVector(10, {0xb4858ac77ff39a87, 0x9fce5e14c4873176});
+    jit.SetVector(21, {0x56d3f085ff890e2b, 0x6e4b0a41801a2d00});
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetVector(22) == Vector{0x56d3f0857fc90e2b, 0x6e4b0a4144873176});
+}
