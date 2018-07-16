@@ -184,4 +184,12 @@ bool TranslatorVisitor::FRINTA_float(Imm<2> type, Vec Vn, Vec Vd) {
     return FloatingPointRoundToIntegral(*this, type, Vn, Vd, FP::RoundingMode::ToNearest_TieAwayFromZero, false);
 }
 
+bool TranslatorVisitor::FRINTX_float(Imm<2> type, Vec Vn, Vec Vd) {
+    return FloatingPointRoundToIntegral(*this, type, Vn, Vd, ir.current_location->FPCR().RMode(), true);
+}
+
+bool TranslatorVisitor::FRINTI_float(Imm<2> type, Vec Vn, Vec Vd) {
+    return FloatingPointRoundToIntegral(*this, type, Vn, Vd, ir.current_location->FPCR().RMode(), false);
+}
+
 } // namespace Dynarmic::A64
