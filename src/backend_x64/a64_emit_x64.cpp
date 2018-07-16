@@ -1005,7 +1005,8 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlockFast terminal, IR::Location
 void A64EmitX64::EmitTerminalImpl(IR::Term::PopRSBHint, IR::LocationDescriptor) {
     // This calculation has to match up with A64::LocationDescriptor::UniqueHash
     // TODO: Optimization is available here based on known state of FPSCR_mode and CPSR_et.
-    code.mov(rcx, qword[r15 + offsetof(A64JitState, pc)]);
+    code.mov(rcx, A64::LocationDescriptor::PC_MASK);
+    code.and_(rcx, qword[r15 + offsetof(A64JitState, pc)]);
     code.mov(ebx, dword[r15 + offsetof(A64JitState, fpcr)]);
     code.and_(ebx, A64::LocationDescriptor::FPCR_MASK);
     code.shl(ebx, 37);
