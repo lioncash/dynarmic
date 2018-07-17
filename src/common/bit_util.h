@@ -40,6 +40,29 @@ constexpr T Bits(const T value) {
     return (value >> begin_bit) & Ones<T>(end_bit - begin_bit + 1);
 }
 
+/// Create a mask of type T for bits [begin_bit, end_bit] inclusive.
+template<size_t begin_bit, size_t end_bit, typename T>
+constexpr T Mask() {
+    static_assert(begin_bit <= end_bit,
+                  "invalid bit range (position of beginning bit cannot be greater than that of end bit)");
+    static_assert(begin_bit < BitSize<T>(), "begin_bit must be smaller than size of T");
+    static_assert(end_bit < BitSize<T>(), "end_bit must be smaller than size of T");
+
+    return Ones<T>(end_bit - begin_bit + 1) << begin_bit;
+}
+
+/// Clears bits [begin_bit, end_bit] inclusive of value of type T.
+template<size_t begin_bit, size_t end_bit, typename T>
+constexpr T ClearBits(const T value) {
+    return value & ~Mask<begin_bit, end_bit, T>();
+}
+
+/// Modifies bits [begin_bit, end_bit] inclusive of value of type T.
+template<size_t begin_bit, size_t end_bit, typename T>
+constexpr T ModifyBits(const T value, const T new_bits) {
+    return ClearBits<begin_bit, end_bit, T>(value) | ((new_bits << begin_bit) & Mask<begin_bit, end_bit, T>());
+}
+
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4554)
