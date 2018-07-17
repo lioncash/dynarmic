@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/bit_util.h"
 #include "common/common_types.h"
+#include "common/fp/fpcr.h"
 #include "common/fp/fpsr.h"
 #include "common/fp/info.h"
 #include "common/fp/mantissa_util.h"
@@ -16,7 +17,6 @@
 #include "common/fp/rounding_mode.h"
 #include "common/fp/unpacked.h"
 #include "common/safe_ops.h"
-#include "frontend/A64/FPCR.h"
 
 namespace Dynarmic::FP {
 

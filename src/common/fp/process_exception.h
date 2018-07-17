@@ -6,12 +6,10 @@
 
 #pragma once
 
+#include "common/fp/fpcr.h"
 #include "common/fp/fpsr.h"
-#include "frontend/A64/FPCR.h"
 
 namespace Dynarmic::FP {
-
-using FPCR = A64::FPCR;
 
 enum class FPExc {
     InvalidOp,

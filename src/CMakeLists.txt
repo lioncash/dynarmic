@@ -16,6 +16,7 @@ add_library(dynarmic
     common/common_types.h
     common/crc32.cpp
     common/crc32.h
+    common/fp/fpcr.h
     common/fp/fpsr.h
     common/fp/info.h
     common/fp/mantissa_util.h
@@ -97,7 +98,6 @@ add_library(dynarmic
     frontend/A32/types.h
     frontend/A64/decoder/a64.h
     frontend/A64/decoder/a64.inc
-    frontend/A64/FPCR.h
     frontend/A64/imm.h
     frontend/A64/ir_emitter.cpp
     frontend/A64/ir_emitter.h

@@ -7,13 +7,11 @@
 #pragma once
 
 #include "common/common_types.h"
+#include "common/fp/fpcr.h"
 #include "common/fp/fpsr.h"
 #include "common/fp/rounding_mode.h"
-#include "frontend/A64/FPCR.h"
 
 namespace Dynarmic::FP {
-
-using FPCR = A64::FPCR;
 
 template<typename FPT>
 u64 FPRoundInt(FPT op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr);

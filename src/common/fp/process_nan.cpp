@@ -6,11 +6,11 @@
 
 #include "common/assert.h"
 #include "common/bit_util.h"
+#include "common/fp/fpcr.h"
 #include "common/fp/fpsr.h"
 #include "common/fp/info.h"
 #include "common/fp/process_exception.h"
 #include "common/fp/process_nan.h"
-#include "frontend/A64/FPCR.h"
 
 namespace Dynarmic::FP {
 

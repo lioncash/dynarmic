@@ -12,7 +12,7 @@
 
 #include "common/bit_util.h"
 #include "common/common_types.h"
-#include "frontend/A64/FPCR.h"
+#include "common/fp/fpcr.h"
 #include "frontend/ir/location_descriptor.h"
 
 namespace Dynarmic::A64 {
@@ -27,13 +27,13 @@ public:
     static constexpr u64 PC_MASK = 0x00FF'FFFF'FFFF'FFFFull;
     static constexpr u32 FPCR_MASK = 0x07C0'0000;
 
-    LocationDescriptor(u64 pc, FPCR fpcr) : pc(pc & PC_MASK), fpcr(fpcr.Value() & FPCR_MASK) {}
+    LocationDescriptor(u64 pc, FP::FPCR fpcr) : pc(pc & PC_MASK), fpcr(fpcr.Value() & FPCR_MASK) {}
 
     explicit LocationDescriptor(const IR::LocationDescriptor& o)
         : pc(o.Value() & PC_MASK), fpcr((o.Value() >> 37) & FPCR_MASK) {}
 
     u64 PC() const { return Common::SignExtend<56>(pc); }
-    A64::FPCR FPCR() const { return fpcr; }
+    FP::FPCR FPCR() const { return fpcr; }
 
     bool operator == (const LocationDescriptor& o) const {
         return std::tie(pc, fpcr) == std::tie(o.pc, o.fpcr);
@@ -63,8 +63,8 @@ public:
     }
 
 private:
-    u64 pc;         ///< Current program counter value.
-    A64::FPCR fpcr; ///< Floating point control register.
+    u64 pc;        ///< Current program counter value.
+    FP::FPCR fpcr; ///< Floating point control register.
 };
 
 /**
