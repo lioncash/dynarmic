@@ -76,8 +76,8 @@ T ArithmeticShiftLeft(T value, int shift_amount) {
         return ArithmeticShiftRight(value, -shift_amount);
     }
 
-    auto signed_value = static_cast<std::make_signed_t<T>>(value);
-    return static_cast<T>(signed_value << shift_amount);
+    auto unsigned_value = static_cast<std::make_unsigned_t<T>>(value);
+    return static_cast<T>(unsigned_value << shift_amount);
 }
 
 template<typename T>
