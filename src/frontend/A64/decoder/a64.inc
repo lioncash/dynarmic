@@ -477,7 +477,7 @@ INST(SHL_1,                  "SHL",                                       "01011
 //INST(SQSHRN_1,               "SQSHRN, SQSHRN2",                           "010111110IIIIiii100101nnnnnddddd")
 //INST(SQRSHRN_1,              "SQRSHRN, SQRSHRN2",                         "010111110IIIIiii100111nnnnnddddd")
 //INST(SCVTF_fix_1,            "SCVTF (vector, fixed-point)",               "010111110IIIIiii111001nnnnnddddd")
-//INST(FCVTZS_fix_1,           "FCVTZS (vector, fixed-point)",              "010111110IIIIiii111111nnnnnddddd")
+INST(FCVTZS_fix_1,           "FCVTZS (vector, fixed-point)",              "010111110IIIIiii111111nnnnnddddd")
 INST(USHR_1,                 "USHR",                                      "011111110IIIIiii000001nnnnnddddd")
 INST(USRA_1,                 "USRA",                                      "011111110IIIIiii000101nnnnnddddd")
 INST(URSHR_1,                "URSHR",                                     "011111110IIIIiii001001nnnnnddddd")
@@ -491,7 +491,7 @@ INST(SLI_1,                  "SLI",                                       "01111
 //INST(UQSHRN_1,               "UQSHRN, UQSHRN2",                           "011111110IIIIiii100101nnnnnddddd")
 //INST(UQRSHRN_1,              "UQRSHRN, UQRSHRN2",                         "011111110IIIIiii100111nnnnnddddd")
 //INST(UCVTF_fix_1,            "UCVTF (vector, fixed-point)",               "011111110IIIIiii111001nnnnnddddd")
-//INST(FCVTZU_fix_1,           "FCVTZU (vector, fixed-point)",              "011111110IIIIiii111111nnnnnddddd")
+INST(FCVTZU_fix_1,           "FCVTZU (vector, fixed-point)",              "011111110IIIIiii111111nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Scalar x indexed element
 //INST(SQDMLAL_elt_1,          "SQDMLAL, SQDMLAL2 (by element)",            "01011111zzLMmmmm0011H0nnnnnddddd")

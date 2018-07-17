@@ -7,7 +7,7 @@
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
-
+namespace {
 enum class ShiftExtraBehavior {
     None,
     Accumulate,
@@ -18,8 +18,8 @@ enum class Signedness {
     Unsigned,
 };
 
-static void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
-                       ShiftExtraBehavior behavior, Signedness signedness) {
+void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+                ShiftExtraBehavior behavior, Signedness signedness) {
     const size_t esize = 64;
     const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
 
@@ -39,8 +39,8 @@ static void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, V
     v.V_scalar(esize, Vd, result);
 }
 
-static void RoundingShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
-                               ShiftExtraBehavior behavior, Signedness signedness) {
+void RoundingShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+                        ShiftExtraBehavior behavior, Signedness signedness) {
     const size_t esize = 64;
     const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
 
@@ -71,8 +71,8 @@ enum class ShiftDirection {
     Right,
 };
 
-static void ShiftAndInsert(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
-                           ShiftDirection direction) {
+void ShiftAndInsert(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+                    ShiftDirection direction) {
     const size_t esize = 64;
 
     const u8 shift_amount = [&] {
@@ -104,6 +104,52 @@ static void ShiftAndInsert(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec V
 
     const IR::U64 result = v.ir.Or(v.ir.And(operand2, v.ir.Not(v.ir.Imm64(mask))), shifted);
     v.V_scalar(esize, Vd, result);
+}
+
+bool ScalarFPConvertWithRound(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd, Signedness sign) {
+    const u32 immh_value = immh.ZeroExtend();
+
+    if ((immh_value & 0b1110) == 0b0000) {
+        return v.ReservedValue();
+    }
+
+    // TODO: We currently don't handle FP16, so bail like the ARM reference manual allows.
+    if ((immh_value & 0b1110) == 0b0010) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = (immh_value & 0b1000) != 0 ? 64 : 32;
+    const size_t concat = concatenate(immh, immb).ZeroExtend();
+    const size_t fbits = (esize * 2) - concat;
+
+    const IR::U32U64 operand = v.V_scalar(esize, Vn);
+    const IR::U32U64 result = [&]() -> IR::U32U64 {
+        if (esize == 64) {
+            if (sign == Signedness::Signed) {
+                return v.ir.FPDoubleToFixedS64(operand, fbits, FP::RoundingMode::TowardsZero);
+            }
+
+            return v.ir.FPDoubleToFixedU64(operand, fbits, FP::RoundingMode::TowardsZero);
+        }
+
+        if (sign == Signedness::Signed) {
+            return v.ir.FPSingleToFixedS32(operand, fbits, FP::RoundingMode::TowardsZero);
+        }
+
+        return v.ir.FPSingleToFixedU32(operand, fbits, FP::RoundingMode::TowardsZero);
+    }();
+
+    v.V_scalar(esize, Vd, result);
+    return true;
+}
+} // Anonymous namespace
+
+bool TranslatorVisitor::FCVTZS_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, immh, immb, Vn, Vd, Signedness::Signed);
+}
+
+bool TranslatorVisitor::FCVTZU_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, immh, immb, Vn, Vd, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::SLI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
