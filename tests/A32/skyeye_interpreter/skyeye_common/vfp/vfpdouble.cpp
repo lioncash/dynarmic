@@ -54,15 +54,8 @@
 #ifdef _MSC_VER
 #pragma warning(disable : 4100 4244 4245)
 #endif
-#ifdef __GNUC__
-#pragma GCC diagnostic warning "-Wunused-parameter"
-#endif
-#ifdef __clang__
-#pragma clang diagnostic warning "-Wunused-parameter"
-#endif
 
 #include <algorithm>
-//#include "common/logging/log.h"
 #include "A32/skyeye_interpreter/skyeye_common/vfp/vfp.h"
 #include "A32/skyeye_interpreter/skyeye_common/vfp/vfp_helper.h"
 #include "A32/skyeye_interpreter/skyeye_common/vfp/asm_vfp.h"
@@ -76,7 +69,7 @@ static struct vfp_double vfp_double_default_qnan = {
     VFP_DOUBLE_SIGNIFICAND_QNAN,
 };
 
-static void vfp_double_dump(const char *str, struct vfp_double *d)
+static void vfp_double_dump([[maybe_unused]] const char *str, [[maybe_unused]] vfp_double *d)
 {
     LOG_TRACE(Core_ARM11, "VFP: %s: sign=%d exponent=%d significand=%016llx",
              str, d->sign != 0, d->exponent, d->significand);
@@ -98,7 +91,8 @@ static void vfp_double_normalise_denormal(struct vfp_double *vd)
     vfp_double_dump("normalise_denormal: out", vd);
 }
 
-u32 vfp_double_normaliseround(ARMul_State* state, int dd, struct vfp_double *vd, u32 fpscr, const char *func)
+u32 vfp_double_normaliseround(ARMul_State* state, int dd, vfp_double *vd, u32 fpscr,
+                              [[maybe_unused]] const char *func)
 {
     u64 significand, incr;
     int exponent, shift, underflow;
@@ -279,28 +273,32 @@ vfp_propagate_nan(struct vfp_double *vdd, struct vfp_double *vdn,
 /*
  * Extended operations
  */
-static u32 vfp_double_fabs(ARMul_State* state, int dd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fabs(ARMul_State* state, int dd, [[maybe_unused]] int unused, int dm,
+                           [[maybe_unused]] u32 fpscr)
 {
     LOG_TRACE(Core_ARM11, "In %s", __FUNCTION__);
     vfp_put_double(state, vfp_double_packed_abs(vfp_get_double(state, dm)), dd);
     return 0;
 }
 
-static u32 vfp_double_fcpy(ARMul_State* state, int dd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fcpy(ARMul_State* state, int dd, [[maybe_unused]] int unused, int dm,
+                           [[maybe_unused]] u32 fpscr)
 {
     LOG_TRACE(Core_ARM11, "In %s", __FUNCTION__);
     vfp_put_double(state, vfp_get_double(state, dm), dd);
     return 0;
 }
 
-static u32 vfp_double_fneg(ARMul_State* state, int dd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fneg(ARMul_State* state, int dd, [[maybe_unused]] int unused, int dm,
+                           [[maybe_unused]] u32 fpscr)
 {
     LOG_TRACE(Core_ARM11, "In %s", __FUNCTION__);
     vfp_put_double(state, vfp_double_packed_negate(vfp_get_double(state, dm)), dd);
     return 0;
 }
 
-static u32 vfp_double_fsqrt(ARMul_State* state, int dd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fsqrt(ARMul_State* state, int dd, [[maybe_unused]] int unused, int dm,
+                            u32 fpscr)
 {
     LOG_TRACE(Core_ARM11, "In %s", __FUNCTION__);
     vfp_double vdm, vdd, *vdp;
@@ -389,12 +387,13 @@ sqrt_invalid:
 }
 
 /*
- * Equal	:= ZC
- * Less than	:= N
- * Greater than	:= C
- * Unordered	:= CV
+ * Equal        := ZC
+ * Less than    := N
+ * Greater than := C
+ * Unordered    := CV
  */
-static u32 vfp_compare(ARMul_State* state, int dd, int signal_on_qnan, s64 m, u32 fpscr)
+static u32 vfp_compare(ARMul_State* state, int dd, int signal_on_qnan, s64 m,
+                       [[maybe_unused]] u32 fpscr)
 {
     s64 d;
     u32 ret = 0;
@@ -458,31 +457,36 @@ static u32 vfp_compare(ARMul_State* state, int dd, int signal_on_qnan, s64 m, u3
     return ret;
 }
 
-static u32 vfp_double_fcmp(ARMul_State* state, int dd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fcmp(ARMul_State* state, int dd, [[maybe_unused]] int unused, int dm,
+                           u32 fpscr)
 {
     LOG_TRACE(Core_ARM11, "In %s", __FUNCTION__);
     return vfp_compare(state, dd, 0, vfp_get_double(state, dm), fpscr);
 }
 
-static u32 vfp_double_fcmpe(ARMul_State* state, int dd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fcmpe(ARMul_State* state, int dd, [[maybe_unused]] int unused, int dm,
+                            u32 fpscr)
 {
     LOG_TRACE(Core_ARM11, "In %s", __FUNCTION__);
     return vfp_compare(state, dd, 1, vfp_get_double(state, dm), fpscr);
 }
 
-static u32 vfp_double_fcmpz(ARMul_State* state, int dd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fcmpz(ARMul_State* state, int dd, [[maybe_unused]] int unused, [[maybe_unused]] int dm,
+                            u32 fpscr)
 {
     LOG_TRACE(Core_ARM11, "In %s", __FUNCTION__);
     return vfp_compare(state, dd, 0, 0, fpscr);
 }
 
-static u32 vfp_double_fcmpez(ARMul_State* state, int dd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fcmpez(ARMul_State* state, int dd, [[maybe_unused]] int unused, [[maybe_unused]] int dm,
+                             u32 fpscr)
 {
     LOG_TRACE(Core_ARM11, "In %s", __FUNCTION__);
     return vfp_compare(state, dd, 1, 0, fpscr);
 }
 
-static u32 vfp_double_fcvts(ARMul_State* state, int sd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fcvts(ARMul_State* state, int sd, [[maybe_unused]] int unused, int dm,
+                            u32 fpscr)
 {
     struct vfp_double vdm;
     struct vfp_single vsd;
@@ -527,7 +531,8 @@ pack_nan:
     return exceptions;
 }
 
-static u32 vfp_double_fuito(ARMul_State* state, int dd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fuito(ARMul_State* state, int dd, [[maybe_unused]] int unused, int dm,
+                            u32 fpscr)
 {
     struct vfp_double vdm;
     u32 exceptions = 0;
@@ -542,7 +547,8 @@ static u32 vfp_double_fuito(ARMul_State* state, int dd, int unused, int dm, u32 
     return exceptions;
 }
 
-static u32 vfp_double_fsito(ARMul_State* state, int dd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_fsito(ARMul_State* state, int dd, [[maybe_unused]] int unused, int dm,
+                            u32 fpscr)
 {
     struct vfp_double vdm;
     u32 exceptions = 0;
@@ -557,7 +563,8 @@ static u32 vfp_double_fsito(ARMul_State* state, int dd, int unused, int dm, u32 
     return exceptions;
 }
 
-static u32 vfp_double_ftoui(ARMul_State* state, int sd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_ftoui(ARMul_State* state, int sd, [[maybe_unused]] int unused, int dm,
+                            u32 fpscr)
 {
     struct vfp_double vdm;
     u32 d, exceptions = 0;
@@ -646,7 +653,8 @@ static u32 vfp_double_ftouiz(ARMul_State* state, int sd, int unused, int dm, u32
     return vfp_double_ftoui(state, sd, unused, dm, (fpscr & ~FPSCR_RMODE_MASK) | FPSCR_ROUND_TOZERO);
 }
 
-static u32 vfp_double_ftosi(ARMul_State* state, int sd, int unused, int dm, u32 fpscr)
+static u32 vfp_double_ftosi(ARMul_State* state, int sd, [[maybe_unused]] int unused, int dm,
+                            u32 fpscr)
 {
     struct vfp_double vdm;
     u32 d, exceptions = 0;

@@ -20,20 +20,8 @@
 
 /* Note: this file handles interface with arm core and vfp registers */
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4100)
-#endif
-#ifdef __GNUC__
-#pragma GCC diagnostic warning "-Wunused-parameter"
-#endif
-#ifdef __clang__
-#pragma clang diagnostic warning "-Wunused-parameter"
-#endif
-
 #include "common/assert.h"
-//#include "common/common_funcs.h"
 #include "common/common_types.h"
-//#include "common/logging/log.h"
 
 #include "A32/skyeye_interpreter/skyeye_common/armstate.h"
 #include "A32/skyeye_interpreter/skyeye_common/vfp/asm_vfp.h"
@@ -58,7 +46,7 @@ void VFPInit(ARMul_State* state)
     state->VFP[VFP_MVFR1] = 0;
 }
 
-void VMOVBRS(ARMul_State* state, u32 to_arm, u32 t, u32 n, u32* value)
+void VMOVBRS(ARMul_State* state, u32 to_arm, [[maybe_unused]] u32 t, u32 n, u32* value)
 {
     if (to_arm)
     {
@@ -70,7 +58,8 @@ void VMOVBRS(ARMul_State* state, u32 to_arm, u32 t, u32 n, u32* value)
     }
 }
 
-void VMOVBRRD(ARMul_State* state, u32 to_arm, u32 t, u32 t2, u32 n, u32* value1, u32* value2)
+void VMOVBRRD(ARMul_State* state, u32 to_arm, [[maybe_unused]] u32 t, [[maybe_unused]] u32 t2,
+              u32 n, u32* value1, u32* value2)
 {
     if (to_arm)
     {
@@ -83,7 +72,8 @@ void VMOVBRRD(ARMul_State* state, u32 to_arm, u32 t, u32 t2, u32 n, u32* value1,
         state->ExtReg[n*2] = *value1;
     }
 }
-void VMOVBRRSS(ARMul_State* state, u32 to_arm, u32 t, u32 t2, u32 n, u32* value1, u32* value2)
+void VMOVBRRSS(ARMul_State* state, u32 to_arm, [[maybe_unused]] u32 t, [[maybe_unused]] u32 t2,
+               u32 n, u32* value1, u32* value2)
 {
     if (to_arm)
     {
@@ -159,8 +149,6 @@ void vfp_raise_exceptions(ARMul_State* state, u32 exceptions, u32 inst, u32 fpsc
     LOG_TRACE(Core_ARM11, "VFP: raising exceptions %08x", exceptions);
 
     if (exceptions == VFP_EXCEPTION_ERROR) {
-//        LOG_CRITICAL(Core_ARM11, "unhandled bounce %x", inst);
-//        Crash();
         ASSERT_MSG(false, "unhandled bounce {:08x}", inst);
     }
 

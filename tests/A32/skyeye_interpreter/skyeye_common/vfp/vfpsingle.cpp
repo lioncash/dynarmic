@@ -52,22 +52,14 @@
  */
 
 #ifdef _MSC_VER
-#pragma warning(disable : 4100 4244 4245)
-#endif
-#ifdef __GNUC__
-#pragma GCC diagnostic warning "-Wunused-parameter"
-#endif
-#ifdef __clang__
-#pragma clang diagnostic warning "-Wunused-parameter"
+#pragma warning(disable : 4244 4245)
 #endif
 
 #include <algorithm>
 #include <cinttypes>
-#include <common/assert.h>
 
-//#include "common/common_funcs.h"
+#include "common/assert.h"
 #include "common/common_types.h"
-//#include "common/logging/log.h"
 
 #include "A32/skyeye_interpreter/skyeye_common/vfp/vfp_helper.h"
 #include "A32/skyeye_interpreter/skyeye_common/vfp/asm_vfp.h"
@@ -83,7 +75,7 @@ static struct vfp_single vfp_single_default_qnan = {
     VFP_SINGLE_SIGNIFICAND_QNAN,
 };
 
-static void vfp_single_dump(const char *str, struct vfp_single *s)
+static void vfp_single_dump([[maybe_unused]] const char *str, [[maybe_unused]] vfp_single *s)
 {
     LOG_TRACE(Core_ARM11, "%s: sign=%d exponent=%d significand=%08x",
               str, s->sign != 0, s->exponent, s->significand);
@@ -104,7 +96,8 @@ static void vfp_single_normalise_denormal(struct vfp_single *vs)
 }
 
 
-u32 vfp_single_normaliseround(ARMul_State* state, int sd, struct vfp_single *vs, u32 fpscr, const char *func)
+u32 vfp_single_normaliseround(ARMul_State* state, int sd, vfp_single *vs, u32 fpscr,
+                              [[maybe_unused]] const char *func)
 {
     u32 significand, incr, rmode;
     int exponent, shift, underflow;
@@ -289,19 +282,22 @@ vfp_propagate_nan(struct vfp_single *vsd, struct vfp_single *vsn,
 /*
  * Extended operations
  */
-static u32 vfp_single_fabs(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fabs(ARMul_State* state, int sd, [[maybe_unused]] int unused, s32 m,
+                           [[maybe_unused]] u32 fpscr)
 {
     vfp_put_float(state, vfp_single_packed_abs(m), sd);
     return 0;
 }
 
-static u32 vfp_single_fcpy(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fcpy(ARMul_State* state, int sd, [[maybe_unused]] int unused, s32 m,
+                           [[maybe_unused]] u32 fpscr)
 {
     vfp_put_float(state, m, sd);
     return 0;
 }
 
-static u32 vfp_single_fneg(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fneg(ARMul_State* state, int sd, [[maybe_unused]] int unused, s32 m,
+                           [[maybe_unused]] u32 fpscr)
 {
     vfp_put_float(state, vfp_single_packed_negate(m), sd);
     return 0;
@@ -346,7 +342,8 @@ u32 vfp_estimate_sqrt_significand(u32 exponent, u32 significand)
     }
 }
 
-static u32 vfp_single_fsqrt(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fsqrt(ARMul_State* state, int sd, [[maybe_unused]] int unused, s32 m,
+                            u32 fpscr)
 {
     struct vfp_single vsm, vsd, *vsp;
     int ret, tm;
@@ -435,7 +432,8 @@ sqrt_invalid:
  * Greater than	:= C
  * Unordered	:= CV
  */
-static u32 vfp_compare(ARMul_State* state, int sd, int signal_on_qnan, s32 m, u32 fpscr)
+static u32 vfp_compare(ARMul_State* state, int sd, int signal_on_qnan, s32 m,
+                       [[maybe_unused]] u32 fpscr)
 {
     s32 d;
     u32 ret = 0;
@@ -494,27 +492,32 @@ static u32 vfp_compare(ARMul_State* state, int sd, int signal_on_qnan, s32 m, u3
     return ret;
 }
 
-static u32 vfp_single_fcmp(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fcmp(ARMul_State* state, int sd, [[maybe_unused]] int unused, s32 m,
+                           u32 fpscr)
 {
     return vfp_compare(state, sd, 0, m, fpscr);
 }
 
-static u32 vfp_single_fcmpe(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fcmpe(ARMul_State* state, int sd, [[maybe_unused]] int unused, s32 m,
+                            u32 fpscr)
 {
     return vfp_compare(state, sd, 1, m, fpscr);
 }
 
-static u32 vfp_single_fcmpz(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fcmpz(ARMul_State* state, int sd, [[maybe_unused]] int unused,
+                            [[maybe_unused]] s32 m, u32 fpscr)
 {
     return vfp_compare(state, sd, 0, 0, fpscr);
 }
 
-static u32 vfp_single_fcmpez(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fcmpez(ARMul_State* state, int sd, [[maybe_unused]] int unused,
+                             [[maybe_unused]] s32 m, u32 fpscr)
 {
     return vfp_compare(state, sd, 1, 0, fpscr);
 }
 
-static u32 vfp_single_fcvtd(ARMul_State* state, int dd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fcvtd(ARMul_State* state, int dd, [[maybe_unused]] int unused, s32 m,
+                            u32 fpscr)
 {
     struct vfp_single vsm;
     struct vfp_double vdd;
@@ -558,7 +561,8 @@ pack_nan:
     return exceptions;
 }
 
-static u32 vfp_single_fuito(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fuito(ARMul_State* state, int sd, [[maybe_unused]] int unused, s32 m,
+                            u32 fpscr)
 {
     struct vfp_single vs;
     u32 exceptions = 0;
@@ -571,7 +575,8 @@ static u32 vfp_single_fuito(ARMul_State* state, int sd, int unused, s32 m, u32 f
     return exceptions;
 }
 
-static u32 vfp_single_fsito(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_fsito(ARMul_State* state, int sd, [[maybe_unused]] int unused, s32 m,
+                            u32 fpscr)
 {
     struct vfp_single vs;
     u32 exceptions = 0;
@@ -584,7 +589,8 @@ static u32 vfp_single_fsito(ARMul_State* state, int sd, int unused, s32 m, u32 f
     return exceptions;
 }
 
-static u32 vfp_single_ftoui(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_ftoui(ARMul_State* state, int sd, [[maybe_unused]] int unused, s32 m,
+                            u32 fpscr)
 {
     struct vfp_single vsm;
     u32 d, exceptions = 0;
@@ -676,7 +682,8 @@ static u32 vfp_single_ftouiz(ARMul_State* state, int sd, int unused, s32 m, u32 
     return vfp_single_ftoui(state, sd, unused, m, (fpscr & ~FPSCR_RMODE_MASK) | FPSCR_ROUND_TOZERO);
 }
 
-static u32 vfp_single_ftosi(ARMul_State* state, int sd, int unused, s32 m, u32 fpscr)
+static u32 vfp_single_ftosi(ARMul_State* state, int sd, [[maybe_unused]] int unused, s32 m,
+                            u32 fpscr)
 {
     struct vfp_single vsm;
     u32 d, exceptions = 0;
@@ -1293,8 +1300,6 @@ u32 vfp_single_cpdo(ARMul_State* state, u32 inst, u32 fpscr)
               (veclen >> FPSCR_LENGTH_BIT) + 1);
 
     if (!fop->fn) {
-//        LOG_CRITICAL(Core_ARM11, "could not find single op %d, inst=0x%x@0x%x", FEXT_TO_IDX(inst), inst, state->Reg[15]);
-//        Crash();
         ASSERT_MSG(false, "could not find single op {}, inst=0x{:08x}@0x{:08x}", FEXT_TO_IDX(inst), inst, state->Reg[15]);
         goto invalid;
     }
@@ -1302,9 +1307,7 @@ u32 vfp_single_cpdo(ARMul_State* state, u32 inst, u32 fpscr)
     for (vecitr = 0; vecitr <= veclen; vecitr += 1 << FPSCR_LENGTH_BIT) {
         s32 m = vfp_get_float(state, sm);
         u32 except;
-//        char type;
 
-//        type = (fop->flags & OP_DD) ? 'd' : 's';
         if (op == FOP_EXT)
             LOG_TRACE(Core_ARM11, "itr%d (%c%u) = op[%u] (s%u=%08x)",
                       vecitr >> FPSCR_LENGTH_BIT, type, dest, sn,
