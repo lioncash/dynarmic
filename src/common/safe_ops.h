@@ -103,7 +103,7 @@ T ArithmeticShiftRightDouble(T top, T bottom, int shift_amount) {
 
 template<typename T>
 T Negate(T value) {
-    return static_cast<T>(-static_cast<std::make_signed_t<T>>(value));
+    return static_cast<T>(~static_cast<std::uintmax_t>(value) + 1);
 }
 
 } // namespace Dynarmic::Safe
