@@ -16,6 +16,11 @@ enum class ComparisonType {
     LT
 };
 
+enum class Signedness {
+    Signed,
+    Unsigned
+};
+
 bool ScalarFPCompareAgainstZero(TranslatorVisitor& v, bool sz, Vec Vn, Vec Vd, ComparisonType type) {
     const size_t esize = sz ? 64 : 32;
     const size_t datasize = esize;
@@ -41,6 +46,31 @@ bool ScalarFPCompareAgainstZero(TranslatorVisitor& v, bool sz, Vec Vn, Vec Vd, C
     }();
 
     v.V_scalar(datasize, Vd, v.ir.VectorGetElement(esize, result, 0));
+    return true;
+}
+
+bool ScalarFPConvertWithRound(TranslatorVisitor& v, bool sz, Vec Vn, Vec Vd,
+                              FP::RoundingMode rmode, Signedness sign) {
+    const size_t esize = sz ? 64 : 32;
+
+    const IR::U32U64 operand = v.V_scalar(esize, Vn);
+    const IR::U32U64 result = [&]() -> IR::U32U64 {
+        if (sz) {
+            if (sign == Signedness::Signed) {
+                return v.ir.FPDoubleToFixedS64(operand, 0, rmode);
+            }
+
+            return v.ir.FPDoubleToFixedU64(operand, 0, rmode);
+        }
+
+        if (sign == Signedness::Signed) {
+            return v.ir.FPSingleToFixedS32(operand, 0, rmode);
+        }
+
+        return v.ir.FPSingleToFixedU32(operand, 0, rmode);
+    }();
+
+    v.V_scalar(esize, Vd, result);
     return true;
 }
 } // Anonymous namespace
@@ -76,6 +106,46 @@ bool TranslatorVisitor::FCMLE_2(bool sz, Vec Vn, Vec Vd) {
 
 bool TranslatorVisitor::FCMLT_2(bool sz, Vec Vn, Vec Vd) {
     return ScalarFPCompareAgainstZero(*this, sz, Vn, Vd, ComparisonType::LT);
+}
+
+bool TranslatorVisitor::FCVTAS_2(bool sz, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::ToNearest_TieAwayFromZero, Signedness::Signed);
+}
+
+bool TranslatorVisitor::FCVTAU_2(bool sz, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::ToNearest_TieAwayFromZero, Signedness::Unsigned);
+}
+
+bool TranslatorVisitor::FCVTMS_2(bool sz, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::TowardsMinusInfinity, Signedness::Signed);
+}
+
+bool TranslatorVisitor::FCVTMU_2(bool sz, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::TowardsMinusInfinity, Signedness::Unsigned);
+}
+
+bool TranslatorVisitor::FCVTNS_2(bool sz, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::ToNearest_TieEven, Signedness::Signed);
+}
+
+bool TranslatorVisitor::FCVTNU_2(bool sz, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::ToNearest_TieEven, Signedness::Unsigned);
+}
+
+bool TranslatorVisitor::FCVTPS_2(bool sz, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::TowardsPlusInfinity, Signedness::Signed);
+}
+
+bool TranslatorVisitor::FCVTPU_2(bool sz, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::TowardsPlusInfinity, Signedness::Unsigned);
+}
+
+bool TranslatorVisitor::FCVTZS_int_2(bool sz, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::TowardsZero, Signedness::Signed);
+}
+
+bool TranslatorVisitor::FCVTZU_int_2(bool sz, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::TowardsZero, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::NEG_1(Imm<2> size, Vec Vn, Vec Vd) {
