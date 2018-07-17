@@ -66,10 +66,6 @@ u32 A32EmitContext::FPCR() const {
     return Location().FPSCR().Value();
 }
 
-bool A32EmitContext::FPSCR_RoundTowardsZero() const {
-    return Location().FPSCR().RMode() != FP::RoundingMode::TowardsZero;
-}
-
 bool A32EmitContext::FPSCR_FTZ() const {
     return Location().FPSCR().FTZ();
 }

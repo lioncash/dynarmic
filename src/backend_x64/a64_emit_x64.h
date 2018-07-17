@@ -25,7 +25,6 @@ struct A64EmitContext final : public EmitContext {
     A64::LocationDescriptor Location() const;
     FP::RoundingMode FPSCR_RMode() const override;
     u32 FPCR() const override;
-    bool FPSCR_RoundTowardsZero() const override;
     bool FPSCR_FTZ() const override;
     bool FPSCR_DN() const override;
     bool AccurateNaN() const override;

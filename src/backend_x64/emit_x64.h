@@ -47,7 +47,6 @@ struct EmitContext {
 
     virtual FP::RoundingMode FPSCR_RMode() const = 0;
     virtual u32 FPCR() const = 0;
-    virtual bool FPSCR_RoundTowardsZero() const = 0;
     virtual bool FPSCR_FTZ() const = 0;
     virtual bool FPSCR_DN() const = 0;
     virtual bool AccurateNaN() const { return true; }
