@@ -105,7 +105,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x5601 /* 0xABCD = A.BC(D) */
+	VERSION = 0x5650 /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -566,7 +566,7 @@ struct EvexModifierRounding {
 	explicit EvexModifierRounding(int rounding) : rounding(rounding) {}
 	int rounding;
 };
-struct EvexModifierZero{};
+struct EvexModifierZero{EvexModifierZero() {}};
 
 struct Xmm : public Mmx {
 	explicit Xmm(int idx = 0, Kind kind = Operand::XMM, int bit = 128) : Mmx(idx, kind, bit) { }
@@ -614,16 +614,16 @@ struct Reg64 : public Reg32e {
 };
 struct RegRip {
 	sint64 disp_;
-	Label* label_;
+	const Label* label_;
 	bool isAddr_;
-	explicit RegRip(sint64 disp = 0, Label* label = 0, bool isAddr = false) : disp_(disp), label_(label), isAddr_(isAddr) {}
+	explicit RegRip(sint64 disp = 0, const Label* label = 0, bool isAddr = false) : disp_(disp), label_(label), isAddr_(isAddr) {}
 	friend const RegRip operator+(const RegRip& r, sint64 disp) {
 		return RegRip(r.disp_ + disp, r.label_, r.isAddr_);
 	}
 	friend const RegRip operator-(const RegRip& r, sint64 disp) {
 		return RegRip(r.disp_ - disp, r.label_, r.isAddr_);
 	}
-	friend const RegRip operator+(const RegRip& r, Label& label) {
+	friend const RegRip operator+(const RegRip& r, const Label& label) {
 		if (r.label_ || r.isAddr_) throw Error(ERR_BAD_ADDRESSING);
 		return RegRip(r.disp_, &label);
 	}
@@ -1812,15 +1812,20 @@ private:
 	}
 	void opPushPop(const Operand& op, int code, int ext, int alt)
 	{
-		if (op.isREG()) {
-			if (op.isBit(16)) db(0x66);
-			if (op.getReg().getIdx() >= 8) db(0x41);
-			db(alt | (op.getIdx() & 7));
-		} else if (op.isMEM()) {
-			opModM(op.getAddress(), Reg(ext, Operand::REG, op.getBit()), code);
-		} else {
-			throw Error(ERR_BAD_COMBINATION);
+		int bit = op.getBit();
+		if (bit == 16 || bit == BIT) {
+			if (bit == 16) db(0x66);
+			if (op.isREG()) {
+				if (op.getReg().getIdx() >= 8) db(0x41);
+				db(alt | (op.getIdx() & 7));
+				return;
+			}
+			if (op.isMEM()) {
+				opModM(op.getAddress(), Reg(ext, Operand::REG, 32), code);
+				return;
+			}
 		}
+		throw Error(ERR_BAD_COMBINATION);
 	}
 	void verifyMemHasSize(const Operand& op) const
 	{
