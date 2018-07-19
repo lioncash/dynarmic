@@ -70,7 +70,7 @@ bool TranslatorVisitor::DMB(Imm<4> /*CRm*/) {
 }
 
 bool TranslatorVisitor::MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt) {
-    const auto sys_reg = static_cast<SystemRegisterEncoding>(concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<size_t>());
+    const auto sys_reg = concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<SystemRegisterEncoding>();
     switch (sys_reg) {
     case SystemRegisterEncoding::TPIDR_EL0:
         ir.SetTPIDR(X(64, Rt));
@@ -90,7 +90,7 @@ bool TranslatorVisitor::MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, I
 }
 
 bool TranslatorVisitor::MRS(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt) {
-    const auto sys_reg = static_cast<SystemRegisterEncoding>(concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<size_t>());
+    const auto sys_reg = concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<SystemRegisterEncoding>();
     switch (sys_reg) {
     case SystemRegisterEncoding::TPIDR_EL0:
         X(64, Rt, ir.GetTPIDR());
