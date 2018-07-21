@@ -7,6 +7,7 @@
 #pragma once
 
 #include <boost/optional.hpp>
+#include "common/common_types.h"
 
 namespace Dynarmic::FP {
 

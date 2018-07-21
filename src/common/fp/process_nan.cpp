@@ -11,6 +11,7 @@
 #include "common/fp/info.h"
 #include "common/fp/process_exception.h"
 #include "common/fp/process_nan.h"
+#include "common/fp/unpacked.h"
 
 namespace Dynarmic::FP {
 

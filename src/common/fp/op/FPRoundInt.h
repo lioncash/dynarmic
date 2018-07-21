@@ -7,11 +7,12 @@
 #pragma once
 
 #include "common/common_types.h"
-#include "common/fp/fpcr.h"
-#include "common/fp/fpsr.h"
-#include "common/fp/rounding_mode.h"
 
 namespace Dynarmic::FP {
+
+class FPCR;
+class FPSR;
+enum class RoundingMode;
 
 template<typename FPT>
 u64 FPRoundInt(FPT op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr);

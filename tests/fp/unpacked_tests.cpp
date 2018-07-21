@@ -4,8 +4,14 @@
  * General Public License version 2 or any later version.
  */
 
+#include <tuple>
+#include <vector>
+
 #include <catch.hpp>
 
+#include "common/common_types.h"
+#include "common/fp/fpcr.h"
+#include "common/fp/fpsr.h"
 #include "common/fp/unpacked.h"
 #include "rand_int.h"
 

@@ -9,6 +9,7 @@
 
 #include <catch.hpp>
 
+#include "common/common_types.h"
 #include "common/fp/mantissa_util.h"
 #include "common/safe_ops.h"
 #include "rand_int.h"

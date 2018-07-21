@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include "common/fp/fpcr.h"
-#include "common/fp/fpsr.h"
-#include "common/fp/unpacked.h"
-
 namespace Dynarmic::FP {
+
+class FPCR;
+class FPSR;
+enum class FPType;
 
 template<typename FPT>
 FPT FPProcessNaN(FPType type, FPT op, FPCR fpcr, FPSR& fpsr);

@@ -10,9 +10,11 @@
 
 #include "common/common_types.h"
 #include "common/fp/fpcr.h"
-#include "common/fp/fpsr.h"
 
 namespace Dynarmic::FP {
+
+class FPSR;
+enum class RoundingMode;
 
 enum class FPType {
     Nonzero,

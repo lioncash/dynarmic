@@ -9,8 +9,11 @@
 
 #include <catch.hpp>
 
+#include "common/common_types.h"
+#include "common/fp/fpcr.h"
 #include "common/fp/fpsr.h"
 #include "common/fp/op.h"
+#include "common/fp/rounding_mode.h"
 #include "rand_int.h"
 
 using namespace Dynarmic;

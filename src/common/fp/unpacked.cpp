@@ -4,8 +4,10 @@
  * General Public License version 2 or any later version.
  */
 
+#include "common/fp/fpsr.h"
 #include "common/fp/info.h"
 #include "common/fp/process_exception.h"
+#include "common/fp/rounding_mode.h"
 #include "common/fp/unpacked.h"
 #include "common/safe_ops.h"
 
