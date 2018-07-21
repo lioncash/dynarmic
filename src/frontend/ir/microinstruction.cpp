@@ -152,6 +152,15 @@ bool Inst::WritesToCPSR() const {
     }
 }
 
+bool Inst::WritesToSystemRegister() const {
+    switch (op) {
+    case Opcode::A64SetTPIDR:
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool Inst::ReadsFromCoreRegister() const {
     switch (op) {
     case Opcode::A32GetRegister:
@@ -287,6 +296,7 @@ bool Inst::MayHaveSideEffects() const {
            op == Opcode::A64DataMemoryBarrier           ||
            CausesCPUException()                         ||
            WritesToCoreRegister()                       ||
+           WritesToSystemRegister()                     ||
            WritesToCPSR()                               ||
            WritesToFPSCR()                              ||
            AltersExclusiveState()                       ||

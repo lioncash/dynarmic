@@ -55,6 +55,9 @@ public:
     /// Determines whether or not this instruction writes to the CPSR.
     bool WritesToCPSR() const;
 
+    /// Determines whether or not this instruction writes to a system register.
+    bool WritesToSystemRegister() const;
+
     /// Determines whether or not this instruction reads from a core register.
     bool ReadsFromCoreRegister() const;
     /// Determines whether or not this instruction writes to a core register.
