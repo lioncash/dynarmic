@@ -671,7 +671,7 @@ INST(ADDV,                   "ADDV",                                      "0Q001
 //INST(FMINNMV_2,              "FMINNMV",                                   "0Q1011101z110000110010nnnnnddddd")
 //INST(FMINV_1,                "FMINV",                                     "0Q00111010110000111110nnnnnddddd")
 //INST(FMINV_2,                "FMINV",                                     "0Q1011101z110000111110nnnnnddddd")
-//INST(UADDLV,                 "UADDLV",                                    "0Q101110zz110000001110nnnnnddddd")
+INST(UADDLV,                 "UADDLV",                                    "0Q101110zz110000001110nnnnnddddd")
 //INST(UMAXV,                  "UMAXV",                                     "0Q101110zz110000101010nnnnnddddd")
 //INST(UMINV,                  "UMINV",                                     "0Q101110zz110001101010nnnnnddddd")
 
