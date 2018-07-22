@@ -57,12 +57,11 @@ void EmitX64::EmitAESInverseMixColumns(EmitContext& ctx, IR::Inst* inst) {
      auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAESNI)) {
-        const Xbyak::Xmm operand = ctx.reg_alloc.UseXmm(args[0]);
-        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm data = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-        code.aesimc(result, operand);
+        code.aesimc(data, data);
 
-        ctx.reg_alloc.DefineValue(inst, result);
+        ctx.reg_alloc.DefineValue(inst, data);
     } else {
         EmitAESFunction(args, ctx, code, inst, Common::AES::InverseMixColumns);
     }
