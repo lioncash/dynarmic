@@ -666,8 +666,8 @@ struct TranslatorVisitor final {
     bool FMLA_elt_2(bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool FMLS_elt_1(bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool FMLS_elt_2(bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMUL_elt_1(bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMUL_elt_2(bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool FMUL_elt_1(Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
+    bool FMUL_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool SQRDMLAH_elt_1(Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool SQRDMLSH_elt_1(Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool FMULX_elt_1(bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
