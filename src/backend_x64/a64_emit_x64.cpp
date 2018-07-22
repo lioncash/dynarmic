@@ -522,6 +522,7 @@ void A64EmitX64::EmitA64DataMemoryBarrier(A64EmitContext&, IR::Inst*) {
 
 void A64EmitX64::EmitA64GetCNTPCT(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.HostCall(inst);
+    code.UpdateTicks();
     DEVIRT(conf.callbacks, &A64::UserCallbacks::GetCNTPCT).EmitCall(code);
 }
 

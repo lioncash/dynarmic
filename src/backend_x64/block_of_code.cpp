@@ -189,6 +189,17 @@ void BlockOfCode::SwitchMxcsrOnExit() {
     ldmxcsr(dword[r15 + jsi.offsetof_save_host_MXCSR]);
 }
 
+void BlockOfCode::UpdateTicks() {
+    cb.AddTicks->EmitCall(*this, [this](RegList param) {
+        mov(param[0], qword[r15 + jsi.offsetof_cycles_to_run]);
+        sub(param[0], qword[r15 + jsi.offsetof_cycles_remaining]);
+    });
+
+    cb.GetTicksRemaining->EmitCall(*this);
+    mov(qword[r15 + jsi.offsetof_cycles_to_run], ABI_RETURN);
+    mov(qword[r15 + jsi.offsetof_cycles_remaining], ABI_RETURN);
+}
+
 Xbyak::Address BlockOfCode::MConst(const Xbyak::AddressFrame& frame, u64 lower, u64 upper) {
     return constant_pool.GetConstant(frame, lower, upper);
 }

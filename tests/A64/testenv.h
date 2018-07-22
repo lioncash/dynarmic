@@ -94,6 +94,6 @@ public:
         return ticks_left;
     }
     std::uint64_t GetCNTPCT() override {
-        ASSERT_MSG(false, "GetCNTPCT()");
+        return 0x10000000000 - ticks_left;
     }
 };

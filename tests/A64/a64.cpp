@@ -313,3 +313,24 @@ TEST_CASE("A64: 128-bit exclusive read/write", "[a64]") {
     REQUIRE(env.MemoryRead64(0x1234567812345678) == 0xaf00d1e5badcafe0);
     REQUIRE(env.MemoryRead64(0x1234567812345680) == 0xd0d0cacad0d0caca);
 }
+
+TEST_CASE("A64: CNTPCT_EL0", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0xd53be021; // MRS X1, CNTPCT_EL0
+    env.code_mem[1] = 0xd503201f; // NOP
+    env.code_mem[2] = 0xd503201f; // NOP
+    env.code_mem[3] = 0xd503201f; // NOP
+    env.code_mem[4] = 0xd503201f; // NOP
+    env.code_mem[5] = 0xd503201f; // NOP
+    env.code_mem[6] = 0xd503201f; // NOP
+    env.code_mem[7] = 0xd53be022; // MRS X2, CNTPCT_EL0
+    env.code_mem[8] = 0xcb010043; // SUB X3, X2, X1
+    env.code_mem[9] = 0x14000000; // B .
+
+    env.ticks_left = 10;
+    jit.Run();
+
+    REQUIRE(jit.GetRegister(3) == 7);
+}
