@@ -72,4 +72,27 @@ bool TranslatorVisitor::MUL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> 
     return true;
 }
 
+bool TranslatorVisitor::FMUL_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    if (sz && L == 1) {
+        return UnallocatedEncoding();
+    }
+    if (sz && !Q) {
+        return ReservedValue();
+    }
+
+    const size_t idxdsize = H == 1 ? 128 : 64;
+    const size_t index = sz ? H.ZeroExtend() : concatenate(H, L).ZeroExtend();
+    const Vec Vm = concatenate(M, Vmlo).ZeroExtend<Vec>();
+    const size_t esize = sz ? 64 : 32;
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::UAny element2 = ir.VectorGetElement(esize, V(idxdsize, Vm), index);
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = Q ? ir.VectorBroadcast(esize, element2) : ir.VectorBroadcastLower(esize, element2);
+
+    const IR::U128 result = ir.FPVectorMul(esize, operand1, operand2);
+    V(datasize, Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64

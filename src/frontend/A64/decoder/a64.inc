@@ -835,7 +835,7 @@ INST(MUL_elt,                "MUL (by element)",                          "0Q001
 //INST(FMLS_elt_3,             "FMLS (by element)",                         "0Q00111100LMmmmm0101H0nnnnnddddd")
 //INST(FMLS_elt_4,             "FMLS (by element)",                         "0Q0011111zLMmmmm0101H0nnnnnddddd")
 //INST(FMUL_elt_3,             "FMUL (by element)",                         "0Q00111100LMmmmm1001H0nnnnnddddd")
-//INST(FMUL_elt_4,             "FMUL (by element)",                         "0Q0011111zLMmmmm1001H0nnnnnddddd")
+INST(FMUL_elt_4,             "FMUL (by element)",                         "0Q0011111zLMmmmm1001H0nnnnnddddd")
 //INST(FMLAL_elt_1,            "FMLAL, FMLAL2 (by element)",                "0Q0011111zLMmmmm0000H0nnnnnddddd")
 //INST(FMLAL_elt_2,            "FMLAL, FMLAL2 (by element)",                "0Q1011111zLMmmmm1000H0nnnnnddddd")
 //INST(FMLSL_elt_1,            "FMLSL, FMLSL2 (by element)",                "0Q0011111zLMmmmm0100H0nnnnnddddd")
