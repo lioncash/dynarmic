@@ -879,7 +879,7 @@ void EmitX64::EmitFPRoundInt64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template<typename FPT>
-static void EmitFPRSqrtEsimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+static void EmitFPRSqrtEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
@@ -888,11 +888,11 @@ static void EmitFPRSqrtEsimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* in
 }
 
 void EmitX64::EmitFPRSqrtEstimate32(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPRSqrtEsimate<u32>(code, ctx, inst);
+    EmitFPRSqrtEstimate<u32>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPRSqrtEstimate64(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPRSqrtEsimate<u64>(code, ctx, inst);
+    EmitFPRSqrtEstimate<u64>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
