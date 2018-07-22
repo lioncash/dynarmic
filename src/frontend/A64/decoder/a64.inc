@@ -397,7 +397,7 @@ INST(FCVTPU_2,               "FCVTPU (vector)",                           "01111
 //INST(FCVTZU_int_1,           "FCVTZU (vector, integer)",                  "0111111011111001101110nnnnnddddd")
 INST(FCVTZU_int_2,           "FCVTZU (vector, integer)",                  "011111101z100001101110nnnnnddddd")
 //INST(FRSQRTE_1,              "FRSQRTE",                                   "0111111011111001110110nnnnnddddd")
-//INST(FRSQRTE_2,              "FRSQRTE",                                   "011111101z100001110110nnnnnddddd")
+INST(FRSQRTE_2,              "FRSQRTE",                                   "011111101z100001110110nnnnnddddd")
 
 // Data Processing - FP and SIMD - Scalar three same extra
 //INST(SQRDMLAH_vec_1,         "SQRDMLAH (vector)",                         "01111110zz0mmmmm100001nnnnnddddd")
