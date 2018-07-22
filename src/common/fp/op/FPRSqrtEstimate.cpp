@@ -22,9 +22,11 @@ namespace Dynarmic::FP {
 
 /// Input is a u1.8 fixed point number.
 static u8 RecipSqrtEstimate(u64 a) {
-    static const std::array<u8, 512> lut = []{
-        std::array<u8, 512> result{};
-        for (u64 i = 128; i < 512; i++) {
+    using LUT = std::array<u8, 512>;
+
+    static const LUT lut = [] {
+        LUT result{};
+        for (u64 i = 128; i < result.size(); i++) {
             u64 a = i;
             if (a < 256) {
                 a = a * 2 + 1;
