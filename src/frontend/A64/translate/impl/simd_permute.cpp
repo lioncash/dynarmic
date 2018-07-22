@@ -14,8 +14,12 @@ enum class Transposition {
     TRN2,
 };
 
-void VectorTranspose(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+bool VectorTranspose(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
                      Transposition type) {
+    if (!Q && size == 0b11) {
+        return v.ReservedValue();
+    }
+
     const size_t datasize = Q ? 128 : 64;
     const u8 esize = static_cast<u8>(8 << size.ZeroExtend());
 
@@ -61,6 +65,7 @@ void VectorTranspose(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, 
     }();
 
     v.V(datasize, Vd, result);
+    return true;
 }
 
 enum class UnzipType {
@@ -68,7 +73,11 @@ enum class UnzipType {
     Odd,
 };
 
-void VectorUnzip(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, UnzipType type) {
+bool VectorUnzip(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, UnzipType type) {
+    if (size == 0b11 && !Q) {
+        return v.ReservedValue();
+    }
+
     const size_t datasize = Q ? 128 : 64;
     const size_t esize = 8 << size.ZeroExtend();
 
@@ -86,43 +95,24 @@ void VectorUnzip(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec 
     }
 
     v.V(datasize, Vd, result);
+    return true;
 }
 } // Anonymous namespace
 
 bool TranslatorVisitor::TRN1(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (!Q && size == 0b11) {
-        return ReservedValue();
-    }
-
-    VectorTranspose(*this, Q, size, Vm, Vn, Vd, Transposition::TRN1);
-    return true;
+    return VectorTranspose(*this, Q, size, Vm, Vn, Vd, Transposition::TRN1);
 }
 
 bool TranslatorVisitor::TRN2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (!Q && size == 0b11) {
-        return ReservedValue();
-    }
-
-    VectorTranspose(*this, Q, size, Vm, Vn, Vd, Transposition::TRN2);
-    return true;
+    return VectorTranspose(*this, Q, size, Vm, Vn, Vd, Transposition::TRN2);
 }
 
 bool TranslatorVisitor::UZP1(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11 && !Q) {
-        return ReservedValue();
-    }
-
-    VectorUnzip(*this, Q, size, Vm, Vn, Vd, UnzipType::Even);
-    return true;
+    return VectorUnzip(*this, Q, size, Vm, Vn, Vd, UnzipType::Even);
 }
 
 bool TranslatorVisitor::UZP2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11 && !Q) {
-        return ReservedValue();
-    }
-
-    VectorUnzip(*this, Q, size, Vm, Vn, Vd, UnzipType::Odd);
-    return true;
+    return VectorUnzip(*this, Q, size, Vm, Vn, Vd, UnzipType::Odd);
 }
 
 bool TranslatorVisitor::ZIP1(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {

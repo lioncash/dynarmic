@@ -18,8 +18,12 @@ enum class Signedness {
     Unsigned,
 };
 
-void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+bool ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
                 ShiftExtraBehavior behavior, Signedness signedness) {
+    if (!immh.Bit<3>()) {
+        return v.ReservedValue();
+    }
+
     const size_t esize = 64;
     const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
 
@@ -37,10 +41,15 @@ void ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
     }
 
     v.V_scalar(esize, Vd, result);
+    return true;
 }
 
-void RoundingShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+bool RoundingShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
                         ShiftExtraBehavior behavior, Signedness signedness) {
+    if (!immh.Bit<3>()) {
+        return v.ReservedValue();
+    }
+
     const size_t esize = 64;
     const u8 shift_amount = static_cast<u8>((esize * 2) - concatenate(immh, immb).ZeroExtend());
 
@@ -64,6 +73,7 @@ void RoundingShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, 
     }();
 
     v.V_scalar(esize, Vd, result);
+    return true;
 }
 
 enum class ShiftDirection {
@@ -71,8 +81,12 @@ enum class ShiftDirection {
     Right,
 };
 
-void ShiftAndInsert(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+bool ShiftAndInsert(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
                     ShiftDirection direction) {
+    if (!immh.Bit<3>()) {
+        return v.ReservedValue();
+    }
+
     const size_t esize = 64;
 
     const u8 shift_amount = [&] {
@@ -104,6 +118,7 @@ void ShiftAndInsert(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec 
 
     const IR::U64 result = v.ir.Or(v.ir.And(operand2, v.ir.Not(v.ir.Imm64(mask))), shifted);
     v.V_scalar(esize, Vd, result);
+    return true;
 }
 
 bool ScalarFPConvertWithRound(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd, Signedness sign) {
@@ -153,57 +168,27 @@ bool TranslatorVisitor::FCVTZU_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::SLI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    ShiftAndInsert(*this, immh, immb, Vn, Vd, ShiftDirection::Left);
-    return true;
+    return ShiftAndInsert(*this, immh, immb, Vn, Vd, ShiftDirection::Left);
 }
 
 bool TranslatorVisitor::SRI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    ShiftAndInsert(*this, immh, immb, Vn, Vd, ShiftDirection::Right);
-    return true;
+    return ShiftAndInsert(*this, immh, immb, Vn, Vd, ShiftDirection::Right);
 }
 
 bool TranslatorVisitor::SRSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Signed);
-    return true;
+    return RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SRSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Signed);
-    return true;
+    return RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Signed);
-    return true;
+    return ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Signed);
-    return true;
+    return ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SHL_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
@@ -222,39 +207,19 @@ bool TranslatorVisitor::SHL_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::URSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Unsigned);
-    return true;
+    return RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::URSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Unsigned);
-    return true;
+    return RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::USHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Unsigned);
-    return true;
+    return ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::USRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Unsigned);
-    return true;
+    return ShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::Accumulate, Signedness::Unsigned);
 }
 
 } // namespace Dynarmic::A64

@@ -18,8 +18,12 @@ enum class ExtraBehavior {
     Round
 };
 
-static void HighNarrowingOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
-                                   HighNarrowingOp op, ExtraBehavior behavior) {
+bool HighNarrowingOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                            HighNarrowingOp op, ExtraBehavior behavior) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
     const size_t part = Q;
     const size_t esize = 8 << size.ZeroExtend();
     const size_t doubled_esize = 2 * esize;
@@ -43,6 +47,7 @@ static void HighNarrowingOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Ve
                                               v.ir.VectorLogicalShiftRight(doubled_esize, wide, static_cast<u8>(esize)));
 
     v.Vpart(64, Vd, part, result);
+    return true;
 }
 
 enum class AbsDiffExtraBehavior {
@@ -252,39 +257,19 @@ bool TranslatorVisitor::MUL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::ADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Add, ExtraBehavior::None);
-    return true;
+    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Add, ExtraBehavior::None);
 }
 
 bool TranslatorVisitor::RADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Add, ExtraBehavior::Round);
-    return true;
+    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Add, ExtraBehavior::Round);
 }
 
 bool TranslatorVisitor::SUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Subtract, ExtraBehavior::None);
-    return true;
+    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Subtract, ExtraBehavior::None);
 }
 
 bool TranslatorVisitor::RSUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Subtract, ExtraBehavior::Round);
-    return true;
+    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Subtract, ExtraBehavior::Round);
 }
 
 bool TranslatorVisitor::SHADD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {

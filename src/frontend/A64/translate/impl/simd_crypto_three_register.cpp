@@ -7,13 +7,13 @@
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
-
+namespace {
 enum class SM3TTVariant {
     A,
     B,
 };
 
-static void SM3TT1(TranslatorVisitor& v, Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd, SM3TTVariant behavior) {
+bool SM3TT1(TranslatorVisitor& v, Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd, SM3TTVariant behavior) {
     const IR::U128 d = v.ir.GetQ(Vd);
     const IR::U128 m = v.ir.GetQ(Vm);
     const IR::U128 n = v.ir.GetQ(Vn);
@@ -45,9 +45,10 @@ static void SM3TT1(TranslatorVisitor& v, Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd, SM
     const IR::U128 result = v.ir.VectorSetElement(32, tmp3, 3, final_tt1);
 
     v.ir.SetQ(Vd, result);
+    return true;
 }
 
-static void SM3TT2(TranslatorVisitor& v, Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd, SM3TTVariant behavior) {
+bool SM3TT2(TranslatorVisitor& v, Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd, SM3TTVariant behavior) {
     const IR::U128 d = v.ir.GetQ(Vd);
     const IR::U128 m = v.ir.GetQ(Vm);
     const IR::U128 n = v.ir.GetQ(Vn);
@@ -79,26 +80,24 @@ static void SM3TT2(TranslatorVisitor& v, Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd, SM
     const IR::U128 result = v.ir.VectorSetElement(32, tmp3, 3, top_result);
 
     v.ir.SetQ(Vd, result);
+    return true;
 }
+} // Anonymous namespace
 
 bool TranslatorVisitor::SM3TT1A(Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd) {
-    SM3TT1(*this, Vm, imm2, Vn, Vd, SM3TTVariant::A);
-    return true;
+    return SM3TT1(*this, Vm, imm2, Vn, Vd, SM3TTVariant::A);
 }
 
 bool TranslatorVisitor::SM3TT1B(Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd) {
-    SM3TT1(*this, Vm, imm2, Vn, Vd, SM3TTVariant::B);
-    return true;
+    return SM3TT1(*this, Vm, imm2, Vn, Vd, SM3TTVariant::B);
 }
 
 bool TranslatorVisitor::SM3TT2A(Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd) {
-    SM3TT2(*this, Vm, imm2, Vn, Vd, SM3TTVariant::A);
-    return true;
+    return SM3TT2(*this, Vm, imm2, Vn, Vd, SM3TTVariant::A);
 }
 
 bool TranslatorVisitor::SM3TT2B(Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd) {
-    SM3TT2(*this, Vm, imm2, Vn, Vd, SM3TTVariant::B);
-    return true;
+    return SM3TT2(*this, Vm, imm2, Vn, Vd, SM3TTVariant::B);
 }
 
 } // namespace Dynarmic::A64

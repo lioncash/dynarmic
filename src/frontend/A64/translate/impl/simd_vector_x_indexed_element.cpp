@@ -23,8 +23,12 @@ enum class ExtraBehavior {
     Subtract,
 };
 
-void MultiplyByElement(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd,
+bool MultiplyByElement(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd,
                        ExtraBehavior extra_behavior) {
+    if (size != 0b01 && size != 0b10) {
+        return v.UnallocatedEncoding();
+    }
+
     const auto [index, Vm] = Combine(size, H, L, M, Vmlo);
     const size_t idxdsize = H == 1 ? 128 : 64;
     const size_t esize = 8 << size.ZeroExtend();
@@ -42,34 +46,20 @@ void MultiplyByElement(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<
     }
 
     v.V(datasize, Vd, result);
+    return true;
 }
 } // Anonymous namespace
 
 bool TranslatorVisitor::MLA_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
-    if (size != 0b01 && size != 0b10) {
-        return UnallocatedEncoding();
-    }
-
-    MultiplyByElement(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Accumulate);
-    return true;
+    return MultiplyByElement(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Accumulate);
 }
 
 bool TranslatorVisitor::MLS_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
-    if (size != 0b01 && size != 0b10) {
-        return UnallocatedEncoding();
-    }
-
-    MultiplyByElement(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Subtract);
-    return true;
+    return MultiplyByElement(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Subtract);
 }
 
 bool TranslatorVisitor::MUL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
-    if (size != 0b01 && size != 0b10) {
-        return UnallocatedEncoding();
-    }
-
-    MultiplyByElement(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None);
-    return true;
+    return MultiplyByElement(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None);
 }
 
 bool TranslatorVisitor::FMUL_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
