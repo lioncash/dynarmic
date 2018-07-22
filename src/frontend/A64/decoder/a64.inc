@@ -659,7 +659,7 @@ INST(FCMLE_4,                "FCMLE (zero)",                              "0Q101
 //INST(FSQRT_2,                "FSQRT (vector)",                            "0Q1011101z100001111110nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD across lanes
-//INST(SADDLV,                 "SADDLV",                                    "0Q001110zz110000001110nnnnnddddd")
+INST(SADDLV,                 "SADDLV",                                    "0Q001110zz110000001110nnnnnddddd")
 //INST(SMAXV,                  "SMAXV",                                     "0Q001110zz110000101010nnnnnddddd")
 //INST(SMINV,                  "SMINV",                                     "0Q001110zz110001101010nnnnnddddd")
 INST(ADDV,                   "ADDV",                                      "0Q001110zz110001101110nnnnnddddd")
