@@ -430,7 +430,7 @@ void EmitX64::EmitVectorBroadcastLower8(EmitContext& ctx, IR::Inst* inst) {
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
         code.vpbroadcastb(a, a);
-        code.movq(a, a);
+        code.vmovq(a, a);
     } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
         Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
