@@ -6,6 +6,8 @@
 
 #include <catch.hpp>
 
+#include <dynarmic/A64/exclusive_monitor.h>
+
 #include "testenv.h"
 
 TEST_CASE("A64: ADD", "[a64]") {
@@ -273,4 +275,41 @@ TEST_CASE("A64: FABD", "[a64]") {
     jit.Run();
 
     REQUIRE(jit.GetVector(22) == Vector{0x56d3f0857fc90e2b, 0x6e4b0a4144873176});
+}
+
+TEST_CASE("A64: 128-bit exclusive read/write", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::ExclusiveMonitor monitor{1};
+
+    Dynarmic::A64::UserConfig conf;
+    conf.callbacks = &env;
+    conf.processor_id = 0;
+
+    SECTION("Local Monitor Only") {
+        conf.global_monitor = nullptr;
+    }
+    SECTION("Global Monitor") {
+        conf.global_monitor = &monitor;
+    }
+
+    Dynarmic::A64::Jit jit{conf};
+
+    env.code_mem[0] = 0xc87f0861; // LDXP X1, X2, [X3]
+    env.code_mem[1] = 0xc8241865; // STXP W4, X5, X6, [X3]
+    env.code_mem[2] = 0x14000000; // B .
+
+    jit.SetPC(0);
+    jit.SetRegister(3, 0x1234567812345678);
+    jit.SetRegister(4, 0xbaadbaadbaadbaad);
+    jit.SetRegister(5, 0xaf00d1e5badcafe0);
+    jit.SetRegister(6, 0xd0d0cacad0d0caca);
+
+    env.ticks_left = 3;
+    jit.Run();
+
+    REQUIRE(jit.GetRegister(1) == 0x7f7e7d7c7b7a7978);
+    REQUIRE(jit.GetRegister(2) == 0x8786858483828180);
+    REQUIRE(jit.GetRegister(4) == 0);
+    REQUIRE(env.MemoryRead64(0x1234567812345678) == 0xaf00d1e5badcafe0);
+    REQUIRE(env.MemoryRead64(0x1234567812345680) == 0xd0d0cacad0d0caca);
 }

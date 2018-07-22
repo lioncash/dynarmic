@@ -896,7 +896,7 @@ void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t 
             ));
             break;
         case 128:
-            code.sub(rsp, 8 + 16 + ABI_SHADOW_SPACE);
+            code.sub(rsp, 16 + ABI_SHADOW_SPACE);
             code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE]);
             code.movaps(xword[code.ABI_PARAM3], xmm0);
             code.CallFunction(static_cast<u32(*)(A64::UserConfig&, u64, A64::Vector&)>(
@@ -906,7 +906,7 @@ void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t 
                     }) ? 0 : 1;
                 }
             ));
-            code.add(rsp, 8 + 16 + ABI_SHADOW_SPACE);
+            code.add(rsp, 16 + ABI_SHADOW_SPACE);
             break;
         default:
             UNREACHABLE();
