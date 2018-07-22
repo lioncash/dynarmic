@@ -250,15 +250,16 @@ void EmitX64::EmitVectorSetElement64(EmitContext& ctx, IR::Inst* inst) {
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     } else {
-        const Xbyak::Reg64 source_elem = ctx.reg_alloc.UseScratchGpr(args[2]);
+        const Xbyak::Reg64 source_elem = ctx.reg_alloc.UseGpr(args[2]);
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-        code.pinsrw(source_vector, source_elem.cvt32(), index * 4);
-        code.shr(source_elem, 16);
-        code.pinsrw(source_vector, source_elem.cvt32(), index * 4 + 1);
-        code.shr(source_elem, 16);
-        code.pinsrw(source_vector, source_elem.cvt32(), index * 4 + 2);
-        code.shr(source_elem, 16);
-        code.pinsrw(source_vector, source_elem.cvt32(), index * 4 + 3);
+        code.movq(tmp, source_elem);
+
+        if (index == 0) {
+            code.movsd(source_vector, tmp);
+        } else {
+            code.punpcklqdq(source_vector, tmp);
+        }
 
         ctx.reg_alloc.DefineValue(inst, source_vector);
     }
