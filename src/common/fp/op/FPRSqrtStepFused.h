@@ -6,8 +6,12 @@
 
 #pragma once
 
-#include "common/fp/op/FPMulAdd.h"
-#include "common/fp/op/FPRoundInt.h"
-#include "common/fp/op/FPRSqrtEstimate.h"
-#include "common/fp/op/FPRSqrtStepFused.h"
-#include "common/fp/op/FPToFixed.h"
+namespace Dynarmic::FP {
+
+class FPCR;
+class FPSR;
+
+template<typename FPT>
+FPT FPRSqrtStepFused(FPT op1, FPT op2, FPCR fpcr, FPSR& fpsr);
+
+} // namespace Dynarmic::FP 

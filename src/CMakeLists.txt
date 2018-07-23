@@ -29,6 +29,8 @@ add_library(dynarmic
     common/fp/op/FPRoundInt.h
     common/fp/op/FPRSqrtEstimate.cpp
     common/fp/op/FPRSqrtEstimate.h
+    common/fp/op/FPRSqrtStepFused.cpp
+    common/fp/op/FPRSqrtStepFused.h
     common/fp/op/FPToFixed.cpp
     common/fp/op/FPToFixed.h
     common/fp/process_exception.cpp

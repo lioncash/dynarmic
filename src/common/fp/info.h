@@ -33,6 +33,7 @@ struct FPInfo<u32> {
     static constexpr u32 Infinity(bool sign) { return exponent_mask | Zero(sign); }
     static constexpr u32 MaxNormal(bool sign) { return (exponent_mask - 1) | Zero(sign); }
     static constexpr u32 DefaultNaN() { return exponent_mask | (u32(1) << (explicit_mantissa_width - 1)); }
+    static constexpr u32 OnePointFive(bool sign) { return Zero(sign) | (u32(1) << (explicit_mantissa_width - 1)) | (u32(exponent_bias) << explicit_mantissa_width); }
 };
 
 template<>
@@ -55,6 +56,7 @@ struct FPInfo<u64> {
     static constexpr u64 Infinity(bool sign) { return exponent_mask | Zero(sign); }
     static constexpr u64 MaxNormal(bool sign) { return (exponent_mask - 1) | Zero(sign); }
     static constexpr u64 DefaultNaN() { return exponent_mask | (u64(1) << (explicit_mantissa_width - 1)); }
+    static constexpr u64 OnePointFive(bool sign) { return Zero(sign) | (u64(1) << (explicit_mantissa_width - 1)) | (u64(exponent_bias) << explicit_mantissa_width); }
 };
 
 } // namespace Dynarmic::FP 
