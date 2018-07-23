@@ -739,7 +739,7 @@ INST(BIC_asimd_reg,          "BIC (vector, register)",                    "0Q001
 INST(FSUB_2,                 "FSUB (vector)",                             "0Q0011101z1mmmmm110101nnnnnddddd")
 //INST(FMLSL_vec_1,            "FMLSL, FMLSL2 (vector)",                    "0Q0011101z1mmmmm111011nnnnnddddd")
 //INST(FMIN_2,                 "FMIN (vector)",                             "0Q0011101z1mmmmm111101nnnnnddddd")
-//INST(FRSQRTS_4,              "FRSQRTS",                                   "0Q0011101z1mmmmm111111nnnnnddddd")
+INST(FRSQRTS_4,              "FRSQRTS",                                   "0Q0011101z1mmmmm111111nnnnnddddd")
 INST(ORR_asimd_reg,          "ORR (vector, register)",                    "0Q001110101mmmmm000111nnnnnddddd")
 INST(ORN_asimd,              "ORN (vector)",                              "0Q001110111mmmmm000111nnnnnddddd")
 INST(UHADD,                  "UHADD",                                     "0Q101110zz1mmmmm000001nnnnnddddd")

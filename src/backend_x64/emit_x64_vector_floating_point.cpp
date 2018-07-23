@@ -250,6 +250,50 @@ inline void EmitOneArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Ins
     ctx.reg_alloc.DefineValue(inst, xmm0);
 }
 
+template <typename Lambda>
+inline void EmitTwoArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+    const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm arg2 = ctx.reg_alloc.UseXmm(args[1]);
+    ctx.reg_alloc.EndOfAllocScope();
+    ctx.reg_alloc.HostCall(nullptr);
+
+#ifdef _WIN32
+    constexpr u32 stack_space = 4 * 16;
+    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
+    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
+    code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 3 * 16]);
+    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
+    code.lea(rax, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.mov(qword[rsp + ABI_SHADOW_SPACE + 0 * 16], rax);
+#else
+    constexpr u32 stack_space = 3 * 16;
+    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
+    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+    code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
+    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
+    code.lea(code.ABI_PARAM5, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+#endif
+
+    code.movaps(xword[code.ABI_PARAM2], arg1);
+    code.movaps(xword[code.ABI_PARAM3], arg2);
+    code.CallFunction(fn);
+
+#ifdef _WIN32
+    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+#else
+    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+#endif
+
+    code.add(rsp, stack_space + ABI_SHADOW_SPACE);
+
+    ctx.reg_alloc.DefineValue(inst, xmm0);
+}
+
 void EmitX64::EmitFPVectorAbs16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -408,6 +452,23 @@ void EmitX64::EmitFPVectorRSqrtEstimate32(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPVectorRSqrtEstimate64(EmitContext& ctx, IR::Inst* inst) {
     EmitRSqrtEstimate<u64>(code, ctx, inst);
+}
+
+template<typename FPT>
+static void EmitRSqrtStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<FPT>& result, const VectorArray<FPT>& op1, const VectorArray<FPT>& op2, FP::FPCR fpcr, FP::FPSR& fpsr) {
+        for (size_t i = 0; i < result.size(); i++) {
+            result[i] = FP::FPRSqrtStepFused<FPT>(op1[i], op2[i], fpcr, fpsr);
+        }
+    });
+}
+
+void EmitX64::EmitFPVectorRSqrtStepFused32(EmitContext& ctx, IR::Inst* inst) {
+    EmitRSqrtStepFused<u32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPVectorRSqrtStepFused64(EmitContext& ctx, IR::Inst* inst) {
+    EmitRSqrtStepFused<u64>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPVectorS32ToSingle(EmitContext& ctx, IR::Inst* inst) {

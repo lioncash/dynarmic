@@ -300,6 +300,7 @@ public:
     U128 FPVectorPairedAdd(size_t esize, const U128& a, const U128& b);
     U128 FPVectorPairedAddLower(size_t esize, const U128& a, const U128& b);
     U128 FPVectorRSqrtEstimate(size_t esize, const U128& a);
+    U128 FPVectorRSqrtStepFused(size_t esize, const U128& a, const U128& b);
     U128 FPVectorSub(size_t esize, const U128& a, const U128& b);
     U128 FPVectorS32ToSingle(const U128& a);
     U128 FPVectorS64ToDouble(const U128& a);

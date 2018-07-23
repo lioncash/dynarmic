@@ -404,40 +404,22 @@ struct TranslatorVisitor final {
     // Data Processing - FP and SIMD - Scalar three
     bool FMULX_vec_1(Vec Vm, Vec Vn, Vec Vd);
     bool FMULX_vec_2(bool sz, Vec Vm, Vec Vn, Vec Vd);
-    bool FMULX_vec_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMULX_vec_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FCMEQ_reg_1(Vec Vm, Vec Vn, Vec Vd);
     bool FCMEQ_reg_2(bool sz, Vec Vm, Vec Vn, Vec Vd);
-    bool FCMEQ_reg_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FCMEQ_reg_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FRECPS_1(Vec Vm, Vec Vn, Vec Vd);
     bool FRECPS_2(bool sz, Vec Vm, Vec Vn, Vec Vd);
-    bool FRECPS_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FRECPS_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FRSQRTS_1(Vec Vm, Vec Vn, Vec Vd);
     bool FRSQRTS_2(bool sz, Vec Vm, Vec Vn, Vec Vd);
-    bool FRSQRTS_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FRSQRTS_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FCMGE_reg_1(Vec Vm, Vec Vn, Vec Vd);
     bool FCMGE_reg_2(bool sz, Vec Vm, Vec Vn, Vec Vd);
-    bool FCMGE_reg_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FCMGE_reg_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FACGE_1(Vec Vm, Vec Vn, Vec Vd);
     bool FACGE_2(bool sz, Vec Vm, Vec Vn, Vec Vd);
-    bool FACGE_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FACGE_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FABD_1(Vec Vm, Vec Vn, Vec Vd);
     bool FABD_2(bool sz, Vec Vm, Vec Vn, Vec Vd);
-    bool FABD_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FABD_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FCMGT_reg_1(Vec Vm, Vec Vn, Vec Vd);
     bool FCMGT_reg_2(bool sz, Vec Vm, Vec Vn, Vec Vd);
-    bool FCMGT_reg_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FCMGT_reg_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FACGT_1(Vec Vm, Vec Vn, Vec Vd);
     bool FACGT_2(bool sz, Vec Vm, Vec Vn, Vec Vd);
-    bool FACGT_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FACGT_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - Two register misc FP16
     bool FCVTNS_1(Vec Vn, Vec Vd);
@@ -697,36 +679,30 @@ struct TranslatorVisitor final {
     bool INS_elt(Imm<5> imm5, Imm<4> imm4, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Three same
+    bool FMULX_vec_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
+    bool FCMEQ_reg_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
+    bool FRECPS_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
+    bool FRSQRTS_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
+    bool FCMGE_reg_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
+    bool FACGE_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
+    bool FABD_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
+    bool FCMGT_reg_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
+    bool FACGT_3(bool Q, Vec Vm, Vec Vn, Vec Vd);
     bool FMAXNM_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMAXNM_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FMLA_vec_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMLA_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FADD_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FADD_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FMAX_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMAX_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FMINNM_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMINNM_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FMLS_vec_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMLS_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FSUB_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FSUB_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FMIN_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMIN_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FMAXNMP_vec_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMAXNMP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FADDP_vec_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FADDP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FMUL_vec_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMUL_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FMAXP_vec_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMAXP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FDIV_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FDIV_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FMINNMP_vec_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMINNMP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FMINP_vec_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
-    bool FMINP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Two-register misc
     bool FRINTN_1(bool Q, Vec Vn, Vec Vd);
@@ -854,6 +830,30 @@ struct TranslatorVisitor final {
     bool BSL(bool Q, Vec Vm, Vec Vn, Vec Vd);
     bool BIT(bool Q, Vec Vm, Vec Vn, Vec Vd);
     bool BIF(bool Q, Vec Vm, Vec Vn, Vec Vd);
+    bool FMAXNM_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMLA_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FADD_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMAX_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMINNM_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMLS_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FSUB_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMIN_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMAXNMP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FADDP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMUL_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMAXP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FDIV_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMINNMP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMINP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FMULX_vec_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FCMEQ_reg_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FRECPS_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FRSQRTS_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FCMGE_reg_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FACGE_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FABD_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FCMGT_reg_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool FACGT_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD modified immediate
     bool MOVI(bool Q, bool op, Imm<1> a, Imm<1> b, Imm<1> c, Imm<4> cmode, Imm<1> d, Imm<1> e, Imm<1> f, Imm<1> g, Imm<1> h, Vec Vd);
