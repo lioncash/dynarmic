@@ -425,15 +425,15 @@ INST(NEG_1,                  "NEG (vector)",                              "01111
 // Data Processing - FP and SIMD - SIMD Scalar pairwise
 INST(ADDP_pair,              "ADDP (scalar)",                             "01011110zz110001101110nnnnnddddd")
 //INST(FMAXNMP_pair_1,         "FMAXNMP (scalar)",                          "0101111000110000110010nnnnnddddd")
-//INST(FMAXNMP_pair_2,         "FMAXNMP (scalar)",                          "011111100z110000110010nnnnnddddd")
+INST(FMAXNMP_pair_2,         "FMAXNMP (scalar)",                          "011111100z110000110010nnnnnddddd")
 //INST(FADDP_pair_1,           "FADDP (scalar)",                            "0101111000110000110110nnnnnddddd")
 INST(FADDP_pair_2,           "FADDP (scalar)",                            "011111100z110000110110nnnnnddddd")
 //INST(FMAXP_pair_1,           "FMAXP (scalar)",                            "0101111000110000111110nnnnnddddd")
-//INST(FMAXP_pair_2,           "FMAXP (scalar)",                            "011111100z110000111110nnnnnddddd")
+INST(FMAXP_pair_2,           "FMAXP (scalar)",                            "011111100z110000111110nnnnnddddd")
 //INST(FMINNMP_pair_1,         "FMINNMP (scalar)",                          "0101111010110000110010nnnnnddddd")
-//INST(FMINNMP_pair_2,         "FMINNMP (scalar)",                          "011111101z110000110010nnnnnddddd")
+INST(FMINNMP_pair_2,         "FMINNMP (scalar)",                          "011111101z110000110010nnnnnddddd")
 //INST(FMINP_pair_1,           "FMINP (scalar)",                            "0101111010110000111110nnnnnddddd")
-//INST(FMINP_pair_2,           "FMINP (scalar)",                            "011111101z110000111110nnnnnddddd")
+INST(FMINP_pair_2,           "FMINP (scalar)",                            "011111101z110000111110nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Scalar three different
 //INST(SQDMLAL_vec_1,          "SQDMLAL, SQDMLAL2 (vector)",                "01011110zz1mmmmm100100nnnnnddddd")
