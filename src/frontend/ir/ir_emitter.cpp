@@ -1604,8 +1604,8 @@ U32U64 IREmitter::FPAbs(const U32U64& a) {
     }
 }
 
-U32U64 IREmitter::FPAdd(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32U64 IREmitter::FPAdd(const U32U64& a, const U32U64& b, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPAdd32, a, b);
@@ -1614,8 +1614,8 @@ U32U64 IREmitter::FPAdd(const U32U64& a, const U32U64& b, bool fpscr_controlled)
     }
 }
 
-NZCV IREmitter::FPCompare(const U32U64& a, const U32U64& b, bool exc_on_qnan, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+NZCV IREmitter::FPCompare(const U32U64& a, const U32U64& b, bool exc_on_qnan, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
         return Inst<NZCV>(Opcode::FPCompare32, a, b, Imm1(exc_on_qnan));
@@ -1624,8 +1624,8 @@ NZCV IREmitter::FPCompare(const U32U64& a, const U32U64& b, bool exc_on_qnan, bo
     }
 }
 
-U32U64 IREmitter::FPDiv(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32U64 IREmitter::FPDiv(const U32U64& a, const U32U64& b, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPDiv32, a, b);
@@ -1634,8 +1634,8 @@ U32U64 IREmitter::FPDiv(const U32U64& a, const U32U64& b, bool fpscr_controlled)
     }
 }
 
-U32U64 IREmitter::FPMax(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32U64 IREmitter::FPMax(const U32U64& a, const U32U64& b, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPMax32, a, b);
@@ -1644,8 +1644,8 @@ U32U64 IREmitter::FPMax(const U32U64& a, const U32U64& b, bool fpscr_controlled)
     }
 }
 
-U32U64 IREmitter::FPMaxNumeric(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32U64 IREmitter::FPMaxNumeric(const U32U64& a, const U32U64& b, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPMaxNumeric32, a, b);
@@ -1654,8 +1654,8 @@ U32U64 IREmitter::FPMaxNumeric(const U32U64& a, const U32U64& b, bool fpscr_cont
     }
 }
 
-U32U64 IREmitter::FPMin(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32U64 IREmitter::FPMin(const U32U64& a, const U32U64& b, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPMin32, a, b);
@@ -1664,8 +1664,8 @@ U32U64 IREmitter::FPMin(const U32U64& a, const U32U64& b, bool fpscr_controlled)
     }
 }
 
-U32U64 IREmitter::FPMinNumeric(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32U64 IREmitter::FPMinNumeric(const U32U64& a, const U32U64& b, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPMinNumeric32, a, b);
@@ -1674,8 +1674,8 @@ U32U64 IREmitter::FPMinNumeric(const U32U64& a, const U32U64& b, bool fpscr_cont
     }
 }
 
-U32U64 IREmitter::FPMul(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32U64 IREmitter::FPMul(const U32U64& a, const U32U64& b, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPMul32, a, b);
@@ -1684,8 +1684,8 @@ U32U64 IREmitter::FPMul(const U32U64& a, const U32U64& b, bool fpscr_controlled)
     }
 }
 
-U32U64 IREmitter::FPMulAdd(const U32U64& a, const U32U64& b, const U32U64& c, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32U64 IREmitter::FPMulAdd(const U32U64& a, const U32U64& b, const U32U64& c, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPMulAdd32, a, b, c);
@@ -1754,8 +1754,8 @@ U32U64 IREmitter::FPSqrt(const U32U64& a) {
     }
 }
 
-U32U64 IREmitter::FPSub(const U32U64& a, const U32U64& b, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32U64 IREmitter::FPSub(const U32U64& a, const U32U64& b, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPSub32, a, b);
@@ -1764,13 +1764,13 @@ U32U64 IREmitter::FPSub(const U32U64& a, const U32U64& b, bool fpscr_controlled)
     }
 }
 
-U32 IREmitter::FPDoubleToSingle(const U64& a, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32 IREmitter::FPDoubleToSingle(const U64& a, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     return Inst<U32>(Opcode::FPDoubleToSingle, a);
 }
 
-U64 IREmitter::FPSingleToDouble(const U32& a, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U64 IREmitter::FPSingleToDouble(const U32& a, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     return Inst<U64>(Opcode::FPSingleToDouble, a);
 }
 
@@ -1814,43 +1814,43 @@ U64 IREmitter::FPSingleToFixedU64(const U32& a, size_t fbits, FP::RoundingMode r
     return Inst<U64>(Opcode::FPSingleToFixedU64, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
 }
 
-U32 IREmitter::FPS32ToSingle(const U32& a, bool round_to_nearest, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32 IREmitter::FPS32ToSingle(const U32& a, bool round_to_nearest, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     return Inst<U32>(Opcode::FPS32ToSingle, a, Imm1(round_to_nearest));
 }
 
-U64 IREmitter::FPS64ToDouble(const U64& a, bool round_to_nearest, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U64 IREmitter::FPS64ToDouble(const U64& a, bool round_to_nearest, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     return Inst<U64>(Opcode::FPS64ToDouble, a, Imm1(round_to_nearest));
 }
 
-U32 IREmitter::FPS64ToSingle(const U64& a, bool round_to_nearest, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32 IREmitter::FPS64ToSingle(const U64& a, bool round_to_nearest, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     return Inst<U32>(Opcode::FPS64ToSingle, a, Imm1(round_to_nearest));
 }
 
-U32 IREmitter::FPU32ToSingle(const U32& a, bool round_to_nearest, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32 IREmitter::FPU32ToSingle(const U32& a, bool round_to_nearest, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     return Inst<U32>(Opcode::FPU32ToSingle, a, Imm1(round_to_nearest));
 }
 
-U64 IREmitter::FPS32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U64 IREmitter::FPS32ToDouble(const U32& a, bool round_to_nearest, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     return Inst<U64>(Opcode::FPS32ToDouble, a, Imm1(round_to_nearest));
 }
 
-U64 IREmitter::FPU32ToDouble(const U32& a, bool round_to_nearest, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U64 IREmitter::FPU32ToDouble(const U32& a, bool round_to_nearest, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     return Inst<U64>(Opcode::FPU32ToDouble, a, Imm1(round_to_nearest));
 }
 
-U64 IREmitter::FPU64ToDouble(const U64& a, bool round_to_nearest, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U64 IREmitter::FPU64ToDouble(const U64& a, bool round_to_nearest, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     return Inst<U64>(Opcode::FPU64ToDouble, a, Imm1(round_to_nearest));
 }
 
-U32 IREmitter::FPU64ToSingle(const U64& a, bool round_to_nearest, bool fpscr_controlled) {
-    ASSERT(fpscr_controlled);
+U32 IREmitter::FPU64ToSingle(const U64& a, bool round_to_nearest, bool fpcr_controlled) {
+    ASSERT(fpcr_controlled);
     return Inst<U32>(Opcode::FPU64ToSingle, a, Imm1(round_to_nearest));
 }
 
