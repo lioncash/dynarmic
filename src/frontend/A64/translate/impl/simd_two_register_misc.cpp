@@ -217,6 +217,21 @@ bool TranslatorVisitor::FCMLT_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FPCompareAgainstZero(*this, Q, sz, Vn, Vd, ComparisonType::LT);
 }
 
+bool TranslatorVisitor::FRSQRTE_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    if (sz && !Q) {
+        return ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = sz ? 64 : 32;
+
+    const IR::U128 operand = V(datasize, Vn);
+    const IR::U128 result = ir.FPVectorRSqrtEstimate(esize, operand);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FNEG_1(bool Q, Vec Vn, Vec Vd) {
     const size_t datasize = Q ? 128 : 64;
 

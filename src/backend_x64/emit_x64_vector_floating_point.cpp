@@ -10,7 +10,10 @@
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
 #include "common/bit_util.h"
+#include "common/fp/fpcr.h"
+#include "common/fp/op.h"
 #include "common/fp/util.h"
+#include "common/mp.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
 
@@ -222,6 +225,31 @@ static void EmitVectorOperation64(BlockOfCode& code, EmitContext& ctx, IR::Inst*
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+template <typename Lambda>
+inline void EmitOneArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+    const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
+    
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
+    ctx.reg_alloc.EndOfAllocScope();
+    ctx.reg_alloc.HostCall(nullptr);
+
+    constexpr u32 stack_space = 2 * 16;
+    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
+    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+    code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+
+    code.movaps(xword[code.ABI_PARAM2], arg1);
+    code.CallFunction(fn);
+    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+
+    code.add(rsp, stack_space + ABI_SHADOW_SPACE);
+
+    ctx.reg_alloc.DefineValue(inst, xmm0);
+}
+
 void EmitX64::EmitFPVectorAbs16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -363,6 +391,23 @@ void EmitX64::EmitFPVectorPairedAddLower64(EmitContext& ctx, IR::Inst* inst) {
         code.punpcklqdq(result, xmm_b); 
         code.haddpd(result, zero);
     });
+}
+
+template<typename FPT>
+static void EmitRSqrtEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallback(code, ctx, inst, [](VectorArray<FPT>& result, const VectorArray<FPT>& operand, FP::FPCR fpcr, FP::FPSR& fpsr) {
+        for (size_t i = 0; i < result.size(); i++) {
+            result[i] = FP::FPRSqrtEstimate<FPT>(operand[i], fpcr, fpsr);
+        }
+    });
+}
+
+void EmitX64::EmitFPVectorRSqrtEstimate32(EmitContext& ctx, IR::Inst* inst) {
+    EmitRSqrtEstimate<u32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPVectorRSqrtEstimate64(EmitContext& ctx, IR::Inst* inst) {
+    EmitRSqrtEstimate<u64>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPVectorS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
