@@ -69,15 +69,15 @@ inline bool operator<(u128 a, u128 b) {
 }
 
 inline bool operator>(u128 a, u128 b) {
-    return std::tie(a.upper, a.lower) > std::tie(b.upper, b.lower);
+    return operator<(b, a);
 }
 
 inline bool operator<=(u128 a, u128 b) {
-    return std::tie(a.upper, a.lower) <= std::tie(b.upper, b.lower);
+    return !operator>(a, b);
 }
 
 inline bool operator>=(u128 a, u128 b) {
-    return std::tie(a.upper, a.lower) >= std::tie(b.upper, b.lower);
+    return !operator<(a, b);
 }
 
 inline bool operator==(u128 a, u128 b) {
@@ -85,7 +85,7 @@ inline bool operator==(u128 a, u128 b) {
 }
 
 inline bool operator!=(u128 a, u128 b) {
-    return std::tie(a.upper, a.lower) != std::tie(b.upper, b.lower);
+    return !operator==(a, b);
 }
 
 u128 operator<<(u128 operand, int amount);
