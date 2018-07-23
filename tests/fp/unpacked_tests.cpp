@@ -75,3 +75,15 @@ TEST_CASE("FPUnpack<->FPRound Round-trip Tests", "[fp]") {
         REQUIRE(input == output);
     }
 }
+
+TEST_CASE("FPRound (near zero, round to posinf)", "[fp]") {
+    const FPUnpacked input = {false, -353, 0x0a98d25ace5b2000};
+
+    FPSR fpsr;
+    FPCR fpcr;
+    fpcr.RMode(RoundingMode::TowardsPlusInfinity);
+
+    const u32 output = FPRound<u32>(input, fpcr, fpsr);
+
+    REQUIRE(output == 0x00000001);
+}

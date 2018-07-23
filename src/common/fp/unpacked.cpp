@@ -6,6 +6,7 @@
 
 #include "common/fp/fpsr.h"
 #include "common/fp/info.h"
+#include "common/fp/mantissa_util.h"
 #include "common/fp/process_exception.h"
 #include "common/fp/rounding_mode.h"
 #include "common/fp/unpacked.h"
@@ -55,11 +56,11 @@ template std::tuple<FPType, bool, FPUnpacked> FPUnpack<u32>(u32 op, FPCR fpcr, F
 template std::tuple<FPType, bool, FPUnpacked> FPUnpack<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
 
 template<size_t F>
-std::tuple<bool, int, u64, u64> Normalize(FPUnpacked op) {
+std::tuple<bool, int, u64, ResidualError> Normalize(FPUnpacked op, int extra_right_shift = 0) {
     const int highest_set_bit = Common::HighestSetBit(op.mantissa);
-    const int shift_amount = highest_set_bit - static_cast<int>(F);
+    const int shift_amount = highest_set_bit - static_cast<int>(F) + extra_right_shift;
     const u64 mantissa = Safe::LogicalShiftRight(op.mantissa, shift_amount);
-    const u64 error = Safe::LogicalShiftRightDouble(op.mantissa, static_cast<u64>(0), shift_amount);
+    const ResidualError error = ResidualErrorOnRightShift(op.mantissa, shift_amount);
     const int exponent = op.exponent + highest_set_bit;
     return std::make_tuple(op.sign, exponent, mantissa, error);
 }
@@ -83,28 +84,26 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
 
     int biased_exp = std::max<int>(exponent - minimum_exp + 1, 0);
     if (biased_exp == 0) {
-        error = Safe::LogicalShiftRightDouble(mantissa, error, minimum_exp - exponent);
-        mantissa = Safe::LogicalShiftRight(mantissa, minimum_exp - exponent);
+        std::tie(sign, exponent, mantissa, error) = Normalize<F>(op, minimum_exp - exponent);
     }
 
-    if (biased_exp == 0 && (error != 0 || fpcr.UFE())) {
+    if (biased_exp == 0 && (error != ResidualError::Zero || fpcr.UFE())) {
         FPProcessException(FPExc::Underflow, fpcr, fpsr);
     }
 
     bool round_up = false, overflow_to_inf = false;
     switch (rounding) {
     case RoundingMode::ToNearest_TieEven: {
-        constexpr u64 half = static_cast<u64>(1) << (Common::BitSize<u64>() - 1);
-        round_up = (error > half) || (error == half && Common::Bit<0>(mantissa));
+        round_up = (error > ResidualError::Half) || (error == ResidualError::Half && Common::Bit<0>(mantissa));
         overflow_to_inf = true;
         break;
     }
     case RoundingMode::TowardsPlusInfinity:
-        round_up = error != 0 && !sign;
+        round_up = error != ResidualError::Zero && !sign;
         overflow_to_inf = !sign;
         break;
     case RoundingMode::TowardsMinusInfinity:
-        round_up = error != 0 && sign;
+        round_up = error != ResidualError::Zero && sign;
         overflow_to_inf = sign;
         break;
     default:
@@ -128,7 +127,7 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
         }
     }
 
-    if (error != 0 && rounding == RoundingMode::ToOdd) {
+    if (error != ResidualError::Zero && rounding == RoundingMode::ToOdd) {
         mantissa = Common::ModifyBit<0>(mantissa, true);
     }
 
@@ -152,7 +151,7 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
             result += biased_exp;
             result <<= F;
             result |= static_cast<FPT>(mantissa) & FPInfo<FPT>::mantissa_mask;
-            if (error != 0) {
+            if (error != ResidualError::Zero) {
                 FPProcessException(FPExc::Inexact, fpcr, fpsr);
             }
         }
@@ -167,7 +166,7 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
             result += biased_exp;
             result <<= F;
             result |= static_cast<FPT>(mantissa) & FPInfo<FPT>::mantissa_mask;
-            if (error != 0) {
+            if (error != ResidualError::Zero) {
                 FPProcessException(FPExc::Inexact, fpcr, fpsr);
             }
         }
