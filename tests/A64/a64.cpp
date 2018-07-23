@@ -371,3 +371,22 @@ TEST_CASE("A64: FNMSUB 2", "[a64]") {
 
     REQUIRE(jit.GetVector(14) == Vector{0x0000000080045284, 0x0000000000000000});
 }
+
+TEST_CASE("A64: FMADD", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x1f5e0e4a; // FMADD D10, D18, D30, D3
+    env.code_mem[1] = 0x14000000; // B .
+
+    jit.SetPC(0);
+    jit.SetVector(18, {0x8000007600800000, 0x7ff812347f800000});
+    jit.SetVector(30, {0xff984a3700000000, 0xe73a513480800000});
+    jit.SetVector(3, {0x3f000000ff7fffff, 0x8139843780000000});
+    jit.SetFpcr(0x00400000);
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetVector(10) == Vector{0x3f059921bf0dbfff, 0x0000000000000000});
+}

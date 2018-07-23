@@ -112,6 +112,16 @@ u128 StickyLogicalShiftRight(u128 operand, int amount) {
         return result;
     }
 
+    if (amount == 64) {
+        u128 result;
+        result.lower = operand.upper;
+        // Sticky bit
+        if (operand.lower != 0) {
+            result.lower |= 1;
+        }
+        return result;
+    }
+
     if (amount < 128) {
         u128 result;
         result.lower = operand.upper >> (amount - 64);
