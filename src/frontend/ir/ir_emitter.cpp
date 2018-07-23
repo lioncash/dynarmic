@@ -1463,6 +1463,13 @@ U32U64 IREmitter::FPRSqrtEstimate(const U32U64& a) {
     return Inst<U64>(Opcode::FPRSqrtEstimate64, a);
 }
 
+U32U64 IREmitter::FPRSqrtStepFused(const U32U64& a, const U32U64& b) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPRSqrtStepFused32, a, b);
+    }
+    return Inst<U64>(Opcode::FPRSqrtStepFused64, a, b);
+}
+
 U32U64 IREmitter::FPSqrt(const U32U64& a) {
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPSqrt32, a);

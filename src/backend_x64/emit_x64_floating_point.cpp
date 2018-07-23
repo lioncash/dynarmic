@@ -912,6 +912,23 @@ void EmitX64::EmitFPRSqrtEstimate64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPRSqrtEstimate<u64>(code, ctx, inst);
 }
 
+template<typename FPT>
+static void EmitFPRSqrtStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.HostCall(inst, args[0], args[1]);
+    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+    code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.CallFunction(&FP::FPRSqrtStepFused<FPT>);
+}
+
+void EmitX64::EmitFPRSqrtStepFused32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRSqrtStepFused<u32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPRSqrtStepFused64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRSqrtStepFused<u64>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
     FPTwoOp32(code, ctx, inst, &Xbyak::CodeGenerator::sqrtss);
 }
