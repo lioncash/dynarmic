@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstring>
+#include <tuple>
 #include <type_traits>
 
 #include "common/bit_util.h"
@@ -49,6 +50,30 @@ inline u128 operator-(u128 a, u128 b) {
     result.lower = a.lower - b.lower;
     result.upper = a.upper - b.upper - (a.lower < result.lower);
     return result;
+}
+
+inline bool operator<(u128 a, u128 b) {
+    return std::tie(a.upper, a.lower) < std::tie(b.upper, b.lower);
+}
+
+inline bool operator>(u128 a, u128 b) {
+    return std::tie(a.upper, a.lower) > std::tie(b.upper, b.lower);
+}
+
+inline bool operator<=(u128 a, u128 b) {
+    return std::tie(a.upper, a.lower) <= std::tie(b.upper, b.lower);
+}
+
+inline bool operator>=(u128 a, u128 b) {
+    return std::tie(a.upper, a.lower) >= std::tie(b.upper, b.lower);
+}
+
+inline bool operator==(u128 a, u128 b) {
+    return std::tie(a.upper, a.lower) == std::tie(b.upper, b.lower);
+}
+
+inline bool operator!=(u128 a, u128 b) {
+    return std::tie(a.upper, a.lower) != std::tie(b.upper, b.lower);
 }
 
 u128 operator<<(u128 operand, int amount);
