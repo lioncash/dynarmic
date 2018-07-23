@@ -34,7 +34,7 @@ struct u128 {
     u64 upper = 0;
 
     template<size_t bit_position>
-    bool Bit() {
+    bool Bit() const {
         static_assert(bit_position < 128);
         if constexpr (bit_position < 64) {
             return Common::Bit<bit_position>(lower);
