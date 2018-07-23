@@ -49,6 +49,60 @@ bool LongAdd(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vn, Vec Vd, Signedne
 
     return true;
 }
+
+enum class MinMaxOperation {
+    Max,
+    MaxNumeric,
+    Min,
+    MinNumeric,
+};
+
+bool FPMinMax(TranslatorVisitor& v, bool Q, bool sz, Vec Vn, Vec Vd, MinMaxOperation operation) {
+    if (!Q || sz) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 32;
+    const size_t datasize = 128;
+    const size_t elements = datasize / esize;
+
+    const IR::U128 operand = v.V(datasize, Vn);
+
+    const auto op = [&](const IR::U32U64& lhs, const IR::U32U64& rhs) {
+        switch (operation) {
+        case MinMaxOperation::Max:
+            return v.ir.FPMax(lhs, rhs, true);
+        case MinMaxOperation::MaxNumeric:
+            return v.ir.FPMaxNumeric(lhs, rhs, true);
+        case MinMaxOperation::Min:
+            return v.ir.FPMin(lhs, rhs, true);
+        case MinMaxOperation::MinNumeric:
+            return v.ir.FPMinNumeric(lhs, rhs, true);
+        default:
+            UNREACHABLE();
+            return IR::U32U64{};
+        }
+    };
+
+    const auto reduce = [&](size_t start, size_t end) {
+        IR::U32U64 result = v.ir.VectorGetElement(esize, operand, start);
+
+        for (size_t i = start + 1; i < end; i++) {
+            const IR::U32U64 element = v.ir.VectorGetElement(esize, operand, i);
+ 
+            result = op(result, element);
+        }
+
+        return result;
+    };
+
+    const IR::U32U64 hi = reduce(elements / 2, elements);
+    const IR::U32U64 lo = reduce(0, elements / 2);
+    const IR::U32U64 result = op(lo, hi);
+
+    v.V_scalar(esize, Vd, result);
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::ADDV(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
@@ -80,6 +134,22 @@ bool TranslatorVisitor::ADDV(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     }
 
     return true;
+}
+
+bool TranslatorVisitor::FMAXNMV_2(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FPMinMax(*this, Q, sz, Vn, Vd, MinMaxOperation::MaxNumeric);
+}
+
+bool TranslatorVisitor::FMAXV_2(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FPMinMax(*this, Q, sz, Vn, Vd, MinMaxOperation::Max);
+}
+
+bool TranslatorVisitor::FMINNMV_2(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FPMinMax(*this, Q, sz, Vn, Vd, MinMaxOperation::MinNumeric);
+}
+
+bool TranslatorVisitor::FMINV_2(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FPMinMax(*this, Q, sz, Vn, Vd, MinMaxOperation::Min);
 }
 
 bool TranslatorVisitor::SADDLV(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
