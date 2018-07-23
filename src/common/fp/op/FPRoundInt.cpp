@@ -77,7 +77,7 @@ u64 FPRoundInt(FPT op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr)
 
     const FPT result = int_result == 0
                      ? FPInfo<FPT>::Zero(sign)
-                     : FPRound<FPT>(FPUnpacked<u64>{new_sign, 0, abs_int_result}, fpcr, RoundingMode::TowardsZero, fpsr);
+                     : FPRound<FPT>(FPUnpacked{new_sign, 0, abs_int_result}, fpcr, RoundingMode::TowardsZero, fpsr);
 
     if (error != ResidualError::Zero && exact) {
         FPProcessException(FPExc::Inexact, fpcr, fpsr);

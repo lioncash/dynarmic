@@ -14,7 +14,7 @@
 namespace Dynarmic::FP {
 
 template<typename FPT>
-std::tuple<FPType, bool, FPUnpacked<u64>> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
+std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
     constexpr size_t sign_bit = FPInfo<FPT>::exponent_width + FPInfo<FPT>::explicit_mantissa_width;
     constexpr size_t exponent_high_bit = FPInfo<FPT>::exponent_width + FPInfo<FPT>::explicit_mantissa_width - 1;
     constexpr size_t exponent_low_bit = FPInfo<FPT>::explicit_mantissa_width;
@@ -51,21 +51,21 @@ std::tuple<FPType, bool, FPUnpacked<u64>> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr
     return {FPType::Nonzero, sign, {sign, exp, frac}};
 }
 
-template std::tuple<FPType, bool, FPUnpacked<u64>> FPUnpack<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
-template std::tuple<FPType, bool, FPUnpacked<u64>> FPUnpack<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
+template std::tuple<FPType, bool, FPUnpacked> FPUnpack<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
+template std::tuple<FPType, bool, FPUnpacked> FPUnpack<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
 
-template<size_t F, typename MantissaT>
-std::tuple<bool, int, MantissaT, MantissaT> Normalize(FPUnpacked<MantissaT> op) {
+template<size_t F>
+std::tuple<bool, int, u64, u64> Normalize(FPUnpacked op) {
     const int highest_set_bit = Common::HighestSetBit(op.mantissa);
     const int shift_amount = highest_set_bit - static_cast<int>(F);
-    const MantissaT mantissa = Safe::LogicalShiftRight(op.mantissa, shift_amount);
-    const MantissaT error = Safe::LogicalShiftRightDouble(op.mantissa, static_cast<MantissaT>(0), shift_amount);
+    const u64 mantissa = Safe::LogicalShiftRight(op.mantissa, shift_amount);
+    const u64 error = Safe::LogicalShiftRightDouble(op.mantissa, static_cast<u64>(0), shift_amount);
     const int exponent = op.exponent + highest_set_bit;
     return std::make_tuple(op.sign, exponent, mantissa, error);
 }
 
-template<typename FPT, typename MantissaT>
-FPT FPRoundBase(FPUnpacked<MantissaT> op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
+template<typename FPT>
+FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
     ASSERT(op.mantissa != 0);
     ASSERT(rounding != RoundingMode::ToNearest_TieAwayFromZero);
 
@@ -94,7 +94,7 @@ FPT FPRoundBase(FPUnpacked<MantissaT> op, FPCR fpcr, RoundingMode rounding, FPSR
     bool round_up = false, overflow_to_inf = false;
     switch (rounding) {
     case RoundingMode::ToNearest_TieEven: {
-        constexpr MantissaT half = static_cast<MantissaT>(1) << (Common::BitSize<MantissaT>() - 1);
+        constexpr u64 half = static_cast<u64>(1) << (Common::BitSize<u64>() - 1);
         round_up = (error > half) || (error == half && Common::Bit<0>(mantissa));
         overflow_to_inf = true;
         break;
@@ -175,7 +175,7 @@ FPT FPRoundBase(FPUnpacked<MantissaT> op, FPCR fpcr, RoundingMode rounding, FPSR
     return result;
 }
 
-template u32 FPRoundBase<u32, u64>(FPUnpacked<u64> op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
-template u64 FPRoundBase<u64, u64>(FPUnpacked<u64> op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
+template u32 FPRoundBase<u32>(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
+template u64 FPRoundBase<u64>(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
 
 } // namespace Dynarmic::FP

@@ -38,12 +38,12 @@ TEST_CASE("ResidualErrorOnRightShift", "[fp]") {
 
 TEST_CASE("ResidualErrorOnRightShift Randomized", "[fp]") {
     for (size_t test = 0; test < 100000; test++) {
-        const u32 mantissa = RandInt<u32>(0, 0xFFFFFFFF);
+        const u64 mantissa = Common::SignExtend<32, u64>(RandInt<u32>(0, 0xFFFFFFFF));
         const int shift = RandInt<int>(-60, 60);
 
         const ResidualError result = ResidualErrorOnRightShift(mantissa, shift);
 
-        const u64 calculated_error = Safe::ArithmeticShiftRightDouble(Common::SignExtend<32, u64>(mantissa), u64(0), shift);
+        const u64 calculated_error = Safe::ArithmeticShiftRightDouble(mantissa, u64(0), shift);
         const ResidualError expected_result = [&]{
             constexpr u64 half_error = 0x8000'0000'0000'0000ull;
             if (calculated_error == 0) {

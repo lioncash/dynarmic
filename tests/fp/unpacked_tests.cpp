@@ -19,7 +19,7 @@ using namespace Dynarmic;
 using namespace Dynarmic::FP;
 
 TEST_CASE("FPUnpack Tests", "[fp]") {
-    const static std::vector<std::tuple<u32, std::tuple<FPType, bool, FPUnpacked<u64>>, u32>> test_cases {
+    const static std::vector<std::tuple<u32, std::tuple<FPType, bool, FPUnpacked>, u32>> test_cases {
         {0x00000000, {FPType::Zero, false, {false, 0, 0}}, 0},
         {0x7F800000, {FPType::Infinity, false, {false, 1000000, 1}}, 0},
         {0xFF800000, {FPType::Infinity, true, {true, 1000000, 1}}, 0},
@@ -43,7 +43,7 @@ TEST_CASE("FPUnpack Tests", "[fp]") {
 }
 
 TEST_CASE("FPRound Tests", "[fp]") {
-    const static std::vector<std::tuple<u32, std::tuple<FPType, bool, FPUnpacked<u64>>, u32>> test_cases {
+    const static std::vector<std::tuple<u32, std::tuple<FPType, bool, FPUnpacked>, u32>> test_cases {
         {0x7F800000, {FPType::Infinity, false, {false, 1000000, 1}}, 0x14},
         {0xFF800000, {FPType::Infinity, true, {true, 1000000, 1}}, 0x14},
         {0x00000001, {FPType::Nonzero, false, {false, -149, 1}}, 0}, // Smallest single precision denormal is 2^-149.

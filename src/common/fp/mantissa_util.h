@@ -18,20 +18,19 @@ enum class ResidualError {
     GreaterThanHalf,
 };
 
-template<typename MantissaT>
-ResidualError ResidualErrorOnRightShift(MantissaT mantissa, int shift_amount) {
+inline ResidualError ResidualErrorOnRightShift(u64 mantissa, int shift_amount) {
     if (shift_amount <= 0 || mantissa == 0) {
         return ResidualError::Zero;
     }
 
-    if (shift_amount > static_cast<int>(Common::BitSize<MantissaT>())) {
+    if (shift_amount > static_cast<int>(Common::BitSize<u64>())) {
         return Common::MostSignificantBit(mantissa) ? ResidualError::GreaterThanHalf : ResidualError::LessThanHalf;
     }
 
     const size_t half_bit_position = static_cast<size_t>(shift_amount - 1);
-    const MantissaT half = static_cast<MantissaT>(1) << half_bit_position;
-    const MantissaT error_mask = Common::Ones<MantissaT>(static_cast<size_t>(shift_amount));
-    const MantissaT error = mantissa & error_mask;
+    const u64 half = static_cast<u64>(1) << half_bit_position;
+    const u64 error_mask = Common::Ones<u64>(static_cast<size_t>(shift_amount));
+    const u64 error = mantissa & error_mask;
 
     if (error == 0) {
         return ResidualError::Zero;
