@@ -766,6 +766,23 @@ void EmitX64::EmitFPMul64(EmitContext& ctx, IR::Inst* inst) {
     FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::mulsd);
 }
 
+template<typename FPT>
+static void EmitFPMulAddFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.HostCall(inst, args[0], args[1], args[2]);
+    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
+#ifdef _WIN32
+    code.sub(rsp, 16 + ABI_SHADOW_SPACE);
+    code.lea(rax, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.mov(qword[rsp + ABI_SHADOW_SPACE], rax);
+    code.CallFunction(&FP::FPMulAdd<FPT>);
+    code.add(rsp, 16 + ABI_SHADOW_SPACE);
+#else
+    code.lea(code.ABI_PARAM5, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.CallFunction(&FP::FPMulAdd<FPT>);
+#endif
+}
+
 void EmitX64::EmitFPMulAdd32(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
         FPFourOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
@@ -774,11 +791,7 @@ void EmitX64::EmitFPMulAdd32(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    // TODO: Improve accuracy.
-    FPFourOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
-        code.mulss(operand2, operand3);
-        code.addss(result, operand2);
-    });
+    EmitFPMulAddFallback<u32>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPMulAdd64(EmitContext& ctx, IR::Inst* inst) {
@@ -789,11 +802,7 @@ void EmitX64::EmitFPMulAdd64(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    // TODO: Improve accuracy.
-    FPFourOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
-        code.mulsd(operand2, operand3);
-        code.addsd(result, operand2);
-    });
+    EmitFPMulAddFallback<u64>(code, ctx, inst);
 }
 
 static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, size_t fsize) {

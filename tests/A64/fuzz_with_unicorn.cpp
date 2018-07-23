@@ -77,8 +77,6 @@ static u32 GenRandomInst(u64 pc, bool is_last_inst) {
             "LDLAR",
             // Dynarmic and QEMU currently differ on how the exclusive monitor's address range works.
             "STXR", "STLXR", "STXP", "STLXP", "LDXR", "LDAXR", "LDXP", "LDAXP",
-            // Approximation. Produces inaccurate results.
-            "FMADD_float", "FMSUB_float", "FNMADD_float", "FNMSUB_float",
         };
 
         for (const auto& [fn, bitstring] : list) {
@@ -116,8 +114,6 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
         const std::vector<std::string> do_not_test {
             // QEMU's implementation of FCVT is incorrect
             "FCVT_float",
-            // Approximation. Produces incorrect results.
-            "FMADD_float", "FMSUB_float", "FNMADD_float", "FNMSUB_float",
             // Requires investigation (temporarily disabled).
             "FDIV_1", "FDIV_2",
         };

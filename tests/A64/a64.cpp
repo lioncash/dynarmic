@@ -334,3 +334,40 @@ TEST_CASE("A64: CNTPCT_EL0", "[a64]") {
 
     REQUIRE(jit.GetRegister(3) == 7);
 }
+
+TEST_CASE("A64: FNMSUB 1", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x1f618a9c; // FNMSUB D28, D20, D1, D2
+    env.code_mem[1] = 0x14000000; // B .
+
+    jit.SetPC(0);
+    jit.SetVector(20, {0xe73a51346164bd6c, 0x8080000000002b94});
+    jit.SetVector(1, {0xbf8000007fffffff, 0xffffffff00002b94});
+    jit.SetVector(2, {0x0000000000000000, 0xc79b271e3f000000});
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetVector(28) == Vector{0x66ca513533ee6076, 0x0000000000000000});
+}
+
+TEST_CASE("A64: FNMSUB 2", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x1f2ab88e; // FNMSUB S14, S4, S10, S14
+    env.code_mem[1] = 0x14000000; // B .
+
+    jit.SetPC(0);
+    jit.SetVector(4, {0x3c9623b101398437, 0x7ff0abcd0ba98d27});
+    jit.SetVector(10, {0xffbfffff3eaaaaab, 0x3f0000003f8147ae});
+    jit.SetVector(14, {0x80000000007fffff, 0xe73a513400000000});
+    jit.SetFpcr(0x00400000);
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetVector(14) == Vector{0x0000000080045284, 0x0000000000000000});
+}
