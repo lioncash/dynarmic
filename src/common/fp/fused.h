@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "common/fp/unpacked.h"
-
 namespace Dynarmic::FP {
+
+struct FPUnpacked;
 
 FPUnpacked FusedMulAdd(FPUnpacked addend, FPUnpacked op1, FPUnpacked op2);
 
