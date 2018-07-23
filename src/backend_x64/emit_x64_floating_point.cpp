@@ -147,7 +147,8 @@ static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.SwitchToNearCode();
 }
 
-static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end) {
+template<typename NaNHandler>
+static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end, NaNHandler nan_handler) {
     Xbyak::Label nan;
 
     code.ucomiss(a, b);
@@ -165,9 +166,7 @@ static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.movd(code.ABI_PARAM1.cvt32(), a);
     code.movd(code.ABI_PARAM2.cvt32(), b);
     code.movd(code.ABI_PARAM3.cvt32(), c);
-    code.CallFunction(static_cast<u32(*)(u32, u32, u32)>([](u32 a, u32 b, u32 c) -> u32 {
-        return *FP::ProcessNaNs(a, b, c);
-    }));
+    code.CallFunction(static_cast<u32(*)(u32, u32, u32)>(nan_handler));
     code.movd(a, code.ABI_RETURN.cvt32());
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
     code.add(rsp, 8);
@@ -214,7 +213,8 @@ static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.SwitchToNearCode();
 }
 
-static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end) {
+template<typename NaNHandler>
+static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end, NaNHandler nan_handler) {
     Xbyak::Label nan;
 
     code.ucomisd(a, b);
@@ -229,9 +229,7 @@ static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.movq(code.ABI_PARAM1, a);
     code.movq(code.ABI_PARAM2, b);
     code.movq(code.ABI_PARAM3, c);
-    code.CallFunction(static_cast<u64(*)(u64, u64, u64)>([](u64 a, u64 b, u64 c) -> u64 {
-        return *FP::ProcessNaNs(a, b, c);
-    }));
+    code.CallFunction(static_cast<u64(*)(u64, u64, u64)>(nan_handler));
     code.movq(a, code.ABI_RETURN);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
     code.add(rsp, 8);
@@ -437,8 +435,8 @@ static void FPTwoOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Funct
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename Function>
-static void FPFourOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
+template <typename Function, typename NaNHandler>
+static void FPFourOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, NaNHandler nan_handler) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
@@ -454,7 +452,7 @@ static void FPFourOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Func
         DenormalsAreZero32(code, operand3, gpr_scratch);
     }
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        PreProcessNaNs32(code, result, operand2, operand3, end);
+        PreProcessNaNs32(code, result, operand2, operand3, end, nan_handler);
     }
     fn(result, operand2, operand3);
     if (ctx.FPSCR_FTZ()) {
@@ -470,8 +468,8 @@ static void FPFourOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Func
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename Function>
-static void FPFourOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
+template <typename Function, typename NaNHandler>
+static void FPFourOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, NaNHandler nan_handler) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
@@ -487,7 +485,7 @@ static void FPFourOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Func
         DenormalsAreZero64(code, operand3, gpr_scratch);
     }
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        PreProcessNaNs64(code, result, operand2, operand3, end);
+        PreProcessNaNs64(code, result, operand2, operand3, end, nan_handler);
     }
     fn(result, operand2, operand3);
     if (ctx.FPSCR_FTZ()) {
@@ -787,6 +785,11 @@ void EmitX64::EmitFPMulAdd32(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
         FPFourOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
             code.vfmadd231ss(result, operand2, operand3);
+        }, [](u32 a, u32 b, u32 c) -> u32 {
+            if (FP::IsQNaN(a) && ((FP::IsInf(b) && FP::IsZero(c)) || (FP::IsZero(b) && FP::IsInf(c)))) {
+                return f32_nan;
+            }
+            return *FP::ProcessNaNs(a, b, c);
         });
         return;
     }
@@ -798,6 +801,11 @@ void EmitX64::EmitFPMulAdd64(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
         FPFourOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
             code.vfmadd231sd(result, operand2, operand3);
+        }, [](u64 a, u64 b, u64 c) -> u64 {
+            if (FP::IsQNaN(a) && ((FP::IsInf(b) && FP::IsZero(c)) || (FP::IsZero(b) && FP::IsInf(c)))) {
+                return f64_nan;
+            }
+            return *FP::ProcessNaNs(a, b, c);
         });
         return;
     }

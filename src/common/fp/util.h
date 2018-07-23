@@ -11,6 +11,16 @@
 
 namespace Dynarmic::FP {
 
+/// Is 32-bit floating point value a zero?
+constexpr bool IsZero(u32 value) {
+    return (value & 0x7fffffff) == 0;
+}
+
+/// Is 32-bit floating point value an infinity?
+constexpr bool IsInf(u32 value) {
+    return (value & 0x7fffffff) == 0x7f800000;
+}
+
 /// Is 32-bit floating point value a QNaN?
 constexpr bool IsQNaN(u32 value) {
     return (value & 0x7fc00000) == 0x7fc00000;
@@ -58,6 +68,16 @@ inline boost::optional<u32> ProcessNaNs(u32 a, u32 b, u32 c) {
         return c;
     }
     return boost::none;
+}
+
+/// Is 64-bit floating point value a zero?
+constexpr bool IsZero(u64 value) {
+    return (value & 0x7FFF'FFFF'FFFF'FFFF) == 0;
+}
+
+/// Is 64-bit floating point value an infinity?
+constexpr bool IsInf(u64 value) {
+    return (value & 0x7FFF'FFFF'FFFF'FFFF) == 0x7FF0'0000'0000'000;
 }
 
 /// Is 64-bit floating point value a QNaN?
