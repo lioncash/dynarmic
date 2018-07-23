@@ -213,12 +213,26 @@ bool Inst::ReadsFromFPSCR() const {
     case Opcode::FPCompare64:
     case Opcode::FPDiv32:
     case Opcode::FPDiv64:
+    case Opcode::FPMax32:
+    case Opcode::FPMax64:
+    case Opcode::FPMaxNumeric32:
+    case Opcode::FPMaxNumeric64:
+    case Opcode::FPMin32:
+    case Opcode::FPMin64:
+    case Opcode::FPMinNumeric32:
+    case Opcode::FPMinNumeric64:
     case Opcode::FPMul32:
     case Opcode::FPMul64:
+    case Opcode::FPMulAdd32:
+    case Opcode::FPMulAdd64:
     case Opcode::FPNeg32:
     case Opcode::FPNeg64:
     case Opcode::FPSqrt32:
     case Opcode::FPSqrt64:
+    case Opcode::FPRoundInt32:
+    case Opcode::FPRoundInt64:
+    case Opcode::FPRSqrtEstimate32:
+    case Opcode::FPRSqrtEstimate64:
     case Opcode::FPSub32:
     case Opcode::FPSub64:
         return true;
@@ -242,12 +256,26 @@ bool Inst::WritesToFPSCR() const {
     case Opcode::FPCompare64:
     case Opcode::FPDiv32:
     case Opcode::FPDiv64:
+    case Opcode::FPMax32:
+    case Opcode::FPMax64:
+    case Opcode::FPMaxNumeric32:
+    case Opcode::FPMaxNumeric64:
+    case Opcode::FPMin32:
+    case Opcode::FPMin64:
+    case Opcode::FPMinNumeric32:
+    case Opcode::FPMinNumeric64:
     case Opcode::FPMul32:
     case Opcode::FPMul64:
+    case Opcode::FPMulAdd32:
+    case Opcode::FPMulAdd64:
     case Opcode::FPNeg32:
     case Opcode::FPNeg64:
     case Opcode::FPSqrt32:
     case Opcode::FPSqrt64:
+    case Opcode::FPRoundInt32:
+    case Opcode::FPRoundInt64:
+    case Opcode::FPRSqrtEstimate32:
+    case Opcode::FPRSqrtEstimate64:
     case Opcode::FPSub32:
     case Opcode::FPSub64:
         return true;
