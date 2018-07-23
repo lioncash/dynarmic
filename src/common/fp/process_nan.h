@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <boost/optional.hpp>
+
 namespace Dynarmic::FP {
 
 class FPCR;
@@ -14,5 +16,8 @@ enum class FPType;
 
 template<typename FPT>
 FPT FPProcessNaN(FPType type, FPT op, FPCR fpcr, FPSR& fpsr);
+
+template<typename FPT>
+boost::optional<FPT> FPProcessNaNs3(FPType type1, FPType type2, FPType type3, FPT op1, FPT op2, FPT op3, FPCR fpcr, FPSR& fpsr);
 
 } // namespace Dynarmic::FP 
