@@ -48,6 +48,8 @@ static_assert(Common::BitSize<u128>() == 128);
 static_assert(std::is_standard_layout_v<u128>);
 static_assert(std::is_trivially_copyable_v<u128>);
 
+u128 Multiply64To128(u64 a, u64 b);
+
 inline u128 operator+(u128 a, u128 b) {
     u128 result;
     result.lower = a.lower + b.lower;
