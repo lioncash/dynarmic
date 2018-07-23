@@ -92,4 +92,43 @@ u128 operator>>(u128 operand, int amount) {
     return {};
 }
 
+u128 StickyLogicalShiftRight(u128 operand, int amount) {
+    if (amount < 0) {
+        return operand << -amount;
+    }
+
+    if (amount == 0) {
+        return operand;
+    }
+
+    if (amount < 64) {
+        u128 result;
+        result.lower = (operand.lower >> amount) | (operand.upper << (64 - amount));
+        result.upper = (operand.upper >> amount);
+        // Sticky bit
+        if ((operand.lower << (64 - amount)) != 0) {
+            result.lower |= 1;
+        }
+        return result;
+    }
+
+    if (amount < 128) {
+        u128 result;
+        result.lower = operand.upper >> (amount - 64);
+        // Sticky bit
+        if (operand.lower != 0) {
+            result.lower |= 1;
+        }
+        if ((operand.upper << (128 - amount)) != 0) {
+            result.lower |= 1;
+        }
+        return result;
+    }
+
+    if (operand.lower != 0 || operand.upper != 0) {
+        return u128(1);
+    }
+    return {};
+}
+
 } // namespace Dynarmic

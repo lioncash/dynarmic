@@ -91,4 +91,8 @@ inline bool operator!=(u128 a, u128 b) {
 u128 operator<<(u128 operand, int amount);
 u128 operator>>(u128 operand, int amount);
 
+/// LSB is a "sticky-bit".
+/// If a 1 is shifted off, the LSB would be set.
+u128 StickyLogicalShiftRight(u128 operand, int amount);
+
 } // namespace Dynarmic
