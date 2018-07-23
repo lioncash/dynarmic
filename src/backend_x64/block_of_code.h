@@ -108,6 +108,10 @@ public:
     static const Xbyak::Reg64 ABI_PARAM2;
     static const Xbyak::Reg64 ABI_PARAM3;
     static const Xbyak::Reg64 ABI_PARAM4;
+#ifndef _WIN32
+    static const Xbyak::Reg64 ABI_PARAM5;
+    static const Xbyak::Reg64 ABI_PARAM6;
+#endif
 
     bool DoesCpuSupport(Xbyak::util::Cpu::Type type) const;
 
