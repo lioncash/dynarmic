@@ -6,7 +6,10 @@
 
 #pragma once
 
-#include "common/fp/op/FPMulAdd.h"
-#include "common/fp/op/FPRoundInt.h"
-#include "common/fp/op/FPRSqrtEstimate.h"
-#include "common/fp/op/FPToFixed.h"
+#include "common/fp/unpacked.h"
+
+namespace Dynarmic::FP {
+
+FPUnpacked FusedMulAdd(FPUnpacked addend, FPUnpacked op1, FPUnpacked op2);
+
+} // namespace Dynarmic::FP

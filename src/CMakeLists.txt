@@ -18,9 +18,13 @@ add_library(dynarmic
     common/crc32.h
     common/fp/fpcr.h
     common/fp/fpsr.h
+    common/fp/fused.cpp
+    common/fp/fused.h
     common/fp/info.h
     common/fp/mantissa_util.h
     common/fp/op.h
+    common/fp/op/FPMulAdd.cpp
+    common/fp/op/FPMulAdd.h
     common/fp/op/FPRoundInt.cpp
     common/fp/op/FPRoundInt.h
     common/fp/op/FPRSqrtEstimate.cpp
