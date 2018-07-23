@@ -29,6 +29,7 @@ add_executable(dynarmic_tests
     A64/inst_gen.cpp
     A64/inst_gen.h
     A64/testenv.h
+    cpu_info.cpp
     fp/FPToFixed.cpp
     fp/mantissa_util_tests.cpp
     fp/unpacked_tests.cpp
@@ -56,7 +57,7 @@ include(CreateDirectoryGroups)
 create_target_directory_groups(dynarmic_tests)
 create_target_directory_groups(dynarmic_print_info)
 
-target_link_libraries(dynarmic_tests PRIVATE dynarmic boost catch fmt)
+target_link_libraries(dynarmic_tests PRIVATE dynarmic boost catch fmt xbyak)
 target_include_directories(dynarmic_tests PRIVATE . ../src)
 target_compile_options(dynarmic_tests PRIVATE ${DYNARMIC_CXX_FLAGS})
 
