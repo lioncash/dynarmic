@@ -2053,40 +2053,28 @@ void EmitX64::EmitVectorRoundingHalvingAddU32(EmitContext& ctx, IR::Inst* inst) 
     EmitVectorRoundingHalvingAddUnsigned(32, ctx, inst, code);
 }
 
-enum class ShuffleType {
-    LowHalfwords,
-    HighHalfwords,
-    Words
-};
-
-static void VectorShuffleImpl(ShuffleType type, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
+static void VectorShuffleImpl(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Mmx&, const Xbyak::Operand&, u8)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    const Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm operand = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     const u8 mask = args[1].GetImmediateU8();
 
-    if (type == ShuffleType::LowHalfwords) {
-        code.pshuflw(result, operand, mask);
-    } else if (type == ShuffleType::HighHalfwords) {
-        code.pshufhw(result, operand, mask);
-    } else {
-        code.pshufd(result, operand, mask);
-    }
+    (code.*fn)(result, operand, mask);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitVectorShuffleHighHalfwords(EmitContext& ctx, IR::Inst* inst) {
-    VectorShuffleImpl(ShuffleType::HighHalfwords, ctx, inst, code);
+    VectorShuffleImpl(code, ctx, inst, &Xbyak::CodeGenerator::pshufhw);
 }
 
 void EmitX64::EmitVectorShuffleLowHalfwords(EmitContext& ctx, IR::Inst* inst) {
-    VectorShuffleImpl(ShuffleType::LowHalfwords, ctx, inst, code);
+    VectorShuffleImpl(code, ctx, inst, &Xbyak::CodeGenerator::pshuflw);
 }
 
 void EmitX64::EmitVectorShuffleWords(EmitContext& ctx, IR::Inst* inst) {
-    VectorShuffleImpl(ShuffleType::Words, ctx, inst, code);
+    VectorShuffleImpl(code, ctx, inst, &Xbyak::CodeGenerator::pshufd);
 }
 
 void EmitX64::EmitVectorSignExtend8(EmitContext& ctx, IR::Inst* inst) {
