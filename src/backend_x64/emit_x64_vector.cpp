@@ -2252,7 +2252,7 @@ void EmitX64::EmitVectorSignedSaturatedNarrowToSigned64(EmitContext& ctx, IR::In
     EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s64>& a) {
         bool qc_flag = false;
         for (size_t i = 0; i < a.size(); ++i) {
-            const s64 saturated = std::clamp<s64>(a[i], -0x80000000, 0x7FFFFFFF);
+            const s64 saturated = std::clamp<s64>(a[i], -s64(0x80000000), s64(0x7FFFFFFF));
             result[i] = static_cast<s32>(saturated);
             qc_flag |= saturated != a[i];
         }

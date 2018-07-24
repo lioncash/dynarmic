@@ -27,6 +27,7 @@ enum class Signedness {
 enum class Narrowing {
     Truncation,
     SaturateToUnsigned,
+    SaturateToSigned,
 };
 
 IR::U128 PerformRoundingCorrection(TranslatorVisitor& v, size_t esize, u64 round_value, IR::U128 original, IR::U128 shifted) {
@@ -110,6 +111,9 @@ bool ShiftRightNarrowing(TranslatorVisitor& v, bool Q, Imm<4> immh, Imm<3> immb,
         case Narrowing::SaturateToUnsigned:
             ASSERT(signedness == Signedness::Signed);
             return v.ir.VectorSignedSaturatedNarrowToUnsigned(source_esize, wide_result);
+        case Narrowing::SaturateToSigned:
+            ASSERT(signedness == Signedness::Signed);
+            return v.ir.VectorSignedSaturatedNarrowToSigned(source_esize, wide_result);
         }
         UNREACHABLE();
         return IR::U128{};
@@ -190,6 +194,14 @@ bool TranslatorVisitor::SHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
 
 bool TranslatorVisitor::RSHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return ShiftRightNarrowing(*this, Q, immh, immb, Vn, Vd, Rounding::Round, Narrowing::Truncation, Signedness::Unsigned);
+}
+
+bool TranslatorVisitor::SQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ShiftRightNarrowing(*this, Q, immh, immb, Vn, Vd, Rounding::None, Narrowing::SaturateToSigned, Signedness::Signed);
+}
+
+bool TranslatorVisitor::SQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ShiftRightNarrowing(*this, Q, immh, immb, Vn, Vd, Rounding::Round, Narrowing::SaturateToSigned, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SQSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
