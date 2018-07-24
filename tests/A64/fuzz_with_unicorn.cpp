@@ -11,6 +11,7 @@
 
 #include <catch.hpp>
 
+#include "common/fp/fpsr.h"
 #include "common/llvm_disassemble.h"
 #include "common/scope_exit.h"
 #include "frontend/A64/decoder/a64.h"
@@ -171,6 +172,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
     jit.SetPC(instructions_offset * 4);
     jit.SetSP(0x08000000);
     jit.SetFpcr(fpcr);
+    jit.SetFpsr(0);
     jit.SetPstate(pstate);
     jit.ClearCache();
     uni.SetRegisters(regs);
@@ -178,6 +180,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
     uni.SetPC(instructions_offset * 4);
     uni.SetSP(0x08000000);
     uni.SetFpcr(fpcr);
+    uni.SetFpsr(0);
     uni.SetPstate(pstate);
     uni.ClearPageCache();
 
@@ -213,6 +216,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
         fmt::print("sp : {:016x} {:016x} {}\n", uni.GetSP(), jit.GetSP(), uni.GetSP() != jit.GetSP() ? "*" : "");
         fmt::print("pc : {:016x} {:016x} {}\n", uni.GetPC(), jit.GetPC(), uni.GetPC() != jit.GetPC() ? "*" : "");
         fmt::print("p  : {:08x} {:08x} {}\n", uni.GetPstate(), jit.GetPstate(), (uni.GetPstate() & 0xF0000000) != (jit.GetPstate() & 0xF0000000) ? "*" : "");
+        fmt::print("qc : {:08x} {:08x} {}\n", uni.GetFpsr(), jit.GetFpsr(), FP::FPSR{uni.GetFpsr()}.QC() != FP::FPSR{jit.GetFpsr()}.QC() ? "*" : "");
         fmt::print("\n");
 
         fmt::print("Modified memory:\n");
@@ -255,6 +259,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
     REQUIRE((uni.GetPstate() & 0xF0000000) == (jit.GetPstate() & 0xF0000000));
     REQUIRE(uni_env.modified_memory == jit_env.modified_memory);
     REQUIRE(uni_env.interrupts.empty());
+    REQUIRE(FP::FPSR{uni.GetFpsr()}.QC() == FP::FPSR{jit.GetFpsr()}.QC());
 }
 
 TEST_CASE("A64: Single random instruction", "[a64]") {

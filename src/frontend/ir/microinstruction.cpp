@@ -340,7 +340,15 @@ bool Inst::ReadsFromFPSRCumulativeSaturationBit() const {
 }
 
 bool Inst::WritesToFPSRCumulativeSaturationBit() const {
-    return false;
+    switch (op) {
+    case Opcode::VectorSignedSaturatedNarrowToUnsigned16:
+    case Opcode::VectorSignedSaturatedNarrowToUnsigned32:
+    case Opcode::VectorSignedSaturatedNarrowToUnsigned64:
+        return true;
+
+    default:
+        return false;
+    }
 }
 
 bool Inst::CausesCPUException() const {

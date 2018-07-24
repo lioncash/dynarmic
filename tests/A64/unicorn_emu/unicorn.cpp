@@ -128,6 +128,16 @@ void Unicorn::SetFpcr(u32 value) {
     CHECKED(uc_reg_write(uc, UC_ARM64_REG_FPCR, &value));
 }
 
+u32 Unicorn::GetFpsr() const {
+    u32 fpsr;
+    CHECKED(uc_reg_read(uc, UC_ARM64_REG_FPSR, &fpsr));
+    return fpsr;
+}
+
+void Unicorn::SetFpsr(u32 value) {
+    CHECKED(uc_reg_write(uc, UC_ARM64_REG_FPSR, &value));
+}
+
 u32 Unicorn::GetPstate() const {
     u32 pstate;
     CHECKED(uc_reg_read(uc, UC_ARM64_REG_NZCV, &pstate));

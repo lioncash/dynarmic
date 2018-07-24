@@ -70,6 +70,30 @@ static void EmitOneArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Ins
 }
 
 template <typename Lambda>
+static void EmitOneArgumentFallbackWithSaturation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+    const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
+    constexpr u32 stack_space = 2 * 16;
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
+    ctx.reg_alloc.EndOfAllocScope();
+
+    ctx.reg_alloc.HostCall(nullptr);
+    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
+    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+
+    code.movaps(xword[code.ABI_PARAM2], arg1);
+    code.CallFunction(fn);
+    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+
+    code.add(rsp, stack_space + ABI_SHADOW_SPACE);
+
+    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], code.ABI_RETURN.cvt8());
+
+    ctx.reg_alloc.DefineValue(inst, xmm0);
+}
+
+template <typename Lambda>
 static void EmitTwoArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
     const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
     constexpr u32 stack_space = 3 * 16;
@@ -2167,6 +2191,70 @@ void EmitX64::EmitVectorSignedAbsoluteDifference16(EmitContext& ctx, IR::Inst* i
 
 void EmitX64::EmitVectorSignedAbsoluteDifference32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorSignedAbsoluteDifference(32, ctx, inst, code);
+}
+
+static void EmitVectorSignedSaturatedNarrowToUnsigned(size_t original_esize, BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm src = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm dest = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm reconstructed = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm zero = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(dest, src);
+    code.pxor(zero, zero);
+
+    switch (original_esize) {
+    case 16:
+        code.packuswb(dest, dest);
+        code.movdqa(reconstructed, dest);
+        code.punpcklbw(reconstructed, zero);
+        break;
+    case 32:
+        code.packusdw(dest, dest);
+        code.movdqa(reconstructed, dest);
+        code.punpcklwd(reconstructed, zero);
+        break;
+    default:
+        UNREACHABLE();
+        break;
+    }
+
+    const Xbyak::Reg32 bit = ctx.reg_alloc.ScratchGpr().cvt32();
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pxor(reconstructed, src);
+        code.ptest(reconstructed, reconstructed);
+    } else {
+        code.pcmpeqd(reconstructed, src);
+        code.movmskps(bit, reconstructed);
+        code.cmp(bit, 0);
+    }
+
+    code.setnz(bit.cvt8());
+    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit.cvt8());
+
+    ctx.reg_alloc.DefineValue(inst, dest);
+}
+
+void EmitX64::EmitVectorSignedSaturatedNarrowToUnsigned16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedNarrowToUnsigned(16, code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedNarrowToUnsigned32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedNarrowToUnsigned(32, code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedNarrowToUnsigned64(EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<s64>& a) {
+        bool qc_flag = false;
+        result.fill(0);
+        for (size_t i = 0; i < a.size(); ++i) {
+            const s64 saturated = std::clamp<s64>(a[i], 0, 0xFFFFFFFF);
+            result[i] = static_cast<u32>(saturated);
+            qc_flag |= saturated != a[i];
+        }
+        return qc_flag;
+    });
 }
 
 void EmitX64::EmitVectorSub8(EmitContext& ctx, IR::Inst* inst) {

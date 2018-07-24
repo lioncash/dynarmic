@@ -46,6 +46,9 @@ public:
     u32 GetFpcr() const;
     void SetFpcr(u32 value);
 
+    u32 GetFpsr() const;
+    void SetFpsr(u32 value);
+
     u32 GetPstate() const;
     void SetPstate(u32 value);
 
