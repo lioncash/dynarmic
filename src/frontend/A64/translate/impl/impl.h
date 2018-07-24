@@ -727,7 +727,7 @@ struct TranslatorVisitor final {
     bool CMLE_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool NEG_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool SQXTUN_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
-    bool UQXTN_2(bool Q, Imm<2> size, Vec Vn, Reg Rd);
+    bool UQXTN_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool FCVTXN_2(bool Q, bool sz, Vec Vn, Reg Rd);
     bool FRINTN_1(bool Q, Vec Vn, Vec Vd);
     bool FRINTN_2(bool Q, bool sz, Vec Vn, Vec Vd);

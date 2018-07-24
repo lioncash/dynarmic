@@ -106,6 +106,23 @@ bool IntegerConvertToFloat(TranslatorVisitor& v, bool Q, bool sz, Vec Vn, Vec Vd
     v.V(datasize, Vd, result);
     return true;
 }
+
+bool SaturatedNarrow(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vn, Vec Vd, IR::U128 (IR::IREmitter::*fn)(size_t, const IR::U128&)) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend<size_t>();
+    const size_t datasize = 64;
+    const size_t part = Q ? 1 : 0;
+
+    const IR::U128 operand = v.V(2 * datasize, Vn);
+    const IR::U128 result = (v.ir.*fn)(2 * esize, operand);
+
+    v.Vpart(datasize, Vd, part, result);
+    return true;
+}
+
 } // Anonymous namespace
 
 bool TranslatorVisitor::CNT(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
@@ -276,35 +293,15 @@ bool TranslatorVisitor::NEG_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::SQXTUN_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t datasize = 64;
-    const size_t part = Q ? 1 : 0;
-
-    const IR::U128 operand = V(2 * datasize, Vn);
-    const IR::U128 result = ir.VectorSignedSaturatedNarrowToUnsigned(2 * esize, operand);
-
-    Vpart(datasize, Vd, part, result);
-    return true;
+    return SaturatedNarrow(*this, Q, size, Vn, Vd, &IR::IREmitter::VectorSignedSaturatedNarrowToUnsigned);
 }
 
 bool TranslatorVisitor::SQXTN_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
+    return SaturatedNarrow(*this, Q, size, Vn, Vd, &IR::IREmitter::VectorSignedSaturatedNarrowToSigned);
+}
 
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t datasize = 64;
-    const size_t part = Q ? 1 : 0;
-
-    const IR::U128 operand = V(2 * datasize, Vn);
-    const IR::U128 result = ir.VectorSignedSaturatedNarrowToSigned(2 * esize, operand);
-
-    Vpart(datasize, Vd, part, result);
-    return true;
+bool TranslatorVisitor::UQXTN_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    return SaturatedNarrow(*this, Q, size, Vn, Vd, &IR::IREmitter::VectorUnsignedSaturatedNarrow);
 }
 
 bool TranslatorVisitor::NOT(bool Q, Vec Vn, Vec Vd) {

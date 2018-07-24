@@ -1346,6 +1346,19 @@ U128 IREmitter::VectorUnsignedAbsoluteDifference(size_t esize, const U128& a, co
     return {};
 }
 
+U128 IREmitter::VectorUnsignedSaturatedNarrow(size_t esize, const U128& a) {
+    switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::VectorUnsignedSaturatedNarrow16, a);
+    case 32:
+        return Inst<U128>(Opcode::VectorUnsignedSaturatedNarrow32, a);
+    case 64:
+        return Inst<U128>(Opcode::VectorUnsignedSaturatedNarrow64, a);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorZeroExtend(size_t original_esize, const U128& a) {
     switch (original_esize) {
     case 8:

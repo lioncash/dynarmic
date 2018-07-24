@@ -2419,6 +2419,42 @@ void EmitX64::EmitVectorUnsignedAbsoluteDifference32(EmitContext& ctx, IR::Inst*
     EmitVectorUnsignedAbsoluteDifference(32, ctx, inst, code);
 }
 
+void EmitX64::EmitVectorUnsignedSaturatedNarrow16(EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u16>& a) {
+        bool qc_flag = false;
+        for (size_t i = 0; i < a.size(); ++i) {
+            const u16 saturated = std::clamp<u16>(a[i], 0, 0xFF);
+            result[i] = static_cast<u8>(saturated);
+            qc_flag |= saturated != a[i];
+        }
+        return qc_flag;
+    });
+}
+
+void EmitX64::EmitVectorUnsignedSaturatedNarrow32(EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u16>& result, const VectorArray<u32>& a) {
+        bool qc_flag = false;
+        for (size_t i = 0; i < a.size(); ++i) {
+            const u32 saturated = std::clamp<u32>(a[i], 0, 0xFFFF);
+            result[i] = static_cast<u16>(saturated);
+            qc_flag |= saturated != a[i];
+        }
+        return qc_flag;
+    });
+}
+
+void EmitX64::EmitVectorUnsignedSaturatedNarrow64(EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<u64>& a) {
+        bool qc_flag = false;
+        for (size_t i = 0; i < a.size(); ++i) {
+            const u64 saturated = std::clamp<u64>(a[i], 0, 0xFFFFFFFF);
+            result[i] = static_cast<u32>(saturated);
+            qc_flag |= saturated != a[i];
+        }
+        return qc_flag;
+    });
+}
+
 void EmitX64::EmitVectorZeroExtend8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
