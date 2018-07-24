@@ -109,8 +109,10 @@ bool ShiftRightNarrowing(TranslatorVisitor& v, bool Q, Imm<4> immh, Imm<3> immb,
         case Narrowing::Truncation:
             return v.ir.VectorNarrow(source_esize, wide_result);
         case Narrowing::SaturateToUnsigned:
-            ASSERT(signedness == Signedness::Signed);
-            return v.ir.VectorSignedSaturatedNarrowToUnsigned(source_esize, wide_result);
+            if (signedness == Signedness::Signed) {
+                return v.ir.VectorSignedSaturatedNarrowToUnsigned(source_esize, wide_result);
+            }
+            return v.ir.VectorUnsignedSaturatedNarrow(source_esize, wide_result);
         case Narrowing::SaturateToSigned:
             ASSERT(signedness == Signedness::Signed);
             return v.ir.VectorSignedSaturatedNarrowToSigned(source_esize, wide_result);
@@ -210,6 +212,14 @@ bool TranslatorVisitor::SQSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec 
 
 bool TranslatorVisitor::SQRSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return ShiftRightNarrowing(*this, Q, immh, immb, Vn, Vd, Rounding::Round, Narrowing::SaturateToUnsigned, Signedness::Signed);
+}
+
+bool TranslatorVisitor::UQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ShiftRightNarrowing(*this, Q, immh, immb, Vn, Vd, Rounding::None, Narrowing::SaturateToUnsigned, Signedness::Unsigned);
+}
+
+bool TranslatorVisitor::UQRSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ShiftRightNarrowing(*this, Q, immh, immb, Vn, Vd, Rounding::Round, Narrowing::SaturateToUnsigned, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::SSHLL(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
