@@ -199,42 +199,11 @@ bool Inst::WritesToCoreRegister() const {
     }
 }
 
-bool Inst::ReadsFromFPSCR() const {
+bool Inst::ReadsFromFPCR() const {
     switch (op) {
     case Opcode::A32GetFpscr:
     case Opcode::A32GetFpscrNZCV:
     case Opcode::A64GetFPCR:
-    case Opcode::A64GetFPSR:
-    case Opcode::FPAbs32:
-    case Opcode::FPAbs64:
-    case Opcode::FPAdd32:
-    case Opcode::FPAdd64:
-    case Opcode::FPCompare32:
-    case Opcode::FPCompare64:
-    case Opcode::FPDiv32:
-    case Opcode::FPDiv64:
-    case Opcode::FPMax32:
-    case Opcode::FPMax64:
-    case Opcode::FPMaxNumeric32:
-    case Opcode::FPMaxNumeric64:
-    case Opcode::FPMin32:
-    case Opcode::FPMin64:
-    case Opcode::FPMinNumeric32:
-    case Opcode::FPMinNumeric64:
-    case Opcode::FPMul32:
-    case Opcode::FPMul64:
-    case Opcode::FPMulAdd32:
-    case Opcode::FPMulAdd64:
-    case Opcode::FPNeg32:
-    case Opcode::FPNeg64:
-    case Opcode::FPSqrt32:
-    case Opcode::FPSqrt64:
-    case Opcode::FPRoundInt32:
-    case Opcode::FPRoundInt64:
-    case Opcode::FPRSqrtEstimate32:
-    case Opcode::FPRSqrtEstimate64:
-    case Opcode::FPSub32:
-    case Opcode::FPSub64:
         return true;
 
     default:
@@ -242,12 +211,44 @@ bool Inst::ReadsFromFPSCR() const {
     }
 }
 
-bool Inst::WritesToFPSCR() const {
+bool Inst::WritesToFPCR() const {
     switch (op) {
     case Opcode::A32SetFpscr:
     case Opcode::A32SetFpscrNZCV:
     case Opcode::A64SetFPCR:
-    case Opcode::A64SetFPSR:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+bool Inst::ReadsFromFPSR() const {
+    return op == Opcode::A32GetFpscr                ||
+           op == Opcode::A32GetFpscrNZCV            ||
+           op == Opcode::A64GetFPSR                 ||
+           ReadsFromFPSRCumulativeExceptionBits()   ||
+           ReadsFromFPSRCumulativeSaturationBit();
+}
+
+bool Inst::WritesToFPSR() const {
+    return op == Opcode::A32SetFpscr                ||
+           op == Opcode::A32SetFpscrNZCV            ||
+           op == Opcode::A64SetFPSR                 ||
+           WritesToFPSRCumulativeExceptionBits()    ||
+           WritesToFPSRCumulativeSaturationBit();
+}
+
+bool Inst::ReadsFromFPSRCumulativeExceptionBits() const {
+    return ReadsFromAndWritesToFPSRCumulativeExceptionBits();
+}
+
+bool Inst::WritesToFPSRCumulativeExceptionBits() const {
+    return ReadsFromAndWritesToFPSRCumulativeExceptionBits();
+}
+
+bool Inst::ReadsFromAndWritesToFPSRCumulativeExceptionBits() const {
+    switch (op) {
     case Opcode::FPAbs32:
     case Opcode::FPAbs64:
     case Opcode::FPAdd32:
@@ -270,19 +271,76 @@ bool Inst::WritesToFPSCR() const {
     case Opcode::FPMulAdd64:
     case Opcode::FPNeg32:
     case Opcode::FPNeg64:
-    case Opcode::FPSqrt32:
-    case Opcode::FPSqrt64:
     case Opcode::FPRoundInt32:
     case Opcode::FPRoundInt64:
     case Opcode::FPRSqrtEstimate32:
     case Opcode::FPRSqrtEstimate64:
+    case Opcode::FPRSqrtStepFused32:
+    case Opcode::FPRSqrtStepFused64:
+    case Opcode::FPSqrt32:
+    case Opcode::FPSqrt64:
     case Opcode::FPSub32:
     case Opcode::FPSub64:
+    case Opcode::FPSingleToDouble:
+    case Opcode::FPDoubleToSingle:
+    case Opcode::FPDoubleToFixedS32:
+    case Opcode::FPDoubleToFixedS64:
+    case Opcode::FPDoubleToFixedU32:
+    case Opcode::FPDoubleToFixedU64:
+    case Opcode::FPSingleToFixedS32:
+    case Opcode::FPSingleToFixedS64:
+    case Opcode::FPSingleToFixedU32:
+    case Opcode::FPSingleToFixedU64:
+    case Opcode::FPU32ToSingle:
+    case Opcode::FPS32ToSingle:
+    case Opcode::FPU32ToDouble:
+    case Opcode::FPU64ToDouble:
+    case Opcode::FPU64ToSingle:
+    case Opcode::FPS32ToDouble:
+    case Opcode::FPS64ToDouble:
+    case Opcode::FPS64ToSingle:
+    case Opcode::FPVectorAbs16:
+    case Opcode::FPVectorAbs32:
+    case Opcode::FPVectorAbs64:
+    case Opcode::FPVectorAdd32:
+    case Opcode::FPVectorAdd64:
+    case Opcode::FPVectorDiv32:
+    case Opcode::FPVectorDiv64:
+    case Opcode::FPVectorEqual32:
+    case Opcode::FPVectorEqual64:
+    case Opcode::FPVectorGreater32:
+    case Opcode::FPVectorGreater64:
+    case Opcode::FPVectorGreaterEqual32:
+    case Opcode::FPVectorGreaterEqual64:
+    case Opcode::FPVectorMul32:
+    case Opcode::FPVectorMul64:
+    case Opcode::FPVectorPairedAddLower32:
+    case Opcode::FPVectorPairedAddLower64:
+    case Opcode::FPVectorPairedAdd32:
+    case Opcode::FPVectorPairedAdd64:
+    case Opcode::FPVectorRSqrtEstimate32:
+    case Opcode::FPVectorRSqrtEstimate64:
+    case Opcode::FPVectorRSqrtStepFused32:
+    case Opcode::FPVectorRSqrtStepFused64:
+    case Opcode::FPVectorS32ToSingle:
+    case Opcode::FPVectorS64ToDouble:
+    case Opcode::FPVectorSub32:
+    case Opcode::FPVectorSub64:
+    case Opcode::FPVectorU32ToSingle:
+    case Opcode::FPVectorU64ToDouble:
         return true;
 
     default:
         return false;
     }
+}
+
+bool Inst::ReadsFromFPSRCumulativeSaturationBit() const {
+    return false;
+}
+
+bool Inst::WritesToFPSRCumulativeSaturationBit() const {
+    return false;
 }
 
 bool Inst::CausesCPUException() const {
@@ -326,7 +384,8 @@ bool Inst::MayHaveSideEffects() const {
            WritesToCoreRegister()                       ||
            WritesToSystemRegister()                     ||
            WritesToCPSR()                               ||
-           WritesToFPSCR()                              ||
+           WritesToFPCR()                               ||
+           WritesToFPSR()                               ||
            AltersExclusiveState()                       ||
            IsMemoryWrite()                              ||
            IsCoprocessorInstruction();

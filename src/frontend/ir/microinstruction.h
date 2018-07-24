@@ -63,10 +63,27 @@ public:
     /// Determines whether or not this instruction writes to a core register.
     bool WritesToCoreRegister() const;
 
-    /// Determines whether or not this instruction reads from the FPSCR.
-    bool ReadsFromFPSCR() const;
-    /// Determines whether or not this instruction writes to the FPSCR.
-    bool WritesToFPSCR() const;
+    /// Determines whether or not this instruction reads from the FPCR.
+    bool ReadsFromFPCR() const;
+    /// Determines whether or not this instruction writes to the FPCR.
+    bool WritesToFPCR() const;
+
+    /// Determines whether or not this instruction reads from the FPSR.
+    bool ReadsFromFPSR() const;
+    /// Determines whether or not this instruction writes to the FPSR.
+    bool WritesToFPSR() const;
+
+    /// Determines whether or not this instruction reads from the FPSR cumulative exception bits.
+    bool ReadsFromFPSRCumulativeExceptionBits() const;
+    /// Determines whether or not this instruction writes to the FPSR cumulative exception bits.
+    bool WritesToFPSRCumulativeExceptionBits() const;
+    /// Determines whether or not this instruction both reads from and writes to the FPSR cumulative exception bits.
+    bool ReadsFromAndWritesToFPSRCumulativeExceptionBits() const;
+
+    /// Determines whether or not this instruction reads from the FPSR cumulative saturation bit.
+    bool ReadsFromFPSRCumulativeSaturationBit() const;
+    /// Determines whether or not this instruction writes to the FPSR cumulative saturation bit.
+    bool WritesToFPSRCumulativeSaturationBit() const;
 
     /// Determines whether or not this instruction alters memory-exclusivity.
     bool AltersExclusiveState() const;
