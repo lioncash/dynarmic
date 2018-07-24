@@ -515,35 +515,20 @@ struct TranslatorVisitor final {
 
     // Data Processing - FP and SIMD - Scalar two-register misc
     bool SUQADD_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool SUQADD_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool SQABS_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool SQABS_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool CMGT_zero_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool CMGT_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool CMEQ_zero_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool CMEQ_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool CMLT_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool CMLT_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool ABS_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool ABS_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool SQXTN_1(Imm<2> size, Vec Vn, Reg Rd);
-    bool SQXTN_2(bool Q, Imm<2> size, Vec Vn, Reg Rd);
     bool USQADD_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool USQADD_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool SQNEG_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool SQNEG_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool CMGE_zero_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool CMGE_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool CMLE_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool CMLE_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool NEG_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool NEG_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool SQXTUN_1(Imm<2> size, Vec Vn, Reg Rd);
-    bool SQXTUN_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
     bool UQXTN_1(Imm<2> size, Vec Vn, Reg Rd);
-    bool UQXTN_2(bool Q, Imm<2> size, Vec Vn, Reg Rd);
     bool FCVTXN_1(bool sz, Vec Vn, Reg Rd);
-    bool FCVTXN_2(bool Q, bool sz, Vec Vn, Reg Rd);
 
     // Data Processing - FP and SIMD - SIMD Scalar pairwise
     bool ADDP_pair(Imm<2> size, Vec Vn, Vec Vd);
@@ -704,28 +689,6 @@ struct TranslatorVisitor final {
     bool FMINNMP_vec_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
     bool FMINP_vec_1(bool Q, Vec Vm, Vec Vn, Vec Vd);
 
-    // Data Processing - FP and SIMD - SIMD Two-register misc
-    bool FRINTN_1(bool Q, Vec Vn, Vec Vd);
-    bool FRINTN_2(bool Q, bool sz, Vec Vn, Vec Vd);
-    bool FRINTM_1(bool Q, Vec Vn, Vec Vd);
-    bool FRINTM_2(bool Q, bool sz, Vec Vn, Vec Vd);
-    bool FABS_1(bool Q, Vec Vn, Vec Vd);
-    bool FABS_2(bool Q, bool sz, Vec Vn, Vec Vd);
-    bool FRINTP_1(bool Q, Vec Vn, Vec Vd);
-    bool FRINTP_2(bool Q, bool sz, Vec Vn, Vec Vd);
-    bool FRINTZ_1(bool Q, Vec Vn, Vec Vd);
-    bool FRINTZ_2(bool Q, bool sz, Vec Vn, Vec Vd);
-    bool FRINTA_1(bool Q, Vec Vn, Vec Vd);
-    bool FRINTA_2(bool Q, bool sz, Vec Vn, Vec Vd);
-    bool FRINTX_1(bool Q, Vec Vn, Vec Vd);
-    bool FRINTX_2(bool Q, bool sz, Vec Vn, Vec Vd);
-    bool FNEG_1(bool Q, Vec Vn, Vec Vd);
-    bool FNEG_2(bool Q, bool sz, Vec Vn, Vec Vd);
-    bool FRINTI_1(bool Q, Vec Vn, Vec Vd);
-    bool FRINTI_2(bool Q, bool sz, Vec Vn, Vec Vd);
-    bool FSQRT_1(bool Q, Vec Vn, Vec Vd);
-    bool FSQRT_2(bool Q, bool sz, Vec Vn, Vec Vd);
-
     // Data Processing - FP and SIMD - SIMD Three same extra
     bool SDOT_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool UDOT_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
@@ -751,6 +714,41 @@ struct TranslatorVisitor final {
     bool NOT(bool Q, Vec Vn, Vec Vd);
     bool RBIT_asimd(bool Q, Vec Vn, Vec Vd);
     bool URSQRTE(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool SUQADD_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool SQABS_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool CMGT_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool CMEQ_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool CMLT_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool ABS_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool SQXTN_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool USQADD_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool SQNEG_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool CMGE_zero_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool CMLE_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool NEG_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool SQXTUN_2(bool Q, Imm<2> size, Vec Vn, Vec Vd);
+    bool UQXTN_2(bool Q, Imm<2> size, Vec Vn, Reg Rd);
+    bool FCVTXN_2(bool Q, bool sz, Vec Vn, Reg Rd);
+    bool FRINTN_1(bool Q, Vec Vn, Vec Vd);
+    bool FRINTN_2(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FRINTM_1(bool Q, Vec Vn, Vec Vd);
+    bool FRINTM_2(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FABS_1(bool Q, Vec Vn, Vec Vd);
+    bool FABS_2(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FRINTP_1(bool Q, Vec Vn, Vec Vd);
+    bool FRINTP_2(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FRINTZ_1(bool Q, Vec Vn, Vec Vd);
+    bool FRINTZ_2(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FRINTA_1(bool Q, Vec Vn, Vec Vd);
+    bool FRINTA_2(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FRINTX_1(bool Q, Vec Vn, Vec Vd);
+    bool FRINTX_2(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FNEG_1(bool Q, Vec Vn, Vec Vd);
+    bool FNEG_2(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FRINTI_1(bool Q, Vec Vn, Vec Vd);
+    bool FRINTI_2(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FSQRT_1(bool Q, Vec Vn, Vec Vd);
+    bool FSQRT_2(bool Q, bool sz, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD across lanes
     bool SADDLV(bool Q, Imm<2> size, Vec Vn, Vec Vd);

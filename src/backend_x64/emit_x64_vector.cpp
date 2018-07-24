@@ -2193,6 +2193,73 @@ void EmitX64::EmitVectorSignedAbsoluteDifference32(EmitContext& ctx, IR::Inst* i
     EmitVectorSignedAbsoluteDifference(32, ctx, inst, code);
 }
 
+static void EmitVectorSignedSaturatedNarrowToSigned(size_t original_esize, BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm src = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm dest = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm reconstructed = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm sign = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(dest, src);
+
+    switch (original_esize) {
+    case 16:
+        code.packsswb(dest, dest);
+        code.movdqa(sign, src);
+        code.psraw(sign, 15);
+        code.packsswb(sign, sign);
+        code.movdqa(reconstructed, dest);
+        code.punpcklbw(reconstructed, sign);
+        break;
+    case 32:
+        code.packssdw(dest, dest);
+        code.movdqa(reconstructed, dest);
+        code.movdqa(sign, dest);
+        code.psraw(sign, 15);
+        code.punpcklwd(reconstructed, sign);
+        break;
+    default:
+        UNREACHABLE();
+        break;
+    }
+
+    const Xbyak::Reg32 bit = ctx.reg_alloc.ScratchGpr().cvt32();
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pxor(reconstructed, src);
+        code.ptest(reconstructed, reconstructed);
+    } else {
+        code.pcmpeqd(reconstructed, src);
+        code.movmskps(bit, reconstructed);
+        code.cmp(bit, 0);
+    }
+
+    code.setnz(bit.cvt8());
+    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit.cvt8());
+
+    ctx.reg_alloc.DefineValue(inst, dest);
+}
+
+void EmitX64::EmitVectorSignedSaturatedNarrowToSigned16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedNarrowToSigned(16, code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedNarrowToSigned32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedNarrowToSigned(32, code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedNarrowToSigned64(EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s64>& a) {
+        bool qc_flag = false;
+        for (size_t i = 0; i < a.size(); ++i) {
+            const s64 saturated = std::clamp<s64>(a[i], -0x80000000, 0x7FFFFFFF);
+            result[i] = static_cast<s32>(saturated);
+            qc_flag |= saturated != a[i];
+        }
+        return qc_flag;
+    });
+}
+
 static void EmitVectorSignedSaturatedNarrowToUnsigned(size_t original_esize, BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm src = ctx.reg_alloc.UseXmm(args[0]);
