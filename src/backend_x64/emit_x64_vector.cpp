@@ -2241,13 +2241,25 @@ void EmitX64::EmitVectorSignedSaturatedNarrowToUnsigned16(EmitContext& ctx, IR::
 }
 
 void EmitX64::EmitVectorSignedSaturatedNarrowToUnsigned32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorSignedSaturatedNarrowToUnsigned(32, code, ctx, inst);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorSignedSaturatedNarrowToUnsigned(32, code, ctx, inst);
+        return;
+    }
+
+    EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u16>& result, const VectorArray<s32>& a) {
+        bool qc_flag = false;
+        for (size_t i = 0; i < a.size(); ++i) {
+            const s32 saturated = std::clamp<s32>(a[i], 0, 0xFFFF);
+            result[i] = static_cast<u16>(saturated);
+            qc_flag |= saturated != a[i];
+        }
+        return qc_flag;
+    });
 }
 
 void EmitX64::EmitVectorSignedSaturatedNarrowToUnsigned64(EmitContext& ctx, IR::Inst* inst) {
     EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<s64>& a) {
         bool qc_flag = false;
-        result.fill(0);
         for (size_t i = 0; i < a.size(); ++i) {
             const s64 saturated = std::clamp<s64>(a[i], 0, 0xFFFFFFFF);
             result[i] = static_cast<u32>(saturated);
