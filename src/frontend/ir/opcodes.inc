@@ -59,6 +59,7 @@ A64OPC(SetQ,                                    T::Void,        T::A64Vec,      
 A64OPC(SetSP,                                   T::Void,        T::U64                                          )
 A64OPC(SetFPCR,                                 T::Void,        T::U32                                          )
 A64OPC(SetFPSR,                                 T::Void,        T::U32                                          )
+A64OPC(OrQC,                                    T::Void,        T::U1                                           )
 A64OPC(SetPC,                                   T::Void,        T::U64                                          )
 A64OPC(CallSupervisor,                          T::Void,        T::U32                                          )
 A64OPC(ExceptionRaised,                         T::Void,        T::U64,         T::U64                          )

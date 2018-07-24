@@ -33,6 +33,10 @@ void IREmitter::SetNZCV(const IR::NZCV& nzcv) {
     Inst(Opcode::A64SetNZCV, nzcv);
 }
 
+void IREmitter::OrQC(const IR::U1& value) {
+    Inst(Opcode::A64OrQC, value);
+}
+
 void IREmitter::CallSupervisor(u32 imm) {
     Inst(Opcode::A64CallSupervisor, Imm32(imm));
 }

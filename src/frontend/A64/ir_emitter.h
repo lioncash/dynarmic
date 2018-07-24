@@ -38,6 +38,7 @@ public:
     void SetCheckBit(const IR::U1& value);
     IR::U1 GetCFlag();
     void SetNZCV(const IR::NZCV& nzcv);
+    void OrQC(const IR::U1& value);
 
     void CallSupervisor(u32 imm);
     void ExceptionRaised(Exception exception);

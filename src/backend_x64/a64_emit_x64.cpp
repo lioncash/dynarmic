@@ -468,6 +468,21 @@ void A64EmitX64::EmitA64SetFPSR(A64EmitContext& ctx, IR::Inst* inst) {
     code.ldmxcsr(code.dword[code.r15 + offsetof(A64JitState, guest_MXCSR)]);
 }
 
+void A64EmitX64::EmitA64OrQC(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    if (args[0].IsImmediate()) {
+        if (!args[0].GetImmediateU1())
+            return;
+
+        code.mov(code.byte[code.r15 + offsetof(A64JitState, fpsr_qc)], u8(1));
+        return;
+    }
+
+    const Xbyak::Reg8 to_store = ctx.reg_alloc.UseGpr(args[1]).cvt8();
+    code.or_(code.byte[code.r15 + offsetof(A64JitState, fpsr_qc)], to_store);
+}
+
 void A64EmitX64::EmitA64SetPC(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto addr = qword[r15 + offsetof(A64JitState, pc)];
