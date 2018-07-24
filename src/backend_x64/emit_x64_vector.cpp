@@ -2231,7 +2231,7 @@ static void EmitVectorSignedSaturatedNarrowToSigned(size_t original_esize, Block
     } else {
         code.pcmpeqd(reconstructed, src);
         code.movmskps(bit, reconstructed);
-        code.cmp(bit, 0);
+        code.cmp(bit, 0xF);
     }
 
     code.setnz(bit.cvt8());
@@ -2294,7 +2294,7 @@ static void EmitVectorSignedSaturatedNarrowToUnsigned(size_t original_esize, Blo
     } else {
         code.pcmpeqd(reconstructed, src);
         code.movmskps(bit, reconstructed);
-        code.cmp(bit, 0);
+        code.cmp(bit, 0xF);
     }
 
     code.setnz(bit.cvt8());
