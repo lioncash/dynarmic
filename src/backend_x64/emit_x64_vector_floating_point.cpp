@@ -29,7 +29,7 @@ using namespace Xbyak::util;
 namespace mp = Common::mp;
 
 template<size_t fsize, typename T>
-static T ChooseOnFsize(T f32, T f64) {
+static T ChooseOnFsize([[maybe_unused]] T f32, [[maybe_unused]] T f64) {
     static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
 
     if constexpr (fsize == 32) {
