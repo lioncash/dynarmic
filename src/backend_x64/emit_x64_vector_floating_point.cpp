@@ -43,12 +43,19 @@ static T ChooseOnFsize([[maybe_unused]] T f32, [[maybe_unused]] T f64) {
 
 template<size_t fsize, template<typename> class Indexer, size_t narg>
 struct NaNHandler {
+public:
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+
+    using function_type = void(*)(std::array<VectorArray<FPT>, narg>&);
+
+    static function_type GetDefault() {
+        return GetDefaultImpl(std::make_index_sequence<narg - 1>{});
+    }
+
 private:
     template<size_t... argi>
-    static auto GetDefaultImpl(std::index_sequence<argi...>) {
-        using FPT = mp::unsigned_integer_of_size<fsize>;
-
-        auto result = [](std::array<VectorArray<FPT>, sizeof...(argi) + 1>& values) {
+    static function_type GetDefaultImpl(std::index_sequence<argi...>) {
+        const auto result = [](std::array<VectorArray<FPT>, narg>& values) {
             VectorArray<FPT>& result = values[0];
             for (size_t elementi = 0; elementi < result.size(); ++elementi) {
                 const auto current_values = Indexer<FPT>{}(elementi, values[argi + 1]...);
@@ -60,15 +67,8 @@ private:
             }
         };
 
-        return static_cast<mp::equivalent_function_type_t<decltype(result)>*>(result);
+        return static_cast<function_type>(result);
     }
-
-public:
-    static auto GetDefault() {
-        return GetDefaultImpl(std::make_index_sequence<narg - 1>{});
-    }
-
-    using function_type = mp::return_type_t<decltype(GetDefault)>;
 };
 
 template<size_t fsize, size_t nargs, typename NaNHandler>
@@ -515,7 +515,7 @@ void EmitFPVectorMulAdd(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     using FPT = mp::unsigned_integer_of_size<fsize>;
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
-        auto x64_instruction = fsize == 32 ? &Xbyak::CodeGenerator::vfmadd231ps : &Xbyak::CodeGenerator::vfmadd231pd;
+        const auto x64_instruction = fsize == 32 ? &Xbyak::CodeGenerator::vfmadd231ps : &Xbyak::CodeGenerator::vfmadd231pd;
         EmitFourOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, x64_instruction,
             static_cast<void(*)(std::array<VectorArray<FPT>, 4>& values)>(
                 [](std::array<VectorArray<FPT>, 4>& values) {
