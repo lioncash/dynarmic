@@ -13,13 +13,14 @@
 #include "common/fp/fpcr.h"
 #include "common/fp/op.h"
 #include "common/fp/util.h"
-#include "common/mp.h"
+#include "common/mp/function_info.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
 
 namespace Dynarmic::BackendX64 {
 
 using namespace Xbyak::util;
+namespace mp = Common::mp;
 
 template <typename T>
 struct NaNWrapper;

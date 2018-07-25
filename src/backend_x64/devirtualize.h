@@ -13,7 +13,7 @@
 #include "common/assert.h"
 #include "common/cast_util.h"
 #include "common/common_types.h"
-#include "common/mp.h"
+#include "common/mp/function_info.h"
 
 namespace Dynarmic {
 namespace BackendX64 {
@@ -33,18 +33,18 @@ struct ThunkBuilder<R(C::*)(Args...), mfp> {
 } // namespace impl
 
 template <typename FunctionType, FunctionType mfp>
-ArgCallback DevirtualizeGeneric(mp::class_type_t<FunctionType>* this_) {
+ArgCallback DevirtualizeGeneric(Common::mp::class_type_t<FunctionType>* this_) {
     return ArgCallback{&impl::ThunkBuilder<FunctionType, mfp>::Thunk, reinterpret_cast<u64>(this_)};
 }
 
 template <typename FunctionType, FunctionType mfp>
-ArgCallback DevirtualizeWindows(mp::class_type_t<FunctionType>* this_) {
+ArgCallback DevirtualizeWindows(Common::mp::class_type_t<FunctionType>* this_) {
     static_assert(sizeof(mfp) == 8);
     return ArgCallback{Common::BitCast<u64>(mfp), reinterpret_cast<u64>(this_)};
 }
 
 template <typename FunctionType, FunctionType mfp>
-ArgCallback DevirtualizeItanium(mp::class_type_t<FunctionType>* this_) {
+ArgCallback DevirtualizeItanium(Common::mp::class_type_t<FunctionType>* this_) {
     struct MemberFunctionPointer {
         /// For a non-virtual function, this is a simple function pointer.
         /// For a virtual function, it is (1 + virtual table offset in bytes).

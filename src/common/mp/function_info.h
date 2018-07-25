@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <tuple>
 
-namespace Dynarmic::mp {
+namespace Dynarmic::Common::mp {
 
 /// Used to provide information about an arbitrary function.
 template <typename Function>
@@ -91,4 +91,4 @@ using class_type_t = typename FunctionInfo<Function>::class_type;
 template <typename Function>
 using equivalent_function_type_t = typename FunctionInfo<Function>::equivalent_function_type;
 
-} // namespace Dynarmic::mp
+} // namespace Dynarmic::Common::mp
