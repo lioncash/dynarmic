@@ -150,7 +150,7 @@ inline size_t BitCount(Integral value) {
 }
 
 template <typename T>
-inline int HighestSetBit(T value) {
+constexpr int HighestSetBit(T value) {
     auto x = static_cast<std::make_unsigned_t<T>>(value);
     int result = -1;
     while (x != 0) {

@@ -35,20 +35,20 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
             return {FPType::Zero, sign, {sign, 0, 0}};
         }
 
-        return {FPType::Nonzero, sign, {sign, denormal_exponent, frac_raw}};
+        return {FPType::Nonzero, sign, ToNormalized(sign, denormal_exponent, frac_raw)};
     }
 
     if (exp_raw == Common::Ones<FPT>(FPInfo<FPT>::exponent_width)) {
         if (frac_raw == 0) {
-            return {FPType::Infinity, sign, {sign, 1000000, 1}};
+            return {FPType::Infinity, sign, ToNormalized(sign, 1000000, 1)};
         }
 
         const bool is_quiet = Common::Bit<mantissa_high_bit>(frac_raw);
         return {is_quiet ? FPType::QNaN : FPType::SNaN, sign, {sign, 0, 0}};
     }
 
-    const int exp = static_cast<int>(exp_raw) - FPInfo<FPT>::exponent_bias - FPInfo<FPT>::explicit_mantissa_width;
-    const u64 frac = frac_raw | FPInfo<FPT>::implicit_leading_bit;
+    const int exp = static_cast<int>(exp_raw) - FPInfo<FPT>::exponent_bias;
+    const u64 frac = static_cast<u64>(frac_raw | FPInfo<FPT>::implicit_leading_bit) << (normalized_point_position - FPInfo<FPT>::explicit_mantissa_width);
     return {FPType::Nonzero, sign, {sign, exp, frac}};
 }
 
@@ -61,7 +61,7 @@ std::tuple<bool, int, u64, ResidualError> Normalize(FPUnpacked op, int extra_rig
     const int shift_amount = highest_set_bit - static_cast<int>(F) + extra_right_shift;
     const u64 mantissa = Safe::LogicalShiftRight(op.mantissa, shift_amount);
     const ResidualError error = ResidualErrorOnRightShift(op.mantissa, shift_amount);
-    const int exponent = op.exponent + highest_set_bit;
+    const int exponent = op.exponent + highest_set_bit - normalized_point_position;
     return std::make_tuple(op.sign, exponent, mantissa, error);
 }
 

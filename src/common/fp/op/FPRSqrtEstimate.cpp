@@ -79,11 +79,10 @@ FPT FPRSqrtEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
         return FPInfo<FPT>::Zero(false);
     }
 
-    const int highest_bit = Common::HighestSetBit(value.mantissa);
-    const int result_exponent = (-(value.exponent + highest_bit + 1)) >> 1;
-    const bool was_exponent_odd = (value.exponent + highest_bit) % 2 == 0;
+    const int result_exponent = (-(value.exponent + 1)) >> 1;
+    const bool was_exponent_odd = (value.exponent) % 2 == 0;
 
-    const u64 scaled = Safe::LogicalShiftRight(value.mantissa, highest_bit - (was_exponent_odd ? 7 : 8));
+    const u64 scaled = Safe::LogicalShiftRight(value.mantissa, normalized_point_position - (was_exponent_odd ? 7 : 8));
     const u64 estimate = RecipSqrtEstimate(scaled);
 
     const FPT bits_exponent = static_cast<FPT>(result_exponent + FPInfo<FPT>::exponent_bias);

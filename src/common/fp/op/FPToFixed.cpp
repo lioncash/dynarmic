@@ -40,12 +40,12 @@ u64 FPToFixed(size_t ibits, FPT op, size_t fbits, bool unsigned_, FPCR fpcr, Rou
         return 0;
     }
 
-    // value *= 2.0^fbits
-    value.exponent += static_cast<int>(fbits);
+    // value *= 2.0^fbits and reshift the decimal point back to bit zero.
+    int exponent = value.exponent + static_cast<int>(fbits) - normalized_point_position;
 
     u64 int_result = sign ? Safe::Negate<u64>(value.mantissa) : static_cast<u64>(value.mantissa);
-    const ResidualError error = ResidualErrorOnRightShift(int_result, -value.exponent);
-    int_result = Safe::ArithmeticShiftLeft(int_result, value.exponent);
+    const ResidualError error = ResidualErrorOnRightShift(int_result, -exponent);
+    int_result = Safe::ArithmeticShiftLeft(int_result, exponent);
 
     bool round_up = false;
     switch (rounding) {
@@ -74,7 +74,7 @@ u64 FPToFixed(size_t ibits, FPT op, size_t fbits, bool unsigned_, FPCR fpcr, Rou
 
     // Detect Overflow
     const int min_exponent_for_overflow = static_cast<int>(ibits) - static_cast<int>(Common::HighestSetBit(value.mantissa + (round_up ? 1 : 0))) - (unsigned_ ? 0 : 1);
-    if (value.exponent >= min_exponent_for_overflow) {
+    if (exponent >= min_exponent_for_overflow) {
         // Positive overflow
         if (unsigned_ || !sign) {
             FPProcessException(FPExc::InvalidOp, fpcr, fpsr);
@@ -83,7 +83,7 @@ u64 FPToFixed(size_t ibits, FPT op, size_t fbits, bool unsigned_, FPCR fpcr, Rou
 
         // Negative overflow
         const u64 min_value = Safe::Negate<u64>(static_cast<u64>(1) << (ibits - 1));
-        if (!(value.exponent == min_exponent_for_overflow && int_result == min_value)) {
+        if (!(exponent == min_exponent_for_overflow && int_result == min_value)) {
             FPProcessException(FPExc::InvalidOp, fpcr, fpsr);
             return static_cast<u64>(1) << (ibits - 1);
         }

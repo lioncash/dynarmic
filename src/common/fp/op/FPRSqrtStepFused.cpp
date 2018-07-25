@@ -41,7 +41,7 @@ FPT FPRSqrtStepFused(FPT op1, FPT op2, FPCR fpcr, FPSR& fpsr) {
     }
 
     // result_value = (3.0 + (value1 * value2)) / 2.0
-    FPUnpacked result_value = FusedMulAdd({false, 0, 3}, value1, value2);
+    FPUnpacked result_value = FusedMulAdd(ToNormalized(false, 0, 3), value1, value2);
     result_value.exponent--;
 
     if (result_value.mantissa == 0) {

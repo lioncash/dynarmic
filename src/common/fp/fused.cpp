@@ -11,26 +11,15 @@
 
 namespace Dynarmic::FP {
 
-constexpr size_t normalized_point_position = 62;
 constexpr size_t product_point_position = normalized_point_position * 2;
 
-static FPUnpacked NormalizeUnpacked(FPUnpacked op) {
-    constexpr int desired_highest = static_cast<int>(normalized_point_position);
-
-    const int highest_bit = Common::HighestSetBit(op.mantissa);
-    DEBUG_ASSERT(highest_bit < desired_highest);
-
-    const int offset = desired_highest - highest_bit;
-    op.mantissa <<= offset;
-    op.exponent -= offset;
-    return op;
+static FPUnpacked ReduceMantissa(bool sign, int exponent, const u128& mantissa) {
+    constexpr int point_position_correction = normalized_point_position - (product_point_position - 64);
+    // We round-to-odd here when reducing the bitwidth of the mantissa so that subsequent roundings are accurate.
+    return {sign, exponent + point_position_correction, mantissa.upper | static_cast<u64>(mantissa.lower != 0)};
 }
 
 FPUnpacked FusedMulAdd(FPUnpacked addend, FPUnpacked op1, FPUnpacked op2) {
-    addend = NormalizeUnpacked(addend);
-    op1 = NormalizeUnpacked(op1);
-    op2 = NormalizeUnpacked(op2);
-
     const bool product_sign = op1.sign != op2.sign;
     const auto [product_exponent, product_value] = [op1, op2]{
         int exponent = op1.exponent + op2.exponent;
@@ -47,10 +36,10 @@ FPUnpacked FusedMulAdd(FPUnpacked addend, FPUnpacked op1, FPUnpacked op2) {
     }
 
     if (addend.mantissa == 0) {
-        return FPUnpacked{product_sign, product_exponent + 64, product_value.upper | u64(product_value.lower != 0)};
+        return ReduceMantissa(product_sign, product_exponent, product_value);
     }
 
-    const int exp_diff = product_exponent - (addend.exponent - normalized_point_position);
+    const int exp_diff = product_exponent - addend.exponent;
 
     if (product_sign == addend.sign) {
         // Addition
@@ -63,7 +52,7 @@ FPUnpacked FusedMulAdd(FPUnpacked addend, FPUnpacked op1, FPUnpacked op2) {
 
         // addend < product
         const u128 result = product_value + StickyLogicalShiftRight(addend.mantissa, exp_diff - normalized_point_position);
-        return FPUnpacked{product_sign, product_exponent + 64, result.upper | u64(result.lower != 0)};
+        return ReduceMantissa(product_sign, product_exponent, result);
     }
 
     // Subtraction
@@ -80,7 +69,7 @@ FPUnpacked FusedMulAdd(FPUnpacked addend, FPUnpacked op1, FPUnpacked op2) {
         result = product_value - addend_long;
     } else if (exp_diff <= 0) {
         result_sign = !product_sign;
-        result_exponent = addend.exponent - normalized_point_position;
+        result_exponent = addend.exponent;
         result = addend_long - StickyLogicalShiftRight(product_value, -exp_diff);
     } else {
         result_sign = product_sign;
@@ -95,7 +84,7 @@ FPUnpacked FusedMulAdd(FPUnpacked addend, FPUnpacked op1, FPUnpacked op2) {
     const int required_shift = normalized_point_position - Common::HighestSetBit(result.upper);
     result = result << required_shift;
     result_exponent -= required_shift;
-    return FPUnpacked{result_sign, result_exponent + 64, result.upper | u64(result.lower != 0)};
+    return ReduceMantissa(result_sign, result_exponent, result);
 }
 
 } // namespace Dynarmic::FP
