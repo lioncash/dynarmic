@@ -301,6 +301,7 @@ public:
     U128 FPVectorGreaterEqual(size_t esize, const U128& a, const U128& b);
     U128 FPVectorMul(size_t esize, const U128& a, const U128& b);
     U128 FPVectorMulAdd(size_t esize, const U128& addend, const U128& op1, const U128& op2);
+    U128 FPVectorNeg(size_t esize, const U128& a);
     U128 FPVectorPairedAdd(size_t esize, const U128& a, const U128& b);
     U128 FPVectorPairedAddLower(size_t esize, const U128& a, const U128& b);
     U128 FPVectorRSqrtEstimate(size_t esize, const U128& a);

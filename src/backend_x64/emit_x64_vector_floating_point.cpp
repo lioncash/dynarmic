@@ -555,6 +555,39 @@ void EmitX64::EmitFPVectorMulAdd64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPVectorMulAdd<64>(code, ctx, inst);
 }
 
+void EmitX64::EmitFPVectorNeg16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Address mask = code.MConst(xword, 0x8000800080008000, 0x8000800080008000);
+
+    code.pxor(a, mask);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitFPVectorNeg32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Address mask = code.MConst(xword, 0x8000000080000000, 0x8000000080000000);
+
+    code.pxor(a, mask);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitFPVectorNeg64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Address mask = code.MConst(xword, 0x8000000000000000, 0x8000000000000000);
+
+    code.pxor(a, mask);
+
+    ctx.reg_alloc.DefineValue(inst, a);
+}
+
 void EmitX64::EmitFPVectorPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
     EmitThreeOpVectorOperation<32, PairedIndexer>(code, ctx, inst, &Xbyak::CodeGenerator::haddps);
 }
