@@ -4,16 +4,20 @@
  * General Public License version 2 or any later version.
  */
 
+#include <array>
 #include <type_traits>
+#include <utility>
 
 #include "backend_x64/abi.h"
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
 #include "common/bit_util.h"
 #include "common/fp/fpcr.h"
+#include "common/fp/info.h"
 #include "common/fp/op.h"
 #include "common/fp/util.h"
 #include "common/mp/function_info.h"
+#include "common/mp/integer.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
 
@@ -22,23 +26,38 @@ namespace Dynarmic::BackendX64 {
 using namespace Xbyak::util;
 namespace mp = Common::mp;
 
-template <typename T>
-struct NaNWrapper;
+template <size_t fsize, typename T>
+static T ChooseOnFsize(T f32, T f64) {
+    static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
 
-template <>
-struct NaNWrapper<u32> {
-    static constexpr u32 value = 0x7fc00000;
-};
+    if constexpr (fsize == 32) {
+        return f32;
+    } else {
+        return f64;
+    }
+}
 
-template <>
-struct NaNWrapper<u64> {
-    static constexpr u64 value = 0x7ff8'0000'0000'0000;
-};
+#define FCODE(NAME) (code.*ChooseOnFsize<fsize>(&Xbyak::CodeGenerator::NAME##s, &Xbyak::CodeGenerator::NAME##d))
 
-template <typename T, auto IndexFunction>
-static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& xmm_a,
-                       const Xbyak::Xmm& xmm_b, const Xbyak::Xmm& result, const Xbyak::Xmm& nan_mask) {
-    static_assert(std::is_same_v<T, u32> || std::is_same_v<T, u64>, "T must be either u32 or u64");
+template<typename T, auto IndexFunction, size_t... argi>
+static auto GetRuntimeNaNFunction(std::index_sequence<argi...>) {
+    auto result = [](std::array<VectorArray<T>, sizeof...(argi) + 1>& values) {
+        VectorArray<T>& result = values[0];
+        for (size_t elementi = 0; elementi < result.size(); ++elementi) {
+            const auto current_values = IndexFunction(elementi, values[argi + 1]...);
+            if (auto r = FP::ProcessNaNs(std::get<argi>(current_values)...)) {
+                result[elementi] = *r;
+            } else if (FP::IsNaN(result[elementi])) {
+                result[elementi] = FP::FPInfo<T>::DefaultNaN();
+            }
+        }
+    };
+    return static_cast<mp::equivalent_function_type_t<decltype(result)>*>(result);
+}
+
+template <size_t fsize, size_t nargs, auto IndexFunction>
+static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, std::array<Xbyak::Xmm, nargs + 1> xmms, const Xbyak::Xmm& nan_mask) {
+    static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         code.ptest(nan_mask, nan_mask);
@@ -57,29 +76,21 @@ static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& xm
 
     code.SwitchToFarCode();
     code.L(nan);
+
+    const Xbyak::Xmm result = xmms[0];
+
     code.sub(rsp, 8);
     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
-    const size_t stack_space = 3 * 16;
-    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
-    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
-    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
-    code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
-    code.movaps(xword[code.ABI_PARAM1], result);
-    code.movaps(xword[code.ABI_PARAM2], xmm_a);
-    code.movaps(xword[code.ABI_PARAM3], xmm_b);
 
-    code.CallFunction(static_cast<void(*)(VectorArray<T>&, const VectorArray<T>&, const VectorArray<T>&)>(
-        [](VectorArray<T>& result, const VectorArray<T>& a, const VectorArray<T>& b) {
-            for (size_t i = 0; i < result.size(); ++i) {
-                auto [first, second] = IndexFunction(i, a, b);
-                if (auto r = FP::ProcessNaNs(first, second)) {
-                    result[i] = *r;
-                } else if (FP::IsNaN(result[i])) {
-                    result[i] = NaNWrapper<T>::value;
-                }
-            }
-        }
-    ));
+    const size_t stack_space = xmms.size() * 16;
+    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
+    for (size_t i = 0; i < xmms.size(); ++i) {
+        code.movaps(xword[rsp + ABI_SHADOW_SPACE + i * 16], xmms[i]);
+    }
+    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+
+    using T = mp::unsigned_integer_of_size<fsize>;
+    code.CallFunction(GetRuntimeNaNFunction<T, IndexFunction>(std::make_index_sequence<nargs>{}));
 
     code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
     code.add(rsp, stack_space + ABI_SHADOW_SPACE);
@@ -123,8 +134,10 @@ static std::tuple<u64, u64> PairedLowerIndexFunction64(size_t i, const VectorArr
     return i == 0 ? std::make_tuple(a[0], b[0]) : std::make_tuple(u64(0), u64(0));
 }
 
-template <auto IndexFunction, typename Function>
-static void EmitVectorOperation32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
+template <size_t fsize, auto IndexFunction, typename Function>
+static void EmitThreeOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
+    static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
+
     if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -141,10 +154,10 @@ static void EmitVectorOperation32(BlockOfCode& code, EmitContext& ctx, IR::Inst*
             Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
             code.pcmpeqw(tmp, tmp);
             code.movaps(nan_mask, xmm_a);
-            code.cmpordps(nan_mask, nan_mask);
+            FCODE(cmpordp)(nan_mask, nan_mask);
             code.andps(xmm_a, nan_mask);
             code.xorps(nan_mask, tmp);
-            code.andps(nan_mask, code.MConst(xword, 0x7fc0'0000'7fc0'0000, 0x7fc0'0000'7fc0'0000));
+            code.andps(nan_mask, fsize == 32 ? code.MConst(xword, 0x7fc0'0000'7fc0'0000, 0x7fc0'0000'7fc0'0000) : code.MConst(xword, 0x7ff8'0000'0000'0000, 0x7ff8'0000'0000'0000));
             code.orps(xmm_a, nan_mask);
         }
 
@@ -161,67 +174,15 @@ static void EmitVectorOperation32(BlockOfCode& code, EmitContext& ctx, IR::Inst*
 
     code.movaps(nan_mask, xmm_b);
     code.movaps(result, xmm_a);
-    code.cmpunordps(nan_mask, xmm_a);
+    FCODE(cmpunordp)(nan_mask, xmm_a);
     if constexpr (std::is_member_function_pointer_v<Function>) {
         (code.*fn)(result, xmm_b);
     } else {
         fn(result, xmm_b);
     }
-    code.cmpunordps(nan_mask, result);
+    FCODE(cmpunordp)(nan_mask, result);
 
-    HandleNaNs<u32, IndexFunction>(code, ctx, xmm_a, xmm_b, result, nan_mask);
-
-    ctx.reg_alloc.DefineValue(inst, result);
-}
-
-template <auto IndexFunction, typename Function>
-static void EmitVectorOperation64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
-    if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-        Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
-        Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
-
-        if constexpr (std::is_member_function_pointer_v<Function>) {
-            (code.*fn)(xmm_a, xmm_b);
-        } else {
-            fn(xmm_a, xmm_b);
-        }
-
-        if (ctx.FPSCR_DN()) {
-            Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
-            Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
-            code.pcmpeqw(tmp, tmp);
-            code.movaps(nan_mask, xmm_a);
-            code.cmpordpd(nan_mask, nan_mask);
-            code.andps(xmm_a, nan_mask);
-            code.xorps(nan_mask, tmp);
-            code.andps(nan_mask, code.MConst(xword, 0x7ff8'0000'0000'0000, 0x7ff8'0000'0000'0000));
-            code.orps(xmm_a, nan_mask);
-        }
-
-        ctx.reg_alloc.DefineValue(inst, xmm_a);
-        return;
-    }
-
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    Xbyak::Label end, nan;
-    Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-    Xbyak::Xmm xmm_a = ctx.reg_alloc.UseXmm(args[0]);
-    Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
-    Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
-
-    code.movaps(nan_mask, xmm_b);
-    code.movaps(result, xmm_a);
-    code.cmpunordpd(nan_mask, xmm_a);
-    if constexpr (std::is_member_function_pointer_v<Function>) {
-        (code.*fn)(result, xmm_b);
-    } else {
-        fn(result, xmm_b);
-    }
-    code.cmpunordpd(nan_mask, result);
-
-    HandleNaNs<u64, IndexFunction>(code, ctx, xmm_a, xmm_b, result, nan_mask);
+    HandleNaNs<fsize, 2, IndexFunction>(code, ctx, {result, xmm_a, xmm_b}, nan_mask);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -329,19 +290,19 @@ void EmitX64::EmitFPVectorAbs64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPVectorAdd32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation32<DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::addps);
+    EmitThreeOpVectorOperation<32, DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::addps);
 }
 
 void EmitX64::EmitFPVectorAdd64(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation64<DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::addpd);
+    EmitThreeOpVectorOperation<64, DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::addpd);
 }
 
 void EmitX64::EmitFPVectorDiv32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation32<DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::divps);
+    EmitThreeOpVectorOperation<32, DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::divps);
 }
 
 void EmitX64::EmitFPVectorDiv64(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation64<DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::divpd);
+    EmitThreeOpVectorOperation<64, DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::divpd);
 }
 
 void EmitX64::EmitFPVectorEqual32(EmitContext& ctx, IR::Inst* inst) {
@@ -405,23 +366,23 @@ void EmitX64::EmitFPVectorGreaterEqual64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPVectorMul32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation32<DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::mulps);
+    EmitThreeOpVectorOperation<32, DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::mulps);
 }
 
 void EmitX64::EmitFPVectorMul64(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation64<DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::mulpd);
+    EmitThreeOpVectorOperation<64, DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::mulpd);
 }
 
 void EmitX64::EmitFPVectorPairedAdd32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation32<PairedIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::haddps);
+    EmitThreeOpVectorOperation<32, PairedIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::haddps);
 }
 
 void EmitX64::EmitFPVectorPairedAdd64(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation64<PairedIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::haddpd);
+    EmitThreeOpVectorOperation<64, PairedIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::haddpd);
 }
 
 void EmitX64::EmitFPVectorPairedAddLower32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation32<PairedLowerIndexFunction32>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm xmm_b) {
+    EmitThreeOpVectorOperation<32, PairedLowerIndexFunction32>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm xmm_b) {
         const Xbyak::Xmm zero = ctx.reg_alloc.ScratchXmm();
         code.xorps(zero, zero);
         code.punpcklqdq(result, xmm_b);
@@ -430,7 +391,7 @@ void EmitX64::EmitFPVectorPairedAddLower32(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPVectorPairedAddLower64(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation64<PairedLowerIndexFunction64>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm xmm_b) {
+    EmitThreeOpVectorOperation<64, PairedLowerIndexFunction64>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm xmm_b) {
         const Xbyak::Xmm zero = ctx.reg_alloc.ScratchXmm();
         code.xorps(zero, zero);
         code.punpcklqdq(result, xmm_b); 
@@ -523,11 +484,11 @@ void EmitX64::EmitFPVectorS64ToDouble(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPVectorSub32(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation32<DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::subps);
+    EmitThreeOpVectorOperation<32, DefaultIndexFunction32>(code, ctx, inst, &Xbyak::CodeGenerator::subps);
 }
 
 void EmitX64::EmitFPVectorSub64(EmitContext& ctx, IR::Inst* inst) {
-    EmitVectorOperation64<DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::subpd);
+    EmitThreeOpVectorOperation<64, DefaultIndexFunction64>(code, ctx, inst, &Xbyak::CodeGenerator::subpd);
 }
 
 void EmitX64::EmitFPVectorU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
