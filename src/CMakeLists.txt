@@ -27,6 +27,8 @@ add_library(dynarmic
     common/fp/op/FPMulAdd.h
     common/fp/op/FPRecipEstimate.cpp
     common/fp/op/FPRecipEstimate.h
+    common/fp/op/FPRecipStepFused.cpp
+    common/fp/op/FPRecipStepFused.h
     common/fp/op/FPRoundInt.cpp
     common/fp/op/FPRoundInt.h
     common/fp/op/FPRSqrtEstimate.cpp

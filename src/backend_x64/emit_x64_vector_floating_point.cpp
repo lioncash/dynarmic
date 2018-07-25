@@ -632,6 +632,23 @@ void EmitX64::EmitFPVectorRecipEstimate64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 template<typename FPT>
+static void EmitRecipStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    EmitThreeOpFallback(code, ctx, inst, [](VectorArray<FPT>& result, const VectorArray<FPT>& op1, const VectorArray<FPT>& op2, FP::FPCR fpcr, FP::FPSR& fpsr) {
+        for (size_t i = 0; i < result.size(); i++) {
+            result[i] = FP::FPRecipStepFused<FPT>(op1[i], op2[i], fpcr, fpsr);
+        }
+    });
+}
+
+void EmitX64::EmitFPVectorRecipStepFused32(EmitContext& ctx, IR::Inst* inst) {
+    EmitRecipStepFused<u32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPVectorRecipStepFused64(EmitContext& ctx, IR::Inst* inst) {
+    EmitRecipStepFused<u64>(code, ctx, inst);
+}
+
+template<typename FPT>
 static void EmitRSqrtEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     EmitTwoOpFallback(code, ctx, inst, [](VectorArray<FPT>& result, const VectorArray<FPT>& operand, FP::FPCR fpcr, FP::FPSR& fpsr) {
         for (size_t i = 0; i < result.size(); i++) {

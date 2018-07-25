@@ -1495,6 +1495,13 @@ U32U64 IREmitter::FPRecipEstimate(const U32U64& a) {
     return Inst<U64>(Opcode::FPRecipEstimate64, a);
 }
 
+U32U64 IREmitter::FPRecipStepFused(const U32U64& a, const U32U64& b) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPRecipStepFused32, a, b);
+    }
+    return Inst<U64>(Opcode::FPRecipStepFused64, a, b);
+}
+
 U32U64 IREmitter::FPRoundInt(const U32U64& a, FP::RoundingMode rounding, bool exact) {
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPRoundInt32, a, static_cast<u8>(rounding), Imm1(exact));
@@ -1755,6 +1762,17 @@ U128 IREmitter::FPVectorRecipEstimate(size_t esize, const U128& a) {
         return Inst<U128>(Opcode::FPVectorRecipEstimate32, a);
     case 64:
         return Inst<U128>(Opcode::FPVectorRecipEstimate64, a);
+    }
+    UNREACHABLE();
+    return {};
+}
+
+U128 IREmitter::FPVectorRecipStepFused(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 32:
+        return Inst<U128>(Opcode::FPVectorRecipStepFused32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::FPVectorRecipStepFused64, a, b);
     }
     UNREACHABLE();
     return {};

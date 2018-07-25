@@ -830,6 +830,23 @@ void EmitX64::EmitFPRecipEstimate64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPRecipEstimate<u64>(code, ctx, inst);
 }
 
+template<typename FPT>
+static void EmitFPRecipStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.HostCall(inst, args[0], args[1]);
+    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+    code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.CallFunction(&FP::FPRecipStepFused<FPT>);
+}
+
+void EmitX64::EmitFPRecipStepFused32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRecipStepFused<u32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPRecipStepFused64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRecipStepFused<u64>(code, ctx, inst);
+}
+
 static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, size_t fsize) {
     const auto rounding = static_cast<FP::RoundingMode>(inst->GetArg(1).GetU8());
     const bool exact = inst->GetArg(2).GetU1();
