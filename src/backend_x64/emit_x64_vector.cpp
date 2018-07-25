@@ -381,14 +381,11 @@ void EmitX64::EmitVectorAnd(EmitContext& ctx, IR::Inst* inst) {
 static void ArithmeticShiftRightByte(EmitContext& ctx, BlockOfCode& code, const Xbyak::Xmm& result, u8 shift_amount) {
     const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-    // TODO: Optimize
-    code.movdqa(tmp, result);
-    code.pslldq(tmp, 1);
-    code.psraw(tmp, shift_amount);
-    code.psraw(result, shift_amount + 8);
-    code.psllw(result, 8);
-    code.psrlw(tmp, 8);
-    code.por(result, tmp);
+    code.punpckhbw(tmp, result);
+    code.punpcklbw(result, result);
+    code.psraw(tmp, 8 + shift_amount);
+    code.psraw(result, 8 + shift_amount);
+    code.packsswb(result, tmp);
 }
 
 void EmitX64::EmitVectorArithmeticShiftRight8(EmitContext& ctx, IR::Inst* inst) {
