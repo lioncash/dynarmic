@@ -900,9 +900,9 @@ struct TranslatorVisitor final {
     bool SQRDMULH_elt_2(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool SDOT_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool FMLA_elt_3(bool Q, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMLA_elt_4(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool FMLA_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMLS_elt_3(bool Q, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMLS_elt_4(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool FMLS_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMUL_elt_3(bool Q, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool FMUL_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMLAL_elt_1(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
