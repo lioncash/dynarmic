@@ -16,7 +16,6 @@
 #include "common/fp/process_exception.h"
 #include "common/fp/process_nan.h"
 #include "common/fp/unpacked.h"
-#include "common/safe_ops.h"
 
 namespace Dynarmic::FP {
 
@@ -91,9 +90,9 @@ FPT FPRecipEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
         }
     }
 
-    const u64 scaled = Safe::LogicalShiftRight(value.mantissa, normalized_point_position - 8);
+    const u64 scaled = value.mantissa >> (normalized_point_position - 8);
     u64 estimate = static_cast<u64>(RecipEstimate(scaled)) << (FPInfo<FPT>::explicit_mantissa_width - 8);
-    int result_exponent = -value.exponent;
+    int result_exponent = -(value.exponent + 1);
     if (result_exponent < FPInfo<FPT>::exponent_min) {
         switch (result_exponent) {
         case (FPInfo<FPT>::exponent_min - 1):
@@ -103,16 +102,17 @@ FPT FPRecipEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
         case (FPInfo<FPT>::exponent_min - 2):
             estimate |= FPInfo<FPT>::implicit_leading_bit;
             estimate >>= 2;
-            result_exponent = 0;
+            result_exponent++;
             break;
         default:
             UNREACHABLE();
         }
     }
 
+    const FPT bits_sign = FPInfo<FPT>::Zero(sign);
     const FPT bits_exponent = static_cast<FPT>(result_exponent + FPInfo<FPT>::exponent_bias);
     const FPT bits_mantissa = static_cast<FPT>(estimate);
-    return (bits_exponent << FPInfo<FPT>::explicit_mantissa_width) | (bits_mantissa & FPInfo<FPT>::mantissa_mask);
+    return (bits_exponent << FPInfo<FPT>::explicit_mantissa_width) | (bits_mantissa & FPInfo<FPT>::mantissa_mask) | bits_sign;
 }
 
 template u32 FPRecipEstimate<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
