@@ -249,8 +249,6 @@ bool Inst::WritesToFPSRCumulativeExceptionBits() const {
 
 bool Inst::ReadsFromAndWritesToFPSRCumulativeExceptionBits() const {
     switch (op) {
-    case Opcode::FPAbs32:
-    case Opcode::FPAbs64:
     case Opcode::FPAdd32:
     case Opcode::FPAdd64:
     case Opcode::FPCompare32:
@@ -269,8 +267,10 @@ bool Inst::ReadsFromAndWritesToFPSRCumulativeExceptionBits() const {
     case Opcode::FPMul64:
     case Opcode::FPMulAdd32:
     case Opcode::FPMulAdd64:
-    case Opcode::FPNeg32:
-    case Opcode::FPNeg64:
+    case Opcode::FPRecipEstimate32:
+    case Opcode::FPRecipEstimate64:
+    case Opcode::FPRecipStepFused32:
+    case Opcode::FPRecipStepFused64:
     case Opcode::FPRoundInt32:
     case Opcode::FPRoundInt64:
     case Opcode::FPRSqrtEstimate32:
@@ -299,9 +299,6 @@ bool Inst::ReadsFromAndWritesToFPSRCumulativeExceptionBits() const {
     case Opcode::FPS32ToDouble:
     case Opcode::FPS64ToDouble:
     case Opcode::FPS64ToSingle:
-    case Opcode::FPVectorAbs16:
-    case Opcode::FPVectorAbs32:
-    case Opcode::FPVectorAbs64:
     case Opcode::FPVectorAdd32:
     case Opcode::FPVectorAdd64:
     case Opcode::FPVectorDiv32:
@@ -314,10 +311,16 @@ bool Inst::ReadsFromAndWritesToFPSRCumulativeExceptionBits() const {
     case Opcode::FPVectorGreaterEqual64:
     case Opcode::FPVectorMul32:
     case Opcode::FPVectorMul64:
+    case Opcode::FPVectorMulAdd32:
+    case Opcode::FPVectorMulAdd64:
     case Opcode::FPVectorPairedAddLower32:
     case Opcode::FPVectorPairedAddLower64:
     case Opcode::FPVectorPairedAdd32:
     case Opcode::FPVectorPairedAdd64:
+    case Opcode::FPVectorRecipEstimate32:
+    case Opcode::FPVectorRecipEstimate64:
+    case Opcode::FPVectorRecipStepFused32:
+    case Opcode::FPVectorRecipStepFused64:
     case Opcode::FPVectorRSqrtEstimate32:
     case Opcode::FPVectorRSqrtEstimate64:
     case Opcode::FPVectorRSqrtStepFused32:
