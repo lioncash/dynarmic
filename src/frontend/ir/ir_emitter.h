@@ -267,7 +267,7 @@ public:
     U32U64 FPMin(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32U64 FPMinNumeric(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32U64 FPMul(const U32U64& a, const U32U64& b, bool fpscr_controlled);
-    U32U64 FPMulAdd(const U32U64& a, const U32U64& b, const U32U64& c, bool fpscr_controlled);
+    U32U64 FPMulAdd(const U32U64& addend, const U32U64& op1, const U32U64& op2, bool fpscr_controlled);
     U32U64 FPNeg(const U32U64& a);
     U32U64 FPRoundInt(const U32U64& a, FP::RoundingMode rounding, bool exact);
     U32U64 FPRSqrtEstimate(const U32U64& a);
@@ -300,6 +300,7 @@ public:
     U128 FPVectorGreater(size_t esize, const U128& a, const U128& b);
     U128 FPVectorGreaterEqual(size_t esize, const U128& a, const U128& b);
     U128 FPVectorMul(size_t esize, const U128& a, const U128& b);
+    U128 FPVectorMulAdd(size_t esize, const U128& addend, const U128& op1, const U128& op2);
     U128 FPVectorPairedAdd(size_t esize, const U128& a, const U128& b);
     U128 FPVectorPairedAddLower(size_t esize, const U128& a, const U128& b);
     U128 FPVectorRSqrtEstimate(size_t esize, const U128& a);

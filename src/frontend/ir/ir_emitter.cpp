@@ -1696,6 +1696,17 @@ U128 IREmitter::FPVectorMul(size_t esize, const U128& a, const U128& b) {
     return {};
 }
 
+U128 IREmitter::FPVectorMulAdd(size_t esize, const U128& a, const U128& b, const U128& c) {
+    switch (esize) {
+    case 32:
+        return Inst<U128>(Opcode::FPVectorMulAdd32, a, b, c);
+    case 64:
+        return Inst<U128>(Opcode::FPVectorMulAdd64, a, b, c);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::FPVectorPairedAdd(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 32:
