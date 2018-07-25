@@ -4,6 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
+#include <array>
 #include <cstring>
 #include <limits>
 
@@ -22,6 +23,7 @@ const Xbyak::Reg64 BlockOfCode::ABI_PARAM1 = Xbyak::util::rcx;
 const Xbyak::Reg64 BlockOfCode::ABI_PARAM2 = Xbyak::util::rdx;
 const Xbyak::Reg64 BlockOfCode::ABI_PARAM3 = Xbyak::util::r8;
 const Xbyak::Reg64 BlockOfCode::ABI_PARAM4 = Xbyak::util::r9;
+const std::array<Xbyak::Reg64, 4> BlockOfCode::ABI_PARAMS = {BlockOfCode::ABI_PARAM1, BlockOfCode::ABI_PARAM2, BlockOfCode::ABI_PARAM3, BlockOfCode::ABI_PARAM4};
 #else
 const Xbyak::Reg64 BlockOfCode::ABI_RETURN = Xbyak::util::rax;
 const Xbyak::Reg64 BlockOfCode::ABI_RETURN2 = Xbyak::util::rdx;
@@ -31,6 +33,7 @@ const Xbyak::Reg64 BlockOfCode::ABI_PARAM3 = Xbyak::util::rdx;
 const Xbyak::Reg64 BlockOfCode::ABI_PARAM4 = Xbyak::util::rcx;
 const Xbyak::Reg64 BlockOfCode::ABI_PARAM5 = Xbyak::util::r8;
 const Xbyak::Reg64 BlockOfCode::ABI_PARAM6 = Xbyak::util::r9;
+const std::array<Xbyak::Reg64, 6> BlockOfCode::ABI_PARAMS = {BlockOfCode::ABI_PARAM1, BlockOfCode::ABI_PARAM2, BlockOfCode::ABI_PARAM3, BlockOfCode::ABI_PARAM4, BlockOfCode::ABI_PARAM5, BlockOfCode::ABI_PARAM6};
 #endif
 
 constexpr size_t TOTAL_CODE_SIZE = 128 * 1024 * 1024;

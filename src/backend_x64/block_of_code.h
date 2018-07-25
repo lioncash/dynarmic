@@ -100,17 +100,24 @@ public:
     void SetCodePtr(CodePtr code_ptr);
     void EnsurePatchLocationSize(CodePtr begin, size_t size);
 
+    // ABI registers
+#ifdef _WIN32
     static const Xbyak::Reg64 ABI_RETURN;
-#ifndef _WIN32
-    static const Xbyak::Reg64 ABI_RETURN2;
-#endif
     static const Xbyak::Reg64 ABI_PARAM1;
     static const Xbyak::Reg64 ABI_PARAM2;
     static const Xbyak::Reg64 ABI_PARAM3;
     static const Xbyak::Reg64 ABI_PARAM4;
-#ifndef _WIN32
+    static const std::array<Xbyak::Reg64, 4> ABI_PARAMS;
+#else
+    static const Xbyak::Reg64 ABI_RETURN;
+    static const Xbyak::Reg64 ABI_RETURN2;
+    static const Xbyak::Reg64 ABI_PARAM1;
+    static const Xbyak::Reg64 ABI_PARAM2;
+    static const Xbyak::Reg64 ABI_PARAM3;
+    static const Xbyak::Reg64 ABI_PARAM4;
     static const Xbyak::Reg64 ABI_PARAM5;
     static const Xbyak::Reg64 ABI_PARAM6;
+    static const std::array<Xbyak::Reg64, 6> ABI_PARAMS;
 #endif
 
     bool DoesCpuSupport(Xbyak::util::Cpu::Type type) const;
