@@ -1488,6 +1488,13 @@ U32U64 IREmitter::FPNeg(const U32U64& a) {
     }
 }
 
+U32U64 IREmitter::FPRecipEstimate(const U32U64& a) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPRecipEstimate32, a);
+    }
+    return Inst<U64>(Opcode::FPRecipEstimate64, a);
+}
+
 U32U64 IREmitter::FPRoundInt(const U32U64& a, FP::RoundingMode rounding, bool exact) {
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPRoundInt32, a, static_cast<u8>(rounding), Imm1(exact));
