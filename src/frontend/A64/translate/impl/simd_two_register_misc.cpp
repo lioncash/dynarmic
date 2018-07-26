@@ -234,6 +234,21 @@ bool TranslatorVisitor::FCMLT_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FPCompareAgainstZero(*this, Q, sz, Vn, Vd, ComparisonType::LT);
 }
 
+bool TranslatorVisitor::FCVTZS_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    if (sz && !Q) {
+        return ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = sz ? 64 : 32;
+
+    const IR::U128 operand = V(datasize, Vn);
+    const IR::U128 result = ir.FPVectorToSignedFixed(esize, operand, 0, FP::RoundingMode::TowardsZero);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FRECPE_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     if (sz && !Q) {
         return ReservedValue();
