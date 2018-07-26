@@ -1866,12 +1866,12 @@ void EmitX64::EmitVectorPairedAddUnsignedWiden32(EmitContext& ctx, IR::Inst* ins
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
-template <typename T>
-static T PolynomialMultiply(T lhs, T rhs) {
+template <typename D, typename T>
+static D PolynomialMultiply(T lhs, T rhs) {
     constexpr size_t bit_size = Common::BitSize<T>();
     const std::bitset<bit_size> operand(lhs);
 
-    T res = 0;
+    D res = 0;
     for (size_t i = 0; i < bit_size; i++) {
         if (operand[i]) {
             res ^= rhs << i;
@@ -1883,7 +1883,35 @@ static T PolynomialMultiply(T lhs, T rhs) {
 
 void EmitX64::EmitVectorPolynomialMultiply8(EmitContext& ctx, IR::Inst* inst) {
     EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u8>& a, const VectorArray<u8>& b) {
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), PolynomialMultiply<u8>);
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), PolynomialMultiply<u8, u8>);
+    });
+}
+
+void EmitX64::EmitVectorPolynomialMultiplyLong8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u16>& result, const VectorArray<u8>& a, const VectorArray<u8>& b) {
+        for (size_t i = 0; i < result.size(); i++) {
+            result[i] = PolynomialMultiply<u16, u8>(a[i], b[i]);
+        }
+    });
+}
+
+void EmitX64::EmitVectorPolynomialMultiplyLong64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& a, const VectorArray<u64>& b) {
+        const auto handle_high_bits = [](u64 lhs, u64 rhs) {
+            constexpr size_t bit_size = Common::BitSize<u64>();
+            u64 result = 0;
+
+            for (size_t i = 1; i < bit_size; i++) {
+                if (Common::Bit(i, lhs)) {
+                    result ^= rhs >> (bit_size - i);
+                }
+            }
+
+            return result;
+        };
+
+        result[0] = PolynomialMultiply<u64, u64>(a[0], b[0]);
+        result[1] = handle_high_bits(a[0], b[0]);
     });
 }
 

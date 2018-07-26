@@ -1198,6 +1198,18 @@ U128 IREmitter::VectorPolynomialMultiply(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorPolynomialMultiply8, a, b);
 }
 
+U128 IREmitter::VectorPolynomialMultiplyLong(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorPolynomialMultiplyLong8, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorPolynomialMultiplyLong64, a, b);
+    default:
+        UNREACHABLE();
+        return {};
+    }
+}
+
 U128 IREmitter::VectorPopulationCount(const U128& a) {
     return Inst<U128>(Opcode::VectorPopulationCount, a);
 }

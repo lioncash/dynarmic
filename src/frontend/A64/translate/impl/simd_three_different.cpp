@@ -161,6 +161,22 @@ bool WideOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Ve
 }
 } // Anonymous namespace
 
+bool TranslatorVisitor::PMULL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b01 || size == 0b10) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = 64;
+
+    const IR::U128 operand1 = Vpart(datasize, Vn, Q);
+    const IR::U128 operand2 = Vpart(datasize, Vm, Q);
+    const IR::U128 result = ir.VectorPolynomialMultiplyLong(esize, operand1, operand2);
+
+    V(128, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SABAL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return AbsoluteDifferenceLong(*this, Q, size, Vm, Vn, Vd, AbsoluteDifferenceBehavior::Accumulate, Signedness::Signed);
 }
