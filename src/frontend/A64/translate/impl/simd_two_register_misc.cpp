@@ -4,6 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
+#include "common/fp/rounding_mode.h"
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
@@ -102,6 +103,23 @@ bool IntegerConvertToFloat(TranslatorVisitor& v, bool Q, bool sz, Vec Vn, Vec Vd
 
         return sz ? v.ir.FPVectorU64ToDouble(operand) : v.ir.FPVectorU32ToSingle(operand);
     }();
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
+bool FloatConvertToInteger(TranslatorVisitor& v, bool Q, bool sz, Vec Vn, Vec Vd, Signedness signedness, FP::RoundingMode rounding_mode) {
+    if (sz && !Q) {
+        return v.ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = sz ? 64 : 32;
+
+    const IR::U128 operand = v.V(datasize, Vn);
+    const IR::U128 result = signedness == Signedness::Signed
+                          ? v.ir.FPVectorToSignedFixed(esize, operand, 0, rounding_mode)
+                          : v.ir.FPVectorToUnsignedFixed(esize, operand, 0, rounding_mode);
 
     v.V(datasize, Vd, result);
     return true;
@@ -234,19 +252,44 @@ bool TranslatorVisitor::FCMLT_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FPCompareAgainstZero(*this, Q, sz, Vn, Vd, ComparisonType::LT);
 }
 
+bool TranslatorVisitor::FCVTNS_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Signed, FP::RoundingMode::ToNearest_TieEven);
+}
+
+bool TranslatorVisitor::FCVTMS_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Signed, FP::RoundingMode::TowardsMinusInfinity);
+}
+
+bool TranslatorVisitor::FCVTAS_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Signed, FP::RoundingMode::ToNearest_TieAwayFromZero);
+}
+
+bool TranslatorVisitor::FCVTPS_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Signed, FP::RoundingMode::TowardsPlusInfinity);
+}
+
 bool TranslatorVisitor::FCVTZS_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
-    if (sz && !Q) {
-        return ReservedValue();
-    }
+    return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Signed, FP::RoundingMode::TowardsZero);
+}
 
-    const size_t datasize = Q ? 128 : 64;
-    const size_t esize = sz ? 64 : 32;
+bool TranslatorVisitor::FCVTNU_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Unsigned, FP::RoundingMode::ToNearest_TieEven);
+}
 
-    const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 result = ir.FPVectorToSignedFixed(esize, operand, 0, FP::RoundingMode::TowardsZero);
+bool TranslatorVisitor::FCVTMU_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Unsigned, FP::RoundingMode::TowardsMinusInfinity);
+}
 
-    V(datasize, Vd, result);
-    return true;
+bool TranslatorVisitor::FCVTAU_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Unsigned, FP::RoundingMode::ToNearest_TieAwayFromZero);
+}
+
+bool TranslatorVisitor::FCVTPU_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Unsigned, FP::RoundingMode::TowardsPlusInfinity);
+}
+
+bool TranslatorVisitor::FCVTZU_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
+    return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Unsigned, FP::RoundingMode::TowardsZero);
 }
 
 bool TranslatorVisitor::FRECPE_4(bool Q, bool sz, Vec Vn, Vec Vd) {
