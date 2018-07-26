@@ -33,7 +33,8 @@ FPT FPRSqrtStepFused(FPT op1, FPT op2, FPCR fpcr, FPSR& fpsr) {
     const bool zero2 = type2 == FPType::Zero;
 
     if ((inf1 && zero2) || (zero1 && inf2)) {
-        return FPInfo<FPT>::OnePointFive(false);
+        // return +1.5
+        return FPValue<FPT, false, -1, 3>();
     }
 
     if (inf1 || inf2) {

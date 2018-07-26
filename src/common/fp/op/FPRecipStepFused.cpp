@@ -33,7 +33,8 @@ FPT FPRecipStepFused(FPT op1, FPT op2, FPCR fpcr, FPSR& fpsr) {
     const bool zero2 = type2 == FPType::Zero;
 
     if ((inf1 && zero2) || (zero1 && inf2)) {
-        return FPInfo<FPT>::Two(false);
+        // return +2.0
+        return FPValue<FPT, false, 0, 2>();
     }
 
     if (inf1 || inf2) {

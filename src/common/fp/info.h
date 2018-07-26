@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common/bit_util.h"
 #include "common/common_types.h"
 
 namespace Dynarmic::FP {
@@ -33,8 +34,6 @@ struct FPInfo<u32> {
     static constexpr u32 Infinity(bool sign) { return exponent_mask | Zero(sign); }
     static constexpr u32 MaxNormal(bool sign) { return (exponent_mask - 1) | Zero(sign); }
     static constexpr u32 DefaultNaN() { return exponent_mask | (u32(1) << (explicit_mantissa_width - 1)); }
-    static constexpr u32 OnePointFive(bool sign) { return Zero(sign) | (u32(1) << (explicit_mantissa_width - 1)) | (u32(exponent_bias) << explicit_mantissa_width); }
-    static constexpr u32 Two(bool sign) { return Zero(sign) | (u32(exponent_bias + 1) << explicit_mantissa_width); }
 };
 
 template<>
@@ -57,8 +56,26 @@ struct FPInfo<u64> {
     static constexpr u64 Infinity(bool sign) { return exponent_mask | Zero(sign); }
     static constexpr u64 MaxNormal(bool sign) { return (exponent_mask - 1) | Zero(sign); }
     static constexpr u64 DefaultNaN() { return exponent_mask | (u64(1) << (explicit_mantissa_width - 1)); }
-    static constexpr u64 OnePointFive(bool sign) { return Zero(sign) | (u64(1) << (explicit_mantissa_width - 1)) | (u64(exponent_bias) << explicit_mantissa_width); }
-    static constexpr u64 Two(bool sign) { return Zero(sign) | (u64(exponent_bias + 1) << explicit_mantissa_width); }
 };
+
+/// value = (sign ? -1 : +1) * 2^exponent * value
+/// @note We do not handle denormals. Denormals will static_assert.
+template<typename FPT, bool sign, int exponent, FPT value>
+constexpr FPT FPValue() {
+    if constexpr (value == 0) {
+        return FPInfo<FPT>::Zero(sign);
+    }
+
+    constexpr int point_position = static_cast<int>(FPInfo<FPT>::mantissa_width);
+    constexpr int highest_bit = Common::HighestSetBit(value);
+    constexpr int offset = point_position - highest_bit;
+    constexpr int normalized_exponent = exponent - offset + point_position;
+    static_assert(offset >= 0);
+    static_assert(normalized_exponent >= FPInfo<FPT>::exponent_min && normalized_exponent <= FPInfo<FPT>::exponent_max);
+
+    constexpr FPT mantissa = (value << offset) & FPInfo<FPT>::mantissa_mask;
+    constexpr FPT biased_exponent = static_cast<FPT>(normalized_exponent + FPInfo<FPT>::exponent_bias);
+    return FPInfo<FPT>::Zero(sign) | mantissa | (biased_exponent << FPInfo<FPT>::explicit_mantissa_width);
+}
 
 } // namespace Dynarmic::FP 
