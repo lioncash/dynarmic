@@ -1194,6 +1194,10 @@ U128 IREmitter::VectorPairedAddUnsignedWiden(size_t original_esize, const U128& 
     return {};
 }
 
+U128 IREmitter::VectorPolynomialMultiply(const U128& a, const U128& b) {
+    return Inst<U128>(Opcode::VectorPolynomialMultiply8, a, b);
+}
+
 U128 IREmitter::VectorPopulationCount(const U128& a) {
     return Inst<U128>(Opcode::VectorPopulationCount, a);
 }

@@ -5,6 +5,7 @@
  */
 
 #include <algorithm>
+#include <bitset>
 #include <functional>
 #include <type_traits>
 
@@ -1863,6 +1864,27 @@ void EmitX64::EmitVectorPairedAddUnsignedWiden32(EmitContext& ctx, IR::Inst* ins
     code.paddq(a, c);
 
     ctx.reg_alloc.DefineValue(inst, a);
+}
+
+template <typename T>
+static T PolynomialMultiply(T lhs, T rhs) {
+    constexpr size_t bit_size = Common::BitSize<T>();
+    const std::bitset<bit_size> operand(lhs);
+
+    T res = 0;
+    for (size_t i = 0; i < bit_size; i++) {
+        if (operand[i]) {
+            res ^= rhs << i;
+        }
+    }
+
+    return res;
+}
+
+void EmitX64::EmitVectorPolynomialMultiply8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u8>& a, const VectorArray<u8>& b) {
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), PolynomialMultiply<u8>);
+    });
 }
 
 void EmitX64::EmitVectorPopulationCount(EmitContext& ctx, IR::Inst* inst) {
