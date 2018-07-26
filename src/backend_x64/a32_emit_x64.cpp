@@ -287,6 +287,7 @@ void A32EmitX64::EmitA32GetCpsr(A32EmitContext& ctx, IR::Inst* inst) {
         // Here we observe that CPSR_q and CPSR_nzcv are right next to each other in memory,
         // so we load them both at the same time with one 64-bit read. This allows us to
         // extract all of their bits together at once with one pext.
+        static_assert(offsetof(A32JitState, CPSR_q) + 4 == offsetof(A32JitState, CPSR_nzcv));
         code.mov(result.cvt64(), qword[r15 + offsetof(A32JitState, CPSR_q)]);
         code.mov(b.cvt64(), 0xF000000000000001ull);
         code.pext(result.cvt64(), result.cvt64(), b.cvt64());
