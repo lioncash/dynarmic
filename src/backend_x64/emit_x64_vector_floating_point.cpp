@@ -86,8 +86,7 @@ static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, std::array<Xbyak::Xm
     Xbyak::Label end;
     Xbyak::Label nan;
 
-    code.jz(end);
-    code.jmp(nan, code.T_NEAR);
+    code.jnz(nan, code.T_NEAR);
     code.L(end);
 
     code.SwitchToFarCode();
