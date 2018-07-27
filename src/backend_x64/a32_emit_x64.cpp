@@ -280,27 +280,22 @@ static u32 GetCpsrImpl(A32JitState* jit_state) {
 void A32EmitX64::EmitA32GetCpsr(A32EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
         Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
-        Xbyak::Reg32 b = ctx.reg_alloc.ScratchGpr().cvt32();
-        Xbyak::Reg32 c = ctx.reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
 
-        code.mov(c, dword[r15 + offsetof(A32JitState, CPSR_ge)]);
-        // Here we observe that CPSR_q and CPSR_nzcv are right next to each other in memory,
+        // Here we observe that CPSR_et and CPSR_ge are right next to each other in memory,
         // so we load them both at the same time with one 64-bit read. This allows us to
         // extract all of their bits together at once with one pext.
-        static_assert(offsetof(A32JitState, CPSR_q) + 4 == offsetof(A32JitState, CPSR_nzcv));
-        code.mov(result.cvt64(), qword[r15 + offsetof(A32JitState, CPSR_q)]);
-        code.mov(b.cvt64(), 0xF000000000000001ull);
-        code.pext(result.cvt64(), result.cvt64(), b.cvt64());
-        code.mov(b, 0x80808080);
-        code.pext(c.cvt64(), c.cvt64(), b.cvt64());
-        code.shl(result, 27);
-        code.shl(c, 16);
-        code.or_(result, c);
-        code.mov(b, 0x00000220);
-        code.mov(c, dword[r15 + offsetof(A32JitState, CPSR_et)]);
-        code.pdep(c.cvt64(), c.cvt64(), b.cvt64());
+        static_assert(offsetof(A32JitState, CPSR_et) + 4 == offsetof(A32JitState, CPSR_ge));
+        code.mov(result.cvt64(), qword[r15 + offsetof(A32JitState, CPSR_et)]);
+        code.mov(tmp.cvt64(), 0x8080808000000003ull);
+        code.pext(result.cvt64(), result.cvt64(), tmp.cvt64());
+        code.mov(tmp, 0x000f0220);
+        code.pdep(result, result, tmp);
+        code.mov(tmp, dword[r15 + offsetof(A32JitState, CPSR_q)]);
+        code.shl(tmp, 27);
+        code.or_(result, tmp);
+        code.or_(result, dword[r15 + offsetof(A32JitState, CPSR_nzcv)]);
         code.or_(result, dword[r15 + offsetof(A32JitState, CPSR_jaifm)]);
-        code.or_(result, c);
 
         ctx.reg_alloc.DefineValue(inst, result);
     } else {

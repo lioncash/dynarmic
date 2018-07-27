@@ -29,8 +29,8 @@ struct A32JitState {
     std::array<u32, 16> Reg{}; // Current register file.
     // TODO: Mode-specific register sets unimplemented.
 
-    u32 CPSR_ge = 0;
     u32 CPSR_et = 0;
+    u32 CPSR_ge = 0;
     u32 CPSR_q = 0;
     u32 CPSR_nzcv = 0;
     u32 CPSR_jaifm = 0;
