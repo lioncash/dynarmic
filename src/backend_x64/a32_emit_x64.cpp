@@ -311,9 +311,40 @@ static void SetCpsrImpl(u32 value, A32JitState* jit_state) {
 
 void A32EmitX64::EmitA32SetCpsr(A32EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    ctx.reg_alloc.HostCall(nullptr, args[0]);
-    code.mov(code.ABI_PARAM2, code.r15);
-    code.CallFunction(&SetCpsrImpl);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
+        Xbyak::Reg32 cpsr = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+        Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
+
+        // CPSR_q
+        code.bt(cpsr, 27);
+        code.setc(code.byte[r15 + offsetof(A32JitState, CPSR_q)]);
+
+        // CPSR_nzcv
+        code.mov(tmp, cpsr);
+        code.and_(tmp, 0xF0000000);
+        code.mov(dword[r15 + offsetof(A32JitState, CPSR_nzcv)], tmp);
+
+        // CPSR_jaifm
+        code.mov(tmp, cpsr);
+        code.and_(tmp, 0x07F0FDDF);
+        code.mov(dword[r15 + offsetof(A32JitState, CPSR_jaifm)], tmp);
+
+        // CPSR_et and CPSR_ge
+        static_assert(offsetof(A32JitState, CPSR_et) + 4 == offsetof(A32JitState, CPSR_ge));
+        code.mov(tmp, 0x000f0220);
+        code.pext(cpsr, cpsr, tmp);
+        code.mov(tmp.cvt64(), 0x8080808000000003ull);
+        code.pdep(cpsr.cvt64(), cpsr.cvt64(), tmp.cvt64());
+        code.mov(tmp.cvt64(), cpsr.cvt64());
+        code.shr(tmp.cvt64(), 7);
+        code.sub(cpsr.cvt64(), tmp.cvt64());
+        code.mov(qword[r15 + offsetof(A32JitState, CPSR_et)], cpsr.cvt64());
+    } else {
+        ctx.reg_alloc.HostCall(nullptr, args[0]);
+        code.mov(code.ABI_PARAM2, code.r15);
+        code.CallFunction(&SetCpsrImpl);
+    }
 }
 
 void A32EmitX64::EmitA32SetCpsrNZCV(A32EmitContext& ctx, IR::Inst* inst) {
