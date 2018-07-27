@@ -9,6 +9,7 @@
 
 #include "backend/x64/block_of_code.h"
 #include "backend/x64/emit_x64.h"
+#include "backend/x64/perf_map.h"
 #include "common/assert.h"
 #include "common/bit_util.h"
 #include "common/common_types.h"
@@ -286,6 +287,15 @@ void EmitX64::EmitCondPrelude(const IR::Block& block) {
     code.L(pass);
 }
 
+EmitX64::BlockDescriptor EmitX64::RegisterBlock(const IR::LocationDescriptor& descriptor, CodePtr entrypoint, size_t size) {
+    PerfMapRegister(entrypoint, code.getCurr(), LocationDescriptorToFriendlyName(descriptor));
+    Patch(descriptor, entrypoint);
+
+    BlockDescriptor block_desc{entrypoint, size};
+    block_descriptors.emplace(descriptor.Value(), block_desc);
+    return block_desc;
+}
+
 void EmitX64::EmitTerminal(IR::Terminal terminal, IR::LocationDescriptor initial_location) {
     Common::VisitVariant<void>(terminal, [this, &initial_location](auto x) {
         using T = std::decay_t<decltype(x)>;
@@ -326,6 +336,8 @@ void EmitX64::Unpatch(const IR::LocationDescriptor& desc) {
 void EmitX64::ClearCache() {
     block_descriptors.clear();
     patch_information.clear();
+
+    PerfMapClear();
 }
 
 void EmitX64::InvalidateBasicBlocks(const std::unordered_set<IR::LocationDescriptor>& locations) {

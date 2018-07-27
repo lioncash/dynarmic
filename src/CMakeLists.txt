@@ -244,6 +244,8 @@ if (ARCHITECTURE_x86_64)
          backend/x64/hostloc.h
          backend/x64/jitstate_info.h
          backend/x64/oparg.h
+         backend/x64/perf_map.cpp
+         backend/x64/perf_map.h
          backend/x64/reg_alloc.cpp
          backend/x64/reg_alloc.h
     )

@@ -74,6 +74,9 @@ protected:
 #undef A32OPC
 #undef A64OPC
 
+    // Helpers
+    std::string LocationDescriptorToFriendlyName(const IR::LocationDescriptor&) const override;
+
     // Terminal instruction emitters
     void EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor initial_location) override;
     void EmitTerminalImpl(IR::Term::ReturnToDispatch terminal, IR::LocationDescriptor initial_location) override;

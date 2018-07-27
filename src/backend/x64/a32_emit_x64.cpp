@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include <dynarmic/A32/coprocessor.h>
@@ -18,6 +19,7 @@
 #include "backend/x64/block_of_code.h"
 #include "backend/x64/devirtualize.h"
 #include "backend/x64/emit_x64.h"
+#include "backend/x64/perf_map.h"
 #include "common/address_range.h"
 #include "common/assert.h"
 #include "common/bit_util.h"
@@ -132,17 +134,15 @@ A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
     EmitX64::EmitTerminal(block.GetTerminal(), block.Location());
     code.int3();
 
-    const A32::LocationDescriptor descriptor{block.Location()};
-    Patch(descriptor, entrypoint);
-
     const size_t size = static_cast<size_t>(code.getCurr() - entrypoint);
+
+    const A32::LocationDescriptor descriptor{block.Location()};
     const A32::LocationDescriptor end_location{block.EndLocation()};
+
     const auto range = boost::icl::discrete_interval<u32>::closed(descriptor.PC(), end_location.PC() - 1);
-    A32EmitX64::BlockDescriptor block_desc{entrypoint, size};
-    block_descriptors.emplace(descriptor.UniqueHash(), block_desc);
     block_ranges.AddRange(range, descriptor);
 
-    return block_desc;
+    return RegisterBlock(descriptor, entrypoint, size);
 }
 
 void A32EmitX64::ClearCache() {
@@ -161,6 +161,7 @@ void A32EmitX64::GenMemoryAccessors() {
     Devirtualize<&A32::UserCallbacks::MemoryRead8>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
+    PerfMapRegister(read_memory_8, code.getCurr(), "a32_read_memory_8");
 
     code.align();
     read_memory_16 = code.getCurr<const void*>();
@@ -168,6 +169,7 @@ void A32EmitX64::GenMemoryAccessors() {
     Devirtualize<&A32::UserCallbacks::MemoryRead16>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
+    PerfMapRegister(read_memory_16, code.getCurr(), "a32_read_memory_16");
 
     code.align();
     read_memory_32 = code.getCurr<const void*>();
@@ -175,6 +177,7 @@ void A32EmitX64::GenMemoryAccessors() {
     Devirtualize<&A32::UserCallbacks::MemoryRead32>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
+    PerfMapRegister(read_memory_32, code.getCurr(), "a32_read_memory_32");
 
     code.align();
     read_memory_64 = code.getCurr<const void*>();
@@ -182,6 +185,7 @@ void A32EmitX64::GenMemoryAccessors() {
     Devirtualize<&A32::UserCallbacks::MemoryRead64>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
+    PerfMapRegister(read_memory_64, code.getCurr(), "a32_read_memory_64");
 
     code.align();
     write_memory_8 = code.getCurr<const void*>();
@@ -189,6 +193,7 @@ void A32EmitX64::GenMemoryAccessors() {
     Devirtualize<&A32::UserCallbacks::MemoryWrite8>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
+    PerfMapRegister(write_memory_8, code.getCurr(), "a32_write_memory_8");
 
     code.align();
     write_memory_16 = code.getCurr<const void*>();
@@ -196,6 +201,7 @@ void A32EmitX64::GenMemoryAccessors() {
     Devirtualize<&A32::UserCallbacks::MemoryWrite16>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
+    PerfMapRegister(write_memory_16, code.getCurr(), "a32_write_memory_16");
 
     code.align();
     write_memory_32 = code.getCurr<const void*>();
@@ -203,6 +209,7 @@ void A32EmitX64::GenMemoryAccessors() {
     Devirtualize<&A32::UserCallbacks::MemoryWrite32>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
+    PerfMapRegister(write_memory_32, code.getCurr(), "a32_write_memory_32");
 
     code.align();
     write_memory_64 = code.getCurr<const void*>();
@@ -210,6 +217,7 @@ void A32EmitX64::GenMemoryAccessors() {
     Devirtualize<&A32::UserCallbacks::MemoryWrite64>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
+    PerfMapRegister(write_memory_64, code.getCurr(), "a32_write_memory_64");
 }
 
 void A32EmitX64::EmitA32GetRegister(A32EmitContext& ctx, IR::Inst* inst) {
@@ -1139,6 +1147,15 @@ void A32EmitX64::EmitA32CoprocStoreWords(A32EmitContext& ctx, IR::Inst* inst) {
     }
 
     CallCoprocCallback(code, ctx.reg_alloc, jit_interface, *action, nullptr, args[1]);
+}
+
+std::string A32EmitX64::LocationDescriptorToFriendlyName(const IR::LocationDescriptor& ir_descriptor) const {
+    const A32::LocationDescriptor descriptor{ir_descriptor};
+    return fmt::format("a32_{}{:08X}_{}_fpcr{:08X}",
+                       descriptor.TFlag() ? "t" : "a",
+                       descriptor.PC(),
+                       descriptor.EFlag() ? "be" : "le",
+                       descriptor.FPSCR().Value());
 }
 
 void A32EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor initial_location) {

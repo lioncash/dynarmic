@@ -13,6 +13,7 @@
 #include "backend/x64/a32_jitstate.h"
 #include "backend/x64/abi.h"
 #include "backend/x64/block_of_code.h"
+#include "backend/x64/perf_map.h"
 #include "common/assert.h"
 
 #ifdef _WIN32
@@ -223,6 +224,8 @@ void BlockOfCode::GenRunCode() {
     align();
     return_from_run_code[MXCSR_ALREADY_EXITED | FORCE_RETURN] = getCurr<const void*>();
     emit_return_from_run_code(true, true);
+
+    PerfMapRegister(run_code_from, getCurr(), "dynarmic_dispatcher");
 }
 
 void BlockOfCode::SwitchMxcsrOnEntry() {

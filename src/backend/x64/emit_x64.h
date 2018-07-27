@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
@@ -85,9 +86,11 @@ protected:
 #undef A64OPC
 
     // Helpers
+    virtual std::string LocationDescriptorToFriendlyName(const IR::LocationDescriptor&) const = 0;
     void EmitAddCycles(size_t cycles);
     Xbyak::Label EmitCond(IR::Cond cond);
     void EmitCondPrelude(const IR::Block& block);
+    BlockDescriptor RegisterBlock(const IR::LocationDescriptor& location_descriptor, CodePtr entrypoint, size_t size);
     void PushRSBHelper(Xbyak::Reg64 loc_desc_reg, Xbyak::Reg64 index_reg, IR::LocationDescriptor target);
 
     // Terminal instruction emitters
