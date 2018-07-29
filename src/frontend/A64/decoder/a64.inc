@@ -660,8 +660,8 @@ INST(FRSQRTE_4,              "FRSQRTE",                                   "0Q101
 
 // Data Processing - FP and SIMD - SIMD across lanes
 INST(SADDLV,                 "SADDLV",                                    "0Q001110zz110000001110nnnnnddddd")
-//INST(SMAXV,                  "SMAXV",                                     "0Q001110zz110000101010nnnnnddddd")
-//INST(SMINV,                  "SMINV",                                     "0Q001110zz110001101010nnnnnddddd")
+INST(SMAXV,                  "SMAXV",                                     "0Q001110zz110000101010nnnnnddddd")
+INST(SMINV,                  "SMINV",                                     "0Q001110zz110001101010nnnnnddddd")
 INST(ADDV,                   "ADDV",                                      "0Q001110zz110001101110nnnnnddddd")
 //INST(FMAXNMV_1,              "FMAXNMV",                                   "0Q00111000110000110010nnnnnddddd")
 INST(FMAXNMV_2,              "FMAXNMV",                                   "0Q1011100z110000110010nnnnnddddd")
@@ -672,8 +672,8 @@ INST(FMINNMV_2,              "FMINNMV",                                   "0Q101
 //INST(FMINV_1,                "FMINV",                                     "0Q00111010110000111110nnnnnddddd")
 INST(FMINV_2,                "FMINV",                                     "0Q1011101z110000111110nnnnnddddd")
 INST(UADDLV,                 "UADDLV",                                    "0Q101110zz110000001110nnnnnddddd")
-//INST(UMAXV,                  "UMAXV",                                     "0Q101110zz110000101010nnnnnddddd")
-//INST(UMINV,                  "UMINV",                                     "0Q101110zz110001101010nnnnnddddd")
+INST(UMAXV,                  "UMAXV",                                     "0Q101110zz110000101010nnnnnddddd")
+INST(UMINV,                  "UMINV",                                     "0Q101110zz110001101010nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD three different
 INST(SADDL,                  "SADDL, SADDL2",                             "0Q001110zz1mmmmm000000nnnnnddddd")

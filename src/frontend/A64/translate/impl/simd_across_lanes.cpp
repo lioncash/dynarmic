@@ -103,6 +103,69 @@ bool FPMinMax(TranslatorVisitor& v, bool Q, bool sz, Vec Vn, Vec Vd, MinMaxOpera
     v.V_scalar(esize, Vd, result);
     return true;
 }
+
+enum class ScalarMinMaxOperation {
+    Max,
+    Min,
+};
+
+bool ScalarMinMax(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vn, Vec Vd,
+                  ScalarMinMaxOperation operation, Signedness sign) {
+    if ((size == 0b10 && !Q) || size == 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+    const size_t elements = datasize / esize;
+
+    const auto get_element = [&](IR::U128 vec, size_t element) {
+        const auto vec_element = v.ir.VectorGetElement(esize, vec, element);
+
+        if (sign == Signedness::Signed) {
+            return v.ir.SignExtendToWord(vec_element);
+        }
+
+        return v.ir.ZeroExtendToWord(vec_element);
+    };
+    
+    const auto op_func = [&](const auto& a, const auto& b) {
+        switch (operation) {
+        case ScalarMinMaxOperation::Max:
+            if (sign == Signedness::Signed) {
+                return v.ir.MaxSigned(a, b);
+            }
+            return v.ir.MaxUnsigned(a, b);
+
+        case ScalarMinMaxOperation::Min:
+            if (sign == Signedness::Signed) {
+                return v.ir.MinSigned(a, b);
+            }
+            return v.ir.MinUnsigned(a, b);
+
+        default:
+            UNREACHABLE();
+            return IR::U32U64{};
+        }
+    };
+
+    const IR::U128 operand = v.V(datasize, Vn);
+
+    IR::U32 value = get_element(operand, 0);
+    for (size_t i = 1; i < elements; i++) {
+        value = op_func(value, get_element(operand, i));
+    }
+
+    if (size == 0b00) {
+        v.V(datasize, Vd, v.ir.ZeroExtendToQuad(v.ir.LeastSignificantByte(value)));
+    } else if (size == 0b01) {
+        v.V(datasize, Vd, v.ir.ZeroExtendToQuad(v.ir.LeastSignificantHalf(value)));
+    } else {
+        v.V(datasize, Vd, v.ir.ZeroExtendToQuad(value));
+    }
+
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::ADDV(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
@@ -156,7 +219,23 @@ bool TranslatorVisitor::SADDLV(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return LongAdd(*this, Q, size, Vn, Vd, Signedness::Signed);
 }
 
+bool TranslatorVisitor::SMAXV(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    return ScalarMinMax(*this, Q, size, Vn, Vd, ScalarMinMaxOperation::Max, Signedness::Signed);
+}
+
+bool TranslatorVisitor::SMINV(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    return ScalarMinMax(*this, Q, size, Vn, Vd, ScalarMinMaxOperation::Min, Signedness::Signed);
+}
+
 bool TranslatorVisitor::UADDLV(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return LongAdd(*this, Q, size, Vn, Vd, Signedness::Unsigned);
+}
+
+bool TranslatorVisitor::UMAXV(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    return ScalarMinMax(*this, Q, size, Vn, Vd, ScalarMinMaxOperation::Max, Signedness::Unsigned);
+}
+
+bool TranslatorVisitor::UMINV(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    return ScalarMinMax(*this, Q, size, Vn, Vd, ScalarMinMaxOperation::Min, Signedness::Unsigned);
 }
 } // namespace Dynarmic::A64
