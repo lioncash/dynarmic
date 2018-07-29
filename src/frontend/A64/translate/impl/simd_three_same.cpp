@@ -151,6 +151,41 @@ enum class MinMaxOperation {
     Max,
 };
 
+bool VectorMinMaxOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                           MinMaxOperation operation, Signedness sign) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = v.V(datasize, Vm);
+    const IR::U128 result = [&] {
+        switch (operation) {
+        case MinMaxOperation::Max:
+            if (sign == Signedness::Signed) {
+                return v.ir.VectorMaxSigned(esize, operand1, operand2);
+            }
+            return v.ir.VectorMaxUnsigned(esize, operand1, operand2);
+
+        case MinMaxOperation::Min:
+            if (sign == Signedness::Signed) {
+                return v.ir.VectorMinSigned(esize, operand1, operand2);
+            }
+            return v.ir.VectorMinUnsigned(esize, operand1, operand2);
+
+        default:
+            UNREACHABLE();
+            return IR::U128{};
+        }
+    }();
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 bool FPMinMaxOperation(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd, MinMaxOperation operation) {
     if (sz && !Q) {
         return v.ReservedValue();
@@ -250,17 +285,7 @@ bool TranslatorVisitor::SABD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::SMAX(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand1 = V(datasize, Vn);
-    const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.VectorMaxSigned(esize, operand1, operand2);
-    V(datasize, Vd, result);
-    return true;
+    return VectorMinMaxOperation(*this, Q, size, Vm, Vn, Vd, MinMaxOperation::Max, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SMAXP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -268,17 +293,7 @@ bool TranslatorVisitor::SMAXP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::SMIN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand1 = V(datasize, Vn);
-    const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.VectorMinSigned(esize, operand1, operand2);
-    V(datasize, Vd, result);
-    return true;
+    return VectorMinMaxOperation(*this, Q, size, Vm, Vn, Vd, MinMaxOperation::Min, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SMINP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -621,17 +636,7 @@ bool TranslatorVisitor::USHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::UMAX(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand1 = V(datasize, Vn);
-    const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.VectorMaxUnsigned(esize, operand1, operand2);
-    V(datasize, Vd, result);
-    return true;
+    return VectorMinMaxOperation(*this, Q, size, Vm, Vn, Vd, MinMaxOperation::Max, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::UMAXP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -674,17 +679,7 @@ bool TranslatorVisitor::UABD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::UMIN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-    const size_t esize = 8 << size.ZeroExtend<size_t>();
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand1 = V(datasize, Vn);
-    const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.VectorMinUnsigned(esize, operand1, operand2);
-    V(datasize, Vd, result);
-    return true;
+    return VectorMinMaxOperation(*this, Q, size, Vm, Vn, Vd, MinMaxOperation::Min, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::UMINP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
