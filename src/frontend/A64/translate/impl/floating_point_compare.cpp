@@ -9,8 +9,8 @@
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
-
-static boost::optional<size_t> GetDataSize(Imm<2> type) {
+namespace {
+boost::optional<size_t> GetDataSize(Imm<2> type) {
     switch (type.ZeroExtend()) {
     case 0b00:
         return 32;
@@ -23,42 +23,32 @@ static boost::optional<size_t> GetDataSize(Imm<2> type) {
     return boost::none;
 }
 
-bool TranslatorVisitor::FCMP_float(Imm<2> type, Vec Vm, Vec Vn, bool cmp_with_zero) {
-    auto datasize = GetDataSize(type);
+bool FPCompare(TranslatorVisitor& v, Imm<2> type, Vec Vm, Vec Vn, bool exc_on_qnan, bool cmp_with_zero) {
+    const auto datasize = GetDataSize(type);
     if (!datasize) {
-        return UnallocatedEncoding();
+        return v.UnallocatedEncoding();
     }
 
-    const IR::U32U64 operand1 = V_scalar(*datasize, Vn);
+    const IR::U32U64 operand1 = v.V_scalar(*datasize, Vn);
     IR::U32U64 operand2;
     if (cmp_with_zero) {
-        operand2 = I(*datasize, 0);
+        operand2 = v.I(*datasize, 0);
     } else {
-        operand2 = V_scalar(*datasize, Vm);
+        operand2 = v.V_scalar(*datasize, Vm);
     }
 
-    auto nzcv = ir.FPCompare(operand1, operand2, false, true);
-    ir.SetNZCV(nzcv);
+    const auto nzcv = v.ir.FPCompare(operand1, operand2, exc_on_qnan, true);
+    v.ir.SetNZCV(nzcv);
     return true;
+}
+} // Anonymous namespace
+
+bool TranslatorVisitor::FCMP_float(Imm<2> type, Vec Vm, Vec Vn, bool cmp_with_zero) {
+    return FPCompare(*this, type, Vm, Vn, false, cmp_with_zero);
 }
 
 bool TranslatorVisitor::FCMPE_float(Imm<2> type, Vec Vm, Vec Vn, bool cmp_with_zero) {
-    auto datasize = GetDataSize(type);
-    if (!datasize) {
-        return UnallocatedEncoding();
-    }
-
-    const IR::U32U64 operand1 = V_scalar(*datasize, Vn);
-    IR::U32U64 operand2;
-    if (cmp_with_zero) {
-        operand2 = I(*datasize, 0);
-    } else {
-        operand2 = V_scalar(*datasize, Vm);
-    }
-
-    auto nzcv = ir.FPCompare(operand1, operand2, true, true);
-    ir.SetNZCV(nzcv);
-    return true;
+    return FPCompare(*this, type, Vm, Vn, true, cmp_with_zero);
 }
 
 } // namespace Dynarmic::A64
