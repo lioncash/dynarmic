@@ -137,6 +137,10 @@ public:
     U64 ByteReverseDual(const U64& a);
     U32U64 CountLeadingZeros(const U32U64& a);
     U32U64 ExtractRegister(const U32U64& a, const U32U64& b, const U8& lsb);
+    U32U64 MaxSigned(const U32U64& a, const U32U64& b);
+    U32U64 MaxUnsigned(const U32U64& a, const U32U64& b);
+    U32U64 MinSigned(const U32U64& a, const U32U64& b);
+    U32U64 MinUnsigned(const U32U64& a, const U32U64& b);
 
     ResultAndOverflow<U32> SignedSaturatedAdd(const U32& a, const U32& b);
     ResultAndOverflow<U32> SignedSaturatedSub(const U32& a, const U32& b);

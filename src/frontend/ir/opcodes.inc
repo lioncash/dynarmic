@@ -145,6 +145,14 @@ OPCODE(CountLeadingZeros32,                     T::U32,         T::U32          
 OPCODE(CountLeadingZeros64,                     T::U64,         T::U64                                          )
 OPCODE(ExtractRegister32,                       T::U32,         T::U32,         T::U32,         T::U8           )
 OPCODE(ExtractRegister64,                       T::U64,         T::U64,         T::U64,         T::U8           )
+OPCODE(MaxSigned32,                             T::U32,         T::U32,         T::U32                          )
+OPCODE(MaxSigned64,                             T::U64,         T::U64,         T::U64                          )
+OPCODE(MaxUnsigned32,                           T::U32,         T::U32,         T::U32                          )
+OPCODE(MaxUnsigned64,                           T::U64,         T::U64,         T::U64                          )
+OPCODE(MinSigned32,                             T::U32,         T::U32,         T::U32                          )
+OPCODE(MinSigned64,                             T::U64,         T::U64,         T::U64                          )
+OPCODE(MinUnsigned32,                           T::U32,         T::U32,         T::U32                          )
+OPCODE(MinUnsigned64,                           T::U64,         T::U64,         T::U64                          )
 
 // Saturated instructions
 OPCODE(SignedSaturatedAdd,                      T::U32,         T::U32,         T::U32                          )

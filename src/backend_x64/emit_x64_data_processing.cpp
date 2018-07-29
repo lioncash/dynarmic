@@ -1317,4 +1317,100 @@ void EmitX64::EmitCountLeadingZeros64(EmitContext& ctx, IR::Inst* inst) {
    }
 }
 
+void EmitX64::EmitMaxSigned32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg32 x = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    const Xbyak::Reg32 y = ctx.reg_alloc.UseScratchGpr(args[1]).cvt32();
+
+    code.cmp(x, y);
+    code.cmovge(y, x);
+
+    ctx.reg_alloc.DefineValue(inst, y);
+}
+
+void EmitX64::EmitMaxSigned64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg64 x = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Reg64 y = ctx.reg_alloc.UseScratchGpr(args[1]);
+
+    code.cmp(x, y);
+    code.cmovge(y, x);
+
+    ctx.reg_alloc.DefineValue(inst, y);
+}
+
+void EmitX64::EmitMaxUnsigned32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg32 x = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    const Xbyak::Reg32 y = ctx.reg_alloc.UseScratchGpr(args[1]).cvt32();
+
+    code.cmp(x, y);
+    code.cmova(y, x);
+
+    ctx.reg_alloc.DefineValue(inst, y);
+}
+
+void EmitX64::EmitMaxUnsigned64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg64 x = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Reg64 y = ctx.reg_alloc.UseScratchGpr(args[1]);
+
+    code.cmp(x, y);
+    code.cmova(y, x);
+
+    ctx.reg_alloc.DefineValue(inst, y);
+}
+
+void EmitX64::EmitMinSigned32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg32 x = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    const Xbyak::Reg32 y = ctx.reg_alloc.UseScratchGpr(args[1]).cvt32();
+
+    code.cmp(x, y);
+    code.cmovle(y, x);
+
+    ctx.reg_alloc.DefineValue(inst, y);
+}
+
+void EmitX64::EmitMinSigned64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg64 x = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Reg64 y = ctx.reg_alloc.UseScratchGpr(args[1]);
+
+    code.cmp(x, y);
+    code.cmovle(y, x);
+
+    ctx.reg_alloc.DefineValue(inst, y);
+}
+
+void EmitX64::EmitMinUnsigned32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg32 x = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    const Xbyak::Reg32 y = ctx.reg_alloc.UseScratchGpr(args[1]).cvt32();
+
+    code.cmp(x, y);
+    code.cmovb(y, x);
+
+    ctx.reg_alloc.DefineValue(inst, y);
+}
+
+void EmitX64::EmitMinUnsigned64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg64 x = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Reg64 y = ctx.reg_alloc.UseScratchGpr(args[1]);
+
+    code.cmp(x, y);
+    code.cmovb(y, x);
+
+    ctx.reg_alloc.DefineValue(inst, y);
+}
+
 } // namespace Dynarmic::BackendX64

@@ -449,6 +449,38 @@ U32U64 IREmitter::ExtractRegister(const U32U64& a, const U32U64& b, const U8& ls
     return Inst<U64>(Opcode::ExtractRegister64, a, b, lsb);
 }
 
+U32U64 IREmitter::MaxSigned(const U32U64& a, const U32U64& b) {
+    if (a.GetType() == IR::Type::U32) {
+        return Inst<U32>(Opcode::MaxSigned32, a, b);
+    }
+
+    return Inst<U64>(Opcode::MaxSigned64, a, b);
+}
+
+U32U64 IREmitter::MaxUnsigned(const U32U64& a, const U32U64& b) {
+    if (a.GetType() == IR::Type::U32) {
+        return Inst<U32>(Opcode::MaxUnsigned32, a, b);
+    }
+
+    return Inst<U64>(Opcode::MaxUnsigned64, a, b);
+}
+
+U32U64 IREmitter::MinSigned(const U32U64& a, const U32U64& b) {
+    if (a.GetType() == IR::Type::U32) {
+        return Inst<U32>(Opcode::MinSigned32, a, b);
+    }
+
+    return Inst<U64>(Opcode::MinSigned64, a, b);
+}
+
+U32U64 IREmitter::MinUnsigned(const U32U64& a, const U32U64& b) {
+    if (a.GetType() == IR::Type::U32) {
+        return Inst<U32>(Opcode::MinUnsigned32, a, b);
+    }
+
+    return Inst<U64>(Opcode::MinUnsigned64, a, b);
+}
+
 ResultAndOverflow<U32> IREmitter::SignedSaturatedAdd(const U32& a, const U32& b) {
     auto result = Inst<U32>(Opcode::SignedSaturatedAdd, a, b);
     auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
