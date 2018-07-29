@@ -10,20 +10,8 @@
 
 namespace Dynarmic::A64 {
 namespace {
-static boost::optional<size_t> GetDataSize(Imm<2> type) {
-    switch (type.ZeroExtend()) {
-    case 0b00:
-        return 32;
-    case 0b01:
-        return 64;
-    case 0b11:
-        return 16;
-    }
-    return boost::none;
-}
-
 bool FPCompare(TranslatorVisitor& v, Imm<2> type, Vec Vm, Cond cond, Vec Vn, Imm<4> nzcv, bool exc_on_qnan) {
-    const auto datasize = GetDataSize(type);
+    const auto datasize = FPGetDataSize(type);
     if (!datasize || *datasize == 16) {
         return v.UnallocatedEncoding();
     }

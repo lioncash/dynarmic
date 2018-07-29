@@ -10,20 +10,8 @@
 
 namespace Dynarmic::A64 {
 
-static boost::optional<size_t> GetDataSize(Imm<2> type) {
-    switch (type.ZeroExtend()) {
-    case 0b00:
-        return 32;
-    case 0b01:
-        return 64;
-    case 0b11:
-        return 16;
-    }
-    return boost::none;
-}
-
 bool TranslatorVisitor::FMOV_float(Imm<2> type, Vec Vn, Vec Vd) {
-    const boost::optional<size_t> datasize = GetDataSize(type);
+    const auto datasize = FPGetDataSize(type);
     if (!datasize || *datasize == 16) {
         return UnallocatedEncoding();
     }
@@ -35,7 +23,7 @@ bool TranslatorVisitor::FMOV_float(Imm<2> type, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::FABS_float(Imm<2> type, Vec Vn, Vec Vd) {
-    boost::optional<size_t> datasize = GetDataSize(type);
+    const auto datasize = FPGetDataSize(type);
     if (!datasize || *datasize == 16) {
         return UnallocatedEncoding();
     }
@@ -47,7 +35,7 @@ bool TranslatorVisitor::FABS_float(Imm<2> type, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::FNEG_float(Imm<2> type, Vec Vn, Vec Vd) {
-    boost::optional<size_t> datasize = GetDataSize(type);
+    const auto datasize = FPGetDataSize(type);
     if (!datasize || *datasize == 16) {
         return UnallocatedEncoding();
     }
@@ -59,7 +47,7 @@ bool TranslatorVisitor::FNEG_float(Imm<2> type, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::FSQRT_float(Imm<2> type, Vec Vn, Vec Vd) {
-    boost::optional<size_t> datasize = GetDataSize(type);
+    const auto datasize = FPGetDataSize(type);
     if (!datasize || *datasize == 16) {
         return UnallocatedEncoding();
     }
@@ -71,7 +59,7 @@ bool TranslatorVisitor::FSQRT_float(Imm<2> type, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::FMOV_float_imm(Imm<2> type, Imm<8> imm8, Vec Vd) {
-    boost::optional<size_t> datasize = GetDataSize(type);
+    const auto datasize = FPGetDataSize(type);
     if (!datasize) {
         return UnallocatedEncoding();
     }
@@ -109,8 +97,8 @@ bool TranslatorVisitor::FCVT_float(Imm<2> type, Imm<2> opc, Vec Vn, Vec Vd) {
         return UnallocatedEncoding();
     }
 
-    boost::optional<size_t> srcsize = GetDataSize(type);
-    boost::optional<size_t> dstsize = GetDataSize(opc);
+    const auto srcsize = FPGetDataSize(type);
+    const auto dstsize = FPGetDataSize(opc);
 
     if (!srcsize || !dstsize) {
         return UnallocatedEncoding();
@@ -152,8 +140,9 @@ bool TranslatorVisitor::FCVT_float(Imm<2> type, Imm<2> opc, Vec Vn, Vec Vd) {
     return true;
 }
 
-bool FloatingPointRoundToIntegral(TranslatorVisitor& v, Imm<2> type, Vec Vn, Vec Vd, FP::RoundingMode rounding_mode, bool exact) {
-    const boost::optional<size_t> datasize = GetDataSize(type);
+static bool FloatingPointRoundToIntegral(TranslatorVisitor& v, Imm<2> type, Vec Vn, Vec Vd,
+                                         FP::RoundingMode rounding_mode, bool exact) {
+    const auto datasize = FPGetDataSize(type);
     if (!datasize || *datasize == 16) {
         return v.UnallocatedEncoding();
     }

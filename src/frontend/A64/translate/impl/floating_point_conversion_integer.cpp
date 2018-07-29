@@ -11,21 +11,9 @@
 
 namespace Dynarmic::A64 {
 
-static boost::optional<size_t> GetDataSize(Imm<2> type) {
-    switch (type.ZeroExtend()) {
-    case 0b00:
-        return 32;
-    case 0b01:
-        return 64;
-    case 0b11:
-        return 16;
-    }
-    return boost::none;
-}
-
 bool TranslatorVisitor::SCVTF_float_int(bool sf, Imm<2> type, Reg Rn, Vec Vd) {
     const size_t intsize = sf ? 64 : 32;
-    const auto fltsize = GetDataSize(type);
+    const auto fltsize = FPGetDataSize(type);
     if (!fltsize || *fltsize == 16) {
         return UnallocatedEncoding();
     }
@@ -52,7 +40,7 @@ bool TranslatorVisitor::SCVTF_float_int(bool sf, Imm<2> type, Reg Rn, Vec Vd) {
 
 bool TranslatorVisitor::UCVTF_float_int(bool sf, Imm<2> type, Reg Rn, Vec Vd) {
     const size_t intsize = sf ? 64 : 32;
-    const auto fltsize = GetDataSize(type);
+    const auto fltsize = FPGetDataSize(type);
     if (!fltsize || *fltsize == 16) {
         return UnallocatedEncoding();
     }
@@ -138,7 +126,7 @@ bool TranslatorVisitor::FMOV_float_gen(bool sf, Imm<2> type, Imm<1> rmode_0, Imm
 
 static bool FloaingPointConvertSignedInteger(TranslatorVisitor& v, bool sf, Imm<2> type, Vec Vn, Reg Rd, FP::RoundingMode rounding_mode) {
     const size_t intsize = sf ? 64 : 32;
-    const auto fltsize = GetDataSize(type);
+    const auto fltsize = FPGetDataSize(type);
     if (!fltsize || *fltsize == 16) {
         return v.UnallocatedEncoding();
     }
@@ -165,7 +153,7 @@ static bool FloaingPointConvertSignedInteger(TranslatorVisitor& v, bool sf, Imm<
 
 static bool FloaingPointConvertUnsignedInteger(TranslatorVisitor& v, bool sf, Imm<2> type, Vec Vn, Reg Rd, FP::RoundingMode rounding_mode) {
     const size_t intsize = sf ? 64 : 32;
-    const auto fltsize = GetDataSize(type);
+    const auto fltsize = FPGetDataSize(type);
     if (!fltsize || *fltsize == 16) {
         return v.UnallocatedEncoding();
     }

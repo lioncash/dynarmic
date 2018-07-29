@@ -10,21 +10,9 @@
 
 namespace Dynarmic::A64 {
 
-static boost::optional<size_t> GetDataSize(Imm<2> type) {
-    switch (type.ZeroExtend()) {
-    case 0b00:
-        return 32;
-    case 0b01:
-        return 64;
-    case 0b11:
-        return 16;
-    }
-    return boost::none;
-}
-
 bool TranslatorVisitor::FCVTZS_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec Vn, Reg Rd) {
     const size_t intsize = sf ? 64 : 32;
-    const auto fltsize = GetDataSize(type);
+    const auto fltsize = FPGetDataSize(type);
     if (!fltsize || *fltsize == 16) {
         return UnallocatedEncoding();
     }
@@ -55,7 +43,7 @@ bool TranslatorVisitor::FCVTZS_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec
 
 bool TranslatorVisitor::FCVTZU_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec Vn, Reg Rd) {
     const size_t intsize = sf ? 64 : 32;
-    const auto fltsize = GetDataSize(type);
+    const auto fltsize = FPGetDataSize(type);
     if (!fltsize || *fltsize == 16) {
         return UnallocatedEncoding();
     }

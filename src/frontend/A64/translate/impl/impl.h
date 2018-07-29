@@ -1014,4 +1014,16 @@ struct TranslatorVisitor final {
     bool FNMSUB_float(Imm<2> type, Vec Vm, Vec Va, Vec Vn, Vec Vd);
 };
 
+inline boost::optional<size_t> FPGetDataSize(Imm<2> type) {
+    switch (type.ZeroExtend()) {
+    case 0b00:
+        return 32;
+    case 0b01:
+        return 64;
+    case 0b11:
+        return 16;
+    }
+    return boost::none;
+}
+
 } // namespace Dynarmic::A64

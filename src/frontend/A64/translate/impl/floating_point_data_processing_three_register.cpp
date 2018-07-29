@@ -10,21 +10,8 @@
 
 namespace Dynarmic::A64 {
 
-static boost::optional<size_t> GetDataSize(Imm<2> type) {
-    switch (type.ZeroExtend()) {
-    case 0b00:
-        return 32;
-    case 0b01:
-        return 64;
-    case 0b11:
-        // FP16Ext, unimplemented.
-        return boost::none;
-    }
-    return boost::none;
-}
-
 bool TranslatorVisitor::FMADD_float(Imm<2> type, Vec Vm, Vec Va, Vec Vn, Vec Vd) {
-    const auto datasize = GetDataSize(type);
+    const auto datasize = FPGetDataSize(type);
     if (!datasize || *datasize == 16) {
         return UnallocatedEncoding();
     }
@@ -38,7 +25,7 @@ bool TranslatorVisitor::FMADD_float(Imm<2> type, Vec Vm, Vec Va, Vec Vn, Vec Vd)
 }
 
 bool TranslatorVisitor::FMSUB_float(Imm<2> type, Vec Vm, Vec Va, Vec Vn, Vec Vd) {
-    const auto datasize = GetDataSize(type);
+    const auto datasize = FPGetDataSize(type);
     if (!datasize || *datasize == 16) {
         return UnallocatedEncoding();
     }
@@ -52,7 +39,7 @@ bool TranslatorVisitor::FMSUB_float(Imm<2> type, Vec Vm, Vec Va, Vec Vn, Vec Vd)
 }
 
 bool TranslatorVisitor::FNMADD_float(Imm<2> type, Vec Vm, Vec Va, Vec Vn, Vec Vd) {
-    const auto datasize = GetDataSize(type);
+    const auto datasize = FPGetDataSize(type);
     if (!datasize || *datasize == 16) {
         return UnallocatedEncoding();
     }
@@ -66,7 +53,7 @@ bool TranslatorVisitor::FNMADD_float(Imm<2> type, Vec Vm, Vec Va, Vec Vn, Vec Vd
 }
 
 bool TranslatorVisitor::FNMSUB_float(Imm<2> type, Vec Vm, Vec Va, Vec Vn, Vec Vd) {
-    const auto datasize = GetDataSize(type);
+    const auto datasize = FPGetDataSize(type);
     if (!datasize || *datasize == 16) {
         return UnallocatedEncoding();
     }
