@@ -1226,6 +1226,62 @@ U128 IREmitter::VectorPairedAddUnsignedWiden(size_t original_esize, const U128& 
     return {};
 }
 
+U128 IREmitter::VectorPairedMaxSigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorPairedMaxS8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorPairedMaxS16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorPairedMaxS32, a, b);
+    default:
+        UNREACHABLE();
+        return {};
+    }
+}
+
+U128 IREmitter::VectorPairedMaxUnsigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorPairedMaxU8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorPairedMaxU16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorPairedMaxU32, a, b);
+    default:
+        UNREACHABLE();
+        return {};
+    }
+}
+
+U128 IREmitter::VectorPairedMinSigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorPairedMinS8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorPairedMinS16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorPairedMinS32, a, b);
+    default:
+        UNREACHABLE();
+        return {};
+    }
+}
+
+U128 IREmitter::VectorPairedMinUnsigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorPairedMinU8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorPairedMinU16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorPairedMinU32, a, b);
+    default:
+        UNREACHABLE();
+        return {};
+    }
+}
+
 U128 IREmitter::VectorPolynomialMultiply(const U128& a, const U128& b) {
     return Inst<U128>(Opcode::VectorPolynomialMultiply8, a, b);
 }

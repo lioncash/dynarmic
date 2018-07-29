@@ -1866,6 +1866,101 @@ void EmitX64::EmitVectorPairedAddUnsignedWiden32(EmitContext& ctx, IR::Inst* ins
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+template <typename T, typename Function>
+static void PairedOperation(VectorArray<T>& result, const VectorArray<T>& x, const VectorArray<T>& y, Function fn) {
+    const size_t range = x.size() / 2;
+
+    for (size_t i = 0; i < range; i++) {
+        result[i] = fn(x[2 * i], x[2 * i + 1]);
+    }
+
+    for (size_t i = 0; i < range; i++) {
+        result[range + i] = fn(y[2 * i], y[2 * i + 1]);
+    }
+}
+
+template <typename T>
+static void PairedMax(VectorArray<T>& result, const VectorArray<T>& x, const VectorArray<T>& y) {
+    PairedOperation(result, x, y, [](auto a, auto b) { return std::max(a, b); });
+}
+
+template <typename T>
+static void PairedMin(VectorArray<T>& result, const VectorArray<T>& x, const VectorArray<T>& y) {
+    PairedOperation(result, x, y, [](auto a, auto b) { return std::min(a, b); });
+}
+
+void EmitX64::EmitVectorPairedMaxS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s8>& result, const VectorArray<s8>& a, const VectorArray<s8>& b) {
+        PairedMax(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMaxS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s16>& result, const VectorArray<s16>& a, const VectorArray<s16>& b) {
+        PairedMax(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMaxS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s32>& a, const VectorArray<s32>& b) {
+        PairedMax(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMaxU8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u8>& a, const VectorArray<u8>& b) {
+        PairedMax(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMaxU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u16>& result, const VectorArray<u16>& a, const VectorArray<u16>& b) {
+        PairedMax(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMaxU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<u32>& a, const VectorArray<u32>& b) {
+        PairedMax(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMinS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s8>& result, const VectorArray<s8>& a, const VectorArray<s8>& b) {
+        PairedMin(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMinS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s16>& result, const VectorArray<s16>& a, const VectorArray<s16>& b) {
+        PairedMin(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMinS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s32>& a, const VectorArray<s32>& b) {
+        PairedMin(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMinU8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u8>& a, const VectorArray<u8>& b) {
+        PairedMin(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMinU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u16>& result, const VectorArray<u16>& a, const VectorArray<u16>& b) {
+        PairedMin(result, a, b);
+    });
+}
+
+void EmitX64::EmitVectorPairedMinU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<u32>& a, const VectorArray<u32>& b) {
+        PairedMin(result, a, b);
+    });
+}
+
 template <typename D, typename T>
 static D PolynomialMultiply(T lhs, T rhs) {
     constexpr size_t bit_size = Common::BitSize<T>();
