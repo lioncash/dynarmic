@@ -7,7 +7,7 @@
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
 #include "common/common_types.h"
-#include "common/sm4.h"
+#include "common/crypto/sm4.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/opcodes.h"
 
@@ -17,7 +17,7 @@ void EmitX64::EmitSM4AccessSubstitutionBox(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     ctx.reg_alloc.HostCall(inst, args[0]);
-    code.CallFunction(&Common::SM4::AccessSubstitutionBox);
+    code.CallFunction(&Common::Crypto::SM4::AccessSubstitutionBox);
 }
 
 } // namespace Dynarmic::BackendX64

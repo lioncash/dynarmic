@@ -8,14 +8,16 @@ add_library(dynarmic
     ../include/dynarmic/A64/config.h
     ../include/dynarmic/A64/exclusive_monitor.h
     common/address_range.h
-    common/aes.cpp
-    common/aes.h
     common/assert.h
     common/bit_util.h
     common/cast_util.h
     common/common_types.h
-    common/crc32.cpp
-    common/crc32.h
+    common/crypto/aes.cpp
+    common/crypto/aes.h
+    common/crypto/crc32.cpp
+    common/crypto/crc32.h
+    common/crypto/sm4.cpp
+    common/crypto/sm4.h
     common/fp/fpcr.h
     common/fp/fpsr.h
     common/fp/fused.cpp
@@ -67,8 +69,6 @@ add_library(dynarmic
     common/mp/vllift.h
     common/safe_ops.h
     common/scope_exit.h
-    common/sm4.cpp
-    common/sm4.h
     common/string_util.h
     common/u128.cpp
     common/u128.h

@@ -6,10 +6,10 @@
 
 #include <array>
 
-#include "common/sm4.h"
 #include "common/common_types.h"
+#include "common/crypto/sm4.h"
 
-namespace Dynarmic::Common::SM4 {
+namespace Dynarmic::Common::Crypto::SM4 {
 
 using SubstitutionTable = std::array<u8, 256>;
 
@@ -52,4 +52,4 @@ u8 AccessSubstitutionBox(u8 index) {
     return substitution_box[index];
 }
 
-} // namespace Dynarmic::Common::SM4
+} // namespace Dynarmic::Common::Crypto::SM4

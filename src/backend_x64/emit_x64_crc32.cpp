@@ -10,13 +10,14 @@
 #include "backend_x64/block_of_code.h"
 #include "backend_x64/emit_x64.h"
 #include "common/common_types.h"
-#include "common/crc32.h"
+#include "common/crypto/crc32.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/opcodes.h"
 
 namespace Dynarmic::BackendX64 {
 
 using namespace Xbyak::util;
+namespace CRC32 = Common::Crypto::CRC32;
 
 static void EmitCRC32Castagnoli(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, const int data_size) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -29,7 +30,7 @@ static void EmitCRC32Castagnoli(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
     } else {
         ctx.reg_alloc.HostCall(inst, args[0], args[1], {});
         code.mov(code.ABI_PARAM3, data_size / CHAR_BIT);
-        code.CallFunction(&Common::ComputeCRC32Castagnoli);
+        code.CallFunction(&CRC32::ComputeCRC32Castagnoli);
     }
 }
 
@@ -38,7 +39,7 @@ static void EmitCRC32ISO(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, co
 
     ctx.reg_alloc.HostCall(inst, args[0], args[1], {});
     code.mov(code.ABI_PARAM3, data_size / CHAR_BIT);
-    code.CallFunction(&Common::ComputeCRC32ISO);
+    code.CallFunction(&CRC32::ComputeCRC32ISO);
 }
 
 void EmitX64::EmitCRC32Castagnoli8(EmitContext& ctx, IR::Inst* inst) {

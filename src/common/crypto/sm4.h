@@ -8,8 +8,8 @@
 
 #include "common/common_types.h"
 
-namespace Dynarmic::Common::SM4 {
+namespace Dynarmic::Common::Crypto::SM4 {
 
 u8 AccessSubstitutionBox(u8 index);
 
-} // namespace Dynarmic::Common::SM4
+} // namespace Dynarmic::Common::Crypto::SM4

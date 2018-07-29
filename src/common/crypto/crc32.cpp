@@ -7,9 +7,9 @@
 #include <array>
 
 #include "common/common_types.h"
-#include "common/crc32.h"
+#include "common/crypto/crc32.h"
 
-namespace Dynarmic::Common {
+namespace Dynarmic::Common::Crypto::CRC32 {
 
 using CRC32Table = std::array<u32, 256>;
 
@@ -167,4 +167,4 @@ u32 ComputeCRC32ISO(u32 crc, u64 value, int length) {
     return ComputeCRC32(iso_table, crc, value, length);
 }
 
-} // namespace Dynarmic::Common
+} // namespace Dynarmic::Common::Crypto::CRC32

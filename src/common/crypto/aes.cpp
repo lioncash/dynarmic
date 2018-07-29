@@ -6,10 +6,10 @@
 
 #include <array>
 
-#include "common/aes.h"
 #include "common/common_types.h"
+#include "common/crypto/aes.h"
 
-namespace Dynarmic::Common::AES {
+namespace Dynarmic::Common::Crypto::AES {
 
 using SubstitutionTable = std::array<u8, 256>;
 
@@ -179,4 +179,4 @@ void InverseMixColumns(State& out_state, const State& state) {
     }
 }
 
-} // namespace Dynarmic::Common::AES
+} // namespace Dynarmic::Common::Crypto::AES

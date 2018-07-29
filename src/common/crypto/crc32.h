@@ -8,7 +8,7 @@
 
 #include "common/common_types.h"
 
-namespace Dynarmic::Common {
+namespace Dynarmic::Common::Crypto::CRC32 {
 
 /**
  * Computes a CRC32 value using Castagnoli polynomial (0x1EDC6F41).
@@ -38,4 +38,4 @@ u32 ComputeCRC32Castagnoli(u32 crc, u64 value, int length);
  */
 u32 ComputeCRC32ISO(u32 crc, u64 value, int length);
 
-} // namespace Dynarmic::Common
+} // namespace Dynarmic::Common::Crypto::CRC32

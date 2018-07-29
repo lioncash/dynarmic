@@ -9,7 +9,7 @@
 #include <array>
 #include "common/common_types.h"
 
-namespace Dynarmic::Common::AES {
+namespace Dynarmic::Common::Crypto::AES {
 
 using State = std::array<u8, 16>;
 
@@ -20,4 +20,4 @@ void EncryptSingleRound(State& out_state, const State& state);
 void MixColumns(State& out_state, const State& state);
 void InverseMixColumns(State& out_state, const State& state);
 
-} // namespace Dynarmic::Common::AES
+} // namespace Dynarmic::Common::Crypto::AES
