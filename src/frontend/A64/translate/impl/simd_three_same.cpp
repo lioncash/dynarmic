@@ -173,6 +173,45 @@ bool FPMinMaxOperation(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Ve
     return true;
 }
 
+bool PairedMinMaxOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                           MinMaxOperation operation, Signedness sign) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = v.V(datasize, Vm);
+    IR::U128 result = [&] {
+        switch (operation) {
+        case MinMaxOperation::Max:
+            if (sign == Signedness::Signed) {
+                return v.ir.VectorPairedMaxSigned(esize, operand1, operand2);
+            }
+            return v.ir.VectorPairedMaxUnsigned(esize, operand1, operand2);
+
+        case MinMaxOperation::Min:
+            if (sign == Signedness::Signed) {
+                return v.ir.VectorPairedMinSigned(esize, operand1, operand2);
+            }
+            return v.ir.VectorPairedMinUnsigned(esize, operand1, operand2);
+
+        default:
+            UNREACHABLE();
+            return IR::U128{};
+        }
+    }();
+
+    if (datasize == 64) {
+        result = v.ir.VectorShuffleWords(result, 0b11101000);
+    }
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 } // Anonymous namespace
 
 bool TranslatorVisitor::CMGT_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -224,6 +263,10 @@ bool TranslatorVisitor::SMAX(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SMAXP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return PairedMinMaxOperation(*this, Q, size, Vm, Vn, Vd, MinMaxOperation::Max, Signedness::Signed);
+}
+
 bool TranslatorVisitor::SMIN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11) {
         return ReservedValue();
@@ -236,6 +279,10 @@ bool TranslatorVisitor::SMIN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     const IR::U128 result = ir.VectorMinSigned(esize, operand1, operand2);
     V(datasize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::SMINP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return PairedMinMaxOperation(*this, Q, size, Vm, Vn, Vd, MinMaxOperation::Min, Signedness::Signed);
 }
 
 bool TranslatorVisitor::ADD_vector(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -587,6 +634,10 @@ bool TranslatorVisitor::UMAX(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::UMAXP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return PairedMinMaxOperation(*this, Q, size, Vm, Vn, Vd, MinMaxOperation::Max, Signedness::Unsigned);
+}
+
 bool TranslatorVisitor::UABA(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11) {
         return ReservedValue();
@@ -634,6 +685,10 @@ bool TranslatorVisitor::UMIN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     const IR::U128 result = ir.VectorMinUnsigned(esize, operand1, operand2);
     V(datasize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::UMINP(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return PairedMinMaxOperation(*this, Q, size, Vm, Vn, Vd, MinMaxOperation::Min, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::FSUB_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
