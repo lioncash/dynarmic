@@ -479,7 +479,7 @@ void A64EmitX64::EmitA64OrQC(A64EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
-    const Xbyak::Reg8 to_store = ctx.reg_alloc.UseGpr(args[1]).cvt8();
+    const Xbyak::Reg8 to_store = ctx.reg_alloc.UseGpr(args[0]).cvt8();
     code.or_(code.byte[code.r15 + offsetof(A64JitState, fpsr_qc)], to_store);
 }
 
