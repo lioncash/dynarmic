@@ -274,7 +274,7 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
         std::generate(vecs.begin(), vecs.end(), RandomVector);
         instructions[0] = GenRandomInst(0, true);
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
-        u32 fpcr = RandInt<u32>(0, 0x3) << 22; // randomize RMode
+        u32 fpcr = (RandInt<u32>(0, 0x3) << 22) | (RandInt<u32>(0, 1) << 25); // randomize RMode and DN
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
@@ -387,7 +387,7 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
         std::generate(vecs.begin(), vecs.end(), gen_vector);
         instructions[0] = GenFloatInst(0, true);
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
-        u32 fpcr = RandInt<u32>(0, 0x3) << 22; // randomize RMode
+        u32 fpcr = (RandInt<u32>(0, 0x3) << 22) | (RandInt<u32>(0, 1) << 25); // randomize RMode and DN
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
@@ -411,7 +411,7 @@ TEST_CASE("A64: Small random block", "[a64]") {
         instructions[4] = GenRandomInst(16, true);
 
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
-        u32 fpcr = RandInt<u32>(0, 0x3) << 22; // randomize RMode
+        u32 fpcr = (RandInt<u32>(0, 0x3) << 22) | (RandInt<u32>(0, 1) << 25); // randomize RMode and DN
 
         INFO("Instruction 1: 0x" << std::hex << instructions[0]);
         INFO("Instruction 2: 0x" << std::hex << instructions[1]);
