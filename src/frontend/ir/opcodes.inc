@@ -491,6 +491,8 @@ OPCODE(FPVectorRecipEstimate32,                 T::U128,        T::U128         
 OPCODE(FPVectorRecipEstimate64,                 T::U128,        T::U128                                         )
 OPCODE(FPVectorRecipStepFused32,                T::U128,        T::U128,        T::U128                         )
 OPCODE(FPVectorRecipStepFused64,                T::U128,        T::U128,        T::U128                         )
+OPCODE(FPVectorRoundInt32,                      T::U128,        T::U128,        T::U8,          T::U1           )
+OPCODE(FPVectorRoundInt64,                      T::U128,        T::U128,        T::U8,          T::U1           )
 OPCODE(FPVectorRSqrtEstimate32,                 T::U128,        T::U128                                         )
 OPCODE(FPVectorRSqrtEstimate64,                 T::U128,        T::U128                                         )
 OPCODE(FPVectorRSqrtStepFused32,                T::U128,        T::U128,        T::U128                         )

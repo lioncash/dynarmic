@@ -1932,6 +1932,17 @@ U128 IREmitter::FPVectorRecipStepFused(size_t esize, const U128& a, const U128& 
     return {};
 }
 
+U128 IREmitter::FPVectorRoundInt(size_t esize, const U128& operand, FP::RoundingMode rounding, bool exact) {
+    switch (esize) {
+    case 32:
+        return Inst<U128>(Opcode::FPVectorRoundInt32, operand, Imm8(static_cast<u8>(rounding)), Imm1(exact));
+    case 64:
+        return Inst<U128>(Opcode::FPVectorRoundInt64, operand, Imm8(static_cast<u8>(rounding)), Imm1(exact));
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::FPVectorRSqrtEstimate(size_t esize, const U128& a) {
     switch (esize) {
     case 32:

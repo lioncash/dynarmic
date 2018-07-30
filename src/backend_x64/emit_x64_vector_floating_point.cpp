@@ -24,6 +24,7 @@
 #include "common/mp/list.h"
 #include "common/mp/lut.h"
 #include "common/mp/to_tuple.h"
+#include "common/mp/vlift.h"
 #include "common/mp/vllift.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
@@ -726,6 +727,55 @@ void EmitX64::EmitFPVectorRecipStepFused32(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPVectorRecipStepFused64(EmitContext& ctx, IR::Inst* inst) {
     EmitRecipStepFused<u64>(code, ctx, inst);
+}
+
+template<size_t fsize>
+void EmitFPVectorRoundInt(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+
+    const auto rounding = static_cast<FP::RoundingMode>(inst->GetArg(1).GetU8());
+    const bool exact = inst->GetArg(2).GetU1();
+
+    using rounding_list = mp::list<
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieEven>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsPlusInfinity>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsMinusInfinity>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsZero>,
+        std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieAwayFromZero>
+    >;
+    using exact_list = mp::list<mp::vlift<true>, mp::vlift<false>>;
+
+    using key_type = std::tuple<FP::RoundingMode, bool>;
+    using value_type = void(*)(VectorArray<FPT>&, const VectorArray<FPT>&, FP::FPCR, FP::FPSR&);
+
+    static const auto lut = mp::GenerateLookupTableFromList<key_type, value_type>(
+        [](auto arg) {
+            return std::pair<key_type, value_type>{
+                mp::to_tuple<decltype(arg)>,
+                static_cast<value_type>(
+                    [](VectorArray<FPT>& output, const VectorArray<FPT>& input, FP::FPCR fpcr, FP::FPSR& fpsr) {
+                        constexpr FP::RoundingMode rounding_mode = std::get<0>(mp::to_tuple<decltype(arg)>);
+                        constexpr bool exact = std::get<1>(mp::to_tuple<decltype(arg)>);
+
+                        for (size_t i = 0; i < output.size(); ++i) {
+                            output[i] = static_cast<FPT>(FP::FPRoundInt<FPT>(input[i], fpcr, rounding_mode, exact, fpsr));
+                        }
+                    }
+                )
+            };
+        },
+        mp::cartesian_product<rounding_list, exact_list>{}
+    );
+
+    EmitTwoOpFallback(code, ctx, inst, lut.at(std::make_tuple(rounding, exact)));
+}
+
+void EmitX64::EmitFPVectorRoundInt32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorRoundInt<32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPVectorRoundInt64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorRoundInt<64>(code, ctx, inst);
 }
 
 template<typename FPT>
