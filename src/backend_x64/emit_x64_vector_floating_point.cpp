@@ -34,8 +34,10 @@ namespace Dynarmic::BackendX64 {
 using namespace Xbyak::util;
 namespace mp = Common::mp;
 
+namespace {
+
 template<size_t fsize, typename T>
-static T ChooseOnFsize([[maybe_unused]] T f32, [[maybe_unused]] T f64) {
+T ChooseOnFsize([[maybe_unused]] T f32, [[maybe_unused]] T f64) {
     static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
 
     if constexpr (fsize == 32) {
@@ -78,7 +80,7 @@ private:
 };
 
 template<size_t fsize, size_t nargs, typename NaNHandler>
-static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, std::array<Xbyak::Xmm, nargs + 1> xmms, const Xbyak::Xmm& nan_mask, NaNHandler nan_handler) {
+void HandleNaNs(BlockOfCode& code, EmitContext& ctx, std::array<Xbyak::Xmm, nargs + 1> xmms, const Xbyak::Xmm& nan_mask, NaNHandler nan_handler) {
     static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
@@ -120,8 +122,27 @@ static void HandleNaNs(BlockOfCode& code, EmitContext& ctx, std::array<Xbyak::Xm
     code.SwitchToNearCode();
 }
 
+template<size_t fsize>
+void ForceToDefaultNaN(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result) {
+    if (ctx.FPSCR_DN()) {
+        const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+        code.pcmpeqw(tmp, tmp);
+        code.movaps(nan_mask, result);
+        FCODE(cmpordp)(nan_mask, nan_mask);
+        code.andps(result, nan_mask);
+        code.xorps(nan_mask, tmp);
+        code.andps(nan_mask, fsize == 32 ? code.MConst(xword, 0x7fc0'0000'7fc0'0000, 0x7fc0'0000'7fc0'0000) : code.MConst(xword, 0x7ff8'0000'0000'0000, 0x7ff8'0000'0000'0000));
+        code.orps(result, nan_mask);
+    }
+}
+
 template<typename T>
 struct DefaultIndexer {
+    std::tuple<T> operator()(size_t i, const VectorArray<T>& a) {
+        return std::make_tuple(a[i]);
+    }
+
     std::tuple<T, T> operator()(size_t i, const VectorArray<T>& a, const VectorArray<T>& b) {
         return std::make_tuple(a[i], b[i]);
     }
@@ -173,7 +194,48 @@ struct PairedLowerIndexer {
 };
 
 template<size_t fsize, template<typename> class Indexer, typename Function>
-static void EmitThreeOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, typename NaNHandler<fsize, Indexer, 3>::function_type nan_handler = NaNHandler<fsize, Indexer, 3>::GetDefault()) {
+void EmitTwoOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, typename NaNHandler<fsize, Indexer, 2>::function_type nan_handler = NaNHandler<fsize, Indexer, 2>::GetDefault()) {
+    static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
+
+    if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+        if constexpr (std::is_member_function_pointer_v<Function>) {
+            (code.*fn)(xmm_a);
+        } else {
+            fn(xmm_a);
+        }
+
+        ForceToDefaultNaN<fsize>(code, ctx, xmm_a);
+
+        ctx.reg_alloc.DefineValue(inst, xmm_a);
+        return;
+    }
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
+
+    code.movaps(nan_mask, xmm_a);
+    code.movaps(result, xmm_a);
+    FCODE(cmpunordp)(nan_mask, nan_mask);
+    if constexpr (std::is_member_function_pointer_v<Function>) {
+        (code.*fn)(result);
+    } else {
+        fn(result);
+    }
+    FCODE(cmpunordp)(nan_mask, result);
+
+    HandleNaNs<fsize, 1>(code, ctx, {result, xmm_a}, nan_mask, nan_handler);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+template<size_t fsize, template<typename> class Indexer, typename Function>
+void EmitThreeOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, typename NaNHandler<fsize, Indexer, 3>::function_type nan_handler = NaNHandler<fsize, Indexer, 3>::GetDefault()) {
     static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
 
     if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
@@ -187,17 +249,7 @@ static void EmitThreeOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::
             fn(xmm_a, xmm_b);
         }
 
-        if (ctx.FPSCR_DN()) {
-            const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
-            const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
-            code.pcmpeqw(tmp, tmp);
-            code.movaps(nan_mask, xmm_a);
-            FCODE(cmpordp)(nan_mask, nan_mask);
-            code.andps(xmm_a, nan_mask);
-            code.xorps(nan_mask, tmp);
-            code.andps(nan_mask, fsize == 32 ? code.MConst(xword, 0x7fc0'0000'7fc0'0000, 0x7fc0'0000'7fc0'0000) : code.MConst(xword, 0x7ff8'0000'0000'0000, 0x7ff8'0000'0000'0000));
-            code.orps(xmm_a, nan_mask);
-        }
+        ForceToDefaultNaN<fsize>(code, ctx, xmm_a);
 
         ctx.reg_alloc.DefineValue(inst, xmm_a);
         return;
@@ -226,7 +278,7 @@ static void EmitThreeOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::
 }
 
 template<size_t fsize, template<typename> class Indexer, typename Function>
-static void EmitFourOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, typename NaNHandler<fsize, Indexer, 4>::function_type nan_handler = NaNHandler<fsize, Indexer, 4>::GetDefault()) {
+void EmitFourOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, typename NaNHandler<fsize, Indexer, 4>::function_type nan_handler = NaNHandler<fsize, Indexer, 4>::GetDefault()) {
     static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
 
     if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
@@ -241,17 +293,7 @@ static void EmitFourOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::I
             fn(xmm_a, xmm_b, xmm_c);
         }
 
-        if (ctx.FPSCR_DN()) {
-            const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
-            const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
-            code.pcmpeqw(tmp, tmp);
-            code.movaps(nan_mask, xmm_a);
-            FCODE(cmpordp)(nan_mask, nan_mask);
-            code.andps(xmm_a, nan_mask);
-            code.xorps(nan_mask, tmp);
-            code.andps(nan_mask, fsize == 32 ? code.MConst(xword, 0x7fc0'0000'7fc0'0000, 0x7fc0'0000'7fc0'0000) : code.MConst(xword, 0x7ff8'0000'0000'0000, 0x7ff8'0000'0000'0000));
-            code.orps(xmm_a, nan_mask);
-        }
+        ForceToDefaultNaN<fsize>(code, ctx, xmm_a);
 
         ctx.reg_alloc.DefineValue(inst, xmm_a);
         return;
@@ -282,7 +324,7 @@ static void EmitFourOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::I
 }
 
 template<typename Lambda>
-inline void EmitTwoOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+void EmitTwoOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
     const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
     
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -307,7 +349,7 @@ inline void EmitTwoOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* ins
 }
 
 template<typename Lambda>
-inline void EmitThreeOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+void EmitThreeOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
     const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -351,7 +393,7 @@ inline void EmitThreeOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
 }
 
 template<typename Lambda>
-inline void EmitFourOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+void EmitFourOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
     const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -397,6 +439,8 @@ inline void EmitFourOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* in
 
     ctx.reg_alloc.DefineValue(inst, xmm0);
 }
+
+} // anonymous namespace
 
 void EmitX64::EmitFPVectorAbs16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -735,6 +779,34 @@ void EmitFPVectorRoundInt(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
 
     const auto rounding = static_cast<FP::RoundingMode>(inst->GetArg(1).GetU8());
     const bool exact = inst->GetArg(2).GetU1();
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && rounding != FP::RoundingMode::ToNearest_TieAwayFromZero && !exact) {
+        const u8 round_imm = [&]() -> u8 {
+            switch (rounding) {
+            case FP::RoundingMode::ToNearest_TieEven:
+                return 0b00;
+            case FP::RoundingMode::TowardsPlusInfinity:
+                return 0b10;
+            case FP::RoundingMode::TowardsMinusInfinity:
+                return 0b01;
+            case FP::RoundingMode::TowardsZero:
+                return 0b11;
+            default:
+                UNREACHABLE();
+            }
+            return 0;
+        }();
+
+        EmitTwoOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result){
+            if constexpr (fsize == 32) {
+                code.roundps(result, result, round_imm);
+            } else {
+                code.roundpd(result, result, round_imm);
+            }
+        });
+
+        return;
+    }
 
     using rounding_list = mp::list<
         std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieEven>,

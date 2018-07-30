@@ -36,6 +36,17 @@ constexpr bool IsNaN(u32 value) {
     return IsQNaN(value) || IsSNaN(value);
 }
 
+/// Given a single argument, return the NaN value which would be returned by an ARM processor.
+/// If the argument isn't a NaN, returns boost::none.
+inline boost::optional<u32> ProcessNaNs(u32 a) {
+    if (IsSNaN(a)) {
+        return a | 0x00400000;
+    } else if (IsQNaN(a)) {
+        return a;
+    }
+    return boost::none;
+}
+
 /// Given a pair of arguments, return the NaN value which would be returned by an ARM processor.
 /// If neither argument is a NaN, returns boost::none.
 inline boost::optional<u32> ProcessNaNs(u32 a, u32 b) {
@@ -94,6 +105,17 @@ constexpr bool IsSNaN(u64 value) {
 /// Is 64-bit floating point value a NaN?
 constexpr bool IsNaN(u64 value) {
     return IsQNaN(value) || IsSNaN(value);
+}
+
+/// Given a single argument, return the NaN value which would be returned by an ARM processor.
+/// If the argument isn't a NaN, returns boost::none.
+inline boost::optional<u64> ProcessNaNs(u64 a) {
+    if (IsSNaN(a)) {
+        return a | 0x0008'0000'0000'0000;
+    } else if (IsQNaN(a)) {
+        return a;
+    }
+    return boost::none;
 }
 
 /// Given a pair of arguments, return the NaN value which would be returned by an ARM processor.
