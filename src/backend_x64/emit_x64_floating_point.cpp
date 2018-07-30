@@ -33,6 +33,8 @@ namespace Dynarmic::BackendX64 {
 using namespace Xbyak::util;
 namespace mp = Dynarmic::Common::mp;
 
+namespace {
+
 constexpr u64 f32_negative_zero = 0x80000000u;
 constexpr u64 f32_nan = 0x7fc00000u;
 constexpr u64 f32_non_sign_mask = 0x7fffffffu;
@@ -52,7 +54,7 @@ constexpr u64 f64_min_u64 = 0x0000000000000000u; // 0 as a double
 constexpr u64 f64_max_u64_lim = 0x43f0000000000000u; // 2^64 as a double (actual maximum unrepresentable)
 
 template<size_t fsize, typename T>
-static T ChooseOnFsize([[maybe_unused]] T f32, [[maybe_unused]] T f64) {
+T ChooseOnFsize([[maybe_unused]] T f32, [[maybe_unused]] T f64) {
     static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
 
     if constexpr (fsize == 32) {
@@ -64,149 +66,77 @@ static T ChooseOnFsize([[maybe_unused]] T f32, [[maybe_unused]] T f64) {
 
 #define FCODE(NAME) (code.*ChooseOnFsize<fsize>(&Xbyak::CodeGenerator::NAME##s, &Xbyak::CodeGenerator::NAME##d))
 
-static void DenormalsAreZero32(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
+template<size_t fsize>
+void DenormalsAreZero(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
     Xbyak::Label end;
+
+    if constexpr (fsize == 32) {
+        code.movd(gpr_scratch.cvt32(), xmm_value);
+        code.and_(gpr_scratch.cvt32(), u32(0x7FFFFFFF));
+        code.sub(gpr_scratch.cvt32(), u32(1));
+        code.cmp(gpr_scratch.cvt32(), u32(0x007FFFFE));
+    } else {
+        auto mask = code.MConst(xword, f64_non_sign_mask);
+        mask.setBit(64);
+        auto penult_denormal = code.MConst(xword, f64_penultimate_positive_denormal);
+        penult_denormal.setBit(64);
+
+        code.movq(gpr_scratch, xmm_value);
+        code.and_(gpr_scratch, mask);
+        code.sub(gpr_scratch, u32(1));
+        code.cmp(gpr_scratch, penult_denormal);
+    }
 
     // We need to report back whether we've found a denormal on input.
     // SSE doesn't do this for us when SSE's DAZ is enabled.
 
-    code.movd(gpr_scratch, xmm_value);
-    code.and_(gpr_scratch, u32(0x7FFFFFFF));
-    code.sub(gpr_scratch, u32(1));
-    code.cmp(gpr_scratch, u32(0x007FFFFE));
     code.ja(end);
     code.pxor(xmm_value, xmm_value);
     code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_IDC], u32(1 << 7));
     code.L(end);
 }
 
-static void DenormalsAreZero64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
+template<size_t fsize>
+void FlushToZero(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
     Xbyak::Label end;
 
-    auto mask = code.MConst(xword, f64_non_sign_mask);
-    mask.setBit(64);
-    auto penult_denormal = code.MConst(xword, f64_penultimate_positive_denormal);
-    penult_denormal.setBit(64);
+    if constexpr (fsize == 32) {
+        code.movd(gpr_scratch.cvt32(), xmm_value);
+        code.and_(gpr_scratch.cvt32(), u32(0x7FFFFFFF));
+        code.sub(gpr_scratch.cvt32(), u32(1));
+        code.cmp(gpr_scratch.cvt32(), u32(0x007FFFFE));
+    } else {
+        auto mask = code.MConst(xword, f64_non_sign_mask);
+        mask.setBit(64);
+        auto penult_denormal = code.MConst(xword, f64_penultimate_positive_denormal);
+        penult_denormal.setBit(64);
 
-    code.movq(gpr_scratch, xmm_value);
-    code.and_(gpr_scratch, mask);
-    code.sub(gpr_scratch, u32(1));
-    code.cmp(gpr_scratch, penult_denormal);
-    code.ja(end);
-    code.pxor(xmm_value, xmm_value);
-    code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_IDC], u32(1 << 7));
-    code.L(end);
-}
+        code.movq(gpr_scratch, xmm_value);
+        code.and_(gpr_scratch, mask);
+        code.sub(gpr_scratch, u32(1));
+        code.cmp(gpr_scratch, penult_denormal);
+    }
 
-static void FlushToZero32(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
-    Xbyak::Label end;
-
-    code.movd(gpr_scratch, xmm_value);
-    code.and_(gpr_scratch, u32(0x7FFFFFFF));
-    code.sub(gpr_scratch, u32(1));
-    code.cmp(gpr_scratch, u32(0x007FFFFE));
     code.ja(end);
     code.pxor(xmm_value, xmm_value);
     code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_UFC], u32(1 << 3));
     code.L(end);
 }
 
-static void FlushToZero64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
-    Xbyak::Label end;
-
-    auto mask = code.MConst(xword, f64_non_sign_mask);
-    mask.setBit(64);
-    auto penult_denormal = code.MConst(xword, f64_penultimate_positive_denormal);
-    penult_denormal.setBit(64);
-
-    code.movq(gpr_scratch, xmm_value);
-    code.and_(gpr_scratch, mask);
-    code.sub(gpr_scratch, u32(1));
-    code.cmp(gpr_scratch, penult_denormal);
-    code.ja(end);
-    code.pxor(xmm_value, xmm_value);
-    code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_UFC], u32(1 << 3));
-    code.L(end);
-}
-
-static void ZeroIfNaN64(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_scratch) {
+template<size_t fsize>
+void ZeroIfNaN(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_scratch) {
     code.pxor(xmm_scratch, xmm_scratch);
-    code.cmpordsd(xmm_scratch, xmm_value); // true mask when ordered (i.e.: when not an NaN)
+    FCODE(cmpords)(xmm_scratch, xmm_value); // true mask when ordered (i.e.: when not an NaN)
     code.pand(xmm_value, xmm_scratch);
 }
 
-static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Label& end) {
+template<size_t fsize>
+void PreProcessNaNs(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Label& end) {
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+
     Xbyak::Label nan;
 
-    code.ucomiss(a, b);
-    code.jp(nan, code.T_NEAR);
-    code.SwitchToFarCode();
-    code.L(nan);
-
-    code.sub(rsp, 8);
-    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
-    code.xor_(code.ABI_PARAM1.cvt32(), code.ABI_PARAM1.cvt32());
-    code.xor_(code.ABI_PARAM2.cvt32(), code.ABI_PARAM2.cvt32());
-    code.movd(code.ABI_PARAM1.cvt32(), a);
-    code.movd(code.ABI_PARAM2.cvt32(), b);
-    code.CallFunction(static_cast<u32(*)(u32, u32)>([](u32 a, u32 b) -> u32 {
-        return *FP::ProcessNaNs(a, b);
-    }));
-    code.movd(a, code.ABI_RETURN.cvt32());
-    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
-    code.add(rsp, 8);
-
-    code.jmp(end, code.T_NEAR);
-    code.SwitchToNearCode();
-}
-
-template<typename NaNHandler>
-static void PreProcessNaNs32(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end, NaNHandler nan_handler) {
-    Xbyak::Label nan;
-
-    code.ucomiss(a, b);
-    code.jp(nan, code.T_NEAR);
-    code.ucomiss(c, c);
-    code.jp(nan, code.T_NEAR);
-    code.SwitchToFarCode();
-    code.L(nan);
-
-    code.sub(rsp, 8);
-    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
-    code.xor_(code.ABI_PARAM1.cvt32(), code.ABI_PARAM1.cvt32());
-    code.xor_(code.ABI_PARAM2.cvt32(), code.ABI_PARAM2.cvt32());
-    code.xor_(code.ABI_PARAM3.cvt32(), code.ABI_PARAM3.cvt32());
-    code.movd(code.ABI_PARAM1.cvt32(), a);
-    code.movd(code.ABI_PARAM2.cvt32(), b);
-    code.movd(code.ABI_PARAM3.cvt32(), c);
-    code.CallFunction(static_cast<u32(*)(u32, u32, u32)>(nan_handler));
-    code.movd(a, code.ABI_RETURN.cvt32());
-    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
-    code.add(rsp, 8);
-
-    code.jmp(end, code.T_NEAR);
-    code.SwitchToNearCode();
-}
-
-static void PostProcessNaNs32(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm tmp) {
-    code.movaps(tmp, result);
-    code.cmpunordps(tmp, tmp);
-    code.pslld(tmp, 31);
-    code.xorps(result, tmp);
-}
-
-static void DefaultNaN32(BlockOfCode& code, Xbyak::Xmm xmm_value) {
-    Xbyak::Label end;
-    code.ucomiss(xmm_value, xmm_value);
-    code.jnp(end);
-    code.movaps(xmm_value, code.MConst(xword, f32_nan));
-    code.L(end);
-}
-
-static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Label& end) {
-    Xbyak::Label nan;
-
-    code.ucomisd(a, b);
+    FCODE(ucomis)(a, b);
     code.jp(nan, code.T_NEAR);
     code.SwitchToFarCode();
     code.L(nan);
@@ -215,7 +145,7 @@ static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
     code.movq(code.ABI_PARAM1, a);
     code.movq(code.ABI_PARAM2, b);
-    code.CallFunction(static_cast<u64(*)(u64, u64)>([](u64 a, u64 b) -> u64 {
+    code.CallFunction(static_cast<FPT(*)(FPT, FPT)>([](FPT a, FPT b) -> FPT {
         return *FP::ProcessNaNs(a, b);
     }));
     code.movq(a, code.ABI_RETURN);
@@ -226,13 +156,15 @@ static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.SwitchToNearCode();
 }
 
-template<typename NaNHandler>
-static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end, NaNHandler nan_handler) {
+template<size_t fsize, typename NaNHandler>
+void PreProcessNaNs(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end, NaNHandler nan_handler) {
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+
     Xbyak::Label nan;
 
-    code.ucomisd(a, b);
+    FCODE(ucomis)(a, b);
     code.jp(nan, code.T_NEAR);
-    code.ucomisd(c, c);
+    FCODE(ucomis)(c, c);
     code.jp(nan, code.T_NEAR);
     code.SwitchToFarCode();
     code.L(nan);
@@ -242,7 +174,7 @@ static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.movq(code.ABI_PARAM1, a);
     code.movq(code.ABI_PARAM2, b);
     code.movq(code.ABI_PARAM3, c);
-    code.CallFunction(static_cast<u64(*)(u64, u64, u64)>(nan_handler));
+    code.CallFunction(static_cast<FPT(*)(FPT, FPT, FPT)>(nan_handler));
     code.movq(a, code.ABI_RETURN);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
     code.add(rsp, 8);
@@ -251,181 +183,48 @@ static void PreProcessNaNs64(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbya
     code.SwitchToNearCode();
 }
 
-static void PostProcessNaNs64(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm tmp) {
-    code.movaps(tmp, result);
-    code.cmpunordpd(tmp, tmp);
-    code.psllq(tmp, 63);
-    code.xorps(result, tmp);
+template<size_t fsize>
+void PostProcessNaNs(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm tmp) {
+    if constexpr (fsize == 32) {
+        code.movaps(tmp, result);
+        code.cmpunordps(tmp, tmp);
+        code.pslld(tmp, 31);
+        code.xorps(result, tmp);
+    } else {
+        code.movaps(tmp, result);
+        code.cmpunordpd(tmp, tmp);
+        code.psllq(tmp, 63);
+        code.xorps(result, tmp);
+    }
 }
 
-static void DefaultNaN64(BlockOfCode& code, Xbyak::Xmm xmm_value) {
+template<size_t fsize>
+void DefaultNaN(BlockOfCode& code, Xbyak::Xmm xmm_value) {
     Xbyak::Label end;
-    code.ucomisd(xmm_value, xmm_value);
+    FCODE(ucomis)(xmm_value, xmm_value);
     code.jnp(end);
-    code.movaps(xmm_value, code.MConst(xword, f64_nan));
+    code.movaps(xmm_value, code.MConst(xword, fsize == 32 ? f32_nan : f64_nan));
     code.L(end);
 }
 
-static Xbyak::Label ProcessNaN32(BlockOfCode& code, Xbyak::Xmm a) {
+template<size_t fsize>
+Xbyak::Label ProcessNaN(BlockOfCode& code, Xbyak::Xmm a) {
     Xbyak::Label nan, end;
 
-    code.ucomiss(a, a);
+    FCODE(ucomis)(a, a);
     code.jp(nan, code.T_NEAR);
     code.SwitchToFarCode();
     code.L(nan);
 
-    code.orps(a, code.MConst(xword, 0x00400000));
+    code.orps(a, code.MConst(xword, fsize == 32 ? 0x00400000 : 0x0008'0000'0000'0000));
 
     code.jmp(end, code.T_NEAR);
     code.SwitchToNearCode();
     return end;
-}
-
-static Xbyak::Label ProcessNaN64(BlockOfCode& code, Xbyak::Xmm a) {
-    Xbyak::Label nan, end;
-
-    code.ucomisd(a, a);
-    code.jp(nan, code.T_NEAR);
-    code.SwitchToFarCode();
-    code.L(nan);
-
-    code.orps(a, code.MConst(xword, 0x0008'0000'0000'0000));
-
-    code.jmp(end, code.T_NEAR);
-    code.SwitchToNearCode();
-    return end;
-}
-
-template <typename PreprocessFunction, typename Function>
-static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unused]] PreprocessFunction preprocess, Function fn) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    Xbyak::Label end;
-
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
-    Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
-
-    if constexpr(!std::is_same_v<PreprocessFunction, std::nullptr_t>) {
-        preprocess(result, operand, gpr_scratch, end);
-    }
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32(code, result, gpr_scratch);
-        DenormalsAreZero32(code, operand, gpr_scratch);
-    }
-    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        PreProcessNaNs32(code, result, operand, end);
-    }
-    if constexpr (std::is_member_function_pointer_v<Function>) {
-        (code.*fn)(result, operand);
-    } else {
-        fn(result, operand);
-    }
-    if (ctx.FPSCR_FTZ()) {
-        FlushToZero32(code, result, gpr_scratch);
-    }
-    if (ctx.FPSCR_DN()) {
-        DefaultNaN32(code, result);
-    } else if (ctx.AccurateNaN()) {
-        PostProcessNaNs32(code, result, operand);
-    }
-    code.L(end);
-
-    ctx.reg_alloc.DefineValue(inst, result);
-}
-
-template <typename PreprocessFunction, typename Function>
-static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unused]] PreprocessFunction preprocess, Function fn) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    Xbyak::Label end;
-
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
-    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
-
-    if constexpr(!std::is_same_v<PreprocessFunction, std::nullptr_t>) {
-        preprocess(result, operand, gpr_scratch, end);
-    }
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, result, gpr_scratch);
-        DenormalsAreZero64(code, operand, gpr_scratch);
-    }
-    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        PreProcessNaNs64(code, result, operand, end);
-    }
-    if constexpr (std::is_member_function_pointer_v<Function>) {
-        (code.*fn)(result, operand);
-    } else {
-        fn(result, operand);
-    }
-    if (ctx.FPSCR_FTZ()) {
-        FlushToZero64(code, result, gpr_scratch);
-    }
-    if (ctx.FPSCR_DN()) {
-        DefaultNaN64(code, result);
-    } else if (ctx.AccurateNaN()) {
-        PostProcessNaNs64(code, result, operand);
-    }
-    code.L(end);
-
-    ctx.reg_alloc.DefineValue(inst, result);
-}
-
-template <typename Function>
-static void FPThreeOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
-    FPThreeOp32(code, ctx, inst, nullptr, fn);
-}
-
-template <typename Function>
-static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
-    FPThreeOp64(code, ctx, inst, nullptr, fn);
 }
 
 template <size_t fsize, typename Function>
-static void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
-    if constexpr (fsize == 32) {
-        FPThreeOp32(code, ctx, inst, fn);
-    } else {
-        FPThreeOp64(code, ctx, inst, fn);
-    }
-}
-
-template <typename Function>
-static void FPTwoOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    Xbyak::Label end;
-
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
-
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32(code, result, gpr_scratch);
-    }
-    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        end = ProcessNaN32(code, result);
-    }
-    if constexpr (std::is_member_function_pointer_v<Function>) {
-        (code.*fn)(result, result);
-    } else {
-        fn(result);
-    }
-    if (ctx.FPSCR_FTZ()) {
-        FlushToZero32(code, result, gpr_scratch);
-    }
-    if (ctx.FPSCR_DN()) {
-        DefaultNaN32(code, result);
-    } else if (ctx.AccurateNaN()) {
-        PostProcessNaNs32(code, result, ctx.reg_alloc.ScratchXmm());
-    }
-    code.L(end);
-
-    ctx.reg_alloc.DefineValue(inst, result);
-}
-
-template <typename Function>
-static void FPTwoOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
+void FPTwoOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
@@ -434,10 +233,10 @@ static void FPTwoOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Funct
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, result, gpr_scratch);
+        DenormalsAreZero<fsize>(code, result, gpr_scratch);
     }
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        end = ProcessNaN64(code, result);
+        end = ProcessNaN<fsize>(code, result);
     }
     if constexpr (std::is_member_function_pointer_v<Function>) {
         (code.*fn)(result, result);
@@ -445,53 +244,63 @@ static void FPTwoOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Funct
         fn(result);
     }
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero64(code, result, gpr_scratch);
+        FlushToZero<fsize>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
-        DefaultNaN64(code, result);
+        DefaultNaN<fsize>(code, result);
     } else if (ctx.AccurateNaN()) {
-        PostProcessNaNs64(code, result, ctx.reg_alloc.ScratchXmm());
+        PostProcessNaNs<fsize>(code, result, ctx.reg_alloc.ScratchXmm());
     }
     code.L(end);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename Function, typename NaNHandler>
-static void FPFourOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, NaNHandler nan_handler) {
+template <size_t fsize, typename PreprocessFunction, typename Function>
+void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unused]] PreprocessFunction preprocess, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
 
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm operand2 = ctx.reg_alloc.UseScratchXmm(args[1]);
-    Xbyak::Xmm operand3 = ctx.reg_alloc.UseScratchXmm(args[2]);
-    Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
+    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
+    if constexpr(!std::is_same_v<PreprocessFunction, std::nullptr_t>) {
+        preprocess(result, operand, gpr_scratch, end);
+    }
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32(code, result, gpr_scratch);
-        DenormalsAreZero32(code, operand2, gpr_scratch);
-        DenormalsAreZero32(code, operand3, gpr_scratch);
+        DenormalsAreZero<fsize>(code, result, gpr_scratch);
+        DenormalsAreZero<fsize>(code, operand, gpr_scratch);
     }
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        PreProcessNaNs32(code, result, operand2, operand3, end, nan_handler);
+        PreProcessNaNs<fsize>(code, result, operand, end);
     }
-    fn(result, operand2, operand3);
+    if constexpr (std::is_member_function_pointer_v<Function>) {
+        (code.*fn)(result, operand);
+    } else {
+        fn(result, operand);
+    }
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero32(code, result, gpr_scratch);
+        FlushToZero<fsize>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
-        DefaultNaN32(code, result);
+        DefaultNaN<fsize>(code, result);
     } else if (ctx.AccurateNaN()) {
-        PostProcessNaNs32(code, result, operand2);
+        PostProcessNaNs<fsize>(code, result, operand);
     }
     code.L(end);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename Function, typename NaNHandler>
-static void FPFourOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, NaNHandler nan_handler) {
+template <size_t fsize, typename Function>
+void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
+    FPThreeOp<fsize>(code, ctx, inst, nullptr, fn);
+}
+
+template <size_t fsize, typename Function, typename NaNHandler>
+void FPFourOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, NaNHandler nan_handler) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
@@ -502,26 +311,28 @@ static void FPFourOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Func
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, result, gpr_scratch);
-        DenormalsAreZero64(code, operand2, gpr_scratch);
-        DenormalsAreZero64(code, operand3, gpr_scratch);
+        DenormalsAreZero<fsize>(code, result, gpr_scratch);
+        DenormalsAreZero<fsize>(code, operand2, gpr_scratch);
+        DenormalsAreZero<fsize>(code, operand3, gpr_scratch);
     }
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        PreProcessNaNs64(code, result, operand2, operand3, end, nan_handler);
+        PreProcessNaNs<fsize>(code, result, operand2, operand3, end, nan_handler);
     }
     fn(result, operand2, operand3);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero64(code, result, gpr_scratch);
+        FlushToZero<fsize>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
-        DefaultNaN64(code, result);
+        DefaultNaN<fsize>(code, result);
     } else if (ctx.AccurateNaN()) {
-        PostProcessNaNs64(code, result, operand2);
+        PostProcessNaNs<fsize>(code, result, operand2);
     }
     code.L(end);
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
+
+} // anonymous namespace
 
 void EmitX64::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -560,23 +371,23 @@ void EmitX64::EmitFPNeg64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPAdd32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::addss);
+    FPThreeOp<32>(code, ctx, inst, &Xbyak::CodeGenerator::addss);
 }
 
 void EmitX64::EmitFPAdd64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::addsd);
+    FPThreeOp<64>(code, ctx, inst, &Xbyak::CodeGenerator::addsd);
 }
 
 void EmitX64::EmitFPDiv32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::divss);
+    FPThreeOp<32>(code, ctx, inst, &Xbyak::CodeGenerator::divss);
 }
 
 void EmitX64::EmitFPDiv64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::divsd);
+    FPThreeOp<64>(code, ctx, inst, &Xbyak::CodeGenerator::divsd);
 }
 
 template<size_t fsize>
-void EmitFPMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+static void EmitFPMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     if (ctx.FPSCR_DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -584,15 +395,9 @@ void EmitFPMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
         const Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
 
         if (ctx.FPSCR_FTZ()) {
-            if constexpr (fsize == 32) {
-                const Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
-                DenormalsAreZero32(code, result, gpr_scratch);
-                DenormalsAreZero32(code, operand, gpr_scratch);
-            } else {
-                const Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt64();
-                DenormalsAreZero64(code, result, gpr_scratch);
-                DenormalsAreZero64(code, operand, gpr_scratch);
-            }
+            const Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
+            DenormalsAreZero<fsize>(code, result, gpr_scratch);
+            DenormalsAreZero<fsize>(code, operand, gpr_scratch);
         }
 
         Xbyak::Label equal, end, nan;
@@ -641,23 +446,23 @@ void EmitX64::EmitFPMax64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPMaxNumeric32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg32 scratch, Xbyak::Label& end){
+    FPThreeOp<32>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
         Xbyak::Label normal, normal_or_equal, result_is_result;
 
         code.ucomiss(result, operand);
         code.jnp(normal_or_equal);
         // If operand == QNaN, result = result.
-        code.movd(scratch, operand);
-        code.shl(scratch, 1);
-        code.cmp(scratch, 0xff800000u);
+        code.movd(scratch.cvt32(), operand);
+        code.shl(scratch.cvt32(), 1);
+        code.cmp(scratch.cvt32(), 0xff800000u);
         code.jae(result_is_result);
         // If operand == SNaN, let usual NaN code handle it.
-        code.cmp(scratch, 0xff000000u);
+        code.cmp(scratch.cvt32(), 0xff000000u);
         code.ja(normal);
         // If result == SNaN, && operand != NaN, result = result.
-        code.movd(scratch, result);
-        code.shl(scratch, 1);
-        code.cmp(scratch, 0xff800000u);
+        code.movd(scratch.cvt32(), result);
+        code.shl(scratch.cvt32(), 1);
+        code.cmp(scratch.cvt32(), 0xff800000u);
         code.jnae(result_is_result);
         // If result == QNaN && operand != NaN, result = operand.
         code.movaps(result, operand);
@@ -675,7 +480,7 @@ void EmitX64::EmitFPMaxNumeric32(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPMaxNumeric64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
+    FPThreeOp<64>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
         Xbyak::Label normal, normal_or_equal, result_is_result;
 
         code.ucomisd(result, operand);
@@ -708,9 +513,8 @@ void EmitX64::EmitFPMaxNumeric64(EmitContext& ctx, IR::Inst* inst) {
     }, &Xbyak::CodeGenerator::maxsd);
 }
 
-
 template<size_t fsize>
-void EmitFPMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+static void EmitFPMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     if (ctx.FPSCR_DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -718,15 +522,9 @@ void EmitFPMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
         const Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
 
         if (ctx.FPSCR_FTZ()) {
-            if constexpr (fsize == 32) {
-                const Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
-                DenormalsAreZero32(code, result, gpr_scratch);
-                DenormalsAreZero32(code, operand, gpr_scratch);
-            } else {
-                const Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt64();
-                DenormalsAreZero64(code, result, gpr_scratch);
-                DenormalsAreZero64(code, operand, gpr_scratch);
-            }
+            const Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
+            DenormalsAreZero<fsize>(code, result, gpr_scratch);
+            DenormalsAreZero<fsize>(code, operand, gpr_scratch);
         }
 
         Xbyak::Label equal, end, nan;
@@ -774,25 +572,24 @@ void EmitX64::EmitFPMin64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPMin<64>(code, ctx, inst);
 }
 
-
 void EmitX64::EmitFPMinNumeric32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg32 scratch, Xbyak::Label& end){
+    FPThreeOp<32>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
         Xbyak::Label normal, normal_or_equal, result_is_result;
 
         code.ucomiss(result, operand);
         code.jnp(normal_or_equal);
         // If operand == QNaN, result = result.
-        code.movd(scratch, operand);
-        code.shl(scratch, 1);
-        code.cmp(scratch, 0xff800000u);
+        code.movd(scratch.cvt32(), operand);
+        code.shl(scratch.cvt32(), 1);
+        code.cmp(scratch.cvt32(), 0xff800000u);
         code.jae(result_is_result);
         // If operand == SNaN, let usual NaN code handle it.
-        code.cmp(scratch, 0xff000000u);
+        code.cmp(scratch.cvt32(), 0xff000000u);
         code.ja(normal);
         // If result == SNaN, && operand != NaN, result = result.
-        code.movd(scratch, result);
-        code.shl(scratch, 1);
-        code.cmp(scratch, 0xff800000u);
+        code.movd(scratch.cvt32(), result);
+        code.shl(scratch.cvt32(), 1);
+        code.cmp(scratch.cvt32(), 0xff800000u);
         code.jnae(result_is_result);
         // If result == QNaN && operand != NaN, result = operand.
         code.movaps(result, operand);
@@ -810,7 +607,7 @@ void EmitX64::EmitFPMinNumeric32(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPMinNumeric64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
+    FPThreeOp<64>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
         Xbyak::Label normal, normal_or_equal, result_is_result;
 
         code.ucomisd(result, operand);
@@ -844,11 +641,11 @@ void EmitX64::EmitFPMinNumeric64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::mulss);
+    FPThreeOp<32>(code, ctx, inst, &Xbyak::CodeGenerator::mulss);
 }
 
 void EmitX64::EmitFPMul64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::mulsd);
+    FPThreeOp<64>(code, ctx, inst, &Xbyak::CodeGenerator::mulsd);
 }
 
 template<typename FPT>
@@ -870,7 +667,7 @@ static void EmitFPMulAddFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* 
 
 void EmitX64::EmitFPMulAdd32(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
-        FPFourOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
+        FPFourOp<32>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
             code.vfmadd231ss(result, operand2, operand3);
         }, [](u32 a, u32 b, u32 c) -> u32 {
             if (FP::IsQNaN(a) && ((FP::IsInf(b) && FP::IsZero(c)) || (FP::IsZero(b) && FP::IsInf(c)))) {
@@ -886,7 +683,7 @@ void EmitX64::EmitFPMulAdd32(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPMulAdd64(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
-        FPFourOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
+        FPFourOp<64>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
             code.vfmadd231sd(result, operand2, operand3);
         }, [](u64 a, u64 b, u64 c) -> u64 {
             if (FP::IsQNaN(a) && ((FP::IsInf(b) && FP::IsZero(c)) || (FP::IsZero(b) && FP::IsInf(c)))) {
@@ -956,11 +753,11 @@ static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, siz
         }();
 
         if (fsize == 64) {
-            FPTwoOp64(code, ctx, inst, [&](Xbyak::Xmm result) {
+            FPTwoOp<64>(code, ctx, inst, [&](Xbyak::Xmm result) {
                 code.roundsd(result, result, round_imm);
             });
         } else {
-            FPTwoOp32(code, ctx, inst, [&](Xbyak::Xmm result) {
+            FPTwoOp<32>(code, ctx, inst, [&](Xbyak::Xmm result) {
                 code.roundss(result, result, round_imm);
             });
         }
@@ -1051,19 +848,19 @@ void EmitX64::EmitFPRSqrtStepFused64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
-    FPTwoOp32(code, ctx, inst, &Xbyak::CodeGenerator::sqrtss);
+    FPTwoOp<32>(code, ctx, inst, &Xbyak::CodeGenerator::sqrtss);
 }
 
 void EmitX64::EmitFPSqrt64(EmitContext& ctx, IR::Inst* inst) {
-    FPTwoOp64(code, ctx, inst, &Xbyak::CodeGenerator::sqrtsd);
+    FPTwoOp<64>(code, ctx, inst, &Xbyak::CodeGenerator::sqrtsd);
 }
 
 void EmitX64::EmitFPSub32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, &Xbyak::CodeGenerator::subss);
+    FPThreeOp<32>(code, ctx, inst, &Xbyak::CodeGenerator::subss);
 }
 
 void EmitX64::EmitFPSub64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::subsd);
+    FPThreeOp<64>(code, ctx, inst, &Xbyak::CodeGenerator::subsd);
 }
 
 static Xbyak::Reg64 SetFpscrNzcvFromFlags(BlockOfCode& code, EmitContext& ctx) {
@@ -1131,14 +928,14 @@ void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero32(code, result, gpr_scratch.cvt32());
+        DenormalsAreZero<32>(code, result, gpr_scratch);
     }
     code.cvtss2sd(result, result);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero64(code, result, gpr_scratch);
+        FlushToZero<64>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
-        DefaultNaN64(code, result);
+        DefaultNaN<64>(code, result);
     }
 
     ctx.reg_alloc.DefineValue(inst, result);
@@ -1150,14 +947,14 @@ void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero64(code, result, gpr_scratch);
+        DenormalsAreZero<64>(code, result, gpr_scratch);
     }
     code.cvtsd2ss(result, result);
     if (ctx.FPSCR_FTZ()) {
-        FlushToZero32(code, result, gpr_scratch.cvt32());
+        FlushToZero<32>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
-        DefaultNaN32(code, result);
+        DefaultNaN<32>(code, result);
     }
 
     ctx.reg_alloc.DefineValue(inst, result);
@@ -1196,7 +993,6 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, s
             }
 
             code.roundsd(src, src, round_imm);
-            ZeroIfNaN64(code, src, scratch);
         } else {
             if (fbits != 0) {
                 const u32 scale_factor = static_cast<u32>((fbits + 127) << 23);
@@ -1205,8 +1001,9 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, s
 
             code.roundss(src, src, round_imm);
             code.cvtss2sd(src, src);
-            ZeroIfNaN64(code, src, scratch);
         }
+
+        ZeroIfNaN<64>(code, src, scratch);
 
         if (isize == 64) {
             Xbyak::Label saturate_max, end;
