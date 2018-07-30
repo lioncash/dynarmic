@@ -25,6 +25,7 @@ struct FPInfo<u32> {
     static constexpr u32 sign_mask = 0x80000000;
     static constexpr u32 exponent_mask = 0x7F800000;
     static constexpr u32 mantissa_mask = 0x007FFFFF;
+    static constexpr u32 mantissa_msb = 0x00400000;
 
     static constexpr int exponent_min = -126;
     static constexpr int exponent_max = 127;
@@ -47,6 +48,7 @@ struct FPInfo<u64> {
     static constexpr u64 sign_mask = 0x8000'0000'0000'0000;
     static constexpr u64 exponent_mask = 0x7FF0'0000'0000'0000;
     static constexpr u64 mantissa_mask = 0x000F'FFFF'FFFF'FFFF;
+    static constexpr u64 mantissa_msb = 0x0008'0000'0000'0000;
 
     static constexpr int exponent_min = -1022;
     static constexpr int exponent_max = 1023;

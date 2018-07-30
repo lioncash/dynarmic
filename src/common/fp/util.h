@@ -7,40 +7,51 @@
 #pragma once
 
 #include <boost/optional.hpp>
+
 #include "common/common_types.h"
+#include "common/fp/info.h"
 
 namespace Dynarmic::FP {
 
-/// Is 32-bit floating point value a zero?
-constexpr bool IsZero(u32 value) {
-    return (value & 0x7fffffff) == 0;
+/// Is floating point value a zero?
+template<typename FPT>
+constexpr bool IsZero(FPT value) {
+    return (value & ~FPInfo<FPT>::sign_mask) == 0;
 }
 
-/// Is 32-bit floating point value an infinity?
-constexpr bool IsInf(u32 value) {
-    return (value & 0x7fffffff) == 0x7f800000;
+/// Is floating point value an infinity?
+template<typename FPT>
+constexpr bool IsInf(FPT value) {
+    return (value & ~FPInfo<FPT>::sign_mask) == FPInfo<FPT>::Infinity(false);
 }
 
-/// Is 32-bit floating point value a QNaN?
-constexpr bool IsQNaN(u32 value) {
-    return (value & 0x7fc00000) == 0x7fc00000;
+/// Is floating point value a QNaN?
+template<typename FPT>
+constexpr bool IsQNaN(FPT value) {
+    constexpr FPT qnan_bits = FPInfo<FPT>::exponent_mask | FPInfo<FPT>::mantissa_msb;
+    return (value & qnan_bits) == qnan_bits;
 }
 
-/// Is 32-bit floating point value a SNaN?
-constexpr bool IsSNaN(u32 value) {
-    return (value & 0x7fc00000) == 0x7f800000 && (value & 0x007fffff) != 0;
+/// Is floating point value a SNaN?
+template<typename FPT>
+constexpr bool IsSNaN(FPT value) {
+    constexpr FPT qnan_bits = FPInfo<FPT>::exponent_mask | FPInfo<FPT>::mantissa_msb;
+    constexpr FPT snan_bits = FPInfo<FPT>::exponent_mask;
+    return (value & qnan_bits) == snan_bits && (value & FPInfo<FPT>::mantissa_mask) != 0;
 }
 
-/// Is 32-bit floating point value a NaN?
-constexpr bool IsNaN(u32 value) {
+/// Is floating point value a NaN?
+template<typename FPT>
+constexpr bool IsNaN(FPT value) {
     return IsQNaN(value) || IsSNaN(value);
 }
 
 /// Given a single argument, return the NaN value which would be returned by an ARM processor.
 /// If the argument isn't a NaN, returns boost::none.
-inline boost::optional<u32> ProcessNaNs(u32 a) {
+template<typename FPT>
+inline boost::optional<FPT> ProcessNaNs(FPT a) {
     if (IsSNaN(a)) {
-        return a | 0x00400000;
+        return a | FPInfo<FPT>::mantissa_msb;
     } else if (IsQNaN(a)) {
         return a;
     }
@@ -49,11 +60,12 @@ inline boost::optional<u32> ProcessNaNs(u32 a) {
 
 /// Given a pair of arguments, return the NaN value which would be returned by an ARM processor.
 /// If neither argument is a NaN, returns boost::none.
-inline boost::optional<u32> ProcessNaNs(u32 a, u32 b) {
+template<typename FPT>
+inline boost::optional<FPT> ProcessNaNs(FPT a, FPT b) {
     if (IsSNaN(a)) {
-        return a | 0x00400000;
+        return a | FPInfo<FPT>::mantissa_msb;
     } else if (IsSNaN(b)) {
-        return b | 0x00400000;
+        return b | FPInfo<FPT>::mantissa_msb;
     } else if (IsQNaN(a)) {
         return a;
     } else if (IsQNaN(b)) {
@@ -64,84 +76,14 @@ inline boost::optional<u32> ProcessNaNs(u32 a, u32 b) {
 
 /// Given three arguments, return the NaN value which would be returned by an ARM processor.
 /// If none of the arguments is a NaN, returns boost::none.
-inline boost::optional<u32> ProcessNaNs(u32 a, u32 b, u32 c) {
+template<typename FPT>
+inline boost::optional<FPT> ProcessNaNs(FPT a, FPT b, FPT c) {
     if (IsSNaN(a)) {
-        return a | 0x00400000;
+        return a | FPInfo<FPT>::mantissa_msb;
     } else if (IsSNaN(b)) {
-        return b | 0x00400000;
+        return b | FPInfo<FPT>::mantissa_msb;
     } else if (IsSNaN(c)) {
-        return c | 0x00400000;
-    } else if (IsQNaN(a)) {
-        return a;
-    } else if (IsQNaN(b)) {
-        return b;
-    } else if (IsQNaN(c)) {
-        return c;
-    }
-    return boost::none;
-}
-
-/// Is 64-bit floating point value a zero?
-constexpr bool IsZero(u64 value) {
-    return (value & 0x7FFF'FFFF'FFFF'FFFF) == 0;
-}
-
-/// Is 64-bit floating point value an infinity?
-constexpr bool IsInf(u64 value) {
-    return (value & 0x7FFF'FFFF'FFFF'FFFF) == 0x7FF0'0000'0000'000;
-}
-
-/// Is 64-bit floating point value a QNaN?
-constexpr bool IsQNaN(u64 value) {
-    return (value & 0x7FF8'0000'0000'0000) == 0x7FF8'0000'0000'0000;
-}
-
-/// Is 64-bit floating point value a SNaN?
-constexpr bool IsSNaN(u64 value) {
-    return (value & 0x7FF8'0000'0000'0000) == 0x7FF0'0000'0000'0000
-        && (value & 0x0007'FFFF'FFFF'FFFF) != 0;
-}
-
-/// Is 64-bit floating point value a NaN?
-constexpr bool IsNaN(u64 value) {
-    return IsQNaN(value) || IsSNaN(value);
-}
-
-/// Given a single argument, return the NaN value which would be returned by an ARM processor.
-/// If the argument isn't a NaN, returns boost::none.
-inline boost::optional<u64> ProcessNaNs(u64 a) {
-    if (IsSNaN(a)) {
-        return a | 0x0008'0000'0000'0000;
-    } else if (IsQNaN(a)) {
-        return a;
-    }
-    return boost::none;
-}
-
-/// Given a pair of arguments, return the NaN value which would be returned by an ARM processor.
-/// If neither argument is a NaN, returns boost::none.
-inline boost::optional<u64> ProcessNaNs(u64 a, u64 b) {
-    if (IsSNaN(a)) {
-        return a | 0x0008'0000'0000'0000;
-    } else if (IsSNaN(b)) {
-        return b | 0x0008'0000'0000'0000;
-    } else if (IsQNaN(a)) {
-        return a;
-    } else if (IsQNaN(b)) {
-        return b;
-    }
-    return boost::none;
-}
-
-/// Given three arguments, return the NaN value which would be returned by an ARM processor.
-/// If none of the arguments is a NaN, returns boost::none.
-inline boost::optional<u64> ProcessNaNs(u64 a, u64 b, u64 c) {
-    if (IsSNaN(a)) {
-        return a | 0x0008'0000'0000'0000;
-    } else if (IsSNaN(b)) {
-        return b | 0x0008'0000'0000'0000;
-    } else if (IsSNaN(c)) {
-        return c | 0x0008'0000'0000'0000;
+        return c | FPInfo<FPT>::mantissa_msb;
     } else if (IsQNaN(a)) {
         return a;
     } else if (IsQNaN(b)) {
