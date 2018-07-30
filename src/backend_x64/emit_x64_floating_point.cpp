@@ -51,6 +51,19 @@ constexpr u64 f64_max_s64_lim = 0x43e0000000000000u; // 2^63 as a double (actual
 constexpr u64 f64_min_u64 = 0x0000000000000000u; // 0 as a double
 constexpr u64 f64_max_u64_lim = 0x43f0000000000000u; // 2^64 as a double (actual maximum unrepresentable)
 
+template<size_t fsize, typename T>
+static T ChooseOnFsize([[maybe_unused]] T f32, [[maybe_unused]] T f64) {
+    static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
+
+    if constexpr (fsize == 32) {
+        return f32;
+    } else {
+        return f64;
+    }
+}
+
+#define FCODE(NAME) (code.*ChooseOnFsize<fsize>(&Xbyak::CodeGenerator::NAME##s, &Xbyak::CodeGenerator::NAME##d))
+
 static void DenormalsAreZero32(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg32 gpr_scratch) {
     Xbyak::Label end;
 
@@ -369,6 +382,15 @@ static void FPThreeOp64(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Fun
     FPThreeOp64(code, ctx, inst, nullptr, fn);
 }
 
+template <size_t fsize, typename Function>
+static void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
+    if constexpr (fsize == 32) {
+        FPThreeOp32(code, ctx, inst, fn);
+    } else {
+        FPThreeOp64(code, ctx, inst, fn);
+    }
+}
+
 template <typename Function>
 static void FPTwoOp32(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -553,44 +575,69 @@ void EmitX64::EmitFPDiv64(EmitContext& ctx, IR::Inst* inst) {
     FPThreeOp64(code, ctx, inst, &Xbyak::CodeGenerator::divsd);
 }
 
-void EmitX64::EmitFPMax32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand){
-        Xbyak::Label normal, end;
-        code.ucomiss(result, operand);
-        code.jnz(normal);
-        if (!ctx.AccurateNaN()) {
-            Xbyak::Label notnan;
-            code.jnp(notnan);
-            code.addss(result, operand);
-            code.jmp(end);
-            code.L(notnan);
+template<size_t fsize>
+void EmitFPMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    if (ctx.FPSCR_DN()) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+        if (ctx.FPSCR_FTZ()) {
+            if constexpr (fsize == 32) {
+                const Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
+                DenormalsAreZero32(code, result, gpr_scratch);
+                DenormalsAreZero32(code, operand, gpr_scratch);
+            } else {
+                const Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt64();
+                DenormalsAreZero64(code, result, gpr_scratch);
+                DenormalsAreZero64(code, operand, gpr_scratch);
+            }
         }
+
+        Xbyak::Label equal, end, nan;
+
+        FCODE(ucomis)(result, operand);
+        code.jz(equal, code.T_NEAR);
+        FCODE(maxs)(result, operand);
+        code.L(end);
+
+        code.SwitchToFarCode();
+
+        code.L(equal);
+        code.jp(nan);
         code.andps(result, operand);
         code.jmp(end);
-        code.L(normal);
-        code.maxss(result, operand);
+
+        code.L(nan);
+        code.movaps(result, code.MConst(xword, fsize == 32 ? f32_nan : f64_nan));
+        code.jmp(end);
+
+        code.SwitchToNearCode();
+
+        ctx.reg_alloc.DefineValue(inst, result);
+
+        return;
+    }
+
+    FPThreeOp<fsize>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand){
+        Xbyak::Label equal, end;
+        FCODE(ucomis)(result, operand);
+        code.jz(equal);
+        FCODE(maxs)(result, operand);
+        code.jmp(end);
+        code.L(equal);
+        code.andps(result, operand);
         code.L(end);
     });
 }
 
+void EmitX64::EmitFPMax32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPMax<32>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPMax64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand){
-        Xbyak::Label normal, end;
-        code.ucomisd(result, operand);
-        code.jnz(normal);
-        if (!ctx.AccurateNaN()) {
-            Xbyak::Label notnan;
-            code.jnp(notnan);
-            code.addsd(result, operand);
-            code.jmp(end);
-            code.L(notnan);
-        }
-        code.andps(result, operand);
-        code.jmp(end);
-        code.L(normal);
-        code.maxsd(result, operand);
-        code.L(end);
-    });
+    EmitFPMax<64>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPMaxNumeric32(EmitContext& ctx, IR::Inst* inst) {
@@ -661,30 +708,70 @@ void EmitX64::EmitFPMaxNumeric64(EmitContext& ctx, IR::Inst* inst) {
     }, &Xbyak::CodeGenerator::maxsd);
 }
 
-void EmitX64::EmitFPMin32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp32(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand){
-        Xbyak::Label normal, end;
-        code.ucomiss(result, operand);
-        code.jnz(normal);
+
+template<size_t fsize>
+void EmitFPMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    if (ctx.FPSCR_DN()) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+        if (ctx.FPSCR_FTZ()) {
+            if constexpr (fsize == 32) {
+                const Xbyak::Reg32 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt32();
+                DenormalsAreZero32(code, result, gpr_scratch);
+                DenormalsAreZero32(code, operand, gpr_scratch);
+            } else {
+                const Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr().cvt64();
+                DenormalsAreZero64(code, result, gpr_scratch);
+                DenormalsAreZero64(code, operand, gpr_scratch);
+            }
+        }
+
+        Xbyak::Label equal, end, nan;
+
+        FCODE(ucomis)(result, operand);
+        code.jz(equal, code.T_NEAR);
+        FCODE(mins)(result, operand);
+        code.L(end);
+
+        code.SwitchToFarCode();
+
+        code.L(equal);
+        code.jp(nan);
         code.orps(result, operand);
         code.jmp(end);
-        code.L(normal);
-        code.minss(result, operand);
+
+        code.L(nan);
+        code.movaps(result, code.MConst(xword, fsize == 32 ? f32_nan : f64_nan));
+        code.jmp(end);
+
+        code.SwitchToNearCode();
+
+        ctx.reg_alloc.DefineValue(inst, result);
+
+        return;
+    }
+
+    FPThreeOp<fsize>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand){
+        Xbyak::Label equal, end;
+        FCODE(ucomis)(result, operand);
+        code.jz(equal);
+        FCODE(mins)(result, operand);
+        code.jmp(end);
+        code.L(equal);
+        code.orps(result, operand);
         code.L(end);
     });
 }
 
+void EmitX64::EmitFPMin32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPMin<32>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPMin64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp64(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand){
-        Xbyak::Label normal, end;
-        code.ucomisd(result, operand);
-        code.jnz(normal);
-        code.orps(result, operand);
-        code.jmp(end);
-        code.L(normal);
-        code.minsd(result, operand);
-        code.L(end);
-    });
+    EmitFPMin<64>(code, ctx, inst);
 }
 
 
