@@ -444,8 +444,8 @@ INST(FMINP_pair_2,           "FMINP (scalar)",                            "01111
 //INST(SQDMULL_vec_2,          "SQDMULL, SQDMULL2 (vector)",                "0Q001110zz1mmmmm110100nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Scalar three same
-//INST(SQADD_1,                "SQADD",                                     "01011110zz1mmmmm000011nnnnnddddd")
-//INST(SQSUB_1,                "SQSUB",                                     "01011110zz1mmmmm001011nnnnnddddd")
+INST(SQADD_1,                "SQADD",                                     "01011110zz1mmmmm000011nnnnnddddd")
+INST(SQSUB_1,                "SQSUB",                                     "01011110zz1mmmmm001011nnnnnddddd")
 INST(CMGT_reg_1,             "CMGT (register)",                           "01011110zz1mmmmm001101nnnnnddddd")
 INST(CMGE_reg_1,             "CMGE (register)",                           "01011110zz1mmmmm001111nnnnnddddd")
 INST(SSHL_1,                 "SSHL",                                      "01011110zz1mmmmm010001nnnnnddddd")

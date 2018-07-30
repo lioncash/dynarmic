@@ -102,6 +102,28 @@ bool ScalarFPCompareRegister(TranslatorVisitor& v, bool sz, Vec Vm, Vec Vn, Vec 
 }
 } // Anonymous namespace
 
+bool TranslatorVisitor::SQADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t esize = 8 << size.ZeroExtend<size_t>();
+
+    const IR::UAny operand1 = V_scalar(esize, Vn);
+    const IR::UAny operand2 = V_scalar(esize, Vm);
+    const auto result = ir.SignedSaturatedAdd(operand1, operand2);
+    ir.OrQC(result.overflow);
+    V_scalar(esize, Vd, result.result);
+    return true;
+}
+
+bool TranslatorVisitor::SQSUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t esize = 8 << size.ZeroExtend<size_t>();
+
+    const IR::UAny operand1 = V_scalar(esize, Vn);
+    const IR::UAny operand2 = V_scalar(esize, Vm);
+    const auto result = ir.SignedSaturatedSub(operand1, operand2);
+    ir.OrQC(result.overflow);
+    V_scalar(esize, Vd, result.result);
+    return true;
+}
+
 bool TranslatorVisitor::ADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size != 0b11) {
         return ReservedValue();

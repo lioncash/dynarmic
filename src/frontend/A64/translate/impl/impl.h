@@ -553,49 +553,27 @@ struct TranslatorVisitor final {
 
     // Data Processing - FP and SIMD - SIMD Scalar three same
     bool SQADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool SQADD_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SQSUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool SQSUB_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool CMGT_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool CMGT_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool CMGE_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool CMGE_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool SSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SQSHL_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool SQSHL_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SRSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool SRSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SQRSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool SQRSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool ADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool ADD_vector(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool CMTST_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool CMTST_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SQDMULH_vec_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool SQDMULH_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool UQADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool UQADD_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool UQSUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool UQSUB_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool CMHI_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool CMHI_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool CMHS_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool CMHS_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool USHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool USHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool UQSHL_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool UQSHL_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool URSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool URSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool UQRSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool UQRSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool SUB_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool CMEQ_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool CMEQ_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool SQRDMULH_vec_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
-    bool SQRDMULH_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Scalar shift by immediate
     bool SSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
@@ -852,6 +830,28 @@ struct TranslatorVisitor final {
     bool FABD_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FCMGT_reg_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
     bool FACGT_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd);
+    bool SQADD_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SQSUB_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool CMGT_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool CMGE_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SQSHL_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SRSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SQRSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool ADD_vector(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool CMTST_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SQDMULH_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool UQADD_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool UQSUB_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool CMHI_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool CMHS_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool USHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool UQSHL_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool URSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool UQRSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SUB_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool CMEQ_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SQRDMULH_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD modified immediate
     bool MOVI(bool Q, bool op, Imm<1> a, Imm<1> b, Imm<1> c, Imm<4> cmode, Imm<1> d, Imm<1> e, Imm<1> f, Imm<1> g, Imm<1> h, Vec Vd);
