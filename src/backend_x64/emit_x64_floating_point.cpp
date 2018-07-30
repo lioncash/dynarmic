@@ -14,6 +14,7 @@
 #include "common/common_types.h"
 #include "common/fp/fpcr.h"
 #include "common/fp/fpsr.h"
+#include "common/fp/info.h"
 #include "common/fp/op.h"
 #include "common/fp/rounding_mode.h"
 #include "common/fp/util.h"
@@ -648,8 +649,22 @@ void EmitX64::EmitFPMul64(EmitContext& ctx, IR::Inst* inst) {
     FPThreeOp<64>(code, ctx, inst, &Xbyak::CodeGenerator::mulsd);
 }
 
-template<typename FPT>
-static void EmitFPMulAddFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+template<size_t fsize>
+static void EmitFPMulAdd(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
+        FPFourOp<fsize>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
+            FCODE(vfmadd231s)(result, operand2, operand3);
+        }, [](FPT a, FPT b, FPT c) -> FPT {
+            if (FP::IsQNaN(a) && ((FP::IsInf(b) && FP::IsZero(c)) || (FP::IsZero(b) && FP::IsInf(c)))) {
+                return FP::FPInfo<FPT>::DefaultNaN();
+            }
+            return *FP::ProcessNaNs(a, b, c);
+        });
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0], args[1], args[2]);
     code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
@@ -666,35 +681,11 @@ static void EmitFPMulAddFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* 
 }
 
 void EmitX64::EmitFPMulAdd32(EmitContext& ctx, IR::Inst* inst) {
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
-        FPFourOp<32>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
-            code.vfmadd231ss(result, operand2, operand3);
-        }, [](u32 a, u32 b, u32 c) -> u32 {
-            if (FP::IsQNaN(a) && ((FP::IsInf(b) && FP::IsZero(c)) || (FP::IsZero(b) && FP::IsInf(c)))) {
-                return f32_nan;
-            }
-            return *FP::ProcessNaNs(a, b, c);
-        });
-        return;
-    }
-
-    EmitFPMulAddFallback<u32>(code, ctx, inst);
+    EmitFPMulAdd<32>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPMulAdd64(EmitContext& ctx, IR::Inst* inst) {
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
-        FPFourOp<64>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
-            code.vfmadd231sd(result, operand2, operand3);
-        }, [](u64 a, u64 b, u64 c) -> u64 {
-            if (FP::IsQNaN(a) && ((FP::IsInf(b) && FP::IsZero(c)) || (FP::IsZero(b) && FP::IsInf(c)))) {
-                return f64_nan;
-            }
-            return *FP::ProcessNaNs(a, b, c);
-        });
-        return;
-    }
-
-    EmitFPMulAddFallback<u64>(code, ctx, inst);
+    EmitFPMulAdd<64>(code, ctx, inst);
 }
 
 template<typename FPT>
