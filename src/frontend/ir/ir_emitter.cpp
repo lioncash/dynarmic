@@ -481,15 +481,43 @@ U32U64 IREmitter::MinUnsigned(const U32U64& a, const U32U64& b) {
     return Inst<U64>(Opcode::MinUnsigned64, a, b);
 }
 
-ResultAndOverflow<U32> IREmitter::SignedSaturatedAdd(const U32& a, const U32& b) {
-    auto result = Inst<U32>(Opcode::SignedSaturatedAdd, a, b);
-    auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
+ResultAndOverflow<UAny> IREmitter::SignedSaturatedAdd(const UAny& a, const UAny& b) {
+    ASSERT(a.GetType() == b.GetType());
+    const auto result = [&]() -> IR::UAny {
+        switch (a.GetType()) {
+        case IR::Type::U8:
+            return Inst<U8>(Opcode::SignedSaturatedAdd8, a, b);
+        case IR::Type::U16:
+            return Inst<U16>(Opcode::SignedSaturatedAdd16, a, b);
+        case IR::Type::U32:
+            return Inst<U32>(Opcode::SignedSaturatedAdd32, a, b);
+        case IR::Type::U64:
+            return Inst<U64>(Opcode::SignedSaturatedAdd64, a, b);
+        default:
+            return IR::UAny{};
+        }
+    }();
+    const auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
     return {result, overflow};
 }
 
-ResultAndOverflow<U32> IREmitter::SignedSaturatedSub(const U32& a, const U32& b) {
-    auto result = Inst<U32>(Opcode::SignedSaturatedSub, a, b);
-    auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
+ResultAndOverflow<UAny> IREmitter::SignedSaturatedSub(const UAny& a, const UAny& b) {
+    ASSERT(a.GetType() == b.GetType());
+    const auto result = [&]() -> IR::UAny {
+        switch (a.GetType()) {
+        case IR::Type::U8:
+            return Inst<U8>(Opcode::SignedSaturatedSub8, a, b);
+        case IR::Type::U16:
+            return Inst<U16>(Opcode::SignedSaturatedSub16, a, b);
+        case IR::Type::U32:
+            return Inst<U32>(Opcode::SignedSaturatedSub32, a, b);
+        case IR::Type::U64:
+            return Inst<U64>(Opcode::SignedSaturatedSub64, a, b);
+        default:
+            return IR::UAny{};
+        }
+    }();
+    const auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
     return {result, overflow};
 }
 

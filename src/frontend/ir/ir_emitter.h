@@ -142,8 +142,8 @@ public:
     U32U64 MinSigned(const U32U64& a, const U32U64& b);
     U32U64 MinUnsigned(const U32U64& a, const U32U64& b);
 
-    ResultAndOverflow<U32> SignedSaturatedAdd(const U32& a, const U32& b);
-    ResultAndOverflow<U32> SignedSaturatedSub(const U32& a, const U32& b);
+    ResultAndOverflow<UAny> SignedSaturatedAdd(const UAny& a, const UAny& b);
+    ResultAndOverflow<UAny> SignedSaturatedSub(const UAny& a, const UAny& b);
     ResultAndOverflow<U32> UnsignedSaturation(const U32& a, size_t bit_size_to_saturate_to);
     ResultAndOverflow<U32> SignedSaturation(const U32& a, size_t bit_size_to_saturate_to);
 

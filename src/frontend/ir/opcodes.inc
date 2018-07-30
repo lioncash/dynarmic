@@ -76,10 +76,10 @@ A64OPC(GetTPIDRRO,                              T::U64,                         
 // Hints
 OPCODE(PushRSB,                                 T::Void,        T::U64                                          )
 
-// Pseudo-operation, handled special        ly at final emit
-OPCODE(GetCarryFromOp,                          T::U1,          T::U32                                          )
-OPCODE(GetOverflowFromOp,                       T::U1,          T::U32                                          )
-OPCODE(GetGEFromOp,                             T::U32,         T::U32                                          )
+// Pseudo-operation, handled specially at final emit
+OPCODE(GetCarryFromOp,                          T::U1,          T::Opaque                                       )
+OPCODE(GetOverflowFromOp,                       T::U1,          T::Opaque                                       )
+OPCODE(GetGEFromOp,                             T::U32,         T::Opaque                                       )
 OPCODE(GetNZCVFromOp,                           T::NZCVFlags,   T::Opaque                                       )
 
 OPCODE(NZCVFromPackedFlags,                     T::NZCVFlags,   T::U32                                          )
@@ -155,10 +155,16 @@ OPCODE(MinUnsigned32,                           T::U32,         T::U32,         
 OPCODE(MinUnsigned64,                           T::U64,         T::U64,         T::U64                          )
 
 // Saturated instructions
-OPCODE(SignedSaturatedAdd,                      T::U32,         T::U32,         T::U32                          )
-OPCODE(SignedSaturatedSub,                      T::U32,         T::U32,         T::U32                          )
-OPCODE(UnsignedSaturation,                      T::U32,         T::U32,         T::U8                           )
+OPCODE(SignedSaturatedAdd8,                     T::U8,          T::U8,          T::U8                           )
+OPCODE(SignedSaturatedAdd16,                    T::U16,         T::U16,         T::U16                          )
+OPCODE(SignedSaturatedAdd32,                    T::U32,         T::U32,         T::U32                          )
+OPCODE(SignedSaturatedAdd64,                    T::U64,         T::U64,         T::U64                          )
+OPCODE(SignedSaturatedSub8,                     T::U8,          T::U8,          T::U8                           )
+OPCODE(SignedSaturatedSub16,                    T::U16,         T::U16,         T::U16                          )
+OPCODE(SignedSaturatedSub32,                    T::U32,         T::U32,         T::U32                          )
+OPCODE(SignedSaturatedSub64,                    T::U64,         T::U64,         T::U64                          )
 OPCODE(SignedSaturation,                        T::U32,         T::U32,         T::U8                           )
+OPCODE(UnsignedSaturation,                      T::U32,         T::U32,         T::U8                           )
 
 // Packed instructions
 OPCODE(PackedAddU8,                             T::U32,         T::U32,         T::U32                          )
