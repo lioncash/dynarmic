@@ -123,6 +123,15 @@ void HandleNaNs(BlockOfCode& code, EmitContext& ctx, std::array<Xbyak::Xmm, narg
 }
 
 template<size_t fsize>
+Xbyak::Address GetNaNVector(BlockOfCode& code) {
+    if constexpr (fsize == 32) {
+        return code.MConst(xword, 0x7fc0'0000'7fc0'0000, 0x7fc0'0000'7fc0'0000);
+    } else {
+        return code.MConst(xword, 0x7ff8'0000'0000'0000, 0x7ff8'0000'0000'0000);
+    }
+}
+
+template<size_t fsize>
 void ForceToDefaultNaN(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result) {
     if (ctx.FPSCR_DN()) {
         const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
@@ -132,7 +141,7 @@ void ForceToDefaultNaN(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result) {
         FCODE(cmpordp)(nan_mask, nan_mask);
         code.andps(result, nan_mask);
         code.xorps(nan_mask, tmp);
-        code.andps(nan_mask, fsize == 32 ? code.MConst(xword, 0x7fc0'0000'7fc0'0000, 0x7fc0'0000'7fc0'0000) : code.MConst(xword, 0x7ff8'0000'0000'0000, 0x7ff8'0000'0000'0000));
+        code.andps(nan_mask, GetNaNVector<fsize>(code));
         code.orps(result, nan_mask);
     }
 }
@@ -553,6 +562,46 @@ void EmitX64::EmitFPVectorGreaterEqual64(EmitContext& ctx, IR::Inst* inst) {
 
 template<size_t fsize>
 static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    if (ctx.FPSCR_DN()) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+
+        const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm anded = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
+
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            FCODE(vcmpeqp)(mask, result, xmm_b);
+            FCODE(vcmpunordp)(nan_mask, result, xmm_b);
+            FCODE(vandp)(anded, result, xmm_b);
+            FCODE(vmaxp)(result, result, xmm_b);
+            FCODE(vblendvp)(result, result, anded, mask);
+            FCODE(vblendvp)(result, result, GetNaNVector<fsize>(code), nan_mask);
+        } else {
+            code.movaps(mask, result);
+            code.movaps(anded, result);
+            code.movaps(nan_mask, result);
+            FCODE(cmpneqp)(mask, xmm_b);
+            FCODE(cmpordp)(nan_mask, xmm_b);
+
+            code.andps(anded, xmm_b);
+            FCODE(maxp)(result, xmm_b);
+
+            code.andps(result, mask);
+            code.andnps(mask, anded);
+            code.orps(result, mask);
+
+            code.andps(result, nan_mask);
+            code.andnps(nan_mask, GetNaNVector<fsize>(code));
+            code.orps(result, nan_mask);
+        }
+
+        ctx.reg_alloc.DefineValue(inst, result);
+
+        return;
+    }
+
     EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, const Xbyak::Xmm& xmm_b){
         const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm anded = ctx.reg_alloc.ScratchXmm();
@@ -591,6 +640,46 @@ void EmitX64::EmitFPVectorMax64(EmitContext& ctx, IR::Inst* inst) {
 
 template<size_t fsize>
 static void EmitFPVectorMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    if (ctx.FPSCR_DN()) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+
+        const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm ored = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
+
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            FCODE(vcmpeqp)(mask, result, xmm_b);
+            FCODE(vcmpunordp)(nan_mask, result, xmm_b);
+            FCODE(vorp)(ored, result, xmm_b);
+            FCODE(vminp)(result, result, xmm_b);
+            FCODE(vblendvp)(result, result, ored, mask);
+            FCODE(vblendvp)(result, result, GetNaNVector<fsize>(code), nan_mask);
+        } else {
+            code.movaps(mask, result);
+            code.movaps(ored, result);
+            code.movaps(nan_mask, result);
+            FCODE(cmpneqp)(mask, xmm_b);
+            FCODE(cmpordp)(nan_mask, xmm_b);
+
+            code.orps(ored, xmm_b);
+            FCODE(minp)(result, xmm_b);
+
+            code.andps(result, mask);
+            code.andnps(mask, ored);
+            code.orps(result, mask);
+
+            code.andps(result, nan_mask);
+            code.andnps(nan_mask, GetNaNVector<fsize>(code));
+            code.orps(result, nan_mask);
+        }
+
+        ctx.reg_alloc.DefineValue(inst, result);
+
+        return;
+    }
+
     EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, const Xbyak::Xmm& xmm_b){
         const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm ored = ctx.reg_alloc.ScratchXmm();
