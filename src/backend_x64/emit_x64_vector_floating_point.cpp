@@ -154,13 +154,10 @@ template<size_t fsize>
 void ForceToDefaultNaN(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result) {
     if (ctx.FPSCR_DN()) {
         const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
-        code.pcmpeqw(tmp, tmp);
         code.movaps(nan_mask, result);
         FCODE(cmpordp)(nan_mask, nan_mask);
         code.andps(result, nan_mask);
-        code.xorps(nan_mask, tmp);
-        code.andps(nan_mask, GetNaNVector<fsize>(code));
+        code.andnps(nan_mask, GetNaNVector<fsize>(code));
         code.orps(result, nan_mask);
     }
 }
