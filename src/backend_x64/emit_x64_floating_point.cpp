@@ -158,7 +158,7 @@ void PreProcessNaNs(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Label&
 }
 
 template<size_t fsize, typename NaNHandler>
-void PreProcessNaNs(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end, NaNHandler nan_handler) {
+void PreProcessNaNs(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end, NaNHandler nan_handler) {
     using FPT = mp::unsigned_integer_of_size<fsize>;
 
     Xbyak::Label nan;
@@ -175,7 +175,8 @@ void PreProcessNaNs(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c,
     code.movq(code.ABI_PARAM1, a);
     code.movq(code.ABI_PARAM2, b);
     code.movq(code.ABI_PARAM3, c);
-    code.CallFunction(static_cast<FPT(*)(FPT, FPT, FPT)>(nan_handler));
+    code.mov(code.ABI_PARAM4, ctx.FPCR());
+    code.CallFunction(static_cast<FPT(*)(FPT, FPT, FPT, FP::FPCR)>(nan_handler));
     code.movq(a, code.ABI_RETURN);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
     code.add(rsp, 8);
@@ -317,7 +318,7 @@ void FPFourOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, 
         DenormalsAreZero<fsize>(code, operand3, gpr_scratch);
     }
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        PreProcessNaNs<fsize>(code, result, operand2, operand3, end, nan_handler);
+        PreProcessNaNs<fsize>(code, ctx, result, operand2, operand3, end, nan_handler);
     }
     fn(result, operand2, operand3);
     if (ctx.FPSCR_FTZ()) {
@@ -656,8 +657,8 @@ static void EmitFPMulAdd(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
         FPFourOp<fsize>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
             FCODE(vfmadd231s)(result, operand2, operand3);
-        }, [](FPT a, FPT b, FPT c) -> FPT {
-            if (FP::IsQNaN(a) && ((FP::IsInf(b) && FP::IsZero(c)) || (FP::IsZero(b) && FP::IsInf(c)))) {
+        }, [](FPT a, FPT b, FPT c, FP::FPCR fpcr) -> FPT {
+            if (FP::IsQNaN(a) && ((FP::IsInf(b) && FP::IsZero(c, fpcr)) || (FP::IsZero(b, fpcr) && FP::IsInf(c)))) {
                 return FP::FPInfo<FPT>::DefaultNaN();
             }
             return *FP::ProcessNaNs(a, b, c);

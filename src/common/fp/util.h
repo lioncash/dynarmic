@@ -9,13 +9,17 @@
 #include <boost/optional.hpp>
 
 #include "common/common_types.h"
+#include "common/fp/fpcr.h"
 #include "common/fp/info.h"
 
 namespace Dynarmic::FP {
 
 /// Is floating point value a zero?
 template<typename FPT>
-constexpr bool IsZero(FPT value) {
+inline bool IsZero(FPT value, FPCR fpcr) {
+    if (fpcr.FZ()) {
+        return (value & FPInfo<FPT>::exponent_mask) == 0;
+    }
     return (value & ~FPInfo<FPT>::sign_mask) == 0;
 }
 

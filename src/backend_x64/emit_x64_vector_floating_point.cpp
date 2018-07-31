@@ -54,7 +54,7 @@ struct NaNHandler {
 public:
     using FPT = mp::unsigned_integer_of_size<fsize>;
 
-    using function_type = void(*)(std::array<VectorArray<FPT>, narg>&);
+    using function_type = void(*)(std::array<VectorArray<FPT>, narg>&, FP::FPCR);
 
     static function_type GetDefault() {
         return GetDefaultImpl(std::make_index_sequence<narg - 1>{});
@@ -63,7 +63,7 @@ public:
 private:
     template<size_t... argi>
     static function_type GetDefaultImpl(std::index_sequence<argi...>) {
-        const auto result = [](std::array<VectorArray<FPT>, narg>& values) {
+        const auto result = [](std::array<VectorArray<FPT>, narg>& values, FP::FPCR) {
             VectorArray<FPT>& result = values[0];
             for (size_t elementi = 0; elementi < result.size(); ++elementi) {
                 const auto current_values = Indexer<FPT>{}(elementi, values[argi + 1]...);
@@ -111,6 +111,7 @@ void HandleNaNs(BlockOfCode& code, EmitContext& ctx, std::array<Xbyak::Xmm, narg
         code.movaps(xword[rsp + ABI_SHADOW_SPACE + i * 16], xmms[i]);
     }
     code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.mov(code.ABI_PARAM2, ctx.FPCR());
 
     code.CallFunction(nan_handler);
 
@@ -772,14 +773,14 @@ void EmitFPVectorMulAdd(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
         const auto x64_instruction = fsize == 32 ? &Xbyak::CodeGenerator::vfmadd231ps : &Xbyak::CodeGenerator::vfmadd231pd;
         EmitFourOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, x64_instruction,
-            static_cast<void(*)(std::array<VectorArray<FPT>, 4>& values)>(
-                [](std::array<VectorArray<FPT>, 4>& values) {
+            static_cast<void(*)(std::array<VectorArray<FPT>, 4>& values, FP::FPCR fpcr)>(
+                [](std::array<VectorArray<FPT>, 4>& values, FP::FPCR fpcr) {
                     VectorArray<FPT>& result = values[0];
                     const VectorArray<FPT>& a = values[1];
                     const VectorArray<FPT>& b = values[2];
                     const VectorArray<FPT>& c = values[3];
                     for (size_t i = 0; i < result.size(); i++) {
-                        if (FP::IsQNaN(a[i]) && ((FP::IsInf(b[i]) && FP::IsZero(c[i])) || (FP::IsZero(b[i]) && FP::IsInf(c[i])))) {
+                        if (FP::IsQNaN(a[i]) && ((FP::IsInf(b[i]) && FP::IsZero(c[i], fpcr)) || (FP::IsZero(b[i], fpcr) && FP::IsInf(c[i])))) {
                             result[i] = FP::FPInfo<FPT>::DefaultNaN();
                         } else if (auto r = FP::ProcessNaNs(a[i], b[i], c[i])) {
                             result[i] = *r;
