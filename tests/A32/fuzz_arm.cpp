@@ -403,21 +403,21 @@ static void RunVfpTests(u32 instr, std::vector<VfpTest> tests) {
     }
 }
 
-TEST_CASE("vfp: vadd", "[vfp][A32]") {
+TEST_CASE("vfp: vadd", "[.vfp][A32]") {
     // vadd.f32 s2, s4, s6
     RunVfpTests(0xEE321A03, {
 #include "vfp_vadd_f32.inc"
     });
 }
 
-TEST_CASE("vfp: vsub", "[vfp][A32]") {
+TEST_CASE("vfp: vsub", "[.vfp][A32]") {
     // vsub.f32 s2, s4, s6
     RunVfpTests(0xEE321A43, {
 #include "vfp_vsub_f32.inc"
     });
 }
 
-TEST_CASE("VFP: VMOV", "[JitX64][vfp][A32]") {
+TEST_CASE("VFP: VMOV", "[JitX64][.vfp][A32]") {
     const auto is_valid = [](u32 instr) -> bool {
         return Bits<0, 6>(instr) != 0b111111
                 && Bits<12, 15>(instr) != 0b1111
@@ -441,7 +441,7 @@ TEST_CASE("VFP: VMOV", "[JitX64][vfp][A32]") {
     });
 }
 
-TEST_CASE("VFP: VMOV (reg), VLDR, VSTR", "[JitX64][vfp][A32]") {
+TEST_CASE("VFP: VMOV (reg), VLDR, VSTR", "[JitX64][.vfp][A32]") {
     const std::array<InstructionGenerator, 4> instructions = {{
         InstructionGenerator("1111000100000001000000e000000000"), // SETEND
         InstructionGenerator("cccc11101D110000dddd101z01M0mmmm"), // VMOV (reg)
@@ -454,7 +454,7 @@ TEST_CASE("VFP: VMOV (reg), VLDR, VSTR", "[JitX64][vfp][A32]") {
     });
 }
 
-TEST_CASE("VFP: VCMP", "[JitX64][vfp][A32]") {
+TEST_CASE("VFP: VCMP", "[JitX64][.vfp][A32]") {
     const std::array<InstructionGenerator, 2> instructions = {{
         InstructionGenerator("cccc11101D110100dddd101zE1M0mmmm"), // VCMP
         InstructionGenerator("cccc11101D110101dddd101zE1000000"), // VCMP (zero)
@@ -1021,7 +1021,7 @@ TEST_CASE( "SMUAD", "[JitX64][A32]" ) {
     REQUIRE(jit.Cpsr() == 0x080001d0);
 }
 
-TEST_CASE("VFP: VPUSH, VPOP", "[JitX64][vfp][A32]") {
+TEST_CASE("VFP: VPUSH, VPOP", "[JitX64][.vfp][A32]") {
     const auto is_valid = [](u32 instr) -> bool {
         auto regs = (instr & 0x100) ? (Bits<0, 7>(instr) >> 1) : Bits<0, 7>(instr);
         auto base = Bits<12, 15>(instr);
