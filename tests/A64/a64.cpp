@@ -409,3 +409,22 @@ TEST_CASE("A64: FMLA.4S (denormal)", "[a64]") {
 
     REQUIRE(jit.GetVector(12) == Vector{0x7ff800007fc00000, 0xbff0000068e8e581});
 }
+
+TEST_CASE("A64: FMLA.4S (0x80800000)", "[a64]") {
+    TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem[0] = 0x4e38cc2b; // FMLA.4S V11, V1, V24
+    env.code_mem[1] = 0x14000000; // B .
+
+    jit.SetPC(0);
+    jit.SetVector(11, {0xc79b271efff05678, 0xffc0000080800000});
+    jit.SetVector(1, {0x00636d2400800000, 0x0966320bb26bddee});
+    jit.SetVector(24, {0x460e8c84fff00000, 0x8ba98d2780800002});
+    jit.SetFpcr(0x03000000);
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetVector(11) == Vector{0xc79b271e7fc00000, 0x7fc0000080000000});
+}

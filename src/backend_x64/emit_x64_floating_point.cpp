@@ -39,10 +39,12 @@ namespace {
 constexpr u64 f32_negative_zero = 0x80000000u;
 constexpr u64 f32_nan = 0x7fc00000u;
 constexpr u64 f32_non_sign_mask = 0x7fffffffu;
+constexpr u64 f32_smallest_normal = 0x00800000u;
 
 constexpr u64 f64_negative_zero = 0x8000000000000000u;
 constexpr u64 f64_nan = 0x7ff8000000000000u;
 constexpr u64 f64_non_sign_mask = 0x7fffffffffffffffu;
+constexpr u64 f64_smallest_normal = 0x0010000000000000u;
 
 constexpr u64 f64_penultimate_positive_denormal = 0x000ffffffffffffeu;
 constexpr u64 f64_min_s32 = 0xc1e0000000000000u; // -2147483648 as a double
@@ -590,14 +592,52 @@ static void EmitFPMulAdd(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     using FPT = mp::unsigned_integer_of_size<fsize>;
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
-        FPFourOp<fsize>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand2, Xbyak::Xmm operand3) {
-            FCODE(vfmadd231s)(result, operand2, operand3);
-        }, [](FPT a, FPT b, FPT c, FP::FPCR fpcr) -> FPT {
-            if (FP::IsQNaN(a) && ((FP::IsInf(b) && FP::IsZero(c, fpcr)) || (FP::IsZero(b, fpcr) && FP::IsInf(c)))) {
-                return FP::FPInfo<FPT>::DefaultNaN();
-            }
-            return *FP::ProcessNaNs(a, b, c);
-        });
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        Xbyak::Label end, fallback;
+
+        const Xbyak::Xmm operand1 = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm operand2 = ctx.reg_alloc.UseXmm(args[1]);
+        const Xbyak::Xmm operand3 = ctx.reg_alloc.UseXmm(args[2]);
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code.movaps(result, operand1);
+        FCODE(vfmadd231s)(result, operand2, operand3);
+
+        code.movaps(tmp, code.MConst(xword, fsize == 32 ? f32_non_sign_mask : f64_non_sign_mask));
+        code.andps(tmp, result);
+        FCODE(ucomis)(result, code.MConst(xword, fsize == 32 ? f32_smallest_normal : f64_smallest_normal));
+        code.jz(fallback, code.T_NEAR);
+        code.L(end);
+
+        code.SwitchToFarCode();
+        code.L(fallback);
+
+        code.sub(rsp, 8);
+        ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+        code.movq(code.ABI_PARAM1, operand1);
+        code.movq(code.ABI_PARAM2, operand2);
+        code.movq(code.ABI_PARAM3, operand3);
+        code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
+#ifdef _WIN32
+        code.sub(rsp, 16 + ABI_SHADOW_SPACE);
+        code.lea(rax, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+        code.mov(qword[rsp + ABI_SHADOW_SPACE], rax);
+        code.CallFunction(&FP::FPMulAdd<FPT>);
+        code.add(rsp, 16 + ABI_SHADOW_SPACE);
+#else
+        code.lea(code.ABI_PARAM5, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+        code.CallFunction(&FP::FPMulAdd<FPT>);
+#endif
+        code.movq(result, code.ABI_RETURN);
+        ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+        code.add(rsp, 8);
+
+        code.jmp(end, code.T_NEAR);
+        code.SwitchToNearCode();
+
+        ctx.reg_alloc.DefineValue(inst, result);
         return;
     }
 

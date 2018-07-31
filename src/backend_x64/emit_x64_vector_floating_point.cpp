@@ -142,6 +142,15 @@ Xbyak::Address GetNegativeZeroVector(BlockOfCode& code) {
 }
 
 template<size_t fsize>
+Xbyak::Address GetSmallestNormalVector(BlockOfCode& code) {
+    if constexpr (fsize == 32) {
+        return code.MConst(xword, 0x0080'0000'0080'0000, 0x0080'0000'0080'0000);
+    } else {
+        return code.MConst(xword, 0x0010'0000'0000'0000, 0x0010'0000'0000'0000);
+    }
+}
+
+template<size_t fsize>
 void ForceToDefaultNaN(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result) {
     if (ctx.FPSCR_DN()) {
         const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
@@ -310,52 +319,6 @@ void EmitThreeOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template<size_t fsize, template<typename> class Indexer, typename Function>
-void EmitFourOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, typename NaNHandler<fsize, Indexer, 4>::function_type nan_handler = NaNHandler<fsize, Indexer, 4>::GetDefault()) {
-    static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
-
-    if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-        const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
-        const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
-        const Xbyak::Xmm xmm_c = ctx.reg_alloc.UseXmm(args[2]);
-
-        if constexpr (std::is_member_function_pointer_v<Function>) {
-            (code.*fn)(xmm_a, xmm_b, xmm_c);
-        } else {
-            fn(xmm_a, xmm_b, xmm_c);
-        }
-
-        ForceToDefaultNaN<fsize>(code, ctx, xmm_a);
-
-        ctx.reg_alloc.DefineValue(inst, xmm_a);
-        return;
-    }
-
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-    const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseXmm(args[0]);
-    const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
-    const Xbyak::Xmm xmm_c = ctx.reg_alloc.UseXmm(args[2]);
-    const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
-
-    code.movaps(nan_mask, xmm_b);
-    code.movaps(result, xmm_a);
-    FCODE(cmpunordp)(nan_mask, xmm_a);
-    FCODE(cmpunordp)(nan_mask, xmm_c);
-    if constexpr (std::is_member_function_pointer_v<Function>) {
-        (code.*fn)(result, xmm_b, xmm_c);
-    } else {
-        fn(result, xmm_b, xmm_c);
-    }
-    FCODE(cmpunordp)(nan_mask, result);
-
-    HandleNaNs<fsize, 3>(code, ctx, {result, xmm_a, xmm_b, xmm_c}, nan_mask, nan_handler);
-
-    ctx.reg_alloc.DefineValue(inst, result);
-}
-
 template<typename Lambda>
 void EmitTwoOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
     const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
@@ -426,15 +389,8 @@ void EmitThreeOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, La
 }
 
 template<typename Lambda>
-void EmitFourOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+void EmitFourOpFallbackWithoutRegAlloc(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result, Xbyak::Xmm arg1, Xbyak::Xmm arg2, Xbyak::Xmm arg3, Lambda lambda) {
     const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
-
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
-    const Xbyak::Xmm arg2 = ctx.reg_alloc.UseXmm(args[1]);
-    const Xbyak::Xmm arg3 = ctx.reg_alloc.UseXmm(args[2]);
-    ctx.reg_alloc.EndOfAllocScope();
-    ctx.reg_alloc.HostCall(nullptr);
 
 #ifdef _WIN32
     constexpr u32 stack_space = 5 * 16;
@@ -463,12 +419,24 @@ void EmitFourOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lam
     code.CallFunction(fn);
 
 #ifdef _WIN32
-    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 1 * 16]);
 #else
-    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
 #endif
 
     code.add(rsp, stack_space + ABI_SHADOW_SPACE);
+}
+
+template<typename Lambda>
+void EmitFourOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm arg2 = ctx.reg_alloc.UseXmm(args[1]);
+    const Xbyak::Xmm arg3 = ctx.reg_alloc.UseXmm(args[2]);
+    ctx.reg_alloc.EndOfAllocScope();
+    ctx.reg_alloc.HostCall(nullptr);
+
+    EmitFourOpFallbackWithoutRegAlloc(code, ctx, xmm0, arg1, arg2, arg3, lambda);
 
     ctx.reg_alloc.DefineValue(inst, xmm0);
 }
@@ -770,37 +738,48 @@ template<size_t fsize>
 void EmitFPVectorMulAdd(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     using FPT = mp::unsigned_integer_of_size<fsize>;
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
-        const auto x64_instruction = fsize == 32 ? &Xbyak::CodeGenerator::vfmadd231ps : &Xbyak::CodeGenerator::vfmadd231pd;
-        EmitFourOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, x64_instruction,
-            static_cast<void(*)(std::array<VectorArray<FPT>, 4>& values, FP::FPCR fpcr)>(
-                [](std::array<VectorArray<FPT>, 4>& values, FP::FPCR fpcr) {
-                    VectorArray<FPT>& result = values[0];
-                    const VectorArray<FPT>& a = values[1];
-                    const VectorArray<FPT>& b = values[2];
-                    const VectorArray<FPT>& c = values[3];
-                    for (size_t i = 0; i < result.size(); i++) {
-                        if (FP::IsQNaN(a[i]) && ((FP::IsInf(b[i]) && FP::IsZero(c[i], fpcr)) || (FP::IsZero(b[i], fpcr) && FP::IsInf(c[i])))) {
-                            result[i] = FP::FPInfo<FPT>::DefaultNaN();
-                        } else if (auto r = FP::ProcessNaNs(a[i], b[i], c[i])) {
-                            result[i] = *r;
-                        } else if (FP::IsNaN(result[i])) {
-                            result[i] = FP::FPInfo<FPT>::DefaultNaN();
-                        }
-                    }
-                }
-            )
-        );
+    const auto fallback_fn = [](VectorArray<FPT>& result, const VectorArray<FPT>& addend, const VectorArray<FPT>& op1, const VectorArray<FPT>& op2, FP::FPCR fpcr, FP::FPSR& fpsr) {
+        for (size_t i = 0; i < result.size(); i++) {
+            result[i] = FP::FPMulAdd<FPT>(addend[i], op1[i], op2[i], fpcr, fpsr);
+        }
+    };
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+        const Xbyak::Xmm xmm_c = ctx.reg_alloc.UseXmm(args[2]);
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        Xbyak::Label end, fallback;
+
+        code.movaps(result, xmm_a);
+        FCODE(vfmadd231p)(result, xmm_b, xmm_c);
+
+        code.movaps(tmp, GetNegativeZeroVector<fsize>(code));
+        code.andnps(tmp, result);
+        FCODE(vcmpeq_uqp)(tmp, tmp, GetSmallestNormalVector<fsize>(code));
+        code.vptest(tmp, tmp);
+        code.jnz(fallback, code.T_NEAR);
+        code.L(end);
+
+        code.SwitchToFarCode();
+        code.L(fallback);
+        code.sub(rsp, 8);
+        ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+        EmitFourOpFallbackWithoutRegAlloc(code, ctx, result, xmm_a, xmm_b, xmm_c, fallback_fn);
+        ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+        code.add(rsp, 8);
+        code.jmp(end, code.T_NEAR);
+        code.SwitchToNearCode();
+
+        ctx.reg_alloc.DefineValue(inst, result);
         return;
     }
 
-    EmitFourOpFallback(code, ctx, inst,
-        [](VectorArray<FPT>& result, const VectorArray<FPT>& addend, const VectorArray<FPT>& op1, const VectorArray<FPT>& op2, FP::FPCR fpcr, FP::FPSR& fpsr) {
-            for (size_t i = 0; i < result.size(); i++) {
-                result[i] = FP::FPMulAdd<FPT>(addend[i], op1[i], op2[i], fpcr, fpsr);
-            }
-        }
-    );
+    EmitFourOpFallback(code, ctx, inst, fallback_fn);
 }
 
 void EmitX64::EmitFPVectorMulAdd32(EmitContext& ctx, IR::Inst* inst) {
