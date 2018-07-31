@@ -132,6 +132,15 @@ Xbyak::Address GetNaNVector(BlockOfCode& code) {
 }
 
 template<size_t fsize>
+Xbyak::Address GetNegativeZeroVector(BlockOfCode& code) {
+    if constexpr (fsize == 32) {
+        return code.MConst(xword, 0x8000'0000'8000'0000, 0x8000'0000'8000'0000);
+    } else {
+        return code.MConst(xword, 0x8000'0000'0000'0000, 0x8000'0000'0000'0000);
+    }
+}
+
+template<size_t fsize>
 void ForceToDefaultNaN(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result) {
     if (ctx.FPSCR_DN()) {
         const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
@@ -143,6 +152,20 @@ void ForceToDefaultNaN(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result) {
         code.xorps(nan_mask, tmp);
         code.andps(nan_mask, GetNaNVector<fsize>(code));
         code.orps(result, nan_mask);
+    }
+}
+
+template<size_t fsize>
+void DenormalsAreZero(BlockOfCode& code, EmitContext& ctx, std::initializer_list<Xbyak::Xmm> to_daz, Xbyak::Xmm tmp) {
+    if (ctx.FPSCR_FTZ()) {
+        if (ctx.FPSCR_RMode() != FP::RoundingMode::TowardsMinusInfinity) {
+            code.movaps(tmp, GetNegativeZeroVector<fsize>(code));
+        } else {
+            code.xorps(tmp, tmp);
+        }
+        for (const Xbyak::Xmm& xmm : to_daz) {
+            FCODE(addp)(xmm, tmp);
+        }
     }
 }
 
@@ -565,11 +588,13 @@ static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
     if (ctx.FPSCR_DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-        const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+        const Xbyak::Xmm xmm_b = ctx.FPSCR_FTZ() ? ctx.reg_alloc.UseScratchXmm(args[1]) : ctx.reg_alloc.UseXmm(args[1]);
 
         const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm anded = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
+
+        DenormalsAreZero<fsize>(code, ctx, {result, xmm_b}, mask);
 
         if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
             FCODE(vcmpeqp)(mask, result, xmm_b);
@@ -602,9 +627,16 @@ static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
         return;
     }
 
-    EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, const Xbyak::Xmm& xmm_b){
+    EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, Xbyak::Xmm xmm_b){
         const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm anded = ctx.reg_alloc.ScratchXmm();
+
+        if (ctx.FPSCR_FTZ()) {
+            const Xbyak::Xmm prev_xmm_b = xmm_b;
+            xmm_b = ctx.reg_alloc.ScratchXmm();
+            code.movaps(xmm_b, prev_xmm_b);
+            DenormalsAreZero<fsize>(code, ctx, {result, xmm_b}, mask);
+        }
 
         // What we are doing here is handling the case when the inputs are differently signed zeros.
         // x86-64 treats differently signed zeros as equal while ARM does not.
@@ -643,11 +675,13 @@ static void EmitFPVectorMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
     if (ctx.FPSCR_DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-        const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+        const Xbyak::Xmm xmm_b = ctx.FPSCR_FTZ() ? ctx.reg_alloc.UseScratchXmm(args[1]) : ctx.reg_alloc.UseXmm(args[1]);
 
         const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm ored = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
+
+        DenormalsAreZero<fsize>(code, ctx, {result, xmm_b}, mask);
 
         if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
             FCODE(vcmpeqp)(mask, result, xmm_b);
@@ -680,9 +714,16 @@ static void EmitFPVectorMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
         return;
     }
 
-    EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, const Xbyak::Xmm& xmm_b){
+    EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, Xbyak::Xmm xmm_b){
         const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm ored = ctx.reg_alloc.ScratchXmm();
+
+        if (ctx.FPSCR_FTZ()) {
+            const Xbyak::Xmm prev_xmm_b = xmm_b;
+            xmm_b = ctx.reg_alloc.ScratchXmm();
+            code.movaps(xmm_b, prev_xmm_b);
+            DenormalsAreZero<fsize>(code, ctx, {result, xmm_b}, mask);
+        }
 
         // What we are doing here is handling the case when the inputs are differently signed zeros.
         // x86-64 treats differently signed zeros as equal while ARM does not.

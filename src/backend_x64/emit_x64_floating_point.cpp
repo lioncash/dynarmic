@@ -92,7 +92,7 @@ void DenormalsAreZero(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_
     // SSE doesn't do this for us when SSE's DAZ is enabled.
 
     code.ja(end);
-    code.pxor(xmm_value, xmm_value);
+    code.andps(xmm_value, code.MConst(xword, fsize == 32 ? f32_negative_zero : f64_negative_zero));
     code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_IDC], u32(1 << 7));
     code.L(end);
 }
@@ -267,12 +267,12 @@ void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unus
     Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
-    if constexpr(!std::is_same_v<PreprocessFunction, std::nullptr_t>) {
-        preprocess(result, operand, gpr_scratch, end);
-    }
     if (ctx.FPSCR_FTZ()) {
         DenormalsAreZero<fsize>(code, result, gpr_scratch);
         DenormalsAreZero<fsize>(code, operand, gpr_scratch);
+    }
+    if constexpr(!std::is_same_v<PreprocessFunction, std::nullptr_t>) {
+        preprocess(result, operand, gpr_scratch, end);
     }
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
         PreProcessNaNs<fsize>(code, result, operand, end);
