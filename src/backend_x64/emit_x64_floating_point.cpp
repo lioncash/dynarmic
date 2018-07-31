@@ -176,12 +176,17 @@ void PostProcessNaNs(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm tmp) {
 }
 
 template<size_t fsize>
-void DefaultNaN(BlockOfCode& code, Xbyak::Xmm xmm_value) {
-    Xbyak::Label end;
-    FCODE(ucomis)(xmm_value, xmm_value);
-    code.jnp(end);
-    code.movaps(xmm_value, code.MConst(xword, fsize == 32 ? f32_nan : f64_nan));
-    code.L(end);
+void ForceToDefaultNaN(BlockOfCode& code, Xbyak::Xmm result) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        FCODE(vcmpunords)(xmm0, result, result);
+        FCODE(blendvp)(result, code.MConst(xword, fsize == 32 ? f32_nan : f64_nan));
+    } else {
+        Xbyak::Label end;
+        FCODE(ucomis)(result, result);
+        code.jnp(end);
+        code.movaps(result, code.MConst(xword, fsize == 32 ? f32_nan : f64_nan));
+        code.L(end);
+    }
 }
 
 template<size_t fsize>
@@ -217,7 +222,7 @@ void FPTwoOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
         fn(result);
     }
     if (ctx.FPSCR_DN()) {
-        DefaultNaN<fsize>(code, result);
+        ForceToDefaultNaN<fsize>(code, result);
     } else if (ctx.AccurateNaN()) {
         PostProcessNaNs<fsize>(code, result, ctx.reg_alloc.ScratchXmm());
     }
@@ -257,7 +262,7 @@ void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unus
         fn(result, operand);
     }
     if (ctx.FPSCR_DN()) {
-        DefaultNaN<fsize>(code, result);
+        ForceToDefaultNaN<fsize>(code, result);
     } else if (ctx.AccurateNaN()) {
         PostProcessNaNs<fsize>(code, result, operand);
     }
@@ -899,7 +904,7 @@ void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     }
     code.cvtss2sd(result, result);
     if (ctx.FPSCR_DN()) {
-        DefaultNaN<64>(code, result);
+        ForceToDefaultNaN<64>(code, result);
     }
 
     ctx.reg_alloc.DefineValue(inst, result);
@@ -915,7 +920,7 @@ void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     }
     code.cvtsd2ss(result, result);
     if (ctx.FPSCR_DN()) {
-        DefaultNaN<32>(code, result);
+        ForceToDefaultNaN<32>(code, result);
     }
 
     ctx.reg_alloc.DefineValue(inst, result);
