@@ -145,18 +145,18 @@ void A64EmitX64::GenMemory128Accessors() {
         code.sub(rsp, 8 + 16 + ABI_SHADOW_SPACE);
         code.lea(return_value_ptr, ptr[rsp + ABI_SHADOW_SPACE]);
     });
-    code.movups(xmm0, xword[code.ABI_RETURN]);
+    code.movups(xmm1, xword[code.ABI_RETURN]);
     code.add(rsp, 8 + 16 + ABI_SHADOW_SPACE);
 #else
     code.sub(rsp, 8);
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code);
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        code.movq(xmm0, code.ABI_RETURN);
-        code.pinsrq(xmm0, code.ABI_RETURN2, 1);
+        code.movq(xmm1, code.ABI_RETURN);
+        code.pinsrq(xmm1, code.ABI_RETURN2, 1);
     } else {
-        code.movq(xmm0, code.ABI_RETURN);
-        code.movq(xmm1, code.ABI_RETURN2);
-        code.punpcklqdq(xmm0, xmm1);
+        code.movq(xmm1, code.ABI_RETURN);
+        code.movq(xmm2, code.ABI_RETURN2);
+        code.punpcklqdq(xmm1, xmm2);
     }
     code.add(rsp, 8);
 #endif
@@ -167,18 +167,18 @@ void A64EmitX64::GenMemory128Accessors() {
 #ifdef _WIN32
     code.sub(rsp, 8 + 16 + ABI_SHADOW_SPACE);
     code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE]);
-    code.movaps(xword[code.ABI_PARAM3], xmm0);
+    code.movaps(xword[code.ABI_PARAM3], xmm1);
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code);
     code.add(rsp, 8 + 16 + ABI_SHADOW_SPACE);
 #else
     code.sub(rsp, 8);
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        code.movq(code.ABI_PARAM3, xmm0);
-        code.pextrq(code.ABI_PARAM4, xmm0, 1);
+        code.movq(code.ABI_PARAM3, xmm1);
+        code.pextrq(code.ABI_PARAM4, xmm1, 1);
     } else {
-        code.movq(code.ABI_PARAM3, xmm0);
-        code.punpckhqdq(xmm0, xmm0);
-        code.movq(code.ABI_PARAM4, xmm0);
+        code.movq(code.ABI_PARAM3, xmm1);
+        code.punpckhqdq(xmm1, xmm1);
+        code.movq(code.ABI_PARAM4, xmm1);
     }
     DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code);
     code.add(rsp, 8);
@@ -214,8 +214,8 @@ void A64EmitX64::GenFastmemFallbacks() {
                 code.mov(code.ABI_PARAM2, Xbyak::Reg64{vaddr_idx});
             }
             code.call(memory_read_128);
-            if (value_idx != 0) {
-                code.movaps(Xbyak::Xmm{value_idx}, xmm0);
+            if (value_idx != 1) {
+                code.movaps(Xbyak::Xmm{value_idx}, xmm1);
             }
             ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(value_idx));
             code.ret();
@@ -226,8 +226,8 @@ void A64EmitX64::GenFastmemFallbacks() {
             if (vaddr_idx != code.ABI_PARAM2.getIdx()) {
                 code.mov(code.ABI_PARAM2, Xbyak::Reg64{vaddr_idx});
             }
-            if (value_idx != 0) {
-                code.movaps(xmm0, Xbyak::Xmm{value_idx});
+            if (value_idx != 1) {
+                code.movaps(xmm1, Xbyak::Xmm{value_idx});
             }
             code.call(memory_write_128);
             ABI_PopCallerSaveRegistersAndAdjustStack(code);
@@ -780,7 +780,7 @@ void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0]);
     code.CallFunction(memory_read_128);
-    ctx.reg_alloc.DefineValue(inst, xmm0);
+    ctx.reg_alloc.DefineValue(inst, xmm1);
 }
 
 void A64EmitX64::EmitA64WriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
@@ -849,7 +849,7 @@ void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.Use(args[0], ABI_PARAM2);
-    ctx.reg_alloc.Use(args[1], HostLoc::XMM0);
+    ctx.reg_alloc.Use(args[1], HostLoc::XMM1);
     ctx.reg_alloc.EndOfAllocScope();
     ctx.reg_alloc.HostCall(nullptr);
     code.CallFunction(memory_write_128);
@@ -863,7 +863,7 @@ void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t 
             ctx.reg_alloc.HostCall(inst, {}, args[0], args[1]);
         } else {
             ctx.reg_alloc.Use(args[0], ABI_PARAM2);
-            ctx.reg_alloc.Use(args[1], HostLoc::XMM0);
+            ctx.reg_alloc.Use(args[1], HostLoc::XMM1);
             ctx.reg_alloc.EndOfAllocScope();
             ctx.reg_alloc.HostCall(inst);
         }
@@ -914,7 +914,7 @@ void A64EmitX64::EmitExclusiveWrite(A64EmitContext& ctx, IR::Inst* inst, size_t 
         case 128:
             code.sub(rsp, 16 + ABI_SHADOW_SPACE);
             code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE]);
-            code.movaps(xword[code.ABI_PARAM3], xmm0);
+            code.movaps(xword[code.ABI_PARAM3], xmm1);
             code.CallFunction(static_cast<u32(*)(A64::UserConfig&, u64, A64::Vector&)>(
                 [](A64::UserConfig& conf, u64 vaddr, A64::Vector& value) -> u32 {
                     return conf.global_monitor->DoExclusiveOperation(conf.processor_id, vaddr, 16, [&]{

@@ -335,6 +335,7 @@ void EmitTwoOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lamb
     
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     ctx.reg_alloc.EndOfAllocScope();
     ctx.reg_alloc.HostCall(nullptr);
 
@@ -347,11 +348,11 @@ void EmitTwoOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lamb
 
     code.movaps(xword[code.ABI_PARAM2], arg1);
     code.CallFunction(fn);
-    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
 
     code.add(rsp, stack_space + ABI_SHADOW_SPACE);
 
-    ctx.reg_alloc.DefineValue(inst, xmm0);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template<typename Lambda>
@@ -361,6 +362,7 @@ void EmitThreeOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, La
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Xmm arg2 = ctx.reg_alloc.UseXmm(args[1]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     ctx.reg_alloc.EndOfAllocScope();
     ctx.reg_alloc.HostCall(nullptr);
 
@@ -388,14 +390,14 @@ void EmitThreeOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, La
     code.CallFunction(fn);
 
 #ifdef _WIN32
-    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 1 * 16]);
 #else
-    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
 #endif
 
     code.add(rsp, stack_space + ABI_SHADOW_SPACE);
 
-    ctx.reg_alloc.DefineValue(inst, xmm0);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template<typename Lambda>
@@ -443,12 +445,13 @@ void EmitFourOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lam
     const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Xmm arg2 = ctx.reg_alloc.UseXmm(args[1]);
     const Xbyak::Xmm arg3 = ctx.reg_alloc.UseXmm(args[2]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     ctx.reg_alloc.EndOfAllocScope();
     ctx.reg_alloc.HostCall(nullptr);
 
-    EmitFourOpFallbackWithoutRegAlloc(code, ctx, xmm0, arg1, arg2, arg3, lambda);
+    EmitFourOpFallbackWithoutRegAlloc(code, ctx, result, arg1, arg2, arg3, lambda);
 
-    ctx.reg_alloc.DefineValue(inst, xmm0);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 } // anonymous namespace

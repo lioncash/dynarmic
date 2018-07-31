@@ -55,6 +55,7 @@ static void EmitOneArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Ins
     constexpr u32 stack_space = 2 * 16;
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     ctx.reg_alloc.EndOfAllocScope();
 
     ctx.reg_alloc.HostCall(nullptr);
@@ -64,11 +65,11 @@ static void EmitOneArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Ins
 
     code.movaps(xword[code.ABI_PARAM2], arg1);
     code.CallFunction(fn);
-    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
 
     code.add(rsp, stack_space + ABI_SHADOW_SPACE);
 
-    ctx.reg_alloc.DefineValue(inst, xmm0);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename Lambda>
@@ -77,6 +78,7 @@ static void EmitOneArgumentFallbackWithSaturation(BlockOfCode& code, EmitContext
     constexpr u32 stack_space = 2 * 16;
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     ctx.reg_alloc.EndOfAllocScope();
 
     ctx.reg_alloc.HostCall(nullptr);
@@ -86,13 +88,13 @@ static void EmitOneArgumentFallbackWithSaturation(BlockOfCode& code, EmitContext
 
     code.movaps(xword[code.ABI_PARAM2], arg1);
     code.CallFunction(fn);
-    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
 
     code.add(rsp, stack_space + ABI_SHADOW_SPACE);
 
     code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], code.ABI_RETURN.cvt8());
 
-    ctx.reg_alloc.DefineValue(inst, xmm0);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template <typename Lambda>
@@ -102,6 +104,7 @@ static void EmitTwoArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Ins
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Xmm arg2 = ctx.reg_alloc.UseXmm(args[1]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     ctx.reg_alloc.EndOfAllocScope();
 
     ctx.reg_alloc.HostCall(nullptr);
@@ -113,11 +116,11 @@ static void EmitTwoArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Ins
     code.movaps(xword[code.ABI_PARAM2], arg1);
     code.movaps(xword[code.ABI_PARAM3], arg2);
     code.CallFunction(fn);
-    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
 
     code.add(rsp, stack_space + ABI_SHADOW_SPACE);
 
-    ctx.reg_alloc.DefineValue(inst, xmm0);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitVectorGetElement8(EmitContext& ctx, IR::Inst* inst) {

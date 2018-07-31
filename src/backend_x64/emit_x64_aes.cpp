@@ -23,6 +23,7 @@ static void EmitAESFunction(std::array<Argument, 3> args, EmitContext& ctx, Bloc
                             IR::Inst* inst, AESFn fn) {
     constexpr u32 stack_space = static_cast<u32>(sizeof(AES::State)) * 2;
     const Xbyak::Xmm input = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     ctx.reg_alloc.EndOfAllocScope();
 
     ctx.reg_alloc.HostCall(nullptr);
@@ -34,12 +35,12 @@ static void EmitAESFunction(std::array<Argument, 3> args, EmitContext& ctx, Bloc
 
     code.CallFunction(fn);
 
-    code.movaps(xmm0, xword[rsp + ABI_SHADOW_SPACE]);
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE]);
 
     // Free memory
     code.add(rsp, stack_space + ABI_SHADOW_SPACE);
 
-    ctx.reg_alloc.DefineValue(inst, xmm0);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitAESDecryptSingleRound(EmitContext& ctx, IR::Inst* inst) {

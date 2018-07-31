@@ -90,8 +90,8 @@ const HostLocList any_gpr = {
     HostLoc::R14,
 };
 
+// XMM0 is reserved for use by instructions that implicitly use it as an argument
 const HostLocList any_xmm = {
-    HostLoc::XMM0,
     HostLoc::XMM1,
     HostLoc::XMM2,
     HostLoc::XMM3,
