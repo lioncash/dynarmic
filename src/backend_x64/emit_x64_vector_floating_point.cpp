@@ -154,11 +154,16 @@ template<size_t fsize>
 void ForceToDefaultNaN(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result) {
     if (ctx.FPSCR_DN()) {
         const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
-        code.movaps(nan_mask, result);
-        FCODE(cmpordp)(nan_mask, nan_mask);
-        code.andps(result, nan_mask);
-        code.andnps(nan_mask, GetNaNVector<fsize>(code));
-        code.orps(result, nan_mask);
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            FCODE(vcmpunordp)(nan_mask, result, result);
+            FCODE(vblendvp)(result, result, GetNaNVector<fsize>(code), nan_mask);
+        } else {
+            code.movaps(nan_mask, result);
+            FCODE(cmpordp)(nan_mask, nan_mask);
+            code.andps(result, nan_mask);
+            code.andnps(nan_mask, GetNaNVector<fsize>(code));
+            code.orps(result, nan_mask);
+        }
     }
 }
 
