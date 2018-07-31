@@ -128,6 +128,11 @@ void EmitX64::EmitVectorGetElement8(EmitContext& ctx, IR::Inst* inst) {
     ASSERT(args[1].IsImmediate());
     const u8 index = args[1].GetImmediateU8();
 
+    if (index == 0) {
+        ctx.reg_alloc.DefineValue(inst, args[0]);
+        return;
+    }
+
     const Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Reg32 dest = ctx.reg_alloc.ScratchGpr().cvt32();
 
@@ -146,7 +151,12 @@ void EmitX64::EmitVectorGetElement8(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorGetElement16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[1].IsImmediate());
-    u8 index = args[1].GetImmediateU8();
+    const u8 index = args[1].GetImmediateU8();
+
+    if (index == 0) {
+        ctx.reg_alloc.DefineValue(inst, args[0]);
+        return;
+    }
 
     Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
     Xbyak::Reg32 dest = ctx.reg_alloc.ScratchGpr().cvt32();
@@ -157,14 +167,16 @@ void EmitX64::EmitVectorGetElement16(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorGetElement32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[1].IsImmediate());
-    u8 index = args[1].GetImmediateU8();
+    const u8 index = args[1].GetImmediateU8();
+
+    if (index == 0) {
+        ctx.reg_alloc.DefineValue(inst, args[0]);
+        return;
+    }
 
     Xbyak::Reg32 dest = ctx.reg_alloc.ScratchGpr().cvt32();
 
-    if (index == 0) {
-        Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
-        code.movd(dest, source);
-    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
         code.pextrd(dest, source, index);
     } else {
@@ -181,12 +193,14 @@ void EmitX64::EmitVectorGetElement64(EmitContext& ctx, IR::Inst* inst) {
     ASSERT(args[1].IsImmediate());
     u8 index = args[1].GetImmediateU8();
 
+    if (index == 0) {
+        ctx.reg_alloc.DefineValue(inst, args[0]);
+        return;
+    }
+
     Xbyak::Reg64 dest = ctx.reg_alloc.ScratchGpr().cvt64();
 
-    if (index == 0) {
-        Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
-        code.movq(dest, source);
-    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         Xbyak::Xmm source = ctx.reg_alloc.UseXmm(args[0]);
         code.pextrq(dest, source, 1);
     } else {
