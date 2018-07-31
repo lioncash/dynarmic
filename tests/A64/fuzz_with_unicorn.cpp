@@ -11,6 +11,7 @@
 
 #include <catch.hpp>
 
+#include "common/fp/fpcr.h"
 #include "common/fp/fpsr.h"
 #include "common/llvm_disassemble.h"
 #include "common/scope_exit.h"
@@ -36,6 +37,13 @@ using namespace Dynarmic;
 
 static Vector RandomVector() {
     return {RandInt<u64>(0, ~u64(0)), RandInt<u64>(0, ~u64(0))};
+}
+
+static u32 RandomFpcr() {
+    FP::FPCR fpcr;
+    fpcr.DN(RandInt(0, 1) == 0);
+    fpcr.RMode(static_cast<FP::RoundingMode>(RandInt(0, 3)));
+    return fpcr.Value();
 }
 
 static bool ShouldTestInst(u32 instruction, u64 pc, bool is_last_inst) {
@@ -274,7 +282,7 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
         std::generate(vecs.begin(), vecs.end(), RandomVector);
         instructions[0] = GenRandomInst(0, true);
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
-        u32 fpcr = (RandInt<u32>(0, 0x3) << 22) | (RandInt<u32>(0, 1) << 25); // randomize RMode and DN
+        u32 fpcr = RandomFpcr();
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
@@ -387,7 +395,7 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
         std::generate(vecs.begin(), vecs.end(), gen_vector);
         instructions[0] = GenFloatInst(0, true);
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
-        u32 fpcr = (RandInt<u32>(0, 0x3) << 22) | (RandInt<u32>(0, 1) << 25); // randomize RMode and DN
+        u32 fpcr = RandomFpcr();
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
@@ -411,7 +419,7 @@ TEST_CASE("A64: Small random block", "[a64]") {
         instructions[4] = GenRandomInst(16, true);
 
         u32 pstate = RandInt<u32>(0, 0xF) << 28;
-        u32 fpcr = (RandInt<u32>(0, 0x3) << 22) | (RandInt<u32>(0, 1) << 25); // randomize RMode and DN
+        u32 fpcr = RandomFpcr();
 
         INFO("Instruction 1: 0x" << std::hex << instructions[0]);
         INFO("Instruction 2: 0x" << std::hex << instructions[1]);
