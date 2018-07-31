@@ -1919,9 +1919,31 @@ void EmitX64::EmitVectorPairedMaxS16(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorPairedMaxS32(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s32>& a, const VectorArray<s32>& b) {
-        PairedMax(result, a, b);
-    });
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp, x);
+    code.shufps(tmp, y, 0b10001000);
+    code.shufps(x, y, 0b11011101);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pmaxsd(x, tmp);
+
+        ctx.reg_alloc.DefineValue(inst, x);
+    } else {
+        const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+
+        code.movdqa(tmp2, tmp);
+        code.pcmpgtd(tmp2, x);
+        code.pand(tmp, tmp2);
+        code.pandn(tmp2, x);
+        code.por(tmp2, tmp);
+
+        ctx.reg_alloc.DefineValue(inst, tmp2);
+    }
 }
 
 void EmitX64::EmitVectorPairedMaxU8(EmitContext& ctx, IR::Inst* inst) {
@@ -1937,9 +1959,36 @@ void EmitX64::EmitVectorPairedMaxU16(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorPairedMaxU32(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<u32>& a, const VectorArray<u32>& b) {
-        PairedMax(result, a, b);
-    });
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+    const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp1, x);
+    code.shufps(tmp1, y, 0b10001000);
+    code.shufps(x, y, 0b11011101);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pmaxud(x, tmp1);
+
+        ctx.reg_alloc.DefineValue(inst, x);
+    } else {
+        const Xbyak::Xmm tmp3 = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(tmp3, code.MConst(xword, 0x8000000080000000, 0x8000000080000000));
+
+        const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(tmp2, x);
+
+        code.pxor(tmp2, tmp3);
+        code.pxor(tmp3, tmp1);
+        code.pcmpgtd(tmp3, tmp2);
+        code.pand(tmp1, tmp3);
+        code.pandn(tmp3, x);
+        code.por(tmp1, tmp3);
+
+        ctx.reg_alloc.DefineValue(inst, tmp1);
+    }
 }
 
 void EmitX64::EmitVectorPairedMinS8(EmitContext& ctx, IR::Inst* inst) {
@@ -1955,9 +2004,31 @@ void EmitX64::EmitVectorPairedMinS16(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorPairedMinS32(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s32>& a, const VectorArray<s32>& b) {
-        PairedMin(result, a, b);
-    });
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp, x);
+    code.shufps(tmp, y, 0b10001000);
+    code.shufps(x, y, 0b11011101);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pminsd(x, tmp);
+
+        ctx.reg_alloc.DefineValue(inst, x);
+    } else {
+        const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+
+        code.movaps(tmp2, x);
+        code.pcmpgtd(tmp2, tmp);
+        code.pand(tmp, tmp2);
+        code.pandn(tmp2, x);
+        code.por(tmp2, tmp);
+
+        ctx.reg_alloc.DefineValue(inst, tmp2);
+    }
 }
 
 void EmitX64::EmitVectorPairedMinU8(EmitContext& ctx, IR::Inst* inst) {
@@ -1973,9 +2044,36 @@ void EmitX64::EmitVectorPairedMinU16(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorPairedMinU32(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<u32>& a, const VectorArray<u32>& b) {
-        PairedMin(result, a, b);
-    });
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+    const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp1, x);
+    code.shufps(tmp1, y, 0b10001000);
+    code.shufps(x, y, 0b11011101);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pminud(x, tmp1);
+
+        ctx.reg_alloc.DefineValue(inst, x);
+    } else {
+        const Xbyak::Xmm tmp3 = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(tmp3, code.MConst(xword, 0x8000000080000000, 0x8000000080000000));
+
+        const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(tmp2, tmp1);
+
+        code.pxor(tmp2, tmp3);
+        code.pxor(tmp3, x);
+        code.pcmpgtd(tmp3, tmp2);
+        code.pand(tmp1, tmp3);
+        code.pandn(tmp3, x);
+        code.por(tmp1, tmp3);
+
+        ctx.reg_alloc.DefineValue(inst, tmp1);
+    }
 }
 
 template <typename D, typename T>
