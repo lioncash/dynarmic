@@ -205,11 +205,7 @@ void FPTwoOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     Xbyak::Label end;
 
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero<fsize>(code, result, gpr_scratch);
-    }
     if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
         end = ProcessNaN<fsize>(code, result);
     }
@@ -228,8 +224,13 @@ void FPTwoOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+enum class CallDenormalsAreZero {
+    Yes,
+    No,
+};
+
 template <size_t fsize, typename PreprocessFunction, typename Function>
-void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unused]] PreprocessFunction preprocess, Function fn) {
+void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unused]] PreprocessFunction preprocess, Function fn, CallDenormalsAreZero call_denormals_are_zero = CallDenormalsAreZero::No) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     Xbyak::Label end;
@@ -238,7 +239,7 @@ void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unus
     Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
     Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
-    if (ctx.FPSCR_FTZ()) {
+    if (ctx.FPSCR_FTZ() && call_denormals_are_zero == CallDenormalsAreZero::Yes) {
         DenormalsAreZero<fsize>(code, result, gpr_scratch);
         DenormalsAreZero<fsize>(code, operand, gpr_scratch);
     }
@@ -264,38 +265,8 @@ void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unus
 }
 
 template <size_t fsize, typename Function>
-void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
-    FPThreeOp<fsize>(code, ctx, inst, nullptr, fn);
-}
-
-template <size_t fsize, typename Function, typename NaNHandler>
-void FPFourOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, NaNHandler nan_handler) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    Xbyak::Label end;
-
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm operand2 = ctx.reg_alloc.UseScratchXmm(args[1]);
-    Xbyak::Xmm operand3 = ctx.reg_alloc.UseScratchXmm(args[2]);
-    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
-
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero<fsize>(code, result, gpr_scratch);
-        DenormalsAreZero<fsize>(code, operand2, gpr_scratch);
-        DenormalsAreZero<fsize>(code, operand3, gpr_scratch);
-    }
-    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        PreProcessNaNs<fsize>(code, ctx, result, operand2, operand3, end, nan_handler);
-    }
-    fn(result, operand2, operand3);
-    if (ctx.FPSCR_DN()) {
-        DefaultNaN<fsize>(code, result);
-    } else if (ctx.AccurateNaN()) {
-        PostProcessNaNs<fsize>(code, result, operand2);
-    }
-    code.L(end);
-
-    ctx.reg_alloc.DefineValue(inst, result);
+void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, CallDenormalsAreZero call_denormals_are_zero = CallDenormalsAreZero::No) {
+    FPThreeOp<fsize>(code, ctx, inst, nullptr, fn, call_denormals_are_zero);
 }
 
 } // anonymous namespace
@@ -400,7 +371,7 @@ static void EmitFPMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
         code.L(equal);
         code.andps(result, operand);
         code.L(end);
-    });
+    }, CallDenormalsAreZero::Yes);
 }
 
 void EmitX64::EmitFPMax32(EmitContext& ctx, IR::Inst* inst) {
@@ -442,7 +413,7 @@ void EmitX64::EmitFPMaxNumeric32(EmitContext& ctx, IR::Inst* inst) {
         code.jnz(normal);
         code.andps(operand, result);
         code.L(normal);
-    }, &Xbyak::CodeGenerator::maxss);
+    }, &Xbyak::CodeGenerator::maxss, CallDenormalsAreZero::Yes);
 }
 
 void EmitX64::EmitFPMaxNumeric64(EmitContext& ctx, IR::Inst* inst) {
@@ -476,7 +447,7 @@ void EmitX64::EmitFPMaxNumeric64(EmitContext& ctx, IR::Inst* inst) {
         code.jnz(normal);
         code.andps(operand, result);
         code.L(normal);
-    }, &Xbyak::CodeGenerator::maxsd);
+    }, &Xbyak::CodeGenerator::maxsd, CallDenormalsAreZero::Yes);
 }
 
 template<size_t fsize>
@@ -527,7 +498,7 @@ static void EmitFPMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
         code.L(equal);
         code.orps(result, operand);
         code.L(end);
-    });
+    }, CallDenormalsAreZero::Yes);
 }
 
 void EmitX64::EmitFPMin32(EmitContext& ctx, IR::Inst* inst) {
@@ -569,7 +540,7 @@ void EmitX64::EmitFPMinNumeric32(EmitContext& ctx, IR::Inst* inst) {
         code.jnz(normal);
         code.orps(operand, result);
         code.L(normal);
-    }, &Xbyak::CodeGenerator::minss);
+    }, &Xbyak::CodeGenerator::minss, CallDenormalsAreZero::Yes);
 }
 
 void EmitX64::EmitFPMinNumeric64(EmitContext& ctx, IR::Inst* inst) {
@@ -603,7 +574,7 @@ void EmitX64::EmitFPMinNumeric64(EmitContext& ctx, IR::Inst* inst) {
         code.jnz(normal);
         code.orps(operand, result);
         code.L(normal);
-    }, &Xbyak::CodeGenerator::minsd);
+    }, &Xbyak::CodeGenerator::minsd, CallDenormalsAreZero::Yes);
 }
 
 void EmitX64::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
