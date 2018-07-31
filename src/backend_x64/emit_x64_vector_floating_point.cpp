@@ -241,17 +241,21 @@ void EmitTwoOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* ins
 
     if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-        const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+        Xbyak::Xmm result;
 
         if constexpr (std::is_member_function_pointer_v<Function>) {
-            (code.*fn)(xmm_a);
+            result = ctx.reg_alloc.UseScratchXmm(args[0]);
+            (code.*fn)(result);
         } else {
-            fn(xmm_a);
+            const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseXmm(args[0]);
+            result = ctx.reg_alloc.ScratchXmm();
+            fn(result, xmm_a);
         }
 
-        ForceToDefaultNaN<fsize>(code, ctx, xmm_a);
+        ForceToDefaultNaN<fsize>(code, ctx, result);
 
-        ctx.reg_alloc.DefineValue(inst, xmm_a);
+        ctx.reg_alloc.DefineValue(inst, result);
         return;
     }
 
@@ -261,15 +265,19 @@ void EmitTwoOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* ins
     const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
 
-    code.movaps(nan_mask, xmm_a);
-    code.movaps(result, xmm_a);
-    FCODE(cmpunordp)(nan_mask, nan_mask);
     if constexpr (std::is_member_function_pointer_v<Function>) {
+        code.movaps(result, xmm_a);
         (code.*fn)(result);
     } else {
-        fn(result);
+        fn(result, xmm_a);
     }
-    FCODE(cmpunordp)(nan_mask, result);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        FCODE(vcmpunordp)(nan_mask, result, result);
+    } else {
+        code.movaps(nan_mask, result);
+        FCODE(cmpunordp)(nan_mask, nan_mask);
+    }
 
     HandleNaNs<fsize, 1>(code, ctx, {result, xmm_a}, nan_mask, nan_handler);
 
@@ -907,11 +915,11 @@ void EmitFPVectorRoundInt(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
             return 0;
         }();
 
-        EmitTwoOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result){
+        EmitTwoOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, const Xbyak::Xmm& xmm_a){
             if constexpr (fsize == 32) {
-                code.roundps(result, result, round_imm);
+                code.roundps(result, xmm_a, round_imm);
             } else {
-                code.roundpd(result, result, round_imm);
+                code.roundpd(result, xmm_a, round_imm);
             }
         });
 
