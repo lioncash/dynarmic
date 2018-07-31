@@ -153,10 +153,10 @@ Xbyak::Address GetSmallestNormalVector(BlockOfCode& code) {
 template<size_t fsize>
 void ForceToDefaultNaN(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result) {
     if (ctx.FPSCR_DN()) {
-        const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm nan_mask = xmm0;
         if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
             FCODE(vcmpunordp)(nan_mask, result, result);
-            FCODE(vblendvp)(result, result, GetNaNVector<fsize>(code), nan_mask);
+            FCODE(blendvp)(result, GetNaNVector<fsize>(code));
         } else {
             code.movaps(nan_mask, result);
             FCODE(cmpordp)(nan_mask, nan_mask);
@@ -572,7 +572,7 @@ static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
         const Xbyak::Xmm xmm_b = ctx.FPSCR_FTZ() ? ctx.reg_alloc.UseScratchXmm(args[1]) : ctx.reg_alloc.UseXmm(args[1]);
 
-        const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm mask = xmm0;
         const Xbyak::Xmm anded = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
 
@@ -583,7 +583,7 @@ static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
             FCODE(vcmpunordp)(nan_mask, result, xmm_b);
             FCODE(vandp)(anded, result, xmm_b);
             FCODE(vmaxp)(result, result, xmm_b);
-            FCODE(vblendvp)(result, result, anded, mask);
+            FCODE(blendvp)(result, anded);
             FCODE(vblendvp)(result, result, GetNaNVector<fsize>(code), nan_mask);
         } else {
             code.movaps(mask, result);
@@ -610,7 +610,7 @@ static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
     }
 
     EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, Xbyak::Xmm xmm_b){
-        const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm mask = xmm0;
         const Xbyak::Xmm anded = ctx.reg_alloc.ScratchXmm();
 
         if (ctx.FPSCR_FTZ()) {
@@ -628,7 +628,7 @@ static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
             FCODE(vcmpeqp)(mask, result, xmm_b);
             FCODE(vandp)(anded, result, xmm_b);
             FCODE(vmaxp)(result, result, xmm_b);
-            FCODE(vblendvp)(result, result, anded, mask);
+            FCODE(blendvp)(result, anded);
         } else {
             code.movaps(mask, result);
             code.movaps(anded, result);
@@ -659,7 +659,7 @@ static void EmitFPVectorMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
         const Xbyak::Xmm xmm_b = ctx.FPSCR_FTZ() ? ctx.reg_alloc.UseScratchXmm(args[1]) : ctx.reg_alloc.UseXmm(args[1]);
 
-        const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm mask = xmm0;
         const Xbyak::Xmm ored = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
 
@@ -670,7 +670,7 @@ static void EmitFPVectorMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
             FCODE(vcmpunordp)(nan_mask, result, xmm_b);
             FCODE(vorp)(ored, result, xmm_b);
             FCODE(vminp)(result, result, xmm_b);
-            FCODE(vblendvp)(result, result, ored, mask);
+            FCODE(blendvp)(result, ored);
             FCODE(vblendvp)(result, result, GetNaNVector<fsize>(code), nan_mask);
         } else {
             code.movaps(mask, result);
@@ -697,7 +697,7 @@ static void EmitFPVectorMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
     }
 
     EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, Xbyak::Xmm xmm_b){
-        const Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm mask = xmm0;
         const Xbyak::Xmm ored = ctx.reg_alloc.ScratchXmm();
 
         if (ctx.FPSCR_FTZ()) {
@@ -715,7 +715,7 @@ static void EmitFPVectorMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
             FCODE(vcmpeqp)(mask, result, xmm_b);
             FCODE(vorp)(ored, result, xmm_b);
             FCODE(vminp)(result, result, xmm_b);
-            FCODE(vblendvp)(result, result, ored, mask);
+            FCODE(blendvp)(result, ored);
         } else {
             code.movaps(mask, result);
             code.movaps(ored, result);
