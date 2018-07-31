@@ -98,33 +98,6 @@ void DenormalsAreZero(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_
 }
 
 template<size_t fsize>
-void FlushToZero(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
-    Xbyak::Label end;
-
-    if constexpr (fsize == 32) {
-        code.movd(gpr_scratch.cvt32(), xmm_value);
-        code.and_(gpr_scratch.cvt32(), u32(0x7FFFFFFF));
-        code.sub(gpr_scratch.cvt32(), u32(1));
-        code.cmp(gpr_scratch.cvt32(), u32(0x007FFFFE));
-    } else {
-        auto mask = code.MConst(xword, f64_non_sign_mask);
-        mask.setBit(64);
-        auto penult_denormal = code.MConst(xword, f64_penultimate_positive_denormal);
-        penult_denormal.setBit(64);
-
-        code.movq(gpr_scratch, xmm_value);
-        code.and_(gpr_scratch, mask);
-        code.sub(gpr_scratch, u32(1));
-        code.cmp(gpr_scratch, penult_denormal);
-    }
-
-    code.ja(end);
-    code.pxor(xmm_value, xmm_value);
-    code.mov(dword[r15 + code.GetJitStateInfo().offsetof_FPSCR_UFC], u32(1 << 3));
-    code.L(end);
-}
-
-template<size_t fsize>
 void ZeroIfNaN(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_scratch) {
     code.pxor(xmm_scratch, xmm_scratch);
     FCODE(cmpords)(xmm_scratch, xmm_value); // true mask when ordered (i.e.: when not an NaN)
@@ -245,9 +218,6 @@ void FPTwoOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     } else {
         fn(result);
     }
-    if (ctx.FPSCR_FTZ()) {
-        FlushToZero<fsize>(code, result, gpr_scratch);
-    }
     if (ctx.FPSCR_DN()) {
         DefaultNaN<fsize>(code, result);
     } else if (ctx.AccurateNaN()) {
@@ -282,9 +252,6 @@ void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unus
         (code.*fn)(result, operand);
     } else {
         fn(result, operand);
-    }
-    if (ctx.FPSCR_FTZ()) {
-        FlushToZero<fsize>(code, result, gpr_scratch);
     }
     if (ctx.FPSCR_DN()) {
         DefaultNaN<fsize>(code, result);
@@ -321,9 +288,6 @@ void FPFourOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, 
         PreProcessNaNs<fsize>(code, ctx, result, operand2, operand3, end, nan_handler);
     }
     fn(result, operand2, operand3);
-    if (ctx.FPSCR_FTZ()) {
-        FlushToZero<fsize>(code, result, gpr_scratch);
-    }
     if (ctx.FPSCR_DN()) {
         DefaultNaN<fsize>(code, result);
     } else if (ctx.AccurateNaN()) {
@@ -923,9 +887,6 @@ void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
         DenormalsAreZero<32>(code, result, gpr_scratch);
     }
     code.cvtss2sd(result, result);
-    if (ctx.FPSCR_FTZ()) {
-        FlushToZero<64>(code, result, gpr_scratch);
-    }
     if (ctx.FPSCR_DN()) {
         DefaultNaN<64>(code, result);
     }
@@ -942,9 +903,6 @@ void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
         DenormalsAreZero<64>(code, result, gpr_scratch);
     }
     code.cvtsd2ss(result, result);
-    if (ctx.FPSCR_FTZ()) {
-        FlushToZero<32>(code, result, gpr_scratch);
-    }
     if (ctx.FPSCR_DN()) {
         DefaultNaN<32>(code, result);
     }
