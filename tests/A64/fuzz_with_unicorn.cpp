@@ -41,9 +41,11 @@ static Vector RandomVector() {
 
 static u32 RandomFpcr() {
     FP::FPCR fpcr;
+    fpcr.AHP(RandInt(0, 1) == 0);
     fpcr.DN(RandInt(0, 1) == 0);
     fpcr.FZ(RandInt(0, 1) == 0);
     fpcr.RMode(static_cast<FP::RoundingMode>(RandInt(0, 3)));
+    fpcr.FZ16(RandInt(0, 1) == 0);
     return fpcr.Value();
 }
 
@@ -216,9 +218,11 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
         fmt::print("pc : {:016x}\n", instructions_offset * 4);
         fmt::print("p  : {:08x}\n", pstate);
         fmt::print("fpcr {:08x}\n", fpcr);
+        fmt::print("fpcr.AHP   {}\n", FP::FPCR{fpcr}.AHP());
         fmt::print("fpcr.DN    {}\n", FP::FPCR{fpcr}.DN());
         fmt::print("fpcr.FZ    {}\n", FP::FPCR{fpcr}.FZ());
         fmt::print("fpcr.RMode {}\n", static_cast<size_t>(FP::FPCR{fpcr}.RMode()));
+        fmt::print("fpcr.FZ16  {}\n", FP::FPCR{fpcr}.FZ16());
         fmt::print("\n");
 
         fmt::print("Final register listing:\n");
