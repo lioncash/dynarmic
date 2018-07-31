@@ -286,8 +286,9 @@ HostLoc RegAlloc::UseImpl(IR::Value use_value, HostLocList desired_locations) {
         return LoadImmediate(use_value, ScratchImpl(desired_locations));
     }
 
-    IR::Inst* use_inst = use_value.GetInst();
+    const IR::Inst* use_inst = use_value.GetInst();
     const HostLoc current_location = *ValueLocation(use_inst);
+    const size_t max_bit_width = LocInfo(current_location).GetMaxBitWidth();
 
     const bool can_use_current_location = std::find(desired_locations.begin(), desired_locations.end(), current_location) != desired_locations.end();
     if (can_use_current_location) {
@@ -300,7 +301,9 @@ HostLoc RegAlloc::UseImpl(IR::Value use_value, HostLocList desired_locations) {
     }
 
     const HostLoc destination_location = SelectARegister(desired_locations);
-    if (CanExchange(destination_location, current_location)) {
+    if (max_bit_width > HostLocBitWidth(destination_location)) {
+        return UseScratchImpl(use_value, desired_locations);
+    } else if (CanExchange(destination_location, current_location)) {
         Exchange(destination_location, current_location);
     } else {
         MoveOutOfTheWay(destination_location);
@@ -315,8 +318,9 @@ HostLoc RegAlloc::UseScratchImpl(IR::Value use_value, HostLocList desired_locati
         return LoadImmediate(use_value, ScratchImpl(desired_locations));
     }
 
-    IR::Inst* use_inst = use_value.GetInst();
+    const IR::Inst* use_inst = use_value.GetInst();
     const HostLoc current_location = *ValueLocation(use_inst);
+    const size_t bit_width = GetBitWidth(use_inst->GetType());
 
     const bool can_use_current_location = std::find(desired_locations.begin(), desired_locations.end(), current_location) != desired_locations.end();
     if (can_use_current_location && !LocInfo(current_location).IsLocked()) {
@@ -329,7 +333,7 @@ HostLoc RegAlloc::UseScratchImpl(IR::Value use_value, HostLocList desired_locati
 
     const HostLoc destination_location = SelectARegister(desired_locations);
     MoveOutOfTheWay(destination_location);
-    CopyToScratch(destination_location, current_location);
+    CopyToScratch(bit_width, destination_location, current_location);
     LocInfo(destination_location).WriteLock();
     return destination_location;
 }
@@ -478,22 +482,24 @@ HostLoc RegAlloc::LoadImmediate(IR::Value imm, HostLoc host_loc) {
 }
 
 void RegAlloc::Move(HostLoc to, HostLoc from) {
+    const size_t bit_width = LocInfo(from).GetMaxBitWidth();
+
     ASSERT(LocInfo(to).IsEmpty() && !LocInfo(from).IsLocked());
-    ASSERT(LocInfo(from).GetMaxBitWidth() <= HostLocBitWidth(to));
+    ASSERT(bit_width <= HostLocBitWidth(to));
 
     if (LocInfo(from).IsEmpty()) {
         return;
     }
 
-    EmitMove(to, from);
+    EmitMove(bit_width, to, from);
 
     LocInfo(to) = std::exchange(LocInfo(from), {});
 }
 
-void RegAlloc::CopyToScratch(HostLoc to, HostLoc from) {
+void RegAlloc::CopyToScratch(size_t bit_width, HostLoc to, HostLoc from) {
     ASSERT(LocInfo(to).IsEmpty() && !LocInfo(from).IsEmpty());
 
-    EmitMove(to, from);
+    EmitMove(bit_width, to, from);
 }
 
 void RegAlloc::Exchange(HostLoc a, HostLoc b) {
@@ -552,9 +558,7 @@ const HostLocInfo& RegAlloc::LocInfo(HostLoc loc) const {
     return hostloc_info[static_cast<size_t>(loc)];
 }
 
-void RegAlloc::EmitMove(HostLoc to, HostLoc from) {
-    const size_t bit_width = LocInfo(from).GetMaxBitWidth();
-
+void RegAlloc::EmitMove(size_t bit_width, HostLoc to, HostLoc from) {
     if (HostLocIsXMM(to) && HostLocIsXMM(from)) {
         code.movaps(HostLocToXmm(to), HostLocToXmm(from));
     } else if (HostLocIsGPR(to) && HostLocIsGPR(from)) {

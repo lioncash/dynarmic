@@ -133,7 +133,7 @@ private:
 
     HostLoc LoadImmediate(IR::Value imm, HostLoc reg);
     void Move(HostLoc to, HostLoc from);
-    void CopyToScratch(HostLoc to, HostLoc from);
+    void CopyToScratch(size_t bit_width, HostLoc to, HostLoc from);
     void Exchange(HostLoc a, HostLoc b);
     void MoveOutOfTheWay(HostLoc reg);
 
@@ -146,7 +146,7 @@ private:
 
     BlockOfCode& code;
     std::function<Xbyak::Address(HostLoc)> spill_to_addr;
-    void EmitMove(HostLoc to, HostLoc from);
+    void EmitMove(size_t bit_width, HostLoc to, HostLoc from);
     void EmitExchange(HostLoc a, HostLoc b);
 };
 
