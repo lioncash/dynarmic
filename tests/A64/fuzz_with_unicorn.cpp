@@ -182,10 +182,12 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
     static Dynarmic::A64::Jit jit{jit_user_config};
     static Unicorn uni{uni_env};
 
+    const u64 initial_sp = RandInt<u64>(0x30'0000'0000, 0x40'0000'0000) * 4;
+
     jit.SetRegisters(regs);
     jit.SetVectors(vecs);
     jit.SetPC(instructions_start);
-    jit.SetSP(0x08000000);
+    jit.SetSP(initial_sp);
     jit.SetFpcr(fpcr);
     jit.SetFpsr(0);
     jit.SetPstate(pstate);
@@ -193,7 +195,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
     uni.SetRegisters(regs);
     uni.SetVectors(vecs);
     uni.SetPC(instructions_start);
-    uni.SetSP(0x08000000);
+    uni.SetSP(initial_sp);
     uni.SetFpcr(fpcr);
     uni.SetFpsr(0);
     uni.SetPstate(pstate);
@@ -216,7 +218,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
             fmt::print("{:3s}: {:016x}\n", static_cast<A64::Reg>(i), regs[i]);
         for (size_t i = 0; i < vecs.size(); ++i)
             fmt::print("{:3s}: {}\n", static_cast<A64::Vec>(i), vecs[i]);
-        fmt::print("sp : 08000000\n");
+        fmt::print("sp : {:016x}\n", initial_sp);
         fmt::print("pc : {:016x}\n", instructions_start);
         fmt::print("p  : {:08x}\n", pstate);
         fmt::print("fpcr {:08x}\n", fpcr);
