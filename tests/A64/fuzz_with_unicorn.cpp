@@ -158,15 +158,17 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
     }
 }
 
-static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::VectorArray& vecs, const size_t instructions_offset,
+static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::VectorArray& vecs, const size_t instructions_start,
                             const std::vector<u32>& instructions, const u32 pstate, const u32 fpcr) {
     static TestEnv jit_env{};
     static TestEnv uni_env{};
 
-    std::copy(instructions.begin(), instructions.end(), jit_env.code_mem.begin() + instructions_offset);
-    std::copy(instructions.begin(), instructions.end(), uni_env.code_mem.begin() + instructions_offset);
-    jit_env.code_mem[instructions.size() + instructions_offset] = 0x14000000; // B .
-    uni_env.code_mem[instructions.size() + instructions_offset] = 0x14000000; // B .
+    jit_env.code_mem = instructions;
+    uni_env.code_mem = instructions;
+    jit_env.code_mem.emplace_back(0x14000000); // B .
+    uni_env.code_mem.emplace_back(0x14000000); // B .
+    jit_env.code_mem_start_address = instructions_start;
+    uni_env.code_mem_start_address = instructions_start;
     jit_env.modified_memory.clear();
     uni_env.modified_memory.clear();
     jit_env.interrupts.clear();
@@ -182,7 +184,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
 
     jit.SetRegisters(regs);
     jit.SetVectors(vecs);
-    jit.SetPC(instructions_offset * 4);
+    jit.SetPC(instructions_start);
     jit.SetSP(0x08000000);
     jit.SetFpcr(fpcr);
     jit.SetFpsr(0);
@@ -190,7 +192,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
     jit.ClearCache();
     uni.SetRegisters(regs);
     uni.SetVectors(vecs);
-    uni.SetPC(instructions_offset * 4);
+    uni.SetPC(instructions_start);
     uni.SetSP(0x08000000);
     uni.SetFpcr(fpcr);
     uni.SetFpsr(0);
@@ -215,7 +217,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
         for (size_t i = 0; i < vecs.size(); ++i)
             fmt::print("{:3s}: {}\n", static_cast<A64::Vec>(i), vecs[i]);
         fmt::print("sp : 08000000\n");
-        fmt::print("pc : {:016x}\n", instructions_offset * 4);
+        fmt::print("pc : {:016x}\n", instructions_start);
         fmt::print("p  : {:08x}\n", pstate);
         fmt::print("fpcr {:08x}\n", fpcr);
         fmt::print("fpcr.AHP   {}\n", FP::FPCR{fpcr}.AHP());

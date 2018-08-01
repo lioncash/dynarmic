@@ -19,22 +19,30 @@ using Vector = Dynarmic::A64::Vector;
 class TestEnv final : public Dynarmic::A64::UserCallbacks {
 public:
     u64 ticks_left = 0;
+
     bool code_mem_modified_by_guest = false;
-    std::array<u32, 1024> code_mem{};
+    u64 code_mem_start_address = 0;
+    std::vector<u32> code_mem;
+
     std::map<u64, u8> modified_memory;
     std::vector<std::string> interrupts;
 
+    bool IsInCodeMem(u64 vaddr) const {
+        return vaddr >= code_mem_start_address && vaddr < code_mem_start_address + code_mem.size() * 4;
+    }
+
     std::uint32_t MemoryReadCode(u64 vaddr) override {
-        if (vaddr < code_mem.size() * sizeof(u32)) {
-            size_t index = vaddr / sizeof(u32);
-            return code_mem[index];
+        if (!IsInCodeMem(vaddr)) {
+            return 0x14000000; // B .
         }
-        return 0x14000000; // B .
+
+        const size_t index = (vaddr - code_mem_start_address) / 4;
+        return code_mem[index];
     }
 
     std::uint8_t MemoryRead8(u64 vaddr) override {
-        if (vaddr < 4 * code_mem.size()) {
-            return reinterpret_cast<u8*>(code_mem.data())[vaddr];
+        if (IsInCodeMem(vaddr)) {
+            return reinterpret_cast<u8*>(code_mem.data())[vaddr - code_mem_start_address];
         }
         if (auto iter = modified_memory.find(vaddr); iter != modified_memory.end()) {
             return iter->second;
@@ -55,7 +63,7 @@ public:
     }
 
     void MemoryWrite8(u64 vaddr, std::uint8_t value) override {
-        if (vaddr < code_mem.size() * sizeof(u32)) {
+        if (IsInCodeMem(vaddr)) {
             code_mem_modified_by_guest = true;
         }
         modified_memory[vaddr] = value;

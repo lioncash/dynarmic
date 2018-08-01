@@ -14,8 +14,8 @@ TEST_CASE("A64: ADD", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x8b020020; // ADD X0, X1, X2
-    env.code_mem[1] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x8b020020); // ADD X0, X1, X2
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetRegister(0, 0);
     jit.SetRegister(1, 1);
@@ -35,9 +35,9 @@ TEST_CASE("A64: REV", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0xdac00c00; // REV X0, X0
-    env.code_mem[1] = 0x5ac00821; // REV W1, W1
-    env.code_mem[2] = 0x14000000; // B .
+    env.code_mem.emplace_back(0xdac00c00); // REV X0, X0
+    env.code_mem.emplace_back(0x5ac00821); // REV W1, W1
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetRegister(0, 0xaabbccddeeff1100);
     jit.SetRegister(1, 0xaabbccdd);
@@ -55,8 +55,8 @@ TEST_CASE("A64: REV32", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0xdac00800; // REV32 X0, X0
-    env.code_mem[1] = 0x14000000; // B .
+    env.code_mem.emplace_back(0xdac00800); // REV32 X0, X0
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetRegister(0, 0xaabbccddeeff1100);
     jit.SetPC(0);
@@ -71,9 +71,9 @@ TEST_CASE("A64: REV16", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0xdac00400; // REV16 X0, X0
-    env.code_mem[1] = 0x5ac00421; // REV16 W1, W1
-    env.code_mem[2] = 0x14000000; // B .
+    env.code_mem.emplace_back(0xdac00400); // REV16 X0, X0
+    env.code_mem.emplace_back(0x5ac00421); // REV16 W1, W1
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetRegister(0, 0xaabbccddeeff1100);
     jit.SetRegister(1, 0xaabbccdd);
@@ -91,8 +91,8 @@ TEST_CASE("A64: AND", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x8a020020; // AND X0, X1, X2
-    env.code_mem[1] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x8a020020); // AND X0, X1, X2
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetRegister(0, 0);
     jit.SetRegister(1, 1);
@@ -112,10 +112,10 @@ TEST_CASE("A64: Bitmasks", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x3200c3e0; // ORR W0, WZR, #0x01010101
-    env.code_mem[1] = 0x320c8fe1; // ORR W1, WZR, #0x00F000F0
-    env.code_mem[2] = 0x320003e2; // ORR W2, WZR, #1
-    env.code_mem[3] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x3200c3e0); // ORR W0, WZR, #0x01010101
+    env.code_mem.emplace_back(0x320c8fe1); // ORR W1, WZR, #0x00F000F0
+    env.code_mem.emplace_back(0x320003e2); // ORR W2, WZR, #1
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetPC(0);
 
@@ -132,8 +132,8 @@ TEST_CASE("A64: ANDS NZCV", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x6a020020; // ANDS W0, W1, W2
-    env.code_mem[1] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x6a020020); // ANDS W0, W1, W2
+    env.code_mem.emplace_back(0x14000000); // B .
 
     SECTION("N=1, Z=0") {
         jit.SetRegister(0, 0);
@@ -187,11 +187,11 @@ TEST_CASE("A64: CBZ", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x34000060; // CBZ X0, label
-    env.code_mem[1] = 0x320003e2; // MOV X2, 1
-    env.code_mem[2] = 0x14000000; // B.
-    env.code_mem[3] = 0x321f03e2; // label: MOV X2, 2
-    env.code_mem[4] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x34000060); // 0x00 : CBZ X0, label
+    env.code_mem.emplace_back(0x320003e2); // 0x04 : MOV X2, 1
+    env.code_mem.emplace_back(0x14000000); // 0x08 : B.
+    env.code_mem.emplace_back(0x321f03e2); // 0x0C : label: MOV X2, 2
+    env.code_mem.emplace_back(0x14000000); // 0x10 : B .
 
     SECTION("no branch") {
         jit.SetPC(0);
@@ -220,11 +220,11 @@ TEST_CASE("A64: TBZ", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x36180060; // TBZ X0, 3, label
-    env.code_mem[1] = 0x320003e2; // MOV X2, 1
-    env.code_mem[2] = 0x14000000; // B .
-    env.code_mem[3] = 0x321f03e2; // label: MOV X2, 2
-    env.code_mem[4] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x36180060); // 0x00 : TBZ X0, 3, label
+    env.code_mem.emplace_back(0x320003e2); // 0x04 : MOV X2, 1
+    env.code_mem.emplace_back(0x14000000); // 0x08 : B .
+    env.code_mem.emplace_back(0x321f03e2); // 0x0C : label: MOV X2, 2
+    env.code_mem.emplace_back(0x14000000); // 0x10 : B .
 
     SECTION("no branch") {
         jit.SetPC(0);
@@ -264,8 +264,8 @@ TEST_CASE("A64: FABD", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x6eb5d556; // FABD.4S V22, V10, V21
-    env.code_mem[1] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x6eb5d556); // FABD.4S V22, V10, V21
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetPC(0);
     jit.SetVector(10, {0xb4858ac77ff39a87, 0x9fce5e14c4873176});
@@ -294,9 +294,9 @@ TEST_CASE("A64: 128-bit exclusive read/write", "[a64]") {
 
     Dynarmic::A64::Jit jit{conf};
 
-    env.code_mem[0] = 0xc87f0861; // LDXP X1, X2, [X3]
-    env.code_mem[1] = 0xc8241865; // STXP W4, X5, X6, [X3]
-    env.code_mem[2] = 0x14000000; // B .
+    env.code_mem.emplace_back(0xc87f0861); // LDXP X1, X2, [X3]
+    env.code_mem.emplace_back(0xc8241865); // STXP W4, X5, X6, [X3]
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetPC(0);
     jit.SetRegister(3, 0x1234567812345678);
@@ -318,16 +318,16 @@ TEST_CASE("A64: CNTPCT_EL0", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0xd53be021; // MRS X1, CNTPCT_EL0
-    env.code_mem[1] = 0xd503201f; // NOP
-    env.code_mem[2] = 0xd503201f; // NOP
-    env.code_mem[3] = 0xd503201f; // NOP
-    env.code_mem[4] = 0xd503201f; // NOP
-    env.code_mem[5] = 0xd503201f; // NOP
-    env.code_mem[6] = 0xd503201f; // NOP
-    env.code_mem[7] = 0xd53be022; // MRS X2, CNTPCT_EL0
-    env.code_mem[8] = 0xcb010043; // SUB X3, X2, X1
-    env.code_mem[9] = 0x14000000; // B .
+    env.code_mem.emplace_back(0xd53be021); // MRS X1, CNTPCT_EL0
+    env.code_mem.emplace_back(0xd503201f); // NOP
+    env.code_mem.emplace_back(0xd503201f); // NOP
+    env.code_mem.emplace_back(0xd503201f); // NOP
+    env.code_mem.emplace_back(0xd503201f); // NOP
+    env.code_mem.emplace_back(0xd503201f); // NOP
+    env.code_mem.emplace_back(0xd503201f); // NOP
+    env.code_mem.emplace_back(0xd53be022); // MRS X2, CNTPCT_EL0
+    env.code_mem.emplace_back(0xcb010043); // SUB X3, X2, X1
+    env.code_mem.emplace_back(0x14000000); // B .
 
     env.ticks_left = 10;
     jit.Run();
@@ -339,8 +339,8 @@ TEST_CASE("A64: FNMSUB 1", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x1f618a9c; // FNMSUB D28, D20, D1, D2
-    env.code_mem[1] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x1f618a9c); // FNMSUB D28, D20, D1, D2
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetPC(0);
     jit.SetVector(20, {0xe73a51346164bd6c, 0x8080000000002b94});
@@ -357,8 +357,8 @@ TEST_CASE("A64: FNMSUB 2", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x1f2ab88e; // FNMSUB S14, S4, S10, S14
-    env.code_mem[1] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x1f2ab88e); // FNMSUB S14, S4, S10, S14
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetPC(0);
     jit.SetVector(4, {0x3c9623b101398437, 0x7ff0abcd0ba98d27});
@@ -376,8 +376,8 @@ TEST_CASE("A64: FMADD", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x1f5e0e4a; // FMADD D10, D18, D30, D3
-    env.code_mem[1] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x1f5e0e4a); // FMADD D10, D18, D30, D3
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetPC(0);
     jit.SetVector(18, {0x8000007600800000, 0x7ff812347f800000});
@@ -395,8 +395,8 @@ TEST_CASE("A64: FMLA.4S (denormal)", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x4e2fcccc; // FMLA.4S V12, V6, V15
-    env.code_mem[1] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x4e2fcccc); // FMLA.4S V12, V6, V15
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetPC(0);
     jit.SetVector(12, {0x3c9623b17ff80000, 0xbff0000080000076});
@@ -414,8 +414,8 @@ TEST_CASE("A64: FMLA.4S (0x80800000)", "[a64]") {
     TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
-    env.code_mem[0] = 0x4e38cc2b; // FMLA.4S V11, V1, V24
-    env.code_mem[1] = 0x14000000; // B .
+    env.code_mem.emplace_back(0x4e38cc2b); // FMLA.4S V11, V1, V24
+    env.code_mem.emplace_back(0x14000000); // B .
 
     jit.SetPC(0);
     jit.SetVector(11, {0xc79b271efff05678, 0xffc0000080800000});
