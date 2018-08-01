@@ -290,13 +290,16 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
     for (size_t iteration = 0; iteration < 100000; ++iteration) {
         std::generate(regs.begin(), regs.end(), []{ return RandInt<u64>(0, ~u64(0)); });
         std::generate(vecs.begin(), vecs.end(), RandomVector);
+
         instructions[0] = GenRandomInst(0, true);
-        u32 pstate = RandInt<u32>(0, 0xF) << 28;
-        u32 fpcr = RandomFpcr();
+
+        const u64 start_address = RandInt<u64>(0, 0x10'0000'0000) * 4;
+        const u32 pstate = RandInt<u32>(0, 0xF) << 28;
+        const u32 fpcr = RandomFpcr();
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
-        RunTestInstance(regs, vecs, 100, instructions, pstate, fpcr);
+        RunTestInstance(regs, vecs, start_address, instructions, pstate, fpcr);
     }
 }
 
@@ -403,13 +406,16 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
     for (size_t iteration = 0; iteration < 100000; ++iteration) {
         std::generate(regs.begin(), regs.end(), gen_float);
         std::generate(vecs.begin(), vecs.end(), gen_vector);
+
         instructions[0] = GenFloatInst(0, true);
-        u32 pstate = RandInt<u32>(0, 0xF) << 28;
-        u32 fpcr = RandomFpcr();
+
+        const u64 start_address = RandInt<u64>(0, 0x10'0000'0000) * 4;
+        const u32 pstate = RandInt<u32>(0, 0xF) << 28;
+        const u32 fpcr = RandomFpcr();
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
-        RunTestInstance(regs, vecs, 100, instructions, pstate, fpcr);
+        RunTestInstance(regs, vecs, start_address, instructions, pstate, fpcr);
     }
 }
 
@@ -428,8 +434,9 @@ TEST_CASE("A64: Small random block", "[a64]") {
         instructions[3] = GenRandomInst(12, false);
         instructions[4] = GenRandomInst(16, true);
 
-        u32 pstate = RandInt<u32>(0, 0xF) << 28;
-        u32 fpcr = RandomFpcr();
+        const u64 start_address = RandInt<u64>(0, 0x10'0000'0000) * 4;
+        const u32 pstate = RandInt<u32>(0, 0xF) << 28;
+        const u32 fpcr = RandomFpcr();
 
         INFO("Instruction 1: 0x" << std::hex << instructions[0]);
         INFO("Instruction 2: 0x" << std::hex << instructions[1]);
@@ -437,6 +444,6 @@ TEST_CASE("A64: Small random block", "[a64]") {
         INFO("Instruction 4: 0x" << std::hex << instructions[3]);
         INFO("Instruction 5: 0x" << std::hex << instructions[4]);
 
-        RunTestInstance(regs, vecs, 100, instructions, pstate, fpcr);
+        RunTestInstance(regs, vecs, start_address, instructions, pstate, fpcr);
     }
 }
