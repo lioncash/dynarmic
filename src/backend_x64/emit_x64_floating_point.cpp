@@ -109,75 +109,6 @@ void ZeroIfNaN(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_scratch) 
 }
 
 template<size_t fsize>
-void PreProcessNaNs(BlockOfCode& code, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Label& end) {
-    using FPT = mp::unsigned_integer_of_size<fsize>;
-
-    Xbyak::Label nan;
-
-    FCODE(ucomis)(a, b);
-    code.jp(nan, code.T_NEAR);
-    code.SwitchToFarCode();
-    code.L(nan);
-
-    code.sub(rsp, 8);
-    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
-    code.movq(code.ABI_PARAM1, a);
-    code.movq(code.ABI_PARAM2, b);
-    code.CallFunction(static_cast<FPT(*)(FPT, FPT)>([](FPT a, FPT b) -> FPT {
-        return *FP::ProcessNaNs(a, b);
-    }));
-    code.movq(a, code.ABI_RETURN);
-    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
-    code.add(rsp, 8);
-
-    code.jmp(end, code.T_NEAR);
-    code.SwitchToNearCode();
-}
-
-template<size_t fsize, typename NaNHandler>
-void PreProcessNaNs(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm a, Xbyak::Xmm b, Xbyak::Xmm c, Xbyak::Label& end, NaNHandler nan_handler) {
-    using FPT = mp::unsigned_integer_of_size<fsize>;
-
-    Xbyak::Label nan;
-
-    FCODE(ucomis)(a, b);
-    code.jp(nan, code.T_NEAR);
-    FCODE(ucomis)(c, c);
-    code.jp(nan, code.T_NEAR);
-    code.SwitchToFarCode();
-    code.L(nan);
-
-    code.sub(rsp, 8);
-    ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
-    code.movq(code.ABI_PARAM1, a);
-    code.movq(code.ABI_PARAM2, b);
-    code.movq(code.ABI_PARAM3, c);
-    code.mov(code.ABI_PARAM4, ctx.FPCR());
-    code.CallFunction(static_cast<FPT(*)(FPT, FPT, FPT, FP::FPCR)>(nan_handler));
-    code.movq(a, code.ABI_RETURN);
-    ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(a.getIdx()));
-    code.add(rsp, 8);
-
-    code.jmp(end, code.T_NEAR);
-    code.SwitchToNearCode();
-}
-
-template<size_t fsize>
-void PostProcessNaNs(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm tmp) {
-    if constexpr (fsize == 32) {
-        code.movaps(tmp, result);
-        code.cmpunordps(tmp, tmp);
-        code.pslld(tmp, 31);
-        code.xorps(result, tmp);
-    } else {
-        code.movaps(tmp, result);
-        code.cmpunordpd(tmp, tmp);
-        code.psllq(tmp, 63);
-        code.xorps(result, tmp);
-    }
-}
-
-template<size_t fsize>
 void ForceToDefaultNaN(BlockOfCode& code, Xbyak::Xmm result) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
         FCODE(vcmpunords)(xmm0, result, result);
@@ -205,6 +136,21 @@ Xbyak::Label ProcessNaN(BlockOfCode& code, Xbyak::Xmm a) {
     code.jmp(end, code.T_NEAR);
     code.SwitchToNearCode();
     return end;
+}
+
+template<size_t fsize>
+void PostProcessNaN(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm tmp) {
+    if constexpr (fsize == 32) {
+        code.movaps(tmp, result);
+        code.cmpunordps(tmp, tmp);
+        code.pslld(tmp, 31);
+        code.xorps(result, tmp);
+    } else {
+        code.movaps(tmp, result);
+        code.cmpunordpd(tmp, tmp);
+        code.psllq(tmp, 63);
+        code.xorps(result, tmp);
+    }
 }
 
 // This is necessary because x86 and ARM differ in they way they return NaNs from floating point operations
@@ -372,47 +318,7 @@ void FPTwoOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     if (ctx.FPSCR_DN()) {
         ForceToDefaultNaN<fsize>(code, result);
     } else if (ctx.AccurateNaN()) {
-        PostProcessNaNs<fsize>(code, result, ctx.reg_alloc.ScratchXmm());
-    }
-    code.L(end);
-
-    ctx.reg_alloc.DefineValue(inst, result);
-}
-
-enum class CallDenormalsAreZero {
-    Yes,
-    No,
-};
-
-template <size_t fsize, typename PreprocessFunction, typename Function>
-void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, [[maybe_unused]] PreprocessFunction preprocess, Function fn, CallDenormalsAreZero call_denormals_are_zero = CallDenormalsAreZero::No) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-    Xbyak::Label end;
-
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
-    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
-
-    if (ctx.FPSCR_FTZ() && call_denormals_are_zero == CallDenormalsAreZero::Yes) {
-        DenormalsAreZero<fsize>(code, result, gpr_scratch);
-        DenormalsAreZero<fsize>(code, operand, gpr_scratch);
-    }
-    if constexpr(!std::is_same_v<PreprocessFunction, std::nullptr_t>) {
-        preprocess(result, operand, gpr_scratch, end);
-    }
-    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
-        PreProcessNaNs<fsize>(code, result, operand, end);
-    }
-    if constexpr (std::is_member_function_pointer_v<Function>) {
-        (code.*fn)(result, operand);
-    } else {
-        fn(result, operand);
-    }
-    if (ctx.FPSCR_DN()) {
-        ForceToDefaultNaN<fsize>(code, result);
-    } else if (ctx.AccurateNaN()) {
-        PostProcessNaNs<fsize>(code, result, operand);
+        PostProcessNaN<fsize>(code, result, ctx.reg_alloc.ScratchXmm());
     }
     code.L(end);
 
@@ -528,8 +434,8 @@ void EmitX64::EmitFPDiv64(EmitContext& ctx, IR::Inst* inst) {
     FPThreeOp<64>(code, ctx, inst, &Xbyak::CodeGenerator::divsd);
 }
 
-template<size_t fsize>
-static void EmitFPMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+template<size_t fsize, bool is_max>
+static void EmitFPMinMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
@@ -545,14 +451,22 @@ static void EmitFPMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
 
     FCODE(ucomis)(result, operand);
     code.jz(equal, code.T_NEAR);
-    FCODE(maxs)(result, operand);
+    if constexpr (is_max) {
+        FCODE(maxs)(result, operand);
+    } else {
+        FCODE(mins)(result, operand);
+    }
     code.L(end);
 
     code.SwitchToFarCode();
 
     code.L(equal);
     code.jp(nan);
-    code.andps(result, operand);
+    if constexpr (is_max) {
+        code.andps(result, operand);
+    } else {
+        code.orps(result, operand);
+    }
     code.jmp(end);
 
     code.L(nan);
@@ -568,196 +482,137 @@ static void EmitFPMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPMax32(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPMax<32>(code, ctx, inst);
-}
+template<size_t fsize, bool is_max>
+static void EmitFPMinMaxNumeric(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+    constexpr u8 mantissa_msb_bit = static_cast<u8>(FP::FPInfo<FPT>::explicit_mantissa_width - 1);
 
-void EmitX64::EmitFPMax64(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPMax<64>(code, ctx, inst);
-}
-
-void EmitX64::EmitFPMaxNumeric32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp<32>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
-        Xbyak::Label normal, normal_or_equal, result_is_result;
-
-        code.ucomiss(result, operand);
-        code.jnp(normal_or_equal);
-        // If operand == QNaN, result = result.
-        code.movd(scratch.cvt32(), operand);
-        code.shl(scratch.cvt32(), 1);
-        code.cmp(scratch.cvt32(), 0xff800000u);
-        code.jae(result_is_result);
-        // If operand == SNaN, let usual NaN code handle it.
-        code.cmp(scratch.cvt32(), 0xff000000u);
-        code.ja(normal);
-        // If result == SNaN, && operand != NaN, result = result.
-        code.movd(scratch.cvt32(), result);
-        code.shl(scratch.cvt32(), 1);
-        code.cmp(scratch.cvt32(), 0xff800000u);
-        code.jnae(result_is_result);
-        // If result == QNaN && operand != NaN, result = operand.
-        code.movaps(result, operand);
-        code.jmp(end, code.T_NEAR);
-
-        code.L(result_is_result);
-        code.movaps(operand, result);
-        code.jmp(normal);
-
-        code.L(normal_or_equal);
-        code.jnz(normal);
-        code.andps(operand, result);
-        code.L(normal);
-    }, &Xbyak::CodeGenerator::maxss, CallDenormalsAreZero::Yes);
-}
-
-void EmitX64::EmitFPMaxNumeric64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp<64>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
-        Xbyak::Label normal, normal_or_equal, result_is_result;
-
-        code.ucomisd(result, operand);
-        code.jnp(normal_or_equal);
-        // If operand == QNaN, result = result.
-        code.movq(scratch, operand);
-        code.shl(scratch, 1);
-        code.cmp(scratch, code.MConst(qword, 0xfff0'0000'0000'0000u));
-        code.jae(result_is_result);
-        // If operand == SNaN, let usual NaN code handle it.
-        code.cmp(scratch, code.MConst(qword, 0xffe0'0000'0000'0000u));
-        code.ja(normal);
-        // If result == SNaN, && operand != NaN, result = result.
-        code.movq(scratch, result);
-        code.shl(scratch, 1);
-        code.cmp(scratch, code.MConst(qword, 0xfff0'0000'0000'0000u));
-        code.jnae(result_is_result);
-        // If result == QNaN && operand != NaN, result = operand.
-        code.movaps(result, operand);
-        code.jmp(end, code.T_NEAR);
-
-        code.L(result_is_result);
-        code.movaps(operand, result);
-        code.jmp(normal);
-
-        code.L(normal_or_equal);
-        code.jnz(normal);
-        code.andps(operand, result);
-        code.L(normal);
-    }, &Xbyak::CodeGenerator::maxsd, CallDenormalsAreZero::Yes);
-}
-
-template<size_t fsize>
-static void EmitFPMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    const Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
-    const Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
+    const Xbyak::Xmm op1 = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm op2 = ctx.reg_alloc.UseScratchXmm(args[1]); // Result stored here!
+    Xbyak::Reg tmp = ctx.reg_alloc.ScratchGpr();
+    tmp.setBit(fsize);
+
+    const auto move_to_tmp = [&](const Xbyak::Xmm& xmm) {
+        if constexpr (fsize == 32) {
+            code.movd(tmp.cvt32(), xmm);
+        } else {
+            code.movq(tmp.cvt64(), xmm);
+        }
+    };
 
     if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero<fsize>(code, result, gpr_scratch);
-        DenormalsAreZero<fsize>(code, operand, gpr_scratch);
+        DenormalsAreZero<fsize>(code, op1, tmp.cvt64());
+        DenormalsAreZero<fsize>(code, op2, tmp.cvt64());
     }
 
-    Xbyak::Label equal, end, nan;
+    Xbyak::Label end, z, nan, op2_is_nan, snan, maybe_both_nan, normal;
 
-    FCODE(ucomis)(result, operand);
-    code.jz(equal, code.T_NEAR);
-    FCODE(mins)(result, operand);
+    FCODE(ucomis)(op1, op2);
+    code.jz(z, code.T_NEAR);
+    code.L(normal);
+    if constexpr (is_max) {
+        FCODE(maxs)(op2, op1);
+    } else {
+        FCODE(mins)(op2, op1);
+    }
     code.L(end);
 
     code.SwitchToFarCode();
 
-    code.L(equal);
+    code.L(z);
     code.jp(nan);
-    code.orps(result, operand);
+    if constexpr (is_max) {
+        code.andps(op2, op1);
+    } else {
+        code.orps(op2, op1);
+    }
     code.jmp(end);
 
+    // NaN requirements:
+    // op1     op2      result
+    // SNaN    anything op1
+    // !SNaN   SNaN     op2
+    // QNaN    !NaN     op2
+    // !NaN    QNaN     op1
+    // QNaN    QNaN     op1
+
     code.L(nan);
+    FCODE(ucomis)(op1, op1);
+    code.jnp(op2_is_nan);
+
+    // op1 is NaN
+    move_to_tmp(op1);
+    code.bt(tmp, mantissa_msb_bit);
+    code.jc(maybe_both_nan);
     if (ctx.FPSCR_DN()) {
-        code.movaps(result, code.MConst(xword, fsize == 32 ? f32_nan : f64_nan));
+        code.L(snan);
+        code.movaps(op2, code.MConst(xword, FP::FPInfo<FPT>::DefaultNaN()));
         code.jmp(end);
     } else {
-        EmitProcessNaNs<fsize>(code, result, result, operand, gpr_scratch, end);
+        code.movaps(op2, op1);
+        code.L(snan);
+        code.orps(op2, code.MConst(xword, FP::FPInfo<FPT>::mantissa_msb));
+        code.jmp(end);
     }
+
+    code.L(maybe_both_nan);
+    FCODE(ucomis)(op2, op2);
+    code.jnp(end, code.T_NEAR);
+    if (ctx.FPSCR_DN()) {
+        code.jmp(snan);
+    } else {
+        move_to_tmp(op2);
+        code.bt(tmp.cvt64(), mantissa_msb_bit);
+        code.jnc(snan);
+        code.movaps(op2, op1);
+        code.jmp(end);
+    }
+
+    // op2 is NaN
+    code.L(op2_is_nan);
+    move_to_tmp(op2);
+    code.bt(tmp, mantissa_msb_bit);
+    code.jnc(snan);
+    code.movaps(op2, op1);
+    code.jmp(end);
 
     code.SwitchToNearCode();
 
-    ctx.reg_alloc.DefineValue(inst, result);
+    ctx.reg_alloc.DefineValue(inst, op2);
+}
+
+void EmitX64::EmitFPMax32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPMinMax<32, true>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPMax64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPMinMax<64, true>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPMaxNumeric32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPMinMaxNumeric<32, true>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPMaxNumeric64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPMinMaxNumeric<64, true>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPMin32(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPMin<32>(code, ctx, inst);
+    EmitFPMinMax<32, false>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPMin64(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPMin<64>(code, ctx, inst);
+    EmitFPMinMax<64, false>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPMinNumeric32(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp<32>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
-        Xbyak::Label normal, normal_or_equal, result_is_result;
-
-        code.ucomiss(result, operand);
-        code.jnp(normal_or_equal);
-        // If operand == QNaN, result = result.
-        code.movd(scratch.cvt32(), operand);
-        code.shl(scratch.cvt32(), 1);
-        code.cmp(scratch.cvt32(), 0xff800000u);
-        code.jae(result_is_result);
-        // If operand == SNaN, let usual NaN code handle it.
-        code.cmp(scratch.cvt32(), 0xff000000u);
-        code.ja(normal);
-        // If result == SNaN, && operand != NaN, result = result.
-        code.movd(scratch.cvt32(), result);
-        code.shl(scratch.cvt32(), 1);
-        code.cmp(scratch.cvt32(), 0xff800000u);
-        code.jnae(result_is_result);
-        // If result == QNaN && operand != NaN, result = operand.
-        code.movaps(result, operand);
-        code.jmp(end, code.T_NEAR);
-
-        code.L(result_is_result);
-        code.movaps(operand, result);
-        code.jmp(normal);
-
-        code.L(normal_or_equal);
-        code.jnz(normal);
-        code.orps(operand, result);
-        code.L(normal);
-    }, &Xbyak::CodeGenerator::minss, CallDenormalsAreZero::Yes);
+    EmitFPMinMaxNumeric<32, false>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPMinNumeric64(EmitContext& ctx, IR::Inst* inst) {
-    FPThreeOp<64>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm operand, Xbyak::Reg64 scratch, Xbyak::Label& end){
-        Xbyak::Label normal, normal_or_equal, result_is_result;
-
-        code.ucomisd(result, operand);
-        code.jnp(normal_or_equal);
-        // If operand == QNaN, result = result.
-        code.movq(scratch, operand);
-        code.shl(scratch, 1);
-        code.cmp(scratch, code.MConst(qword, 0xfff0'0000'0000'0000u));
-        code.jae(result_is_result);
-        // If operand == SNaN, let usual NaN code handle it.
-        code.cmp(scratch, code.MConst(qword, 0xffe0'0000'0000'0000u));
-        code.ja(normal);
-        // If result == SNaN, && operand != NaN, result = result.
-        code.movq(scratch, result);
-        code.shl(scratch, 1);
-        code.cmp(scratch, code.MConst(qword, 0xfff0'0000'0000'0000u));
-        code.jnae(result_is_result);
-        // If result == QNaN && operand != NaN, result = operand.
-        code.movaps(result, operand);
-        code.jmp(end, code.T_NEAR);
-
-        code.L(result_is_result);
-        code.movaps(operand, result);
-        code.jmp(normal);
-
-        code.L(normal_or_equal);
-        code.jnz(normal);
-        code.orps(operand, result);
-        code.L(normal);
-    }, &Xbyak::CodeGenerator::minsd, CallDenormalsAreZero::Yes);
+    EmitFPMinMaxNumeric<64, false>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPMul32(EmitContext& ctx, IR::Inst* inst) {
