@@ -203,6 +203,17 @@ bool TranslatorVisitor::FABD_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FMULX_vec_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t esize = sz ? 64 : 32;
+
+    const IR::U32U64 operand1 = V_scalar(esize, Vn);
+    const IR::U32U64 operand2 = V_scalar(esize, Vm);
+    const IR::U32U64 result = ir.FPMulX(operand1, operand2);
+
+    V_scalar(esize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FRECPS_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
     const size_t esize = sz ? 64 : 32;
 

@@ -339,7 +339,7 @@ INST(DUP_elt_1,              "DUP (element)",                             "01011
 
 // Data Processing - FP and SIMD - Scalar three
 //INST(FMULX_vec_1,            "FMULX",                                     "01011110010mmmmm000111nnnnnddddd")
-//INST(FMULX_vec_2,            "FMULX",                                     "010111100z1mmmmm110111nnnnnddddd")
+INST(FMULX_vec_2,            "FMULX",                                     "010111100z1mmmmm110111nnnnnddddd")
 //INST(FCMEQ_reg_1,            "FCMEQ (register)",                          "01011110010mmmmm001001nnnnnddddd")
 INST(FCMEQ_reg_2,            "FCMEQ (register)",                          "010111100z1mmmmm111001nnnnnddddd")
 //INST(FRECPS_1,               "FRECPS",                                    "01011110010mmmmm001111nnnnnddddd")
