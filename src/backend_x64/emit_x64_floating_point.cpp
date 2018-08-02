@@ -1028,12 +1028,8 @@ void EmitX64::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
+    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero<32>(code, result, gpr_scratch);
-    }
     code.cvtss2sd(result, result);
     if (ctx.FPSCR_DN()) {
         ForceToDefaultNaN<64>(code, result);
@@ -1044,12 +1040,8 @@ void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
+    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    if (ctx.FPSCR_FTZ()) {
-        DenormalsAreZero<64>(code, result, gpr_scratch);
-    }
     code.cvtsd2ss(result, result);
     if (ctx.FPSCR_DN()) {
         ForceToDefaultNaN<32>(code, result);
