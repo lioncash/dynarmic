@@ -278,6 +278,7 @@ public:
     U32U64 FPMinNumeric(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32U64 FPMul(const U32U64& a, const U32U64& b, bool fpscr_controlled);
     U32U64 FPMulAdd(const U32U64& addend, const U32U64& op1, const U32U64& op2, bool fpscr_controlled);
+    U32U64 FPMulX(const U32U64& a, const U32U64& b);
     U32U64 FPNeg(const U32U64& a);
     U32U64 FPRecipEstimate(const U32U64& a);
     U32U64 FPRecipStepFused(const U32U64& a, const U32U64& b);

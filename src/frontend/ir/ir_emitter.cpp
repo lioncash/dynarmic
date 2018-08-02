@@ -1612,6 +1612,15 @@ U32U64 IREmitter::FPMulAdd(const U32U64& a, const U32U64& b, const U32U64& c, bo
     }
 }
 
+U32U64 IREmitter::FPMulX(const U32U64& a, const U32U64& b) {
+    ASSERT(a.GetType() == b.GetType());
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPMulX32, a, b);
+    } else {
+        return Inst<U64>(Opcode::FPMulX64, a, b);
+    }
+}
+
 U32U64 IREmitter::FPNeg(const U32U64& a) {
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPNeg32, a);

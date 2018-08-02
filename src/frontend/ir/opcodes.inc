@@ -421,6 +421,8 @@ OPCODE(FPMul32,                                 T::U32,         T::U32,         
 OPCODE(FPMul64,                                 T::U64,         T::U64,         T::U64                          )
 OPCODE(FPMulAdd32,                              T::U32,         T::U32,         T::U32,         T::U32          )
 OPCODE(FPMulAdd64,                              T::U64,         T::U64,         T::U64,         T::U64          )
+OPCODE(FPMulX32,                                T::U32,         T::U32,         T::U32                          )
+OPCODE(FPMulX64,                                T::U64,         T::U64,         T::U64                          )
 OPCODE(FPNeg32,                                 T::U32,         T::U32                                          )
 OPCODE(FPNeg64,                                 T::U64,         T::U64                                          )
 OPCODE(FPRecipEstimate32,                       T::U32,         T::U32                                          )
