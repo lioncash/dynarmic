@@ -123,31 +123,32 @@ void HandleNaNs(BlockOfCode& code, EmitContext& ctx, std::array<Xbyak::Xmm, narg
     code.SwitchToNearCode();
 }
 
+template<size_t fsize, u64 value>
+Xbyak::Address GetVectorOf(BlockOfCode& code) {
+    if constexpr (fsize == 32) {
+        return code.MConst(xword, (value << 32) | value, (value << 32) | value);
+    } else {
+        return code.MConst(xword, value, value);
+    }
+}
+
 template<size_t fsize>
 Xbyak::Address GetNaNVector(BlockOfCode& code) {
-    if constexpr (fsize == 32) {
-        return code.MConst(xword, 0x7fc0'0000'7fc0'0000, 0x7fc0'0000'7fc0'0000);
-    } else {
-        return code.MConst(xword, 0x7ff8'0000'0000'0000, 0x7ff8'0000'0000'0000);
-    }
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+    return GetVectorOf<fsize, FP::FPInfo<FPT>::DefaultNaN()>(code);
 }
 
 template<size_t fsize>
 Xbyak::Address GetNegativeZeroVector(BlockOfCode& code) {
-    if constexpr (fsize == 32) {
-        return code.MConst(xword, 0x8000'0000'8000'0000, 0x8000'0000'8000'0000);
-    } else {
-        return code.MConst(xword, 0x8000'0000'0000'0000, 0x8000'0000'0000'0000);
-    }
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+    return GetVectorOf<fsize, FP::FPInfo<FPT>::Zero(true)>(code);
 }
 
 template<size_t fsize>
 Xbyak::Address GetSmallestNormalVector(BlockOfCode& code) {
-    if constexpr (fsize == 32) {
-        return code.MConst(xword, 0x0080'0000'0080'0000, 0x0080'0000'0080'0000);
-    } else {
-        return code.MConst(xword, 0x0010'0000'0000'0000, 0x0010'0000'0000'0000);
-    }
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+    constexpr FPT smallest_normal_number = FP::FPValue<FPT, false, FP::FPInfo<FPT>::exponent_min, FP::FPInfo<FPT>::implicit_leading_bit>();
+    return GetVectorOf<fsize, smallest_normal_number>(code);
 }
 
 template<size_t fsize>
