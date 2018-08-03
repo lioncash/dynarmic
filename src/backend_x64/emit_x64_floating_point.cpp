@@ -242,63 +242,6 @@ void EmitPostProcessNaNs(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm op1, X
     code.jmp(end, code.T_NEAR);
 }
 
-// Do full NaN processing.
-template<size_t fsize>
-void EmitProcessNaNs(BlockOfCode& code, Xbyak::Xmm result, Xbyak::Xmm op1, Xbyak::Xmm op2, Xbyak::Reg64 tmp, Xbyak::Label end) {
-    using FPT = mp::unsigned_integer_of_size<fsize>;
-    constexpr FPT exponent_mask = FP::FPInfo<FPT>::exponent_mask;
-    constexpr FPT mantissa_msb = FP::FPInfo<FPT>::mantissa_msb;
-    constexpr u8 mantissa_msb_bit = static_cast<u8>(FP::FPInfo<FPT>::explicit_mantissa_width - 1);
-
-    Xbyak::Label return_sum;
-
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-        code.vxorps(xmm0, op1, op2);
-    } else {
-        code.movaps(xmm0, op1);
-        code.xorps(xmm0, op2);
-    }
-
-    constexpr size_t shift = fsize == 32 ? 0 : 48;
-    if constexpr (fsize == 32) {
-        code.movd(tmp.cvt32(), xmm0);
-    } else {
-        code.pextrw(tmp.cvt32(), xmm0, shift / 16);
-    }
-    code.and_(tmp.cvt32(), static_cast<u32>((exponent_mask | mantissa_msb) >> shift));
-    code.cmp(tmp.cvt32(), static_cast<u32>(mantissa_msb >> shift));
-    code.jne(return_sum);
-
-    if constexpr (fsize == 32) {
-        code.movd(tmp.cvt32(), op2);
-        code.shl(tmp.cvt32(), 32 - mantissa_msb_bit);
-    } else {
-        code.movq(tmp, op2);
-        code.shl(tmp, 64 - mantissa_msb_bit);
-    }
-    code.jna(return_sum);
-
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-        code.vorps(result, op2, code.MConst(xword, mantissa_msb));
-    } else {
-        code.movaps(result, op2);
-        code.orps(result, code.MConst(xword, mantissa_msb));
-    }
-    code.jmp(end, code.T_NEAR);
-
-    // x86 behaviour is reliable in this case
-    code.L(return_sum);
-    if (result == op1) {
-        FCODE(adds)(result, op2);
-    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-        FCODE(vadds)(result, op1, op2);
-    } else {
-        code.movaps(result, op1);
-        FCODE(adds)(result, op2);
-    }
-    code.jmp(end, code.T_NEAR);
-}
-
 template <size_t fsize, typename Function>
 void FPTwoOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -440,6 +383,7 @@ static void EmitFPMinMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
 
     const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     const Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
     const Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
     if (ctx.FPSCR_FTZ()) {
@@ -474,7 +418,9 @@ static void EmitFPMinMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
         code.movaps(result, code.MConst(xword, fsize == 32 ? f32_nan : f64_nan));
         code.jmp(end);
     } else {
-        EmitProcessNaNs<fsize>(code, result, result, operand, gpr_scratch, end);
+        code.movaps(tmp, result);
+        FCODE(adds)(result, operand);
+        EmitPostProcessNaNs<fsize>(code, result, tmp, operand, gpr_scratch, end);
     }
 
     code.SwitchToNearCode();
