@@ -154,56 +154,56 @@ void A32EmitX64::GenMemoryAccessors() {
     code.align();
     read_memory_8 = code.getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead8).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::MemoryRead8>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     read_memory_16 = code.getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead16).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::MemoryRead16>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     read_memory_32 = code.getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead32).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::MemoryRead32>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     read_memory_64 = code.getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryRead64).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::MemoryRead64>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     write_memory_8 = code.getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite8).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::MemoryWrite8>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     write_memory_16 = code.getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite16).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::MemoryWrite16>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     write_memory_32 = code.getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite32).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::MemoryWrite32>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 
     code.align();
     write_memory_64 = code.getCurr<const void*>();
     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::MemoryWrite64).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::MemoryWrite64>(config.callbacks).EmitCall(code);
     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, ABI_RETURN);
     code.ret();
 }
@@ -605,12 +605,12 @@ void A32EmitX64::EmitA32CallSupervisor(A32EmitContext& ctx, IR::Inst* inst) {
     code.SwitchMxcsrOnExit();
     code.mov(code.ABI_PARAM2, qword[r15 + offsetof(A32JitState, cycles_to_run)]);
     code.sub(code.ABI_PARAM2, qword[r15 + offsetof(A32JitState, cycles_remaining)]);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::AddTicks).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::AddTicks>(config.callbacks).EmitCall(code);
     ctx.reg_alloc.EndOfAllocScope();
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0]);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::CallSVC).EmitCall(code);
-    DEVIRT(config.callbacks, &A32::UserCallbacks::GetTicksRemaining).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::CallSVC>(config.callbacks).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::GetTicksRemaining>(config.callbacks).EmitCall(code);
     code.mov(qword[r15 + offsetof(A32JitState, cycles_to_run)], code.ABI_RETURN);
     code.mov(qword[r15 + offsetof(A32JitState, cycles_remaining)], code.ABI_RETURN);
     code.SwitchMxcsrOnEntry();
@@ -622,7 +622,7 @@ void A32EmitX64::EmitA32ExceptionRaised(A32EmitContext& ctx, IR::Inst* inst) {
     ASSERT(args[0].IsImmediate() && args[1].IsImmediate());
     u32 pc = args[0].GetImmediateU32();
     u64 exception = args[1].GetImmediateU64();
-    DEVIRT(config.callbacks, &A32::UserCallbacks::ExceptionRaised).EmitCall(code, [&](RegList param) {
+    Devirtualize<&A32::UserCallbacks::ExceptionRaised>(config.callbacks).EmitCall(code, [&](RegList param) {
         code.mov(param[0], pc);
         code.mov(param[1], exception);
     });
@@ -691,7 +691,7 @@ static void ReadMemory(BlockOfCode& code, RegAlloc& reg_alloc, IR::Inst* inst, c
 
     if (!config.page_table) {
         reg_alloc.HostCall(inst, {}, args[0]);
-        DEVIRT(config.callbacks, raw_fn).EmitCall(code);
+        Devirtualize<raw_fn>(config.callbacks).EmitCall(code);
         return;
     }
 
@@ -744,7 +744,7 @@ static void WriteMemory(BlockOfCode& code, RegAlloc& reg_alloc, IR::Inst* inst, 
 
     if (!config.page_table) {
         reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
-        DEVIRT(config.callbacks, raw_fn).EmitCall(code);
+        Devirtualize<raw_fn>(config.callbacks).EmitCall(code);
         return;
     }
 
@@ -848,7 +848,7 @@ static void ExclusiveWrite(BlockOfCode& code, RegAlloc& reg_alloc, IR::Inst* ins
         code.shl(code.ABI_PARAM4, 32);
         code.or_(code.ABI_PARAM3, code.ABI_PARAM4);
     }
-    DEVIRT(config.callbacks, fn).EmitCall(code);
+    Devirtualize<fn>(config.callbacks).EmitCall(code);
     code.xor_(passed, passed);
     code.L(end);
 
@@ -1143,7 +1143,7 @@ void A32EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDesc
     code.mov(code.ABI_PARAM3.cvt32(), 1);
     code.mov(MJitStateReg(A32::Reg::PC), code.ABI_PARAM2.cvt32());
     code.SwitchMxcsrOnExit();
-    DEVIRT(config.callbacks, &A32::UserCallbacks::InterpreterFallback).EmitCall(code);
+    Devirtualize<&A32::UserCallbacks::InterpreterFallback>(config.callbacks).EmitCall(code);
     code.ReturnFromRunCode(true); // TODO: Check cycles
 }
 

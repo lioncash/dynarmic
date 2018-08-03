@@ -140,16 +140,17 @@ void A64EmitX64::GenMemory128Accessors() {
     code.align();
     memory_read_128 = code.getCurr<void(*)()>();
 #ifdef _WIN32
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCallWithReturnPointer(code, [&](Xbyak::Reg64 return_value_ptr, RegList args) {
-        code.mov(code.ABI_PARAM3, code.ABI_PARAM2);
-        code.sub(rsp, 8 + 16 + ABI_SHADOW_SPACE);
-        code.lea(return_value_ptr, ptr[rsp + ABI_SHADOW_SPACE]);
-    });
+    Devirtualize<&A64::UserCallbacks::MemoryRead128>(conf.callbacks).EmitCallWithReturnPointer(code,
+        [&](Xbyak::Reg64 return_value_ptr, RegList args) {
+            code.mov(code.ABI_PARAM3, code.ABI_PARAM2);
+            code.sub(rsp, 8 + 16 + ABI_SHADOW_SPACE);
+            code.lea(return_value_ptr, ptr[rsp + ABI_SHADOW_SPACE]);
+        });
     code.movups(xmm1, xword[code.ABI_RETURN]);
     code.add(rsp, 8 + 16 + ABI_SHADOW_SPACE);
 #else
     code.sub(rsp, 8);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead128).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryRead128>(conf.callbacks).EmitCall(code);
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         code.movq(xmm1, code.ABI_RETURN);
         code.pinsrq(xmm1, code.ABI_RETURN2, 1);
@@ -168,7 +169,7 @@ void A64EmitX64::GenMemory128Accessors() {
     code.sub(rsp, 8 + 16 + ABI_SHADOW_SPACE);
     code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE]);
     code.movaps(xword[code.ABI_PARAM3], xmm1);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryWrite128>(conf.callbacks).EmitCall(code);
     code.add(rsp, 8 + 16 + ABI_SHADOW_SPACE);
 #else
     code.sub(rsp, 8);
@@ -180,7 +181,7 @@ void A64EmitX64::GenMemory128Accessors() {
         code.punpckhqdq(xmm1, xmm1);
         code.movq(code.ABI_PARAM4, xmm1);
     }
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite128).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryWrite128>(conf.callbacks).EmitCall(code);
     code.add(rsp, 8);
 #endif
     code.ret();
@@ -189,16 +190,16 @@ void A64EmitX64::GenMemory128Accessors() {
 void A64EmitX64::GenFastmemFallbacks() {
     const std::initializer_list<int> idxes{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     const std::vector<std::tuple<size_t, ArgCallback>> read_callbacks {
-        {8, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead8)},
-        {16, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead16)},
-        {32, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead32)},
-        {64, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead64)},
+        {8, Devirtualize<&A64::UserCallbacks::MemoryRead8>(conf.callbacks)},
+        {16, Devirtualize<&A64::UserCallbacks::MemoryRead16>(conf.callbacks)},
+        {32, Devirtualize<&A64::UserCallbacks::MemoryRead32>(conf.callbacks)},
+        {64, Devirtualize<&A64::UserCallbacks::MemoryRead64>(conf.callbacks)},
     };
     const std::vector<std::tuple<size_t, ArgCallback>> write_callbacks {
-        {8, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite8)},
-        {16, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite16)},
-        {32, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite32)},
-        {64, DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite64)},
+        {8, Devirtualize<&A64::UserCallbacks::MemoryWrite8>(conf.callbacks)},
+        {16, Devirtualize<&A64::UserCallbacks::MemoryWrite16>(conf.callbacks)},
+        {32, Devirtualize<&A64::UserCallbacks::MemoryWrite32>(conf.callbacks)},
+        {64, Devirtualize<&A64::UserCallbacks::MemoryWrite64>(conf.callbacks)},
     };
 
     for (int vaddr_idx : idxes) {
@@ -502,9 +503,10 @@ void A64EmitX64::EmitA64CallSupervisor(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ASSERT(args[0].IsImmediate());
     u32 imm = args[0].GetImmediateU32();
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::CallSVC).EmitCall(code, [&](RegList param) {
-        code.mov(param[0], imm);
-    });
+    Devirtualize<&A64::UserCallbacks::CallSVC>(conf.callbacks).EmitCall(code,
+        [&](RegList param) {
+            code.mov(param[0], imm);
+        });
     // The kernel would have to execute ERET to get here, which would clear exclusive state.
     code.mov(code.byte[r15 + offsetof(A64JitState, exclusive_state)], u8(0));
 }
@@ -515,16 +517,17 @@ void A64EmitX64::EmitA64ExceptionRaised(A64EmitContext& ctx, IR::Inst* inst) {
     ASSERT(args[0].IsImmediate() && args[1].IsImmediate());
     u64 pc = args[0].GetImmediateU64();
     u64 exception = args[1].GetImmediateU64();
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::ExceptionRaised).EmitCall(code, [&](RegList param) {
-        code.mov(param[0], pc);
-        code.mov(param[1], exception);
-    });
+    Devirtualize<&A64::UserCallbacks::ExceptionRaised>(conf.callbacks).EmitCall(code,
+        [&](RegList param) {
+            code.mov(param[0], pc);
+            code.mov(param[1], exception);
+        });
 }
 
 void A64EmitX64::EmitA64DataCacheOperationRaised(A64EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, args[0], args[1]);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::DataCacheOperationRaised).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::DataCacheOperationRaised>(conf.callbacks).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64DataSynchronizationBarrier(A64EmitContext&, IR::Inst*) {
@@ -538,7 +541,7 @@ void A64EmitX64::EmitA64DataMemoryBarrier(A64EmitContext&, IR::Inst*) {
 void A64EmitX64::EmitA64GetCNTPCT(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.HostCall(inst);
     code.UpdateTicks();
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::GetCNTPCT).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::GetCNTPCT>(conf.callbacks).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64GetCTR(A64EmitContext& ctx, IR::Inst* inst) {
@@ -719,7 +722,7 @@ void A64EmitX64::EmitA64ReadMemory8(A64EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, {}, args[0]);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead8).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryRead8>(conf.callbacks).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64ReadMemory16(A64EmitContext& ctx, IR::Inst* inst) {
@@ -730,7 +733,7 @@ void A64EmitX64::EmitA64ReadMemory16(A64EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, {}, args[0]);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead16).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryRead16>(conf.callbacks).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64ReadMemory32(A64EmitContext& ctx, IR::Inst* inst) {
@@ -741,7 +744,7 @@ void A64EmitX64::EmitA64ReadMemory32(A64EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, {}, args[0]);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead32).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryRead32>(conf.callbacks).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64ReadMemory64(A64EmitContext& ctx, IR::Inst* inst) {
@@ -752,7 +755,7 @@ void A64EmitX64::EmitA64ReadMemory64(A64EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, {}, args[0]);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryRead64).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryRead64>(conf.callbacks).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
@@ -791,7 +794,7 @@ void A64EmitX64::EmitA64WriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite8).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryWrite8>(conf.callbacks).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64WriteMemory16(A64EmitContext& ctx, IR::Inst* inst) {
@@ -802,7 +805,7 @@ void A64EmitX64::EmitA64WriteMemory16(A64EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite16).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryWrite16>(conf.callbacks).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64WriteMemory32(A64EmitContext& ctx, IR::Inst* inst) {
@@ -813,7 +816,7 @@ void A64EmitX64::EmitA64WriteMemory32(A64EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite32).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryWrite32>(conf.callbacks).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64WriteMemory64(A64EmitContext& ctx, IR::Inst* inst) {
@@ -824,7 +827,7 @@ void A64EmitX64::EmitA64WriteMemory64(A64EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(nullptr, {}, args[0], args[1]);
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::MemoryWrite64).EmitCall(code);
+    Devirtualize<&A64::UserCallbacks::MemoryWrite64>(conf.callbacks).EmitCall(code);
 }
 
 void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
@@ -979,11 +982,12 @@ void A64EmitX64::EmitA64ExclusiveWriteMemory128(A64EmitContext& ctx, IR::Inst* i
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::Interpret terminal, IR::LocationDescriptor) {
     code.SwitchMxcsrOnExit();
-    DEVIRT(conf.callbacks, &A64::UserCallbacks::InterpreterFallback).EmitCall(code, [&](RegList param) {
-        code.mov(param[0], A64::LocationDescriptor{terminal.next}.PC());
-        code.mov(qword[r15 + offsetof(A64JitState, pc)], param[0]);
-        code.mov(param[1].cvt32(), terminal.num_instructions);
-    });
+    Devirtualize<&A64::UserCallbacks::InterpreterFallback>(conf.callbacks).EmitCall(code,
+        [&](RegList param) {
+            code.mov(param[0], A64::LocationDescriptor{terminal.next}.PC());
+            code.mov(qword[r15 + offsetof(A64JitState, pc)], param[0]);
+            code.mov(param[1].cvt32(), terminal.num_instructions);
+        });
     code.ReturnFromRunCode(true); // TODO: Check cycles
 }
 

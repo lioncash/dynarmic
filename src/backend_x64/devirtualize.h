@@ -32,19 +32,19 @@ struct ThunkBuilder<R(C::*)(Args...), mfp> {
 
 } // namespace impl
 
-template <typename FunctionType, FunctionType mfp>
-ArgCallback DevirtualizeGeneric(Common::mp::class_type_t<FunctionType>* this_) {
-    return ArgCallback{&impl::ThunkBuilder<FunctionType, mfp>::Thunk, reinterpret_cast<u64>(this_)};
+template<auto mfp>
+ArgCallback DevirtualizeGeneric(Common::mp::class_type_t<decltype(mfp)>* this_) {
+    return ArgCallback{&impl::ThunkBuilder<decltype(mfp), mfp>::Thunk, reinterpret_cast<u64>(this_)};
 }
 
-template <typename FunctionType, FunctionType mfp>
-ArgCallback DevirtualizeWindows(Common::mp::class_type_t<FunctionType>* this_) {
+template<auto mfp>
+ArgCallback DevirtualizeWindows(Common::mp::class_type_t<decltype(mfp)>* this_) {
     static_assert(sizeof(mfp) == 8);
     return ArgCallback{Common::BitCast<u64>(mfp), reinterpret_cast<u64>(this_)};
 }
 
-template <typename FunctionType, FunctionType mfp>
-ArgCallback DevirtualizeItanium(Common::mp::class_type_t<FunctionType>* this_) {
+template<auto mfp>
+ArgCallback DevirtualizeItanium(Common::mp::class_type_t<decltype(mfp)>* this_) {
     struct MemberFunctionPointer {
         /// For a non-virtual function, this is a simple function pointer.
         /// For a virtual function, it is (1 + virtual table offset in bytes).
@@ -65,15 +65,18 @@ ArgCallback DevirtualizeItanium(Common::mp::class_type_t<FunctionType>* this_) {
     return ArgCallback{fn_ptr, this_ptr};
 }
 
+template<auto mfp>
+ArgCallback Devirtualize(Common::mp::class_type_t<decltype(mfp)>* this_) {
 #if defined(__APPLE__) || defined(linux) || defined(__linux) || defined(__linux__)
-#define DEVIRT(this_, mfp) Dynarmic::BackendX64::DevirtualizeItanium<decltype(mfp), mfp>(this_)
+    return DevirtualizeItanium<mfp>(this_);
 #elif defined(__MINGW64__)
-#define DEVIRT(this_, mfp) Dynarmic::BackendX64::DevirtualizeItanium<decltype(mfp), mfp>(this_)
+    return DevirtualizeItanium<mfp>(this_);
 #elif defined(_WIN32)
-#define DEVIRT(this_, mfp) Dynarmic::BackendX64::DevirtualizeWindows<decltype(mfp), mfp>(this_)
+    return DevirtualizeWindows<mfp>(this_);
 #else
-#define DEVIRT(this_, mfp) Dynarmic::BackendX64::DevirtualizeGeneric<decltype(mfp), mfp>(this_)
+    return DevirtualizeGeneric<mfp>(this_);
 #endif
+}
 
 } // namespace BackendX64
 } // namespace Dynarmic

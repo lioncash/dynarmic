@@ -29,8 +29,8 @@ using namespace BackendX64;
 static RunCodeCallbacks GenRunCodeCallbacks(A64::UserCallbacks* cb, CodePtr (*LookupBlock)(void* lookup_block_arg), void* arg) {
     return RunCodeCallbacks{
         std::make_unique<ArgCallback>(LookupBlock, reinterpret_cast<u64>(arg)),
-        std::make_unique<ArgCallback>(DEVIRT(cb, &A64::UserCallbacks::AddTicks)),
-        std::make_unique<ArgCallback>(DEVIRT(cb, &A64::UserCallbacks::GetTicksRemaining)),
+        std::make_unique<ArgCallback>(Devirtualize<&A64::UserCallbacks::AddTicks>(cb)),
+        std::make_unique<ArgCallback>(Devirtualize<&A64::UserCallbacks::GetTicksRemaining>(cb)),
     };
 }
 
