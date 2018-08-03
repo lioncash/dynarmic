@@ -566,15 +566,15 @@ void EmitX64::EmitFPVectorGreaterEqual64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, b);
 }
 
-template<size_t fsize>
-static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+template<size_t fsize, bool is_max>
+static void EmitFPVectorMinMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     if (ctx.FPSCR_DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
         const Xbyak::Xmm xmm_b = ctx.FPSCR_FTZ() ? ctx.reg_alloc.UseScratchXmm(args[1]) : ctx.reg_alloc.UseXmm(args[1]);
 
         const Xbyak::Xmm mask = xmm0;
-        const Xbyak::Xmm anded = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm eq = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
 
         DenormalsAreZero<fsize>(code, ctx, {result, xmm_b}, mask);
@@ -582,22 +582,32 @@ static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
         if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
             FCODE(vcmpeqp)(mask, result, xmm_b);
             FCODE(vcmpunordp)(nan_mask, result, xmm_b);
-            FCODE(vandp)(anded, result, xmm_b);
-            FCODE(vmaxp)(result, result, xmm_b);
-            FCODE(blendvp)(result, anded);
+            if constexpr (is_max) {
+                FCODE(vandp)(eq, result, xmm_b);
+                FCODE(vmaxp)(result, result, xmm_b);
+            } else {
+                FCODE(vorp)(eq, result, xmm_b);
+                FCODE(vminp)(result, result, xmm_b);
+            }
+            FCODE(blendvp)(result, eq);
             FCODE(vblendvp)(result, result, GetNaNVector<fsize>(code), nan_mask);
         } else {
             code.movaps(mask, result);
-            code.movaps(anded, result);
+            code.movaps(eq, result);
             code.movaps(nan_mask, result);
             FCODE(cmpneqp)(mask, xmm_b);
             FCODE(cmpordp)(nan_mask, xmm_b);
 
-            code.andps(anded, xmm_b);
-            FCODE(maxp)(result, xmm_b);
+            if constexpr (is_max) {
+                code.andps(eq, xmm_b);
+                FCODE(maxp)(result, xmm_b);
+            } else {
+                code.orps(eq, xmm_b);
+                FCODE(minp)(result, xmm_b);
+            }
 
             code.andps(result, mask);
-            code.andnps(mask, anded);
+            code.andnps(mask, eq);
             code.orps(result, mask);
 
             code.andps(result, nan_mask);
@@ -612,7 +622,7 @@ static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
 
     EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, Xbyak::Xmm xmm_b){
         const Xbyak::Xmm mask = xmm0;
-        const Xbyak::Xmm anded = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm eq = ctx.reg_alloc.ScratchXmm();
 
         if (ctx.FPSCR_FTZ()) {
             const Xbyak::Xmm prev_xmm_b = xmm_b;
@@ -627,117 +637,48 @@ static void EmitFPVectorMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst)
 
         if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
             FCODE(vcmpeqp)(mask, result, xmm_b);
-            FCODE(vandp)(anded, result, xmm_b);
-            FCODE(vmaxp)(result, result, xmm_b);
-            FCODE(blendvp)(result, anded);
+            if constexpr (is_max) {
+                FCODE(vandp)(eq, result, xmm_b);
+                FCODE(vmaxp)(result, result, xmm_b);
+            } else {
+                FCODE(vorp)(eq, result, xmm_b);
+                FCODE(vminp)(result, result, xmm_b);
+            }
+            FCODE(blendvp)(result, eq);
         } else {
             code.movaps(mask, result);
-            code.movaps(anded, result);
+            code.movaps(eq, result);
             FCODE(cmpneqp)(mask, xmm_b);
 
-            code.andps(anded, xmm_b);
-            FCODE(maxp)(result, xmm_b);
+            if constexpr (is_max) {
+                code.andps(eq, xmm_b);
+                FCODE(maxp)(result, xmm_b);
+            } else {
+                code.orps(eq, xmm_b);
+                FCODE(minp)(result, xmm_b);
+            }
 
             code.andps(result, mask);
-            code.andnps(mask, anded);
+            code.andnps(mask, eq);
             code.orps(result, mask);
         }
     });
 }
 
 void EmitX64::EmitFPVectorMax32(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPVectorMax<32>(code, ctx, inst);
+    EmitFPVectorMinMax<32, true>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPVectorMax64(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPVectorMax<64>(code, ctx, inst);
-}
-
-template<size_t fsize>
-static void EmitFPVectorMin(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
-    if (ctx.FPSCR_DN()) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-        const Xbyak::Xmm xmm_b = ctx.FPSCR_FTZ() ? ctx.reg_alloc.UseScratchXmm(args[1]) : ctx.reg_alloc.UseXmm(args[1]);
-
-        const Xbyak::Xmm mask = xmm0;
-        const Xbyak::Xmm ored = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
-
-        DenormalsAreZero<fsize>(code, ctx, {result, xmm_b}, mask);
-
-        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-            FCODE(vcmpeqp)(mask, result, xmm_b);
-            FCODE(vcmpunordp)(nan_mask, result, xmm_b);
-            FCODE(vorp)(ored, result, xmm_b);
-            FCODE(vminp)(result, result, xmm_b);
-            FCODE(blendvp)(result, ored);
-            FCODE(vblendvp)(result, result, GetNaNVector<fsize>(code), nan_mask);
-        } else {
-            code.movaps(mask, result);
-            code.movaps(ored, result);
-            code.movaps(nan_mask, result);
-            FCODE(cmpneqp)(mask, xmm_b);
-            FCODE(cmpordp)(nan_mask, xmm_b);
-
-            code.orps(ored, xmm_b);
-            FCODE(minp)(result, xmm_b);
-
-            code.andps(result, mask);
-            code.andnps(mask, ored);
-            code.orps(result, mask);
-
-            code.andps(result, nan_mask);
-            code.andnps(nan_mask, GetNaNVector<fsize>(code));
-            code.orps(result, nan_mask);
-        }
-
-        ctx.reg_alloc.DefineValue(inst, result);
-
-        return;
-    }
-
-    EmitThreeOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, Xbyak::Xmm xmm_b){
-        const Xbyak::Xmm mask = xmm0;
-        const Xbyak::Xmm ored = ctx.reg_alloc.ScratchXmm();
-
-        if (ctx.FPSCR_FTZ()) {
-            const Xbyak::Xmm prev_xmm_b = xmm_b;
-            xmm_b = ctx.reg_alloc.ScratchXmm();
-            code.movaps(xmm_b, prev_xmm_b);
-            DenormalsAreZero<fsize>(code, ctx, {result, xmm_b}, mask);
-        }
-
-        // What we are doing here is handling the case when the inputs are differently signed zeros.
-        // x86-64 treats differently signed zeros as equal while ARM does not.
-        // Thus if we OR together things that x86-64 thinks are equal we'll get the negative zero.
-
-        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-            FCODE(vcmpeqp)(mask, result, xmm_b);
-            FCODE(vorp)(ored, result, xmm_b);
-            FCODE(vminp)(result, result, xmm_b);
-            FCODE(blendvp)(result, ored);
-        } else {
-            code.movaps(mask, result);
-            code.movaps(ored, result);
-            FCODE(cmpneqp)(mask, xmm_b);
-
-            code.orps(ored, xmm_b);
-            FCODE(minp)(result, xmm_b);
-
-            code.andps(result, mask);
-            code.andnps(mask, ored);
-            code.orps(result, mask);
-        }
-    });
+    EmitFPVectorMinMax<64, true>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPVectorMin32(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPVectorMin<32>(code, ctx, inst);
+    EmitFPVectorMinMax<32, false>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPVectorMin64(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPVectorMin<64>(code, ctx, inst);
+    EmitFPVectorMinMax<64, false>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPVectorMul32(EmitContext& ctx, IR::Inst* inst) {
