@@ -6,6 +6,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 #include <fmt/ostream.h>
 
@@ -75,7 +76,7 @@ bool A32EmitContext::FPSCR_DN() const {
 }
 
 A32EmitX64::A32EmitX64(BlockOfCode& code, A32::UserConfig config, A32::Jit* jit_interface)
-    : EmitX64(code), config(config), jit_interface(jit_interface)
+    : EmitX64(code), config(std::move(config)), jit_interface(jit_interface)
 {
     GenMemoryAccessors();
     code.PreludeComplete();
