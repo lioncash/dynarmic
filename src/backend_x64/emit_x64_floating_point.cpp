@@ -711,7 +711,7 @@ static void EmitFPMulX(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm op1 = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Xmm op2 = ctx.reg_alloc.UseXmm(args[1]);
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-    const Xbyak::Reg32 tmp = do_default_nan ? INVALID_REG.cvt32() : ctx.reg_alloc.ScratchGpr().cvt32();
+    const Xbyak::Reg64 tmp = do_default_nan ? INVALID_REG : ctx.reg_alloc.ScratchGpr();
 
     Xbyak::Label end, nan, op_are_nans;
 
@@ -743,50 +743,7 @@ static void EmitFPMulX(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
         code.movaps(result, code.MConst(xword, FP::FPInfo<FPT>::DefaultNaN()));
         code.jmp(end, code.T_NEAR);
     } else {
-        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-            code.vxorps(xmm0, op1, op2);
-        } else {
-            code.movaps(xmm0, op1);
-            code.xorps(xmm0, op2);
-        }
-
-        constexpr FPT exponent_mask = FP::FPInfo<FPT>::exponent_mask;
-        constexpr FPT mantissa_msb = FP::FPInfo<FPT>::mantissa_msb;
-        constexpr u8 mantissa_msb_bit = static_cast<u8>(FP::FPInfo<FPT>::explicit_mantissa_width - 1);
-        constexpr size_t shift = fsize == 32 ? 0 : 48;
-
-        if constexpr (fsize == 32) {
-            code.movd(tmp, xmm0);
-        } else {
-            code.pextrw(tmp, xmm0, shift / 16);
-        }
-        code.and_(tmp, static_cast<u32>((exponent_mask | mantissa_msb) >> shift));
-        code.cmp(tmp, static_cast<u32>(mantissa_msb >> shift));
-        code.jne(end, code.T_NEAR); // (op1 != NaN || op2 != NaN) OR (op1 == SNaN && op2 == SNaN) OR (op1 == QNaN && op2 == QNaN) OR (op1 == SNaN && op2 == Inf) OR (op1 == Inf && op2 == SNaN)
-
-        // If we're here there are four cases left:
-        // op1 == SNaN && op2 == QNaN
-        // op1 == Inf  && op2 == QNaN
-        // op1 == QNaN && op2 == SNaN <<< The problematic case
-        // op1 == QNaN && op2 == Inf
-
-        if constexpr (fsize == 32) {
-            code.movd(tmp, op2);
-            code.shl(tmp, 32 - mantissa_msb_bit);
-        } else {
-            code.movq(tmp.cvt64(), op2);
-            code.shl(tmp.cvt64(), 64 - mantissa_msb_bit);
-        }
-        // If op2 is a SNaN, CF = 0 and ZF = 0.
-        code.jna(end, code.T_NEAR);
-
-        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-            code.vorps(result, op2, code.MConst(xword, mantissa_msb));
-        } else {
-            code.movaps(result, op2);
-            code.orps(result, code.MConst(xword, mantissa_msb));
-        }
-        code.jmp(end, code.T_NEAR);
+        EmitPostProcessNaNs<fsize>(code, result, op1, op2, tmp, end);
     }
     code.SwitchToNearCode();
 
