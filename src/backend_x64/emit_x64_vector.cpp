@@ -1578,14 +1578,20 @@ void EmitX64::EmitVectorNarrow16(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitVectorNarrow32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
 
     // TODO: AVX512F implementation
 
     code.pxor(zeros, zeros);
-    code.pand(a, code.MConst(xword, 0x0000FFFF0000FFFF, 0x0000FFFF0000FFFF));
-    code.packusdw(a, zeros);
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pand(a, code.MConst(xword, 0x0000FFFF0000FFFF, 0x0000FFFF0000FFFF));
+        code.packusdw(a, zeros);
+    } else {
+        code.pslld(a, 16);
+        code.psrad(a, 16);
+        code.packssdw(a, zeros);
+    }
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
@@ -2523,7 +2529,8 @@ static void EmitVectorSignedSaturatedNarrowToUnsigned(size_t original_esize, Blo
         code.punpcklbw(reconstructed, zero);
         break;
     case 32:
-        code.packusdw(dest, dest);
+        ASSERT(code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41));
+        code.packusdw(dest, dest); // SSE4.1
         code.movdqa(reconstructed, dest);
         code.punpcklwd(reconstructed, zero);
         break;
