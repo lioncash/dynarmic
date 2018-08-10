@@ -1585,7 +1585,7 @@ void EmitX64::EmitVectorNarrow32(EmitContext& ctx, IR::Inst* inst) {
 
     code.pxor(zeros, zeros);
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        code.pand(a, code.MConst(xword, 0x0000FFFF0000FFFF, 0x0000FFFF0000FFFF));
+        code.pblendw(a, zeros, 0b10101010);
         code.packusdw(a, zeros);
     } else {
         code.pslld(a, 16);
