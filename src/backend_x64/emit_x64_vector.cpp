@@ -1564,10 +1564,19 @@ void EmitX64::EmitVectorMultiply64(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitVectorNarrow16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
 
-    // TODO: AVX512F implementation
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512BW)) {
+        const Xbyak::Xmm a = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+
+        code.vpmovwb(result, a);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
 
     code.pxor(zeros, zeros);
     code.pand(a, code.MConst(xword, 0x00FF00FF00FF00FF, 0x00FF00FF00FF00FF));
