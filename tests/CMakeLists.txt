@@ -26,8 +26,6 @@ add_executable(dynarmic_tests
     A32/test_thumb_instructions.cpp
     A32/testenv.h
     A64/a64.cpp
-    A64/inst_gen.cpp
-    A64/inst_gen.h
     A64/testenv.h
     cpu_info.cpp
     fp/FPToFixed.cpp
@@ -42,6 +40,8 @@ if (DYNARMIC_TESTS_USE_UNICORN)
     target_sources(dynarmic_tests PRIVATE
         A64/fuzz_with_unicorn.cpp
         A64/verify_unicorn.cpp
+        fuzz_util.cpp
+        fuzz_util.h
         unicorn_emu/a32_unicorn.cpp
         unicorn_emu/a32_unicorn.h
         unicorn_emu/a64_unicorn.cpp

@@ -4,11 +4,18 @@
  * General Public License version 2 or any later version.
  */
 
-#include <algorithm>
-#include <cstring>
-#include <vector>
+#pragma once
+
+#include <array>
+#include <iosfwd>
 
 #include "common/common_types.h"
+
+using Vector = std::array<u64, 2>;
+
+std::ostream& operator<<(std::ostream& o, Vector vec);
+Vector RandomVector();
+u32 RandomFpcr();
 
 struct InstructionGenerator final {
 public:
@@ -19,18 +26,7 @@ public:
     u32 Mask() const { return mask; }
     bool Match(u32 inst) const { return (inst & mask) == bits; }
 
-    static void AddInvalidInstruction(const char* format) {
-        invalid_instructions.emplace_back(InstructionGenerator{format});
-    }
-
-    static bool IsInvalidInstruction(u32 inst) {
-        return std::any_of(invalid_instructions.begin(), invalid_instructions.end(),
-                           [inst](const auto& invalid) { return invalid.Match(inst); });
-    }
-
 private:
-    static inline std::vector<InstructionGenerator> invalid_instructions;
-
     u32 bits = 0;
     u32 mask = 0;
 };

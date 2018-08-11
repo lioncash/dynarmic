@@ -11,6 +11,7 @@
 
 #include <catch.hpp>
 
+#include "common/common_types.h"
 #include "common/fp/fpcr.h"
 #include "common/fp/fpsr.h"
 #include "common/llvm_disassemble.h"
@@ -20,34 +21,16 @@
 #include "frontend/A64/translate/translate.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/opcodes.h"
-#include "inst_gen.h"
+#include "fuzz_util.h"
 #include "rand_int.h"
 #include "testenv.h"
 #include "unicorn_emu/a64_unicorn.h"
 
-// Needs to be declaerd before <fmt/ostream.h>
-static std::ostream& operator<<(std::ostream& o, const Dynarmic::A64::Vector& vec) {
-    return o << fmt::format("{:016x}'{:016x}", vec[1], vec[0]);
-}
-
+// Must be declared last for all necessary operator<< to be declared prior to this.
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
 using namespace Dynarmic;
-
-static Vector RandomVector() {
-    return {RandInt<u64>(0, ~u64(0)), RandInt<u64>(0, ~u64(0))};
-}
-
-static u32 RandomFpcr() {
-    FP::FPCR fpcr;
-    fpcr.AHP(RandInt(0, 1) == 0);
-    fpcr.DN(RandInt(0, 1) == 0);
-    fpcr.FZ(RandInt(0, 1) == 0);
-    fpcr.RMode(static_cast<FP::RoundingMode>(RandInt(0, 3)));
-    fpcr.FZ16(RandInt(0, 1) == 0);
-    return fpcr.Value();
-}
 
 static bool ShouldTestInst(u32 instruction, u64 pc, bool is_last_inst) {
     const A64::LocationDescriptor location{pc, {}};
@@ -72,14 +55,18 @@ static bool ShouldTestInst(u32 instruction, u64 pc, bool is_last_inst) {
 }
 
 static u32 GenRandomInst(u64 pc, bool is_last_inst) {
-    static const std::vector<InstructionGenerator> instruction_generators = []{
+    static const struct InstructionGeneratorInfo {
+        std::vector<InstructionGenerator> generators;
+        std::vector<InstructionGenerator> invalid;
+    } instructions = []{
         const std::vector<std::tuple<std::string, const char*>> list {
 #define INST(fn, name, bitstring) {#fn, bitstring},
 #include "frontend/A64/decoder/a64.inc"
 #undef INST
         };
 
-        std::vector<InstructionGenerator> result;
+        std::vector<InstructionGenerator> generators;
+        std::vector<InstructionGenerator> invalid;
 
         // List of instructions not to test
         const std::vector<std::string> do_not_test {
@@ -98,20 +85,23 @@ static u32 GenRandomInst(u64 pc, bool is_last_inst) {
                 continue;
             }
             if (std::find(do_not_test.begin(), do_not_test.end(), fn) != do_not_test.end()) {
-                InstructionGenerator::AddInvalidInstruction(bitstring);
+                invalid.emplace_back(InstructionGenerator{bitstring});
                 continue;
             }
-            result.emplace_back(InstructionGenerator{bitstring});
+            generators.emplace_back(InstructionGenerator{bitstring});
         }
-        return result;
+        return InstructionGeneratorInfo{generators, invalid};
     }();
 
     while (true) {
-        const size_t index = RandInt<size_t>(0, instruction_generators.size() - 1);
-        const u32 instruction = instruction_generators[index].Generate();
+        const size_t index = RandInt<size_t>(0, instructions.generators.size() - 1);
+        const u32 inst = instructions.generators[index].Generate();
 
-        if (ShouldTestInst(instruction, pc, is_last_inst)) {
-            return instruction;
+        if (std::any_of(instructions.invalid.begin(), instructions.invalid.end(), [inst](const auto& invalid) { return invalid.Match(inst); })) {
+            continue;
+        }
+        if (ShouldTestInst(inst, pc, is_last_inst)) {
+            return inst;
         }
     }
 }
@@ -156,11 +146,17 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
     }
 }
 
-static void RunTestInstance(const A64Unicorn::RegisterArray& regs, const A64Unicorn::VectorArray& vecs, const size_t instructions_start,
-                            const std::vector<u32>& instructions, const u32 pstate, const u32 fpcr) {
-    static A64TestEnv jit_env{};
-    static A64TestEnv uni_env{};
+static Dynarmic::A64::UserConfig GetUserConfig(A64TestEnv& jit_env) {
+    Dynarmic::A64::UserConfig jit_user_config{&jit_env};
+    // The below corresponds to the settings for qemu's aarch64_max_initfn
+    jit_user_config.dczid_el0 = 7;
+    jit_user_config.ctr_el0 = 0x80038003;
+    return jit_user_config;
+}
 
+static void RunTestInstance(Dynarmic::A64::Jit& jit, A64Unicorn& uni, A64TestEnv& jit_env, A64TestEnv& uni_env,
+                            const A64Unicorn::RegisterArray& regs, const A64Unicorn::VectorArray& vecs, const size_t instructions_start,
+                            const std::vector<u32>& instructions, const u32 pstate, const u32 fpcr) {
     jit_env.code_mem = instructions;
     uni_env.code_mem = instructions;
     jit_env.code_mem.emplace_back(0x14000000); // B .
@@ -171,14 +167,6 @@ static void RunTestInstance(const A64Unicorn::RegisterArray& regs, const A64Unic
     uni_env.modified_memory.clear();
     jit_env.interrupts.clear();
     uni_env.interrupts.clear();
-
-    Dynarmic::A64::UserConfig jit_user_config{&jit_env};
-    // The below corresponds to the settings for qemu's aarch64_max_initfn
-    jit_user_config.dczid_el0 = 7;
-    jit_user_config.ctr_el0 = 0x80038003;
-
-    static Dynarmic::A64::Jit jit{jit_user_config};
-    static A64Unicorn uni{uni_env};
 
     const u64 initial_sp = RandInt<u64>(0x30'0000'0000, 0x40'0000'0000) * 4;
 
@@ -283,6 +271,12 @@ static void RunTestInstance(const A64Unicorn::RegisterArray& regs, const A64Unic
 }
 
 TEST_CASE("A64: Single random instruction", "[a64]") {
+    A64TestEnv jit_env{};
+    A64TestEnv uni_env{};
+
+    Dynarmic::A64::Jit jit{GetUserConfig(jit_env)};
+    A64Unicorn uni{uni_env};
+
     A64Unicorn::RegisterArray regs;
     A64Unicorn::VectorArray vecs;
     std::vector<u32> instructions(1);
@@ -299,11 +293,17 @@ TEST_CASE("A64: Single random instruction", "[a64]") {
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
-        RunTestInstance(regs, vecs, start_address, instructions, pstate, fpcr);
+        RunTestInstance(jit, uni, jit_env, uni_env, regs, vecs, start_address, instructions, pstate, fpcr);
     }
 }
 
 TEST_CASE("A64: Floating point instructions", "[a64]") {
+    A64TestEnv jit_env{};
+    A64TestEnv uni_env{};
+
+    Dynarmic::A64::Jit jit{GetUserConfig(jit_env)};
+    A64Unicorn uni{uni_env};
+
     static constexpr std::array<u64, 80> float_numbers {
         0x00000000, // positive zero
         0x00000001, // smallest positive denormal
@@ -415,11 +415,17 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
 
         INFO("Instruction: 0x" << std::hex << instructions[0]);
 
-        RunTestInstance(regs, vecs, start_address, instructions, pstate, fpcr);
+        RunTestInstance(jit, uni, jit_env, uni_env, regs, vecs, start_address, instructions, pstate, fpcr);
     }
 }
 
 TEST_CASE("A64: Small random block", "[a64]") {
+    A64TestEnv jit_env{};
+    A64TestEnv uni_env{};
+
+    Dynarmic::A64::Jit jit{GetUserConfig(jit_env)};
+    A64Unicorn uni{uni_env};
+
     A64Unicorn::RegisterArray regs;
     A64Unicorn::VectorArray vecs;
     std::vector<u32> instructions(5);
@@ -444,6 +450,6 @@ TEST_CASE("A64: Small random block", "[a64]") {
         INFO("Instruction 4: 0x" << std::hex << instructions[3]);
         INFO("Instruction 5: 0x" << std::hex << instructions[4]);
 
-        RunTestInstance(regs, vecs, start_address, instructions, pstate, fpcr);
+        RunTestInstance(jit, uni, jit_env, uni_env, regs, vecs, start_address, instructions, pstate, fpcr);
     }
 }
