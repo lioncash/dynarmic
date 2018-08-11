@@ -454,7 +454,7 @@ bool ArmTranslatorVisitor::arm_LDRSH_reg(Cond cond, bool P, bool U, bool W, Reg 
 }
 
 bool ArmTranslatorVisitor::arm_STR_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm12 imm12) {
-    if (W && (n == Reg::PC || n == t))
+    if ((!P || W) && (n == Reg::PC || n == t))
         return UnpredictableInstruction();
 
     // STR <Rt>, [<Rn>, #+/-<imm>]{!}
@@ -471,7 +471,7 @@ bool ArmTranslatorVisitor::arm_STR_reg(Cond cond, bool P, bool U, bool W, Reg n,
     if (m == Reg::PC)
         return UnpredictableInstruction();
 
-    if (W && (n == Reg::PC || n == t))
+    if ((!P || W) && (n == Reg::PC || n == t))
         return UnpredictableInstruction();
 
     // STR <Rt>, [<Rn>, #+/-<Rm>]{!}
@@ -488,7 +488,7 @@ bool ArmTranslatorVisitor::arm_STRB_imm(Cond cond, bool P, bool U, bool W, Reg n
     if (t == Reg::PC)
         return UnpredictableInstruction();
 
-    if (W && (n == Reg::PC || n == t))
+    if ((!P || W) && (n == Reg::PC || n == t))
         return UnpredictableInstruction();
 
     // STRB <Rt>, [<Rn>, #+/-<imm>]{!}
@@ -505,7 +505,7 @@ bool ArmTranslatorVisitor::arm_STRB_reg(Cond cond, bool P, bool U, bool W, Reg n
     if (t == Reg::PC || m == Reg::PC)
         return UnpredictableInstruction();
 
-    if (W && (n == Reg::PC || n == t))
+    if ((!P || W) && (n == Reg::PC || n == t))
         return UnpredictableInstruction();
 
     // STRB <Rt>, [<Rn>, #+/-<Rm>]{!}
@@ -527,7 +527,7 @@ bool ArmTranslatorVisitor::arm_STRD_imm(Cond cond, bool P, bool U, bool W, Reg n
     const u32 imm32 = imm8a << 4 | imm8b;
     const Reg t2 = t + 1;
 
-    if (W && (n == Reg::PC || n == t || n == t2))
+    if ((!P || W) && (n == Reg::PC || n == t || n == t2))
         return UnpredictableInstruction();
     if (t2 == Reg::PC)
         return UnpredictableInstruction();
@@ -556,7 +556,7 @@ bool ArmTranslatorVisitor::arm_STRD_reg(Cond cond, bool P, bool U, bool W, Reg n
 
     if (t2 == Reg::PC || m == Reg::PC)
         return UnpredictableInstruction();
-    if (W && (n == Reg::PC || n == t || n == t2))
+    if ((!P || W) && (n == Reg::PC || n == t || n == t2))
         return UnpredictableInstruction();
 
     // STRD <Rt>, [<Rn>, #+/-<Rm>]{!}
@@ -576,7 +576,7 @@ bool ArmTranslatorVisitor::arm_STRD_reg(Cond cond, bool P, bool U, bool W, Reg n
 bool ArmTranslatorVisitor::arm_STRH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b) {
     if (t == Reg::PC)
         return UnpredictableInstruction();
-    if (W && (n == Reg::PC || n == t))
+    if ((!P || W) && (n == Reg::PC || n == t))
         return UnpredictableInstruction();
 
     const u32 imm32 = imm8a << 4 | imm8b;
@@ -594,7 +594,7 @@ bool ArmTranslatorVisitor::arm_STRH_imm(Cond cond, bool P, bool U, bool W, Reg n
 bool ArmTranslatorVisitor::arm_STRH_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m) {
     if (t == Reg::PC || m == Reg::PC)
         return UnpredictableInstruction();
-    if (W && (n == Reg::PC || n == t))
+    if ((!P || W) && (n == Reg::PC || n == t))
         return UnpredictableInstruction();
 
     // STRH <Rt>, [<Rn>, #+/-<Rm>]{!}
