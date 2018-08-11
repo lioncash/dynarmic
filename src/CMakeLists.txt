@@ -74,9 +74,11 @@ add_library(dynarmic
     common/u128.h
     common/variant_util.h
     frontend/A32/decoder/arm.h
+    frontend/A32/decoder/arm.inc
     frontend/A32/decoder/thumb16.h
     frontend/A32/decoder/thumb32.h
     frontend/A32/decoder/vfp2.h
+    frontend/A32/decoder/vfp2.inc
     frontend/A32/disassembler/disassembler.h
     frontend/A32/disassembler/disassembler_arm.cpp
     frontend/A32/disassembler/disassembler_thumb.cpp
