@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include <fmt/ostream.h>
+
 #include "common/assert.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/opcodes.h"
@@ -485,15 +487,15 @@ size_t Inst::NumArgs() const {
 }
 
 Value Inst::GetArg(size_t index) const {
-    ASSERT(index < GetNumArgsOf(op));
-    ASSERT(!args[index].IsEmpty());
+    ASSERT_MSG(index < GetNumArgsOf(op), "Inst::GetArg: index {} >= number of arguments of {} ({})", index, op, GetNumArgsOf(op));
+    ASSERT_MSG(!args[index].IsEmpty(), "Inst::GetArg: index {} is empty", index);
 
     return args[index];
 }
 
 void Inst::SetArg(size_t index, Value value) {
-    ASSERT(index < GetNumArgsOf(op));
-    ASSERT(AreTypesCompatible(value.GetType(), GetArgTypeOf(op, index)));
+    ASSERT_MSG(index < GetNumArgsOf(op), "Inst::SetArg: index {} >= number of arguments of {} ({})", index, op, GetNumArgsOf(op));
+    ASSERT_MSG(AreTypesCompatible(value.GetType(), GetArgTypeOf(op, index)), "Inst::SetArg: type {} of argument {} not compatible with operation {} ({})", value.GetType(), index, op, GetArgTypeOf(op, index));
 
     if (!args[index].IsImmediate()) {
         UndoUse(args[index]);
