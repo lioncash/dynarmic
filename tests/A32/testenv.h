@@ -25,6 +25,7 @@ public:
     bool code_mem_modified_by_guest = false;
     std::array<InstructionType, 2048> code_mem{};
     std::map<u32, u8> modified_memory;
+    std::vector<std::string> interrupts;
 
     std::uint32_t MemoryReadCode(u32 vaddr) override {
         const size_t index = vaddr / sizeof(InstructionType);

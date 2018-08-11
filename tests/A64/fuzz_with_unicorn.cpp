@@ -23,7 +23,7 @@
 #include "inst_gen.h"
 #include "rand_int.h"
 #include "testenv.h"
-#include "unicorn_emu/unicorn.h"
+#include "unicorn_emu/a64_unicorn.h"
 
 // Needs to be declaerd before <fmt/ostream.h>
 static std::ostream& operator<<(std::ostream& o, const Dynarmic::A64::Vector& vec) {
@@ -156,10 +156,10 @@ static u32 GenFloatInst(u64 pc, bool is_last_inst) {
     }
 }
 
-static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::VectorArray& vecs, const size_t instructions_start,
+static void RunTestInstance(const A64Unicorn::RegisterArray& regs, const A64Unicorn::VectorArray& vecs, const size_t instructions_start,
                             const std::vector<u32>& instructions, const u32 pstate, const u32 fpcr) {
-    static TestEnv jit_env{};
-    static TestEnv uni_env{};
+    static A64TestEnv jit_env{};
+    static A64TestEnv uni_env{};
 
     jit_env.code_mem = instructions;
     uni_env.code_mem = instructions;
@@ -178,7 +178,7 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
     jit_user_config.ctr_el0 = 0x80038003;
 
     static Dynarmic::A64::Jit jit{jit_user_config};
-    static Unicorn uni{uni_env};
+    static A64Unicorn uni{uni_env};
 
     const u64 initial_sp = RandInt<u64>(0x30'0000'0000, 0x40'0000'0000) * 4;
 
@@ -283,8 +283,8 @@ static void RunTestInstance(const Unicorn::RegisterArray& regs, const Unicorn::V
 }
 
 TEST_CASE("A64: Single random instruction", "[a64]") {
-    Unicorn::RegisterArray regs;
-    Unicorn::VectorArray vecs;
+    A64Unicorn::RegisterArray regs;
+    A64Unicorn::VectorArray vecs;
     std::vector<u32> instructions(1);
 
     for (size_t iteration = 0; iteration < 100000; ++iteration) {
@@ -399,8 +399,8 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
         return Vector{lower, upper};
     };
 
-    Unicorn::RegisterArray regs;
-    Unicorn::VectorArray vecs;
+    A64Unicorn::RegisterArray regs;
+    A64Unicorn::VectorArray vecs;
     std::vector<u32> instructions(1);
 
     for (size_t iteration = 0; iteration < 100000; ++iteration) {
@@ -420,8 +420,8 @@ TEST_CASE("A64: Floating point instructions", "[a64]") {
 }
 
 TEST_CASE("A64: Small random block", "[a64]") {
-    Unicorn::RegisterArray regs;
-    Unicorn::VectorArray vecs;
+    A64Unicorn::RegisterArray regs;
+    A64Unicorn::VectorArray vecs;
     std::vector<u32> instructions(5);
 
     for (size_t iteration = 0; iteration < 100000; ++iteration) {

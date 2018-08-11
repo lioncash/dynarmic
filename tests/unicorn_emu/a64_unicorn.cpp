@@ -5,7 +5,7 @@
  */
 
 #include "common/assert.h"
-#include "unicorn.h"
+#include "a64_unicorn.h"
 
 #define CHECKED(expr)                                                                              \
     do {                                                                                           \
@@ -18,7 +18,7 @@
 constexpr u64 BEGIN_ADDRESS = 0;
 constexpr u64 END_ADDRESS = ~u64(0);
 
-Unicorn::Unicorn(TestEnv& testenv) : testenv(testenv) {
+A64Unicorn::A64Unicorn(A64TestEnv& testenv) : testenv(testenv) {
     CHECKED(uc_open(UC_ARCH_ARM64, UC_MODE_ARM, &uc));
     u64 fpv = 3 << 20;
     CHECKED(uc_reg_write(uc, UC_ARM64_REG_CPACR_EL1, &fpv));
@@ -27,14 +27,14 @@ Unicorn::Unicorn(TestEnv& testenv) : testenv(testenv) {
     CHECKED(uc_hook_add(uc, &mem_write_prot_hook, UC_HOOK_MEM_WRITE, (void*)MemoryWriteHook, this, BEGIN_ADDRESS, END_ADDRESS));
 }
 
-Unicorn::~Unicorn() {
+A64Unicorn::~A64Unicorn() {
     ClearPageCache();
     CHECKED(uc_hook_del(uc, intr_hook));
     CHECKED(uc_hook_del(uc, mem_invalid_hook));
     CHECKED(uc_close(uc));
 }
 
-void Unicorn::Run() {
+void A64Unicorn::Run() {
     while (testenv.ticks_left > 0) {
         CHECKED(uc_emu_start(uc, GetPC(), END_ADDRESS, 0, 1));
         testenv.ticks_left--;
@@ -44,33 +44,33 @@ void Unicorn::Run() {
     }
 }
 
-u64 Unicorn::GetSP() const {
+u64 A64Unicorn::GetSP() const {
     u64 sp;
     CHECKED(uc_reg_read(uc, UC_ARM64_REG_SP, &sp));
     return sp;
 }
-void Unicorn::SetSP(u64 value) {
+void A64Unicorn::SetSP(u64 value) {
     CHECKED(uc_reg_write(uc, UC_ARM64_REG_SP, &value));
 }
 
-u64 Unicorn::GetPC() const {
+u64 A64Unicorn::GetPC() const {
     u64 pc;
     CHECKED(uc_reg_read(uc, UC_ARM64_REG_PC, &pc));
     return pc;
 }
 
-void Unicorn::SetPC(u64 value) {
+void A64Unicorn::SetPC(u64 value) {
     CHECKED(uc_reg_write(uc, UC_ARM64_REG_PC, &value));
 }
 
-constexpr std::array<int, Unicorn::num_gprs> gpr_ids{
+constexpr std::array<int, A64Unicorn::num_gprs> gpr_ids{
     UC_ARM64_REG_X0, UC_ARM64_REG_X1, UC_ARM64_REG_X2, UC_ARM64_REG_X3, UC_ARM64_REG_X4, UC_ARM64_REG_X5, UC_ARM64_REG_X6, UC_ARM64_REG_X7,
     UC_ARM64_REG_X8, UC_ARM64_REG_X9, UC_ARM64_REG_X10, UC_ARM64_REG_X11, UC_ARM64_REG_X12, UC_ARM64_REG_X13, UC_ARM64_REG_X14, UC_ARM64_REG_X15,
     UC_ARM64_REG_X16, UC_ARM64_REG_X17, UC_ARM64_REG_X18, UC_ARM64_REG_X19, UC_ARM64_REG_X20, UC_ARM64_REG_X21, UC_ARM64_REG_X22, UC_ARM64_REG_X23,
     UC_ARM64_REG_X24, UC_ARM64_REG_X25, UC_ARM64_REG_X26, UC_ARM64_REG_X27, UC_ARM64_REG_X28, UC_ARM64_REG_X29, UC_ARM64_REG_X30
 };
 
-Unicorn::RegisterArray Unicorn::GetRegisters() const {
+A64Unicorn::RegisterArray A64Unicorn::GetRegisters() const {
     RegisterArray regs;
     RegisterPtrArray ptrs;
     for (size_t i = 0; i < ptrs.size(); ++i)
@@ -81,7 +81,7 @@ Unicorn::RegisterArray Unicorn::GetRegisters() const {
     return regs;
 }
 
-void Unicorn::SetRegisters(const RegisterArray& value) {
+void A64Unicorn::SetRegisters(const RegisterArray& value) {
     RegisterConstPtrArray ptrs;
     for (size_t i = 0; i < ptrs.size(); ++i)
         ptrs[i] = &value[i];
@@ -90,14 +90,14 @@ void Unicorn::SetRegisters(const RegisterArray& value) {
                                reinterpret_cast<void**>(const_cast<u64**>(ptrs.data())), num_gprs));
 }
 
-constexpr std::array<int, Unicorn::num_vecs> vec_ids{
+constexpr std::array<int, A64Unicorn::num_vecs> vec_ids{
     UC_ARM64_REG_Q0, UC_ARM64_REG_Q1, UC_ARM64_REG_Q2, UC_ARM64_REG_Q3, UC_ARM64_REG_Q4, UC_ARM64_REG_Q5, UC_ARM64_REG_Q6, UC_ARM64_REG_Q7,
     UC_ARM64_REG_Q8, UC_ARM64_REG_Q9, UC_ARM64_REG_Q10, UC_ARM64_REG_Q11, UC_ARM64_REG_Q12, UC_ARM64_REG_Q13, UC_ARM64_REG_Q14, UC_ARM64_REG_Q15,
     UC_ARM64_REG_Q16, UC_ARM64_REG_Q17, UC_ARM64_REG_Q18, UC_ARM64_REG_Q19, UC_ARM64_REG_Q20, UC_ARM64_REG_Q21, UC_ARM64_REG_Q22, UC_ARM64_REG_Q23,
     UC_ARM64_REG_Q24, UC_ARM64_REG_Q25, UC_ARM64_REG_Q26, UC_ARM64_REG_Q27, UC_ARM64_REG_Q28, UC_ARM64_REG_Q29, UC_ARM64_REG_Q30, UC_ARM64_REG_Q31
 };
 
-Unicorn::VectorArray Unicorn::GetVectors() const {
+A64Unicorn::VectorArray A64Unicorn::GetVectors() const {
     VectorArray vecs;
     VectorPtrArray ptrs;
     for (size_t i = 0; i < ptrs.size(); ++i)
@@ -109,7 +109,7 @@ Unicorn::VectorArray Unicorn::GetVectors() const {
     return vecs;
 }
 
-void Unicorn::SetVectors(const VectorArray& value) {
+void A64Unicorn::SetVectors(const VectorArray& value) {
     VectorConstPtrArray ptrs;
     for (size_t i = 0; i < ptrs.size(); ++i)
         ptrs[i] = &value[i];
@@ -118,44 +118,44 @@ void Unicorn::SetVectors(const VectorArray& value) {
                                reinterpret_cast<void* const *>(const_cast<Vector**>(ptrs.data())), num_vecs));
 }
 
-u32 Unicorn::GetFpcr() const {
+u32 A64Unicorn::GetFpcr() const {
     u32 fpcr;
     CHECKED(uc_reg_read(uc, UC_ARM64_REG_FPCR, &fpcr));
     return fpcr;
 }
 
-void Unicorn::SetFpcr(u32 value) {
+void A64Unicorn::SetFpcr(u32 value) {
     CHECKED(uc_reg_write(uc, UC_ARM64_REG_FPCR, &value));
 }
 
-u32 Unicorn::GetFpsr() const {
+u32 A64Unicorn::GetFpsr() const {
     u32 fpsr;
     CHECKED(uc_reg_read(uc, UC_ARM64_REG_FPSR, &fpsr));
     return fpsr;
 }
 
-void Unicorn::SetFpsr(u32 value) {
+void A64Unicorn::SetFpsr(u32 value) {
     CHECKED(uc_reg_write(uc, UC_ARM64_REG_FPSR, &value));
 }
 
-u32 Unicorn::GetPstate() const {
+u32 A64Unicorn::GetPstate() const {
     u32 pstate;
     CHECKED(uc_reg_read(uc, UC_ARM64_REG_NZCV, &pstate));
     return pstate;
 }
 
-void Unicorn::SetPstate(u32 value) {
+void A64Unicorn::SetPstate(u32 value) {
     CHECKED(uc_reg_write(uc, UC_ARM64_REG_NZCV, &value));
 }
 
-void Unicorn::ClearPageCache() {
+void A64Unicorn::ClearPageCache() {
     for (const auto& page : pages) {
         CHECKED(uc_mem_unmap(uc, page->address, 4096));
     }
     pages.clear();
 }
 
-void Unicorn::DumpMemoryInformation() {
+void A64Unicorn::DumpMemoryInformation() {
     uc_mem_region* regions;
     u32 count;
     CHECKED(uc_mem_regions(uc, &regions, &count));
@@ -167,8 +167,8 @@ void Unicorn::DumpMemoryInformation() {
     CHECKED(uc_free(regions));
 }
 
-void Unicorn::InterruptHook(uc_engine* uc, u32 int_number, void* user_data) {
-    auto* this_ = static_cast<Unicorn*>(user_data);
+void A64Unicorn::InterruptHook(uc_engine* uc, u32 int_number, void* user_data) {
+    auto* this_ = static_cast<A64Unicorn*>(user_data);
 
     u32 esr;
     CHECKED(uc_reg_read(uc, UC_ARM64_REG_ESR, &esr));
@@ -186,8 +186,8 @@ void Unicorn::InterruptHook(uc_engine* uc, u32 int_number, void* user_data) {
     }
 }
 
-bool Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 start_address, int size, u64 /*value*/, void* user_data) {
-    auto* this_ = static_cast<Unicorn*>(user_data);
+bool A64Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 start_address, int size, u64 /*value*/, void* user_data) {
+    auto* this_ = static_cast<A64Unicorn*>(user_data);
 
     const auto generate_page = [&](u64 base_address) {
         // printf("generate_page(%" PRIx64 ")\n", base_address);
@@ -229,8 +229,8 @@ bool Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 start_
     return true;
 }
 
-bool Unicorn::MemoryWriteHook(uc_engine* /*uc*/, uc_mem_type /*type*/, u64 start_address, int size, u64 value, void* user_data) {
-    auto* this_ = static_cast<Unicorn*>(user_data);
+bool A64Unicorn::MemoryWriteHook(uc_engine* /*uc*/, uc_mem_type /*type*/, u64 start_address, int size, u64 value, void* user_data) {
+    auto* this_ = static_cast<A64Unicorn*>(user_data);
 
     switch (size) {
     case 1:

@@ -12,9 +12,9 @@
 #include <unicorn/unicorn.h>
 
 #include "common/common_types.h"
-#include "../testenv.h"
+#include "A64/testenv.h"
 
-class Unicorn final {
+class A64Unicorn final {
 public:
     static constexpr size_t num_gprs = 31;
     using RegisterArray = std::array<u64, num_gprs>;
@@ -26,8 +26,8 @@ public:
     using VectorPtrArray = std::array<VectorArray::pointer, num_vecs>;
     using VectorConstPtrArray = std::array<VectorArray::const_pointer, num_vecs>;
 
-    explicit Unicorn(TestEnv& testenv);
-    ~Unicorn();
+    explicit A64Unicorn(A64TestEnv& testenv);
+    ~A64Unicorn();
 
     void Run();
 
@@ -66,7 +66,7 @@ private:
         std::array<u8, 4096> data;
     };
 
-    TestEnv& testenv;
+    A64TestEnv& testenv;
     uc_engine* uc{};
     uc_hook intr_hook{};
     uc_hook mem_invalid_hook{};

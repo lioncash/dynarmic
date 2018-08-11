@@ -11,7 +11,7 @@
 #include "testenv.h"
 
 TEST_CASE("A64: ADD", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x8b020020); // ADD X0, X1, X2
@@ -32,7 +32,7 @@ TEST_CASE("A64: ADD", "[a64]") {
 }
 
 TEST_CASE("A64: REV", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0xdac00c00); // REV X0, X0
@@ -52,7 +52,7 @@ TEST_CASE("A64: REV", "[a64]") {
 }
 
 TEST_CASE("A64: REV32", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0xdac00800); // REV32 X0, X0
@@ -68,7 +68,7 @@ TEST_CASE("A64: REV32", "[a64]") {
 }
 
 TEST_CASE("A64: REV16", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0xdac00400); // REV16 X0, X0
@@ -88,7 +88,7 @@ TEST_CASE("A64: REV16", "[a64]") {
 }
 
 TEST_CASE("A64: AND", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x8a020020); // AND X0, X1, X2
@@ -109,7 +109,7 @@ TEST_CASE("A64: AND", "[a64]") {
 }
 
 TEST_CASE("A64: Bitmasks", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x3200c3e0); // ORR W0, WZR, #0x01010101
@@ -129,7 +129,7 @@ TEST_CASE("A64: Bitmasks", "[a64]") {
 }
 
 TEST_CASE("A64: ANDS NZCV", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x6a020020); // ANDS W0, W1, W2
@@ -184,7 +184,7 @@ TEST_CASE("A64: ANDS NZCV", "[a64]") {
 }
 
 TEST_CASE("A64: CBZ", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x34000060); // 0x00 : CBZ X0, label
@@ -217,7 +217,7 @@ TEST_CASE("A64: CBZ", "[a64]") {
 }
 
 TEST_CASE("A64: TBZ", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x36180060); // 0x00 : TBZ X0, 3, label
@@ -261,7 +261,7 @@ TEST_CASE("A64: TBZ", "[a64]") {
 }
 
 TEST_CASE("A64: FABD", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x6eb5d556); // FABD.4S V22, V10, V21
@@ -278,7 +278,7 @@ TEST_CASE("A64: FABD", "[a64]") {
 }
 
 TEST_CASE("A64: 128-bit exclusive read/write", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::ExclusiveMonitor monitor{1};
 
     Dynarmic::A64::UserConfig conf;
@@ -315,7 +315,7 @@ TEST_CASE("A64: 128-bit exclusive read/write", "[a64]") {
 }
 
 TEST_CASE("A64: CNTPCT_EL0", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0xd53be021); // MRS X1, CNTPCT_EL0
@@ -336,7 +336,7 @@ TEST_CASE("A64: CNTPCT_EL0", "[a64]") {
 }
 
 TEST_CASE("A64: FNMSUB 1", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x1f618a9c); // FNMSUB D28, D20, D1, D2
@@ -354,7 +354,7 @@ TEST_CASE("A64: FNMSUB 1", "[a64]") {
 }
 
 TEST_CASE("A64: FNMSUB 2", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x1f2ab88e); // FNMSUB S14, S4, S10, S14
@@ -373,7 +373,7 @@ TEST_CASE("A64: FNMSUB 2", "[a64]") {
 }
 
 TEST_CASE("A64: FMADD", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x1f5e0e4a); // FMADD D10, D18, D30, D3
@@ -392,7 +392,7 @@ TEST_CASE("A64: FMADD", "[a64]") {
 }
 
 TEST_CASE("A64: FMLA.4S (denormal)", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x4e2fcccc); // FMLA.4S V12, V6, V15
@@ -411,7 +411,7 @@ TEST_CASE("A64: FMLA.4S (denormal)", "[a64]") {
 }
 
 TEST_CASE("A64: FMLA.4S (0x80800000)", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
     Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
 
     env.code_mem.emplace_back(0x4e38cc2b); // FMLA.4S V11, V1, V24

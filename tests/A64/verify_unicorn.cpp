@@ -10,24 +10,24 @@
 
 #include "rand_int.h"
 #include "testenv.h"
-#include "unicorn_emu/unicorn.h"
+#include "unicorn_emu/a64_unicorn.h"
 
 using namespace Dynarmic;
 
 TEST_CASE("Unicorn: Sanity test", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
 
     env.code_mem.emplace_back(0x8b020020); // ADD X0, X1, X2
     env.code_mem.emplace_back(0x14000000); // B .
 
-    constexpr Unicorn::RegisterArray regs{
+    constexpr A64Unicorn::RegisterArray regs{
         0, 1, 2, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0
     };
 
-    Unicorn unicorn{env};
+    A64Unicorn unicorn{env};
 
     unicorn.SetRegisters(regs);
     unicorn.SetPC(0);
@@ -42,15 +42,15 @@ TEST_CASE("Unicorn: Sanity test", "[a64]") {
 }
 
 TEST_CASE("Unicorn: Ensure 0xFFFF'FFFF'FFFF'FFFF is readable", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
 
     env.code_mem.emplace_back(0x385fed99); // LDRB W25, [X12, #0xfffffffffffffffe]!
     env.code_mem.emplace_back(0x14000000); // B .
 
-    Unicorn::RegisterArray regs{};
+    A64Unicorn::RegisterArray regs{};
     regs[12] = 1;
 
-    Unicorn unicorn{env};
+    A64Unicorn unicorn{env};
 
     unicorn.SetRegisters(regs);
     unicorn.SetPC(0);
@@ -62,15 +62,15 @@ TEST_CASE("Unicorn: Ensure 0xFFFF'FFFF'FFFF'FFFF is readable", "[a64]") {
 }
 
 TEST_CASE("Unicorn: Ensure is able to read across page boundaries", "[a64]") {
-    TestEnv env;
+    A64TestEnv env;
 
     env.code_mem.emplace_back(0xb85f93d9); // LDUR W25, [X30, #0xfffffffffffffff9]
     env.code_mem.emplace_back(0x14000000); // B .
 
-    Unicorn::RegisterArray regs{};
+    A64Unicorn::RegisterArray regs{};
     regs[30] = 4;
 
-    Unicorn unicorn{env};
+    A64Unicorn unicorn{env};
 
     unicorn.SetRegisters(regs);
     unicorn.SetPC(0);

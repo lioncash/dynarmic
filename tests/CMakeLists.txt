@@ -41,10 +41,12 @@ add_executable(dynarmic_tests
 if (DYNARMIC_TESTS_USE_UNICORN)
     target_sources(dynarmic_tests PRIVATE
         A64/fuzz_with_unicorn.cpp
-        A64/unicorn_emu/unicorn.cpp
-        A64/unicorn_emu/unicorn.h
-        A64/unicorn_emu/unicorn_load.cpp
         A64/verify_unicorn.cpp
+        unicorn_emu/a32_unicorn.cpp
+        unicorn_emu/a32_unicorn.h
+        unicorn_emu/a64_unicorn.cpp
+        unicorn_emu/a64_unicorn.h
+        unicorn_emu/unicorn_load.cpp
     )
     target_link_libraries(dynarmic_tests PRIVATE Unicorn::Unicorn)
 endif()
