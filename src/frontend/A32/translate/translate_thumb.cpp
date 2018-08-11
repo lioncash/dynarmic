@@ -851,13 +851,17 @@ enum class ThumbInstSize {
     Thumb16, Thumb32
 };
 
+bool IsThumb16(u16 first_part) {
+    return (first_part & 0xF800) <= 0xE800;
+}
+
 std::tuple<u32, ThumbInstSize> ReadThumbInstruction(u32 arm_pc, MemoryReadCodeFuncType memory_read_code) {
     u32 first_part = memory_read_code(arm_pc & 0xFFFFFFFC);
     if ((arm_pc & 0x2) != 0)
         first_part >>= 16;
     first_part &= 0xFFFF;
 
-    if ((first_part & 0xF800) <= 0xE800) {
+    if (IsThumb16(static_cast<u16>(first_part))) {
         // 16-bit thumb instruction
         return std::make_tuple(first_part, ThumbInstSize::Thumb16);
     }
@@ -882,28 +886,23 @@ IR::Block TranslateThumb(LocationDescriptor descriptor, MemoryReadCodeFuncType m
     bool should_continue = true;
     while (should_continue) {
         const u32 arm_pc = visitor.ir.current_location.PC();
-
-        u32 thumb_instruction;
-        ThumbInstSize inst_size;
-        std::tie(thumb_instruction, inst_size) = ReadThumbInstruction(arm_pc, memory_read_code);
+        const auto [thumb_instruction, inst_size] = ReadThumbInstruction(arm_pc, memory_read_code);
 
         if (inst_size == ThumbInstSize::Thumb16) {
-            auto decoder = DecodeThumb16<ThumbTranslatorVisitor>(static_cast<u16>(thumb_instruction));
-            if (decoder) {
+            if (const auto decoder = DecodeThumb16<ThumbTranslatorVisitor>(static_cast<u16>(thumb_instruction))) {
                 should_continue = decoder->call(visitor, static_cast<u16>(thumb_instruction));
             } else {
                 should_continue = visitor.thumb16_UDF();
             }
         } else {
-            auto decoder = DecodeThumb32<ThumbTranslatorVisitor>(thumb_instruction);
-            if (decoder) {
+            if (const auto decoder = DecodeThumb32<ThumbTranslatorVisitor>(thumb_instruction)) {
                 should_continue = decoder->call(visitor, thumb_instruction);
             } else {
                 should_continue = visitor.thumb32_UDF();
             }
         }
 
-        s32 advance_pc = (inst_size == ThumbInstSize::Thumb16) ? 2 : 4;
+        const s32 advance_pc = (inst_size == ThumbInstSize::Thumb16) ? 2 : 4;
         visitor.ir.current_location = visitor.ir.current_location.AdvancePC(advance_pc);
         block.CycleCount()++;
     }
@@ -911,6 +910,34 @@ IR::Block TranslateThumb(LocationDescriptor descriptor, MemoryReadCodeFuncType m
     block.SetEndLocation(visitor.ir.current_location);
 
     return block;
+}
+
+bool TranslateSingleThumbInstruction(IR::Block& block, LocationDescriptor descriptor, u32 thumb_instruction) {
+    ThumbTranslatorVisitor visitor{block, descriptor};
+
+    const bool is_thumb_16 = IsThumb16(static_cast<u16>(thumb_instruction));
+    bool should_continue = true;
+    if (is_thumb_16) {
+        if (const auto decoder = DecodeThumb16<ThumbTranslatorVisitor>(static_cast<u16>(thumb_instruction))) {
+            should_continue = decoder->call(visitor, static_cast<u16>(thumb_instruction));
+        } else {
+            should_continue = visitor.thumb16_UDF();
+        }
+    } else {
+        if (const auto decoder = DecodeThumb32<ThumbTranslatorVisitor>(thumb_instruction)) {
+            should_continue = decoder->call(visitor, thumb_instruction);
+        } else {
+            should_continue = visitor.thumb32_UDF();
+        }
+    }
+
+    const s32 advance_pc = is_thumb_16 ? 2 : 4;
+    visitor.ir.current_location = visitor.ir.current_location.AdvancePC(advance_pc);
+    block.CycleCount()++;
+
+    block.SetEndLocation(visitor.ir.current_location);
+
+    return should_continue;
 }
 
 } // namepsace Dynarmic::A32

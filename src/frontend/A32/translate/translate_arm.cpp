@@ -37,9 +37,9 @@ IR::Block TranslateArm(LocationDescriptor descriptor, MemoryReadCodeFuncType mem
         const u32 arm_pc = visitor.ir.current_location.PC();
         const u32 arm_instruction = memory_read_code(arm_pc);
 
-        if (auto vfp_decoder = DecodeVFP2<ArmTranslatorVisitor>(arm_instruction)) {
+        if (const auto vfp_decoder = DecodeVFP2<ArmTranslatorVisitor>(arm_instruction)) {
             should_continue = vfp_decoder->call(visitor, arm_instruction);
-        } else if (auto decoder = DecodeArm<ArmTranslatorVisitor>(arm_instruction)) {
+        } else if (const auto decoder = DecodeArm<ArmTranslatorVisitor>(arm_instruction)) {
             should_continue = decoder->call(visitor, arm_instruction);
         } else {
             should_continue = visitor.arm_UDF();
@@ -66,10 +66,38 @@ IR::Block TranslateArm(LocationDescriptor descriptor, MemoryReadCodeFuncType mem
     return block;
 }
 
+bool TranslateSingleArmInstruction(IR::Block& block, LocationDescriptor descriptor, u32 arm_instruction) {
+    ArmTranslatorVisitor visitor{block, descriptor};
+
+    // TODO: Proper cond handling
+
+    bool should_continue = true;
+    if (const auto vfp_decoder = DecodeVFP2<ArmTranslatorVisitor>(arm_instruction)) {
+        should_continue = vfp_decoder->call(visitor, arm_instruction);
+    } else if (const auto decoder = DecodeArm<ArmTranslatorVisitor>(arm_instruction)) {
+        should_continue = decoder->call(visitor, arm_instruction);
+    } else {
+        should_continue = visitor.arm_UDF();
+    }
+
+    // TODO: Feedback resulting cond status to caller somehow.
+
+    visitor.ir.current_location = visitor.ir.current_location.AdvancePC(4);
+    block.CycleCount()++;
+
+    block.SetEndLocation(visitor.ir.current_location);
+
+    return should_continue;
+}
+
 bool ArmTranslatorVisitor::ConditionPassed(Cond cond) {
     ASSERT_MSG(cond_state != ConditionalState::Break,
                "This should never happen. We requested a break but that wasn't honored.");
-    ASSERT_MSG(cond != Cond::NV, "NV conditional is obsolete");
+    if (cond == Cond::NV) {
+        // NV conditional is obsolete
+        ir.ExceptionRaised(Exception::UnpredictableInstruction);
+        return false;
+    }
 
     if (cond_state == ConditionalState::Translating) {
         if (ir.block.ConditionFailedLocation() != ir.current_location || cond == Cond::AL) {

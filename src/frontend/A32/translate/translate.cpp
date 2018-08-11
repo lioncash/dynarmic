@@ -17,4 +17,11 @@ IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory
     return (descriptor.TFlag() ? TranslateThumb : TranslateArm)(descriptor, memory_read_code);
 }
 
+bool TranslateSingleArmInstruction(IR::Block& block, LocationDescriptor descriptor, u32 instruction);
+bool TranslateSingleThumbInstruction(IR::Block& block, LocationDescriptor descriptor, u32 instruction);
+
+bool TranslateSingleInstruction(IR::Block& block, LocationDescriptor descriptor, u32 instruction) {
+    return (descriptor.TFlag() ? TranslateSingleThumbInstruction : TranslateSingleArmInstruction)(block, descriptor, instruction);
+}
+
 } // namespace Dynarmic::A32

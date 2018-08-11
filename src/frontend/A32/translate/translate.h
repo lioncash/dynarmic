@@ -25,4 +25,13 @@ using MemoryReadCodeFuncType = std::function<u32(u32 vaddr)>;
  */
 IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code);
 
+/**
+ * This function translates a single provided instruction into our intermediate representation.
+ * @param block The block to append the IR for the instruction to.
+ * @param descriptor The location of the instruction. Includes information like PC, Thumb state, &c.
+ * @param instruction The instruction to translate.
+ * @return The translated instruction translated to the intermediate representation.
+ */
+bool TranslateSingleInstruction(IR::Block& block, LocationDescriptor descriptor, u32 instruction);
+
 } // namespace Dynarmic::A32
