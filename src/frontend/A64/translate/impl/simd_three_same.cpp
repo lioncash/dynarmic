@@ -8,7 +8,7 @@
 
 namespace Dynarmic::A64 {
 namespace {
-enum class HighNarrowingOp {
+enum class Operation {
     Add,
     Subtract,
 };
@@ -19,7 +19,7 @@ enum class ExtraBehavior {
 };
 
 bool HighNarrowingOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
-                            HighNarrowingOp op, ExtraBehavior behavior) {
+                            Operation op, ExtraBehavior behavior) {
     if (size == 0b11) {
         return v.ReservedValue();
     }
@@ -31,7 +31,7 @@ bool HighNarrowingOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, V
     const IR::U128 operand1 = v.ir.GetQ(Vn);
     const IR::U128 operand2 = v.ir.GetQ(Vm);
     IR::U128 wide = [&] {
-        if (op == HighNarrowingOp::Add) {
+        if (op == Operation::Add) {
             return v.ir.VectorAdd(doubled_esize, operand1, operand2);
         }
         return v.ir.VectorSub(doubled_esize, operand1, operand2);
@@ -247,6 +247,48 @@ bool PairedMinMaxOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Ve
     return true;
 }
 
+bool SaturatingArithmeticOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
+                                   Operation op, Signedness sign) {
+    if (size == 0b11 && !Q) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+    const size_t elements = datasize / esize;
+
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = v.V(datasize, Vm);
+    IR::U128 result = v.ir.ZeroVector();
+
+    for (size_t i = 0; i < elements; i++) {
+        const IR::UAny op1_elem = v.ir.VectorGetElement(esize, operand1, i);
+        const IR::UAny op2_elem = v.ir.VectorGetElement(esize, operand2, i);
+        const auto result_elem = [&] {
+            if (sign == Signedness::Signed) {
+                if (op == Operation::Add) {
+                    return v.ir.SignedSaturatedAdd(op1_elem, op2_elem);
+                }
+
+                return v.ir.SignedSaturatedSub(op1_elem, op2_elem);
+            }
+
+            if (op == Operation::Add) {
+                return v.ir.UnsignedSaturatedAdd(op1_elem, op2_elem);
+            }
+
+            return v.ir.UnsignedSaturatedSub(op1_elem, op2_elem);
+        }();
+
+        v.ir.OrQC(result_elem.overflow);
+
+        result = v.ir.VectorSetElement(esize, result, i, result_elem.result);
+    }
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 } // Anonymous namespace
 
 bool TranslatorVisitor::CMGT_reg_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -347,19 +389,19 @@ bool TranslatorVisitor::MUL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::ADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Add, ExtraBehavior::None);
+    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, Operation::Add, ExtraBehavior::None);
 }
 
 bool TranslatorVisitor::RADDHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Add, ExtraBehavior::Round);
+    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, Operation::Add, ExtraBehavior::Round);
 }
 
 bool TranslatorVisitor::SUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Subtract, ExtraBehavior::None);
+    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, Operation::Subtract, ExtraBehavior::None);
 }
 
 bool TranslatorVisitor::RSUBHN(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
-    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, HighNarrowingOp::Subtract, ExtraBehavior::Round);
+    return HighNarrowingOperation(*this, Q, size, Vm, Vn, Vd, Operation::Subtract, ExtraBehavior::Round);
 }
 
 bool TranslatorVisitor::SHADD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -392,6 +434,14 @@ bool TranslatorVisitor::SHSUB(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 
     V(datasize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::SQADD_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return SaturatingArithmeticOperation(*this, Q, size, Vm, Vn, Vd, Operation::Add, Signedness::Signed);
+}
+
+bool TranslatorVisitor::SQSUB_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return SaturatingArithmeticOperation(*this, Q, size, Vm, Vn, Vd, Operation::Subtract, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SRHADD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
@@ -428,6 +478,14 @@ bool TranslatorVisitor::UHSUB(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 
     V(datasize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::UQADD_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return SaturatingArithmeticOperation(*this, Q, size, Vm, Vn, Vd, Operation::Add, Signedness::Unsigned);
+}
+
+bool TranslatorVisitor::UQSUB_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return SaturatingArithmeticOperation(*this, Q, size, Vm, Vn, Vd, Operation::Subtract, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::URHADD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
