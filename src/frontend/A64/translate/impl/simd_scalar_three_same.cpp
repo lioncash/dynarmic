@@ -124,6 +124,28 @@ bool TranslatorVisitor::SQSUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::UQADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::UAny operand1 = V_scalar(esize, Vn);
+    const IR::UAny operand2 = V_scalar(esize, Vm);
+    const auto result = ir.UnsignedSaturatedAdd(operand1, operand2);
+    ir.OrQC(result.overflow);
+    V_scalar(esize, Vd, result.result);
+    return true;
+}
+
+bool TranslatorVisitor::UQSUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::UAny operand1 = V_scalar(esize, Vn);
+    const IR::UAny operand2 = V_scalar(esize, Vm);
+    const auto result = ir.UnsignedSaturatedSub(operand1, operand2);
+    ir.OrQC(result.overflow);
+    V_scalar(esize, Vd, result.result);
+    return true;
+}
+
 bool TranslatorVisitor::ADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size != 0b11) {
         return ReservedValue();
