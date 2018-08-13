@@ -52,7 +52,7 @@ Value::Value(u64 value) : type(Type::U64) {
     inner.imm_u64 = value;
 }
 
-Value::Value(std::array<u8, 8> value) : type(Type::CoprocInfo) {
+Value::Value(CoprocessorInfo value) : type(Type::CoprocInfo) {
     inner.imm_coproc = value;
 }
 
@@ -141,7 +141,7 @@ u64 Value::GetU64() const {
     return inner.imm_u64;
 }
 
-std::array<u8, 8> Value::GetCoprocInfo() const {
+Value::CoprocessorInfo Value::GetCoprocInfo() const {
     if (type == Type::Opaque && inner.inst->GetOpcode() == Opcode::Identity)
         return inner.inst->GetArg(0).GetCoprocInfo();
     ASSERT(type == Type::CoprocInfo);

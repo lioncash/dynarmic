@@ -25,6 +25,8 @@ class Inst;
  */
 class Value {
 public:
+    using CoprocessorInfo = std::array<u8, 8>;
+
     Value() : type(Type::Void) {}
     explicit Value(Inst* value);
     explicit Value(A32::Reg value);
@@ -36,7 +38,7 @@ public:
     explicit Value(u16 value);
     explicit Value(u32 value);
     explicit Value(u64 value);
-    explicit Value(std::array<u8, 8> value);
+    explicit Value(CoprocessorInfo value);
     explicit Value(Cond value);
 
     bool IsEmpty() const;
@@ -53,7 +55,7 @@ public:
     u16 GetU16() const;
     u32 GetU32() const;
     u64 GetU64() const;
-    std::array<u8, 8> GetCoprocInfo() const;
+    CoprocessorInfo GetCoprocInfo() const;
     Cond GetCond() const;
 
 private:
@@ -70,7 +72,7 @@ private:
         u16 imm_u16;
         u32 imm_u32;
         u64 imm_u64;
-        std::array<u8, 8> imm_coproc;
+        CoprocessorInfo imm_coproc;
         Cond imm_cond;
     } inner;
 };
