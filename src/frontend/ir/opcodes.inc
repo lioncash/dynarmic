@@ -164,6 +164,14 @@ OPCODE(SignedSaturatedSub16,                    T::U16,         T::U16,         
 OPCODE(SignedSaturatedSub32,                    T::U32,         T::U32,         T::U32                          )
 OPCODE(SignedSaturatedSub64,                    T::U64,         T::U64,         T::U64                          )
 OPCODE(SignedSaturation,                        T::U32,         T::U32,         T::U8                           )
+OPCODE(UnsignedSaturatedAdd8,                   T::U8,          T::U8,          T::U8                           )
+OPCODE(UnsignedSaturatedAdd16,                  T::U16,         T::U16,         T::U16                          )
+OPCODE(UnsignedSaturatedAdd32,                  T::U32,         T::U32,         T::U32                          )
+OPCODE(UnsignedSaturatedAdd64,                  T::U64,         T::U64,         T::U64                          )
+OPCODE(UnsignedSaturatedSub8,                   T::U8,          T::U8,          T::U8                           )
+OPCODE(UnsignedSaturatedSub16,                  T::U16,         T::U16,         T::U16                          )
+OPCODE(UnsignedSaturatedSub32,                  T::U32,         T::U32,         T::U32                          )
+OPCODE(UnsignedSaturatedSub64,                  T::U64,         T::U64,         T::U64                          )
 OPCODE(UnsignedSaturation,                      T::U32,         T::U32,         T::U8                           )
 
 // Packed instructions

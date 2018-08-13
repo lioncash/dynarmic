@@ -77,6 +77,45 @@ void EmitSignedSaturatedOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+template<Op op, size_t size>
+void EmitUnsignedSaturatedOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    Xbyak::Reg op_result = ctx.reg_alloc.UseScratchGpr(args[0]);
+    Xbyak::Reg addend = ctx.reg_alloc.UseScratchGpr(args[1]);
+
+    op_result.setBit(size);
+    addend.setBit(size);
+
+    if constexpr (op == Op::Add) {
+        code.add(op_result, addend);
+    } else {
+        code.sub(op_result, addend);
+    }
+
+    constexpr u64 boundary = op == Op::Add ? std::numeric_limits<mp::unsigned_integer_of_size<size>>::max()
+                                           : 0;
+    code.mov(addend, boundary);
+
+    if constexpr (size < 64) {
+        code.cmovae(addend.cvt32(), op_result.cvt32());
+    } else {
+        code.cmovae(addend, op_result);
+    }
+
+    if (overflow_inst) {
+        Xbyak::Reg overflow = ctx.reg_alloc.ScratchGpr();
+        code.setb(overflow.cvt8());
+
+        ctx.reg_alloc.DefineValue(overflow_inst, overflow);
+        ctx.EraseInstruction(overflow_inst);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, addend);
+}
+
 } // anonymous namespace
 
 void EmitX64::EmitSignedSaturatedAdd8(EmitContext& ctx, IR::Inst* inst) {
@@ -109,36 +148,6 @@ void EmitX64::EmitSignedSaturatedSub32(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitSignedSaturatedSub64(EmitContext& ctx, IR::Inst* inst) {
     EmitSignedSaturatedOp<Op::Sub, 64>(code, ctx, inst);
-}
-
-void EmitX64::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
-    auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
-
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    size_t N = args[1].GetImmediateU8();
-    ASSERT(N <= 31);
-
-    u32 saturated_value = (1u << N) - 1;
-
-    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
-    Xbyak::Reg32 reg_a = ctx.reg_alloc.UseGpr(args[0]).cvt32();
-    Xbyak::Reg32 overflow = ctx.reg_alloc.ScratchGpr().cvt32();
-
-    // Pseudocode: result = clamp(reg_a, 0, saturated_value);
-    code.xor_(overflow, overflow);
-    code.cmp(reg_a, saturated_value);
-    code.mov(result, saturated_value);
-    code.cmovle(result, overflow);
-    code.cmovbe(result, reg_a);
-
-    if (overflow_inst) {
-        code.seta(overflow.cvt8());
-
-        ctx.reg_alloc.DefineValue(overflow_inst, overflow);
-        ctx.EraseInstruction(overflow_inst);
-    }
-
-    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
@@ -178,6 +187,68 @@ void EmitX64::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
 
     // Do the saturation
     code.cmp(overflow, mask);
+    code.cmovbe(result, reg_a);
+
+    if (overflow_inst) {
+        code.seta(overflow.cvt8());
+
+        ctx.reg_alloc.DefineValue(overflow_inst, overflow);
+        ctx.EraseInstruction(overflow_inst);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitUnsignedSaturatedAdd8(EmitContext& ctx, IR::Inst* inst) {
+    EmitUnsignedSaturatedOp<Op::Add, 8>(code, ctx, inst);
+}
+
+void EmitX64::EmitUnsignedSaturatedAdd16(EmitContext& ctx, IR::Inst* inst) {
+    EmitUnsignedSaturatedOp<Op::Add, 16>(code, ctx, inst);
+}
+
+void EmitX64::EmitUnsignedSaturatedAdd32(EmitContext& ctx, IR::Inst* inst) {
+    EmitUnsignedSaturatedOp<Op::Add, 32>(code, ctx, inst);
+}
+
+void EmitX64::EmitUnsignedSaturatedAdd64(EmitContext& ctx, IR::Inst* inst) {
+    EmitUnsignedSaturatedOp<Op::Add, 64>(code, ctx, inst);
+}
+
+void EmitX64::EmitUnsignedSaturatedSub8(EmitContext& ctx, IR::Inst* inst) {
+    EmitUnsignedSaturatedOp<Op::Sub, 8>(code, ctx, inst);
+}
+
+void EmitX64::EmitUnsignedSaturatedSub16(EmitContext& ctx, IR::Inst* inst) {
+    EmitUnsignedSaturatedOp<Op::Sub, 16>(code, ctx, inst);
+}
+
+void EmitX64::EmitUnsignedSaturatedSub32(EmitContext& ctx, IR::Inst* inst) {
+    EmitUnsignedSaturatedOp<Op::Sub, 32>(code, ctx, inst);
+}
+
+void EmitX64::EmitUnsignedSaturatedSub64(EmitContext& ctx, IR::Inst* inst) {
+    EmitUnsignedSaturatedOp<Op::Sub, 64>(code, ctx, inst);
+}
+
+void EmitX64::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
+    auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    size_t N = args[1].GetImmediateU8();
+    ASSERT(N <= 31);
+
+    u32 saturated_value = (1u << N) - 1;
+
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
+    Xbyak::Reg32 reg_a = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    Xbyak::Reg32 overflow = ctx.reg_alloc.ScratchGpr().cvt32();
+
+    // Pseudocode: result = clamp(reg_a, 0, saturated_value);
+    code.xor_(overflow, overflow);
+    code.cmp(reg_a, saturated_value);
+    code.mov(result, saturated_value);
+    code.cmovle(result, overflow);
     code.cmovbe(result, reg_a);
 
     if (overflow_inst) {

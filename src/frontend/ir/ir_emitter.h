@@ -144,8 +144,10 @@ public:
 
     ResultAndOverflow<UAny> SignedSaturatedAdd(const UAny& a, const UAny& b);
     ResultAndOverflow<UAny> SignedSaturatedSub(const UAny& a, const UAny& b);
-    ResultAndOverflow<U32> UnsignedSaturation(const U32& a, size_t bit_size_to_saturate_to);
     ResultAndOverflow<U32> SignedSaturation(const U32& a, size_t bit_size_to_saturate_to);
+    ResultAndOverflow<UAny> UnsignedSaturatedAdd(const UAny& a, const UAny& b);
+    ResultAndOverflow<UAny> UnsignedSaturatedSub(const UAny& a, const UAny& b);
+    ResultAndOverflow<U32> UnsignedSaturation(const U32& a, size_t bit_size_to_saturate_to);
 
     ResultAndGE<U32> PackedAddU8(const U32& a, const U32& b);
     ResultAndGE<U32> PackedAddS8(const U32& a, const U32& b);
