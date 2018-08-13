@@ -91,10 +91,12 @@ private:
 
 class RegAlloc final {
 public:
+    using ArgumentInfo = std::array<Argument, 3>;
+
     explicit RegAlloc(BlockOfCode& code, size_t num_spills, std::function<Xbyak::Address(HostLoc)> spill_to_addr)
         : hostloc_info(NonSpillHostLocCount + num_spills), code(code), spill_to_addr(std::move(spill_to_addr)) {}
 
-    std::array<Argument, 3> GetArgumentInfo(IR::Inst* inst);
+    ArgumentInfo GetArgumentInfo(IR::Inst* inst);
 
     Xbyak::Reg64 UseGpr(Argument& arg);
     Xbyak::Xmm UseXmm(Argument& arg);

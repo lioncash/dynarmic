@@ -19,7 +19,7 @@ namespace AES = Common::Crypto::AES;
 
 using AESFn = void(AES::State&, const AES::State&);
 
-static void EmitAESFunction(std::array<Argument, 3> args, EmitContext& ctx, BlockOfCode& code,
+static void EmitAESFunction(RegAlloc::ArgumentInfo args, EmitContext& ctx, BlockOfCode& code,
                             IR::Inst* inst, AESFn fn) {
     constexpr u32 stack_space = static_cast<u32>(sizeof(AES::State)) * 2;
     const Xbyak::Xmm input = ctx.reg_alloc.UseXmm(args[0]);

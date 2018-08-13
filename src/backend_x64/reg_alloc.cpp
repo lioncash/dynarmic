@@ -208,8 +208,8 @@ bool Argument::IsInMemory() const {
     return HostLocIsSpill(*reg_alloc.ValueLocation(value.GetInst()));
 }
 
-std::array<Argument, 3> RegAlloc::GetArgumentInfo(IR::Inst* inst) {
-    std::array<Argument, 3> ret = { Argument{*this}, Argument{*this}, Argument{*this} };
+RegAlloc::ArgumentInfo RegAlloc::GetArgumentInfo(IR::Inst* inst) {
+    ArgumentInfo ret = { Argument{*this}, Argument{*this}, Argument{*this} };
     for (size_t i = 0; i < inst->NumArgs(); i++) {
         const IR::Value& arg = inst->GetArg(i);
         ret[i].value = arg;
