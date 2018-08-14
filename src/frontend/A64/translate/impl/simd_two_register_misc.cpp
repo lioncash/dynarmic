@@ -286,6 +286,25 @@ bool TranslatorVisitor::FCVTL(bool Q, bool sz, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FCVTN(bool Q, bool sz, Vec Vn, Vec Vd) {
+    // Half-precision not handled directly.
+    if (!sz) {
+        return InterpretThisInstruction();
+    }
+
+    const IR::U128 operand = V(128, Vn);
+    IR::U128 result = ir.ZeroVector();
+
+    for (size_t i = 0; i < 2; i++) {
+        const IR::U32 element = ir.FPDoubleToSingle(ir.VectorGetElement(64, operand, i), true);
+
+        result = ir.VectorSetElement(32, result, i, element);
+    }
+
+    Vpart(64, Vd, Q, result);
+    return true;
+}
+
 bool TranslatorVisitor::FCVTNS_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Signed, FP::RoundingMode::ToNearest_TieEven);
 }

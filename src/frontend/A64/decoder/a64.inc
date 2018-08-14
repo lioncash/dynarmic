@@ -580,7 +580,7 @@ INST(CMLT_2,                 "CMLT (zero)",                               "0Q001
 INST(ABS_2,                  "ABS",                                       "0Q001110zz100000101110nnnnnddddd")
 INST(XTN,                    "XTN, XTN2",                                 "0Q001110zz100001001010nnnnnddddd")
 INST(SQXTN_2,                "SQXTN, SQXTN2",                             "0Q001110zz100001010010nnnnnddddd")
-//INST(FCVTN,                  "FCVTN, FCVTN2",                             "0Q0011100z100001011010nnnnnddddd")
+INST(FCVTN,                  "FCVTN, FCVTN2",                             "0Q0011100z100001011010nnnnnddddd")
 INST(FCVTL,                  "FCVTL, FCVTL2",                             "0Q0011100z100001011110nnnnnddddd")
 //INST(FRINTN_1,               "FRINTN (vector)",                           "0Q00111001111001100010nnnnnddddd")
 INST(FRINTN_2,               "FRINTN (vector)",                           "0Q0011100z100001100010nnnnnddddd")
