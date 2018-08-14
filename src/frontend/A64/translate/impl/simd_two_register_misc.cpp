@@ -267,6 +267,25 @@ bool TranslatorVisitor::FCMLT_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FPCompareAgainstZero(*this, Q, sz, Vn, Vd, ComparisonType::LT);
 }
 
+bool TranslatorVisitor::FCVTL(bool Q, bool sz, Vec Vn, Vec Vd) {
+    // Half-precision not handled directly.
+    if (!sz) {
+        return InterpretThisInstruction();
+    }
+
+    const IR::U128 part = Vpart(64, Vn, Q);
+    IR::U128 result = ir.ZeroVector();
+
+    for (size_t i = 0; i < 2; i++) {
+        const IR::U64 element = ir.FPSingleToDouble(ir.VectorGetElement(32, part, i), true);
+
+        result = ir.VectorSetElement(64, result, i, element);
+    }
+
+    V(128, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FCVTNS_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Signed, FP::RoundingMode::ToNearest_TieEven);
 }
