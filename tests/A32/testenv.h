@@ -9,6 +9,8 @@
 #include <array>
 #include <cstring>
 #include <map>
+#include <string>
+#include <vector>
 
 #include <dynarmic/A32/a32.h>
 
