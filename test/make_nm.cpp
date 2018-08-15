@@ -1,4 +1,5 @@
 #include <stdio.h>
+#define XBYAK_NO_OP_NAMES
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_bin2hex.h"
 #include <stdlib.h>
@@ -121,6 +122,15 @@ class Test {
 	void operator=(const Test&);
 	const bool isXbyak_;
 	int funcNum_;
+	/*
+		and_, or_, xor_, not_ => and, or, xor, not
+	*/
+	std::string removeUnderScore(std::string s) const
+	{
+		if (!isXbyak_ && s[s.size() - 1] == '_') s.resize(s.size() - 1);
+		return s;
+	}
+
 	// check all op1, op2, op3
 	void put(const std::string& nm, uint64 op1 = NOPARA, uint64 op2 = NOPARA, uint64 op3 = NOPARA, uint64 op4 = NOPARA) const
 	{
@@ -448,6 +458,10 @@ class Test {
 #ifdef XBYAK64
 			"cdqe",
 			"cqo",
+			"cmpsq",
+			"movsq",
+			"scasq",
+			"stosq",
 #else
 			"aaa",
 			"aad",
@@ -476,6 +490,18 @@ class Test {
 
 			"lahf",
 //			"lock",
+			"cmpsb",
+			"cmpsw",
+			"cmpsd",
+			"movsb",
+			"movsw",
+			"movsd",
+			"scasb",
+			"scasw",
+			"scasd",
+			"stosb",
+			"stosw",
+			"stosd",
 			"nop",
 
 			"sahf",
@@ -951,15 +977,16 @@ class Test {
 			static const char tbl[][16] = {
 				"adc",
 				"add",
-				"and",
+				"and_",
 				"cmp",
-				"or",
+				"or_",
 				"sbb",
 				"sub",
-				"xor",
+				"xor_",
 			};
 			for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
-				const char *p = tbl[i];
+				const std::string s = removeUnderScore(tbl[i]);
+				const char *p = s.c_str();
 				put(p, REG32, REG32|MEM);
 				put(p, REG64, REG64|MEM);
 				put(p, REG16, REG16|MEM);
@@ -1017,10 +1044,11 @@ class Test {
 			"imul",
 			"mul",
 			"neg",
-			"not",
+			"not_",
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
-			const char *p = tbl[i];
+			const std::string s = removeUnderScore(tbl[i]);
+			const char *p = s.c_str();
 			put(p, REG32e|REG16|REG8|REG8_3);
 			put(p, MEM32|MEM16|MEM8);
 		}
@@ -1042,15 +1070,19 @@ class Test {
 			push word 2
 			reduce 2-byte stack, so I can't support it
 		*/
-		const char *p = "push";
-		put(p, REG16);
-		put(p, IMM8); // IMM16 decrease -2 from esp
-		put(p, MEM16);
 
+		put("push", IMM8|IMM32);
+		if (isXbyak_) {
+			puts("push(word, 1000);dump();");
+		} else {
+			puts("push word 1000");
+		}
+
+		put("push", REG16|MEM16);
 		put("pop", REG16|MEM16);
 #ifdef XBYAK64
-		put("push", REG64);
-		put("pop", REG64);
+		put("push", REG64|IMM32|MEM64);
+		put("pop", REG64|MEM64);
 #else
 		put("push", REG32|IMM32|MEM32);
 		put("pop", REG32|MEM32);
@@ -2672,7 +2704,7 @@ public:
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 			const char *name = tbl[i];
-			put(name, MEM, ZMM);
+			put(name, MEM|MEM_K, ZMM|XMM|YMM);
 			put(name, ZMM, MEM);
 		}
 	}

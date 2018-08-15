@@ -1,5 +1,5 @@
 
-    C++用x86(IA-32), x64(AMD64, x86-64) JITアセンブラ Xbyak 5.601
+    C++用x86(IA-32), x64(AMD64, x86-64) JITアセンブラ Xbyak 5.67
 
 -----------------------------------------------------------------------------
 ◎概要
@@ -335,14 +335,17 @@ http://opensource.org/licenses/BSD-3-Clause
 sample/{echo,hello}.bfは http://www.kmonos.net/alang/etc/brainfuck.php から
 いただきました。
 
-test/cybozu/以下のファイルはcybozulib(https://github.com/herumi/cybozulib/)
-の一部を使っています。cybozulibはBSD-3-Clauseライセンスです。
-cybozulibは単体テストでのみ利用されていて、xbyak/ディレクトリ以下のヘッダ
-ファイルはcybozulibとは独立に利用できます。
-
 -----------------------------------------------------------------------------
 ◎履歴
 
+2018/08/14 ver 5.67 Addressクラス内のmutableを削除 ; fix setCacheHierarchy for cloud vm
+2018/07/26 ver 5.661 mingw64対応
+2018/07/24 ver 5.66 protect()のmodeにCodeArray::PROTECT_REを追加
+2018/06/26 ver 5.65 fix push(qword [mem])
+2018/03/07 ver 5.64 Cpu()の中でzero divisionが出ることがあるのを修正
+2018/02/14 ver 5.63 Cpu::setCacheHierarchy()の修正とclang<3.9のためのEvexModifierZero修正(thanks to mgouicem)
+2018/02/13 ver 5.62 Cpu::setCacheHierarchy() by mgouicem and rsdubtso
+2018/02/07 ver 5.61 vmov*がmem{k}{z}形式対応(忘れてた)
 2018/01/24 ver 5.601 xword, ywordなどをXbyak::util名前空間に追加
 2018/01/05 ver 5.60 Ice lake系命令対応(319433-030.pdf)
 2017/08/22 ver 5.53 mpxエンコーディングバグ修正, bnd()プレフィクス追加
@@ -470,7 +473,3 @@ cybozulibは単体テストでのみ利用されていて、xbyak/ディレク�
 ◎著作権者
 
 光成滋生(MITSUNARI Shigeo, herumi@nifty.com)
-
----
-$Revision: 1.56 $
-$Date: 2010/04/16 11:58:22 $

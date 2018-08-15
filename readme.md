@@ -1,5 +1,5 @@
 
-Xbyak 5.601 ; JIT assembler for x86(IA32), x64(AMD64, x86-64) by C++
+Xbyak 5.67 ; JIT assembler for x86(IA32), x64(AMD64, x86-64) by C++
 =============
 
 Abstract
@@ -327,12 +327,16 @@ License
 modified new BSD License
 http://opensource.org/licenses/BSD-3-Clause
 
-The files under test/cybozu/ are copied from cybozulib(https://github.com/herumi/cybozulib/),
-which is licensed by BSD-3-Clause and are used for only tests.
-The header files under xbyak/ are independent of cybozulib.
-
 History
 -------------
+* 2018/Aug/14 ver 5.67 remove mutable in Address ; fix setCacheHierarchy for cloud vm
+* 2018/Jul/26 ver 5.661 support mingw64
+* 2018/Jul/24 ver 5.66 add CodeArray::PROTECT_RE to mode of protect()
+* 2018/Jun/26 ver 5.65 fix push(qword [mem])
+* 2018/Mar/07 ver 5.64 fix zero division in Cpu() on some cpu
+* 2018/Feb/14 ver 5.63 fix Cpu::setCacheHierarchy() and fix EvexModifierZero for clang<3.9(thanks to mgouicem)
+* 2018/Feb/13 ver 5.62 Cpu::setCacheHierarchy() by mgouicem and rsdubtso
+* 2018/Feb/07 ver 5.61 vmov* supports mem{k}{z}(I forgot it)
 * 2018/Jan/24 ver 5.601 add xword, yword, etc. into Xbyak::util namespace
 * 2018/Jan/05 ver 5.60 support AVX-512 for Ice lake(319433-030.pdf)
 * 2017/Aug/22 ver 5.53 fix mpx encoding, add bnd() prefix
