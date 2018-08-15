@@ -630,9 +630,18 @@ void put()
 			{ "cpuid", 0x0F, 0xA2 },
 			{ "cwd", 0x66, 0x99 },
 			{ "cwde", 0x98 },
+			{ "cmpsb", 0xA6 },
+			{ "cmpsw", 0x66, 0xA7 },
+			{ "cmpsd", 0xA7 },
+			{ "scasb", 0xAE },
+			{ "scasw", 0x66, 0xAF },
+			{ "scasd", 0xAF },
 			{ "movsb", 0xA4 },
 			{ "movsw", 0x66, 0xA5 },
 			{ "movsd", 0xA5 },
+			{ "stosb", 0xAA },
+			{ "stosw", 0x66, 0xAB },
+			{ "stosd", 0xAB },
 			{ "rep", 0xF3 },
 
 			{ "lahf", 0x9F },
@@ -1643,7 +1652,7 @@ void put()
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 			const Tbl& p = tbl[i];
-			printf("void %s(const Xmm& x1, const Address& addr, const Xmm& x2) { opGather(x1, addr, x2, T_0F38 | T_66 | T_W%d, 0x%x, %d); }\n", p.name, p.w, p.code, p.mode);
+			printf("void %s(const Xmm& x1, const Address& addr, const Xmm& x2) { opGather(x1, addr, x2, T_0F38 | T_66 | T_YMM | T_VSIB | T_W%d, 0x%x, %d); }\n", p.name, p.w, p.code, p.mode);
 		}
 	}
 }
@@ -1678,7 +1687,10 @@ void put64()
 	const GenericTbl tbl[] = {
 		{ "cdqe", 0x48, 0x98 },
 		{ "cqo", 0x48, 0x99 },
+		{ "cmpsq", 0x48, 0xA7 },
 		{ "movsq", 0x48, 0xA5 },
+		{ "scasq", 0x48, 0xAF },
+		{ "stosq", 0x48, 0xAB },
 	};
 	putGeneric(tbl, NUM_OF_ARRAY(tbl));
 

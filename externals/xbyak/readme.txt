@@ -1,5 +1,5 @@
 
-    C++用x86(IA-32), x64(AMD64, x86-64) JITアセンブラ Xbyak 5.65
+    C++用x86(IA-32), x64(AMD64, x86-64) JITアセンブラ Xbyak 5.67
 
 -----------------------------------------------------------------------------
 ◎概要
@@ -335,14 +335,12 @@ http://opensource.org/licenses/BSD-3-Clause
 sample/{echo,hello}.bfは http://www.kmonos.net/alang/etc/brainfuck.php から
 いただきました。
 
-test/cybozu/以下のファイルはcybozulib(https://github.com/herumi/cybozulib/)
-の一部を使っています。cybozulibはBSD-3-Clauseライセンスです。
-cybozulibは単体テストでのみ利用されていて、xbyak/ディレクトリ以下のヘッダ
-ファイルはcybozulibとは独立に利用できます。
-
 -----------------------------------------------------------------------------
 ◎履歴
 
+2018/08/14 ver 5.67 Addressクラス内のmutableを削除 ; fix setCacheHierarchy for cloud vm
+2018/07/26 ver 5.661 mingw64対応
+2018/07/24 ver 5.66 protect()のmodeにCodeArray::PROTECT_REを追加
 2018/06/26 ver 5.65 fix push(qword [mem])
 2018/03/07 ver 5.64 Cpu()の中でzero divisionが出ることがあるのを修正
 2018/02/14 ver 5.63 Cpu::setCacheHierarchy()の修正とclang<3.9のためのEvexModifierZero修正(thanks to mgouicem)
