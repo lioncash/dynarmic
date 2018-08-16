@@ -25,6 +25,30 @@ enum class ComparisonVariant {
     Zero,
 };
 
+enum class Signedness {
+    Signed,
+    Unsigned,
+};
+
+bool RoundingShiftLeft(TranslatorVisitor& v, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, Signedness sign) {
+    if (size != 0b11) {
+        return v.ReservedValue();
+    }
+
+    const IR::U128 operand1 = v.V(64, Vn);
+    const IR::U128 operand2 = v.V(64, Vm);
+    const IR::U128 result = [&] {
+        if (sign == Signedness::Signed) {
+            return v.ir.VectorRoundingShiftLeftSigned(64, operand1, operand2);
+        }
+
+        return v.ir.VectorRoundingShiftLeftUnsigned(64, operand1, operand2);
+    }();
+
+    v.V(64, Vd, result);
+    return true;
+}
+
 bool ScalarCompare(TranslatorVisitor& v, Imm<2> size, boost::optional<Vec> Vm, Vec Vn, Vec Vd,
                    ComparisonType type, ComparisonVariant variant) {
     if (size != 0b11) {
@@ -278,6 +302,10 @@ bool TranslatorVisitor::FCMGT_reg_2(bool sz, Vec Vm, Vec Vn, Vec Vd) {
     return ScalarFPCompareRegister(*this, sz, Vm, Vn, Vd, FPComparisonType::GT);
 }
 
+bool TranslatorVisitor::SRSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return RoundingShiftLeft(*this, size, Vm, Vn, Vd, Signedness::Signed);
+}
+
 bool TranslatorVisitor::SSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size != 0b11) {
         return ReservedValue();
@@ -303,6 +331,10 @@ bool TranslatorVisitor::SUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     const IR::U64 result = ir.Sub(operand1, operand2);
     V_scalar(datasize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::URSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return RoundingShiftLeft(*this, size, Vm, Vn, Vd, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::USHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {

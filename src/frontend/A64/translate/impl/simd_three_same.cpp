@@ -102,6 +102,28 @@ bool RoundingHalvingAdd(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec V
     return true;
 }
 
+bool RoundingShiftLeft(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd, Signedness sign) {
+    if (size == 0b11 && !Q) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = v.V(datasize, Vm);
+    const IR::U128 result = [&] {
+        if (sign == Signedness::Signed) {
+            return v.ir.VectorRoundingShiftLeftSigned(esize, operand1, operand2);
+        }
+
+        return v.ir.VectorRoundingShiftLeftUnsigned(esize, operand1, operand2);
+    }();
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 enum class ComparisonType {
     EQ,
     GE,
@@ -723,6 +745,10 @@ bool TranslatorVisitor::CMTST_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SRSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return RoundingShiftLeft(*this, Q, size, Vm, Vn, Vd, Signedness::Signed);
+}
+
 bool TranslatorVisitor::SSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11 && !Q) {
         return ReservedValue();
@@ -735,6 +761,10 @@ bool TranslatorVisitor::SSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     const IR::U128 result = ir.VectorLogicalVShiftSigned(esize, operand1, operand2);
     V(datasize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::URSHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    return RoundingShiftLeft(*this, Q, size, Vm, Vn, Vd, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::USHL_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
