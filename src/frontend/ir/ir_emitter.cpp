@@ -1424,6 +1424,38 @@ U128 IREmitter::VectorRoundingHalvingAddUnsigned(size_t esize, const U128& a, co
     return {};
 }
 
+U128 IREmitter::VectorRoundingShiftLeftSigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorRoundingShiftLeftS8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorRoundingShiftLeftS16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorRoundingShiftLeftS32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorRoundingShiftLeftS64, a, b);
+    }
+
+    UNREACHABLE();
+    return {};
+}
+
+U128 IREmitter::VectorRoundingShiftLeftUnsigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorRoundingShiftLeftU8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorRoundingShiftLeftU16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorRoundingShiftLeftU32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorRoundingShiftLeftU64, a, b);
+    }
+
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorShuffleHighHalfwords(const U128& a, u8 mask) {
     return Inst<U128>(Opcode::VectorShuffleHighHalfwords, a, mask);
 }

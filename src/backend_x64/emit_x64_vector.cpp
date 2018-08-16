@@ -2326,6 +2326,88 @@ void EmitX64::EmitVectorRoundingHalvingAddU32(EmitContext& ctx, IR::Inst* inst) 
     EmitVectorRoundingHalvingAddUnsigned(32, ctx, inst, code);
 }
 
+template <typename T, typename U>
+static void RoundingShiftLeft(VectorArray<T>& out, const VectorArray<T>& lhs, const VectorArray<U>& rhs) {
+    using signed_type = std::make_signed_t<T>;
+    using unsigned_type = std::make_unsigned_t<T>;
+
+    constexpr auto bit_size = static_cast<s64>(Common::BitSize<T>());
+
+    for (size_t i = 0; i < out.size(); i++) {
+        const s64 extended_shift = Common::SignExtend<8>(rhs[i] & 0xFF);
+
+        if (extended_shift >= 0) {
+            if (extended_shift >= bit_size) {
+                out[i] = 0;
+            } else {
+                out[i] = static_cast<T>(static_cast<unsigned_type>(lhs[i]) << extended_shift);
+            }
+        } else {
+            if ((std::is_unsigned_v<T> && extended_shift < -bit_size) ||
+                (std::is_signed_v<T> && extended_shift <= -bit_size)) {
+                out[i] = 0;
+            } else {
+                const s64 shift_value = -extended_shift - 1;
+                const T shifted = (lhs[i] & (static_cast<signed_type>(1) << shift_value)) >> shift_value;
+
+                if (extended_shift == -bit_size) {
+                    out[i] = shifted;
+                } else {
+                    out[i] = (lhs[i] >> -extended_shift) + shifted;
+                }
+            }
+        }
+    }
+}
+
+void EmitX64::EmitVectorRoundingShiftLeftS8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s8>& result, const VectorArray<s8>& lhs, const VectorArray<s8>& rhs) {
+        RoundingShiftLeft(result, lhs, rhs);
+    });
+}
+
+void EmitX64::EmitVectorRoundingShiftLeftS16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s16>& result, const VectorArray<s16>& lhs, const VectorArray<s16>& rhs) {
+        RoundingShiftLeft(result, lhs, rhs);
+    });
+}
+
+void EmitX64::EmitVectorRoundingShiftLeftS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s32>& lhs, const VectorArray<s32>& rhs) {
+        RoundingShiftLeft(result, lhs, rhs);
+    });
+}
+
+void EmitX64::EmitVectorRoundingShiftLeftS64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s64>& result, const VectorArray<s64>& lhs, const VectorArray<s64>& rhs) {
+        RoundingShiftLeft(result, lhs, rhs);
+    });
+}
+
+void EmitX64::EmitVectorRoundingShiftLeftU8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u8>& lhs, const VectorArray<u8>& rhs) {
+        RoundingShiftLeft(result, lhs, rhs);
+    });
+}
+
+void EmitX64::EmitVectorRoundingShiftLeftU16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u16>& result, const VectorArray<u16>& lhs, const VectorArray<u16>& rhs) {
+        RoundingShiftLeft(result, lhs, rhs);
+    });
+}
+
+void EmitX64::EmitVectorRoundingShiftLeftU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<u32>& lhs, const VectorArray<u32>& rhs) {
+        RoundingShiftLeft(result, lhs, rhs);
+    });
+}
+
+void EmitX64::EmitVectorRoundingShiftLeftU64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& lhs, const VectorArray<u64>& rhs) {
+        RoundingShiftLeft(result, lhs, rhs);
+    });
+}
+
 static void VectorShuffleImpl(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, void (Xbyak::CodeGenerator::*fn)(const Xbyak::Mmx&, const Xbyak::Operand&, u8)) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
