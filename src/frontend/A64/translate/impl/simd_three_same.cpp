@@ -208,6 +208,32 @@ bool FPMinMaxOperation(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Ve
     return true;
 }
 
+bool FPMinMaxNumericOperation(TranslatorVisitor& v, bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd,
+                              IR::U32U64 (IREmitter::* fn)(const IR::U32U64&, const IR::U32U64&, bool)) {
+    if (sz && !Q) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = sz ? 64 : 32;
+    const size_t datasize = Q ? 128 : 64;
+    const size_t elements = datasize / esize;
+
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = v.V(datasize, Vm);
+    IR::U128 result = v.ir.ZeroVector();
+
+    for (size_t i = 0; i < elements; i++) {
+        const IR::UAny elem1 = v.ir.VectorGetElement(esize, operand1, i);
+        const IR::UAny elem2 = v.ir.VectorGetElement(esize, operand2, i);
+        const IR::UAny result_elem = (v.ir.*fn)(elem1, elem2, true);
+
+        result = v.ir.VectorSetElement(esize, result, i, result_elem);
+    }
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 bool PairedMinMaxOperation(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd,
                            MinMaxOperation operation, Signedness sign) {
     if (size == 0b11) {
@@ -930,6 +956,10 @@ bool TranslatorVisitor::FMAX_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
     return FPMinMaxOperation(*this, Q, sz, Vm, Vn, Vd, MinMaxOperation::Max);
 }
 
+bool TranslatorVisitor::FMAXNM_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    return FPMinMaxNumericOperation(*this, Q, sz, Vm, Vn, Vd, &IREmitter::FPMaxNumeric);
+}
+
 bool TranslatorVisitor::FMAXNMP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
     return FPPairedMinMax(*this, Q, sz, Vm, Vn, Vd, &IREmitter::FPMaxNumeric);
 }
@@ -940,6 +970,10 @@ bool TranslatorVisitor::FMAXP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
 
 bool TranslatorVisitor::FMIN_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
     return FPMinMaxOperation(*this, Q, sz, Vm, Vn, Vd, MinMaxOperation::Min);
+}
+
+bool TranslatorVisitor::FMINNM_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    return FPMinMaxNumericOperation(*this, Q, sz, Vm, Vn, Vd, &IREmitter::FPMinNumeric);
 }
 
 bool TranslatorVisitor::FMINNMP_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
