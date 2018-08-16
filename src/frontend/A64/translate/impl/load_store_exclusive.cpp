@@ -26,7 +26,10 @@ static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& 
     if (memop == MemOp::LOAD && pair && Rt == *Rt2) {
         return tv.UnpredictableInstruction();
     } else if (memop == MemOp::STORE && (*Rs == Rt || (pair && *Rs == *Rt2))) {
-        return tv.UnpredictableInstruction();
+        if (!tv.options.define_unpredictable_behaviour) {
+            return tv.UnpredictableInstruction();
+        }
+        // UNPREDICTABLE: The Constraint_NONE case is executed.
     } else if (memop == MemOp::STORE && *Rs == Rn && Rn != Reg::R31) {
         return tv.UnpredictableInstruction();
     }
