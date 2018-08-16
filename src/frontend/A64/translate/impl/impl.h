@@ -11,6 +11,7 @@
 #include "frontend/A64/imm.h"
 #include "frontend/A64/ir_emitter.h"
 #include "frontend/A64/location_descriptor.h"
+#include "frontend/A64/translate/translate.h"
 #include "frontend/A64/types.h"
 
 namespace Dynarmic::A64 {
@@ -26,9 +27,10 @@ enum class MemOp {
 struct TranslatorVisitor final {
     using instruction_return_type = bool;
 
-    explicit TranslatorVisitor(IR::Block& block, LocationDescriptor descriptor) : ir(block, descriptor) {}
+    explicit TranslatorVisitor(IR::Block& block, LocationDescriptor descriptor, TranslationOptions options) : ir(block, descriptor), options(std::move(options)) {}
 
     A64::IREmitter ir;
+    TranslationOptions options;
 
     bool InterpretThisInstruction();
     bool UnpredictableInstruction();

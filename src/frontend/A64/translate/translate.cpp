@@ -12,9 +12,9 @@
 
 namespace Dynarmic::A64 {
 
-IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code) {
+IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code, TranslationOptions options) {
     IR::Block block{descriptor};
-    TranslatorVisitor visitor{block, descriptor};
+    TranslatorVisitor visitor{block, descriptor, std::move(options)};
 
     bool should_continue = true;
     while (should_continue) {
@@ -39,7 +39,7 @@ IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory
 }
 
 bool TranslateSingleInstruction(IR::Block& block, LocationDescriptor descriptor, u32 instruction) {
-    TranslatorVisitor visitor{block, descriptor};
+    TranslatorVisitor visitor{block, descriptor, {}};
 
     bool should_continue = true;
     if (auto decoder = Decode<TranslatorVisitor>(instruction)) {
