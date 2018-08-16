@@ -120,6 +120,10 @@ struct UserConfig {
     /// Executing DC ZVA in this mode will result in zeros being written to memory.
     bool hook_data_cache_operations = false;
 
+    /// Counter-timer frequency register. The value of the register is not interpreted by
+    /// dynarmic.
+    std::uint32_t cntfrq_el0 = 600000000;
+
     /// CTR_EL0<27:24> is log2 of the cache writeback granule in words.
     /// CTR_EL0<23:20> is log2 of the exclusives reservation granule in words.
     /// CTR_EL0<19:16> is log2 of the smallest data/unifed cacheline in words.

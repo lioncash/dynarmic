@@ -45,12 +45,13 @@ public:
     void DataCacheOperationRaised(DataCacheOperation op, const IR::U64& value);
     void DataSynchronizationBarrier();
     void DataMemoryBarrier();
+    IR::U32 GetCNTFRQ();
     IR::U64 GetCNTPCT(); // TODO: Ensure sub-basic-block cycle counts are updated before this.
     IR::U32 GetCTR();
     IR::U32 GetDCZID();
     IR::U64 GetTPIDR();
-    void SetTPIDR(const IR::U64& value);
     IR::U64 GetTPIDRRO();
+    void SetTPIDR(const IR::U64& value);
 
     void ClearExclusive();
     void SetExclusive(const IR::U64& vaddr, size_t byte_size);

@@ -10,6 +10,8 @@ namespace Dynarmic::A64 {
 
 // Register encodings used by MRS and MSR.
 enum class SystemRegisterEncoding : u32 {
+    // Counter-timer Frequency register
+    CNTFRQ_EL0 = 0b11'011'1110'0000'000,
     // Counter-timer Physical Count register
     CNTPCT_EL0 = 0b11'011'1110'0000'001,
     // Cache Type Register
@@ -72,9 +74,6 @@ bool TranslatorVisitor::DMB(Imm<4> /*CRm*/) {
 bool TranslatorVisitor::MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt) {
     const auto sys_reg = concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<SystemRegisterEncoding>();
     switch (sys_reg) {
-    case SystemRegisterEncoding::TPIDR_EL0:
-        ir.SetTPIDR(X(64, Rt));
-        return true;
     case SystemRegisterEncoding::FPCR:
         ir.SetFPCR(X(32, Rt));
         ir.SetPC(ir.Imm64(ir.current_location->PC() + 4));
@@ -82,6 +81,9 @@ bool TranslatorVisitor::MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, I
         return false;
     case SystemRegisterEncoding::FPSR:
         ir.SetFPSR(X(32, Rt));
+        return true;
+    case SystemRegisterEncoding::TPIDR_EL0:
+        ir.SetTPIDR(X(64, Rt));
         return true;
     default:
         break;
@@ -92,17 +94,8 @@ bool TranslatorVisitor::MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, I
 bool TranslatorVisitor::MRS(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt) {
     const auto sys_reg = concatenate(Imm<1>{1}, o0, op1, CRn, CRm, op2).ZeroExtend<SystemRegisterEncoding>();
     switch (sys_reg) {
-    case SystemRegisterEncoding::TPIDR_EL0:
-        X(64, Rt, ir.GetTPIDR());
-        return true;
-    case SystemRegisterEncoding::TPIDRRO_EL0:
-        X(64, Rt, ir.GetTPIDRRO());
-        return true;
-    case SystemRegisterEncoding::DCZID_EL0:
-        X(32, Rt, ir.GetDCZID());
-        return true;
-    case SystemRegisterEncoding::CTR_EL0:
-        X(32, Rt, ir.GetCTR());
+    case SystemRegisterEncoding::CNTFRQ_EL0:
+        X(32, Rt, ir.GetCNTFRQ());
         return true;
     case SystemRegisterEncoding::CNTPCT_EL0:
         // HACK: Ensure that this is the first instruction in the block it's emitted in, so the cycle count is most up-to-date.
@@ -113,12 +106,25 @@ bool TranslatorVisitor::MRS(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3
         }
         X(64, Rt, ir.GetCNTPCT());
         return true;
+    case SystemRegisterEncoding::CTR_EL0:
+        X(32, Rt, ir.GetCTR());
+        return true;
+    case SystemRegisterEncoding::DCZID_EL0:
+        X(32, Rt, ir.GetDCZID());
+        return true;
     case SystemRegisterEncoding::FPCR:
         X(32, Rt, ir.GetFPCR());
         return true;
     case SystemRegisterEncoding::FPSR:
         X(32, Rt, ir.GetFPSR());
         return true;
+    case SystemRegisterEncoding::TPIDR_EL0:
+        X(64, Rt, ir.GetTPIDR());
+        return true;
+    case SystemRegisterEncoding::TPIDRRO_EL0:
+        X(64, Rt, ir.GetTPIDRRO());
+        return true;
+
     }
     return InterpretThisInstruction();
 }

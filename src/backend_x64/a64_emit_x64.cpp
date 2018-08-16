@@ -538,6 +538,12 @@ void A64EmitX64::EmitA64DataMemoryBarrier(A64EmitContext&, IR::Inst*) {
     code.lfence();
 }
 
+void A64EmitX64::EmitA64GetCNTFRQ(A64EmitContext& ctx, IR::Inst* inst) {
+    Xbyak::Reg32 result = ctx.reg_alloc.ScratchGpr().cvt32();
+    code.mov(result, conf.cntfrq_el0);
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void A64EmitX64::EmitA64GetCNTPCT(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.HostCall(inst);
     code.UpdateTicks();
@@ -567,16 +573,6 @@ void A64EmitX64::EmitA64GetTPIDR(A64EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void A64EmitX64::EmitA64SetTPIDR(A64EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[0]);
-    Xbyak::Reg64 addr = ctx.reg_alloc.ScratchGpr();
-    if (conf.tpidr_el0) {
-        code.mov(addr, u64(conf.tpidr_el0));
-        code.mov(qword[addr], value);
-    }
-}
-
 void A64EmitX64::EmitA64GetTPIDRRO(A64EmitContext& ctx, IR::Inst* inst) {
     Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr();
     if (conf.tpidrro_el0) {
@@ -586,6 +582,16 @@ void A64EmitX64::EmitA64GetTPIDRRO(A64EmitContext& ctx, IR::Inst* inst) {
         code.xor_(result.cvt32(), result.cvt32());
     }
     ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void A64EmitX64::EmitA64SetTPIDR(A64EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    Xbyak::Reg64 value = ctx.reg_alloc.UseGpr(args[0]);
+    Xbyak::Reg64 addr = ctx.reg_alloc.ScratchGpr();
+    if (conf.tpidr_el0) {
+        code.mov(addr, u64(conf.tpidr_el0));
+        code.mov(qword[addr], value);
+    }
 }
 
 void A64EmitX64::EmitA64ClearExclusive(A64EmitContext&, IR::Inst*) {

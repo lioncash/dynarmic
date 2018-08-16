@@ -78,6 +78,8 @@ static u32 GenRandomInst(u64 pc, bool is_last_inst) {
             "STXR", "STLXR", "STXP", "STLXP", "LDXR", "LDAXR", "LDXP", "LDAXP",
             // QEMU's implementation of FDIV is incorrect
             "FDIV_1", "FDIV_2",
+            // Behaviour differs from QEMU
+            "MSR_reg", "MSR_imm", "MRS",
         };
 
         for (const auto& [fn, bitstring] : list) {
