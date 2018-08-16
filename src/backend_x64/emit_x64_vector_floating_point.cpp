@@ -147,7 +147,7 @@ Xbyak::Address GetNegativeZeroVector(BlockOfCode& code) {
 template<size_t fsize>
 Xbyak::Address GetSmallestNormalVector(BlockOfCode& code) {
     using FPT = mp::unsigned_integer_of_size<fsize>;
-    constexpr FPT smallest_normal_number = FP::FPValue<FPT, false, FP::FPInfo<FPT>::exponent_min, FP::FPInfo<FPT>::implicit_leading_bit>();
+    constexpr FPT smallest_normal_number = FP::FPValue<FPT, false, FP::FPInfo<FPT>::exponent_min, 1>();
     return GetVectorOf<fsize, smallest_normal_number>(code);
 }
 
