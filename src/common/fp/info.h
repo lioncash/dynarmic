@@ -68,7 +68,7 @@ constexpr FPT FPValue() {
         return FPInfo<FPT>::Zero(sign);
     }
 
-    constexpr int point_position = static_cast<int>(FPInfo<FPT>::mantissa_width);
+    constexpr int point_position = static_cast<int>(FPInfo<FPT>::explicit_mantissa_width);
     constexpr int highest_bit = Common::HighestSetBit(value);
     constexpr int offset = point_position - highest_bit;
     constexpr int normalized_exponent = exponent - offset + point_position;

@@ -29,6 +29,7 @@ add_executable(dynarmic_tests
     A64/testenv.h
     cpu_info.cpp
     fp/FPToFixed.cpp
+    fp/FPValue.cpp
     fp/mantissa_util_tests.cpp
     fp/unpacked_tests.cpp
     main.cpp
