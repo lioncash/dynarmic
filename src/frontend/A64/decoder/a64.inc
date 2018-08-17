@@ -560,8 +560,8 @@ INST(INS_elt,                "INS (element)",                             "01101
 //INST(FMINP_vec_1,            "FMINP (vector)",                            "0Q101110110mmmmm001101nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Three same extra
-//INST(SDOT_vec,               "SDOT (vector)",                             "0Q001110zz0mmmmm100101nnnnnddddd")
-//INST(UDOT_vec,               "UDOT (vector)",                             "0Q101110zz0mmmmm100101nnnnnddddd")
+INST(SDOT_vec,               "SDOT (vector)",                             "0Q001110zz0mmmmm100101nnnnnddddd")
+INST(UDOT_vec,               "UDOT (vector)",                             "0Q101110zz0mmmmm100101nnnnnddddd")
 //INST(FCMLA_vec,              "FCMLA",                                     "0Q101110zz0mmmmm110rr1nnnnnddddd")
 //INST(FCADD_vec,              "FCADD",                                     "0Q101110zz0mmmmm111r01nnnnnddddd")
 

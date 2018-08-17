@@ -166,6 +166,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/simd_shift_by_immediate.cpp
     frontend/A64/translate/impl/simd_three_different.cpp
     frontend/A64/translate/impl/simd_three_same.cpp
+    frontend/A64/translate/impl/simd_three_same_extra.cpp
     frontend/A64/translate/impl/simd_two_register_misc.cpp
     frontend/A64/translate/impl/simd_vector_x_indexed_element.cpp
     frontend/A64/translate/impl/sys_dc.cpp
