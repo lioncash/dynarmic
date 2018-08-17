@@ -156,6 +156,41 @@ bool SaturatedNarrow(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vn, Vec Vd, 
     return true;
 }
 
+enum class PairedAddLongExtraBehavior {
+    None,
+    Accumulate,
+};
+
+bool PairedAddLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vn, Vec Vd, Signedness sign,
+                   PairedAddLongExtraBehavior behavior) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = v.V(datasize, Vn);
+    IR::U128 result = [&] {
+        if (sign == Signedness::Signed) {
+            return v.ir.VectorPairedAddSignedWiden(esize, operand);
+        }
+
+        return v.ir.VectorPairedAddUnsignedWiden(esize, operand);
+    }();
+
+    if (behavior == PairedAddLongExtraBehavior::Accumulate) {
+        result = v.ir.VectorAdd(esize * 2, v.V(datasize, Vd), result);
+    }
+
+    if (datasize == 64) {
+        result = v.ir.VectorZeroUpper(result);
+    }
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 } // Anonymous namespace
 
 bool TranslatorVisitor::CNT(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
@@ -564,42 +599,20 @@ bool TranslatorVisitor::REV64_asimd(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
-bool TranslatorVisitor::UADDLP(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t datasize = Q ? 128 : 64;
-
-    const IR::U128 operand = V(datasize, Vn);
-    IR::U128 result = ir.VectorPairedAddUnsignedWiden(esize, operand);
-
-    if (datasize == 64) {
-        result = ir.VectorZeroUpper(result);
-    }
-
-    V(datasize, Vd, result);
-    return true;
+bool TranslatorVisitor::SADALP(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    return PairedAddLong(*this, Q, size, Vn, Vd, Signedness::Signed, PairedAddLongExtraBehavior::Accumulate);
 }
 
 bool TranslatorVisitor::SADDLP(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
-    if (size == 0b11) {
-        return ReservedValue();
-    }
+    return PairedAddLong(*this, Q, size, Vn, Vd, Signedness::Signed, PairedAddLongExtraBehavior::None);
+}
 
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t datasize = Q ? 128 : 64;
+bool TranslatorVisitor::UADALP(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    return PairedAddLong(*this, Q, size, Vn, Vd, Signedness::Unsigned, PairedAddLongExtraBehavior::Accumulate);
+}
 
-    const IR::U128 operand = V(datasize, Vn);
-    IR::U128 result = ir.VectorPairedAddSignedWiden(esize, operand);
-
-    if (datasize == 64) {
-        result = ir.VectorZeroUpper(result);
-    }
-
-    V(datasize, Vd, result);
-    return true;
+bool TranslatorVisitor::UADDLP(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    return PairedAddLong(*this, Q, size, Vn, Vd, Signedness::Unsigned, PairedAddLongExtraBehavior::None);
 }
 
 bool TranslatorVisitor::SCVTF_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
