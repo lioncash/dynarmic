@@ -2709,6 +2709,39 @@ void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
 
     const size_t table_size = std::count_if(table.begin(), table.end(), [](const auto& elem){ return !elem.IsVoid(); });
 
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        const Xbyak::Xmm indicies = ctx.reg_alloc.UseXmm(args[2]);
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm masked = table_size == 1 ? xmm0 : ctx.reg_alloc.ScratchXmm();
+
+        code.movaps(masked, code.MConst(xword, 0xF0F0F0F0F0F0F0F0, 0xF0F0F0F0F0F0F0F0));
+        code.pand(masked, indicies);
+
+        const Xbyak::Xmm xmm_table0 = ctx.reg_alloc.UseScratchXmm(table[0]);
+        const Xbyak::Xmm xmm_table1 = table_size > 1 ? ctx.reg_alloc.UseScratchXmm(table[1]) : Xbyak::Xmm{};
+        const Xbyak::Xmm xmm_table2 = table_size > 2 ? ctx.reg_alloc.UseScratchXmm(table[2]) : Xbyak::Xmm{};
+        const Xbyak::Xmm xmm_table3 = table_size > 3 ? ctx.reg_alloc.UseScratchXmm(table[3]) : Xbyak::Xmm{};
+        const std::array<Xbyak::Xmm, 4> xmm_table{xmm_table0, xmm_table1, xmm_table2, xmm_table3};
+
+        for (size_t i = 0; i < table_size; ++i) {
+            const u64 max_index = Common::Replicate<u64>(i * 16, 8);
+
+            if (table_size == 1) {
+                code.pcmpeqb(masked, code.MConst(xword, max_index, max_index));
+            } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+                code.vpcmpeqb(xmm0, masked, code.MConst(xword, max_index, max_index));
+            } else {
+                code.movaps(xmm0, masked);
+                code.pcmpeqb(xmm0, code.MConst(xword, max_index, max_index));
+            }
+            code.pshufb(xmm_table[i], indicies);
+            code.pblendvb(result, xmm_table[i]);
+        }
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
     const u32 stack_space = static_cast<u32>((table_size + 2) * 16);
     code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
     for (size_t i = 0; i < table_size; ++i) {
