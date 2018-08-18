@@ -22,13 +22,27 @@ namespace Dynarmic::IR {
 
 namespace OpcodeInfo {
 
-using T = Dynarmic::IR::Type;
-
 struct Meta {
     const char* name;
     Type type;
     std::vector<Type> arg_types;
 };
+
+constexpr Type Void = Type::Void;
+constexpr Type A32Reg = Type::A32Reg;
+constexpr Type A32ExtReg = Type::A32ExtReg;
+constexpr Type A64Reg = Type::A64Reg;
+constexpr Type A64Vec = Type::A64Vec;
+constexpr Type Opaque = Type::Opaque;
+constexpr Type U1 = Type::U1;
+constexpr Type U8 = Type::U8;
+constexpr Type U16 = Type::U16;
+constexpr Type U32 = Type::U32;
+constexpr Type U64 = Type::U64;
+constexpr Type U128 = Type::U128;
+constexpr Type CoprocInfo = Type::CoprocInfo;
+constexpr Type NZCV = Type::NZCVFlags;
+constexpr Type Cond = Type::Cond;
 
 static const std::map<Opcode, Meta> opcode_info {{
 #define OPCODE(name, type, ...) { Opcode::name, { #name, type, { __VA_ARGS__ } } },
