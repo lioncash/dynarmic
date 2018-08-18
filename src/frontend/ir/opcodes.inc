@@ -66,6 +66,7 @@ A64OPC(ExceptionRaised,                         T::Void,        T::U64,         
 A64OPC(DataCacheOperationRaised,                T::Void,        T::U64,         T::U64                          )
 A64OPC(DataSynchronizationBarrier,              T::Void,                                                        )
 A64OPC(DataMemoryBarrier,                       T::Void,                                                        )
+A64OPC(InstructionSynchronizationBarrier,       T::Void,                                                        )
 A64OPC(GetCNTFRQ,                               T::U32,                                                         )
 A64OPC(GetCNTPCT,                               T::U64,                                                         )
 A64OPC(GetCTR,                                  T::U32,                                                         )

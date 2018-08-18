@@ -57,6 +57,10 @@ void IREmitter::DataMemoryBarrier() {
     Inst(Opcode::A64DataMemoryBarrier);
 }
 
+void IREmitter::InstructionSynchronizationBarrier() {
+    Inst(Opcode::A64InstructionSynchronizationBarrier);
+}
+
 IR::U32 IREmitter::GetCNTFRQ() {
     return Inst<IR::U32>(Opcode::A64GetCNTFRQ);
 }

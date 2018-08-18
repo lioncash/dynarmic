@@ -36,10 +36,10 @@ static RunCodeCallbacks GenRunCodeCallbacks(A64::UserCallbacks* cb, CodePtr (*Lo
 
 struct Jit::Impl final {
 public:
-    explicit Impl(UserConfig conf)
+    Impl(Jit* jit, UserConfig conf)
         : conf(conf) 
         , block_of_code(GenRunCodeCallbacks(conf.callbacks, &GetCurrentBlockThunk, this), JitStateInfo{jit_state})
-        , emitter(block_of_code, conf)
+        , emitter(block_of_code, conf, jit)
     {
         ASSERT(conf.page_table_address_space_bits >= 12 && conf.page_table_address_space_bits <= 64);
     }
@@ -247,7 +247,7 @@ private:
 };
 
 Jit::Jit(UserConfig conf)
-    : impl(std::make_unique<Jit::Impl>(conf)) {}
+    : impl(std::make_unique<Jit::Impl>(this, conf)) {}
 
 Jit::~Jit() = default;
 

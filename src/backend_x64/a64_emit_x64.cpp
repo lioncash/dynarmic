@@ -60,8 +60,8 @@ bool A64EmitContext::AccurateNaN() const {
     return conf.floating_point_nan_accuracy == A64::UserConfig::NaNAccuracy::Accurate;
 }
 
-A64EmitX64::A64EmitX64(BlockOfCode& code, A64::UserConfig conf)
-    : EmitX64(code), conf(conf)
+A64EmitX64::A64EmitX64(BlockOfCode& code, A64::UserConfig conf, A64::Jit* jit_interface)
+    : EmitX64(code), conf(conf), jit_interface{jit_interface}
 {
     GenMemory128Accessors();
     GenFastmemFallbacks();
@@ -536,6 +536,15 @@ void A64EmitX64::EmitA64DataSynchronizationBarrier(A64EmitContext&, IR::Inst*) {
 
 void A64EmitX64::EmitA64DataMemoryBarrier(A64EmitContext&, IR::Inst*) {
     code.lfence();
+}
+
+void A64EmitX64::EmitA64InstructionSynchronizationBarrier(A64EmitContext& ctx, IR::Inst* ) {
+    ctx.reg_alloc.HostCall(nullptr);
+
+    code.mov(code.ABI_PARAM1, reinterpret_cast<u64>(jit_interface));
+    code.CallFunction(static_cast<void(*)(A64::Jit*)>([](A64::Jit* jit) {
+        jit->ClearCache();
+    }));
 }
 
 void A64EmitX64::EmitA64GetCNTFRQ(A64EmitContext& ctx, IR::Inst* inst) {

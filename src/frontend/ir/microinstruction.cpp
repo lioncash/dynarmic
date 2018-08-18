@@ -395,19 +395,20 @@ bool Inst::IsCoprocessorInstruction() const {
 }
 
 bool Inst::MayHaveSideEffects() const {
-    return op == Opcode::PushRSB                        ||
-           op == Opcode::A64SetCheckBit                 ||
-           op == Opcode::A64DataCacheOperationRaised    ||
-           op == Opcode::A64DataSynchronizationBarrier  ||
-           op == Opcode::A64DataMemoryBarrier           ||
-           CausesCPUException()                         ||
-           WritesToCoreRegister()                       ||
-           WritesToSystemRegister()                     ||
-           WritesToCPSR()                               ||
-           WritesToFPCR()                               ||
-           WritesToFPSR()                               ||
-           AltersExclusiveState()                       ||
-           IsMemoryWrite()                              ||
+    return op == Opcode::PushRSB                              ||
+           op == Opcode::A64SetCheckBit                       ||
+           op == Opcode::A64DataCacheOperationRaised          ||
+           op == Opcode::A64DataSynchronizationBarrier        ||
+           op == Opcode::A64DataMemoryBarrier                 ||
+           op == Opcode::A64InstructionSynchronizationBarrier ||
+           CausesCPUException()                               ||
+           WritesToCoreRegister()                             ||
+           WritesToSystemRegister()                           ||
+           WritesToCPSR()                                     ||
+           WritesToFPCR()                                     ||
+           WritesToFPSR()                                     ||
+           AltersExclusiveState()                             ||
+           IsMemoryWrite()                                    ||
            IsCoprocessorInstruction();
 }
 
