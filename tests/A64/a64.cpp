@@ -428,3 +428,25 @@ TEST_CASE("A64: FMLA.4S (0x80800000)", "[a64]") {
 
     REQUIRE(jit.GetVector(11) == Vector{0xc79b271e7fc00000, 0x7fc0000080000000});
 }
+
+// x64 has different rounding behaviour to AArch64.
+// AArch64 performs rounding after flushing-to-zero.
+// x64 performs rounding before flushing-to-zero.
+TEST_CASE("A64: FMADD (0x80800000)", "[a64]") {
+    A64TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem.emplace_back(0x1f0f7319); // FMADD S25, S24, S15, S28
+    env.code_mem.emplace_back(0x14000000); // B .
+
+    jit.SetPC(0);
+    jit.SetVector(24, {0x00800000, 0});
+    jit.SetVector(15, {0x0ba98d27, 0});
+    jit.SetVector(28, {0x80800000, 0});
+    jit.SetFpcr(0x01000000);
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetVector(25) == Vector{0x80000000, 0});
+}

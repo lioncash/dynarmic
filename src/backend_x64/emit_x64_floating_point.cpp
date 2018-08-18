@@ -589,7 +589,7 @@ static void EmitFPMulAdd(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
 
         code.movaps(tmp, code.MConst(xword, fsize == 32 ? f32_non_sign_mask : f64_non_sign_mask));
         code.andps(tmp, result);
-        FCODE(ucomis)(result, code.MConst(xword, fsize == 32 ? f32_smallest_normal : f64_smallest_normal));
+        FCODE(ucomis)(tmp, code.MConst(xword, fsize == 32 ? f32_smallest_normal : f64_smallest_normal));
         code.jz(fallback, code.T_NEAR);
         code.L(end);
 
