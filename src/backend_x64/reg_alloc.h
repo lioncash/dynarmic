@@ -61,6 +61,7 @@ struct Argument {
 public:
     IR::Type GetType() const;
     bool IsImmediate() const;
+    bool IsVoid() const;
 
     bool FitsInImmediateU32() const;
     bool FitsInImmediateS32() const;
@@ -82,7 +83,7 @@ public:
 
 private:
     friend class RegAlloc;
-    Argument(RegAlloc& reg_alloc) : reg_alloc(reg_alloc) {}
+    explicit Argument(RegAlloc& reg_alloc) : reg_alloc(reg_alloc) {}
 
     bool allocated = false;
     RegAlloc& reg_alloc;
@@ -91,7 +92,7 @@ private:
 
 class RegAlloc final {
 public:
-    using ArgumentInfo = std::array<Argument, 3>;
+    using ArgumentInfo = std::array<Argument, IR::max_arg_count>;
 
     explicit RegAlloc(BlockOfCode& code, size_t num_spills, std::function<Xbyak::Address(HostLoc)> spill_to_addr)
         : hostloc_info(NonSpillHostLocCount + num_spills), code(code), spill_to_addr(std::move(spill_to_addr)) {}

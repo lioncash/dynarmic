@@ -41,35 +41,45 @@ static bool CanExchange(HostLoc a, HostLoc b) {
 // Minimum number of bits required to represent a type
 static size_t GetBitWidth(IR::Type type) {
     switch (type) {
-        case IR::Type::A32Reg:
-        case IR::Type::A32ExtReg:
-        case IR::Type::A64Reg:
-        case IR::Type::A64Vec:
-        case IR::Type::CoprocInfo:
-        case IR::Type::Cond:
-        case IR::Type::Void:
-            ASSERT_MSG(false, "Type {} cannot be represented at runtime", type);
-            return 0;
-        case IR::Type::Opaque:
-            ASSERT_MSG(false, "Not a concrete type");
-            return 0;
-        case IR::Type::U1:
-            return 8;
-        case IR::Type::U8:
-            return 8;
-        case IR::Type::U16:
-            return 16;
-        case IR::Type::U32:
-            return 32;
-        case IR::Type::U64:
-            return 64;
-        case IR::Type::U128:
-            return 128;
-        case IR::Type::NZCVFlags:
-            return 32; // TODO: Update to 16 when flags optimization is done
+    case IR::Type::A32Reg:
+    case IR::Type::A32ExtReg:
+    case IR::Type::A64Reg:
+    case IR::Type::A64Vec:
+    case IR::Type::CoprocInfo:
+    case IR::Type::Cond:
+    case IR::Type::Void:
+    case IR::Type::Table:
+        ASSERT_MSG(false, "Type {} cannot be represented at runtime", type);
+        return 0;
+    case IR::Type::Opaque:
+        ASSERT_MSG(false, "Not a concrete type");
+        return 0;
+    case IR::Type::U1:
+        return 8;
+    case IR::Type::U8:
+        return 8;
+    case IR::Type::U16:
+        return 16;
+    case IR::Type::U32:
+        return 32;
+    case IR::Type::U64:
+        return 64;
+    case IR::Type::U128:
+        return 128;
+    case IR::Type::NZCVFlags:
+        return 32; // TODO: Update to 16 when flags optimization is done
     }
     UNREACHABLE();
     return 0;
+}
+
+static bool IsValuelessType(IR::Type type) {
+    switch (type) {
+    case IR::Type::Table:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool HostLocInfo::IsLocked() const {
@@ -137,6 +147,10 @@ IR::Type Argument::GetType() const {
 
 bool Argument::IsImmediate() const {
     return value.IsImmediate();
+}
+
+bool Argument::IsVoid() const {
+    return GetType() == IR::Type::Void;
 }
 
 bool Argument::FitsInImmediateU32() const {
@@ -209,11 +223,11 @@ bool Argument::IsInMemory() const {
 }
 
 RegAlloc::ArgumentInfo RegAlloc::GetArgumentInfo(IR::Inst* inst) {
-    ArgumentInfo ret = { Argument{*this}, Argument{*this}, Argument{*this} };
+    ArgumentInfo ret = {Argument{*this}, Argument{*this}, Argument{*this}, Argument{*this}};
     for (size_t i = 0; i < inst->NumArgs(); i++) {
         const IR::Value& arg = inst->GetArg(i);
         ret[i].value = arg;
-        if (!arg.IsImmediate()) {
+        if (!arg.IsImmediate() && !IsValuelessType(arg.GetType())) {
             ASSERT_MSG(ValueLocation(arg.GetInst()), "argument must already been defined");
             LocInfo(*ValueLocation(arg.GetInst())).AddArgReference();
         }

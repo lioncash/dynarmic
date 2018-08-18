@@ -43,6 +43,7 @@ constexpr Type U128 = Type::U128;
 constexpr Type CoprocInfo = Type::CoprocInfo;
 constexpr Type NZCV = Type::NZCVFlags;
 constexpr Type Cond = Type::Cond;
+constexpr Type Table = Type::Table;
 
 static const std::map<Opcode, Meta> opcode_info {{
 #define OPCODE(name, type, ...) { Opcode::name, { #name, type, { __VA_ARGS__ } } },

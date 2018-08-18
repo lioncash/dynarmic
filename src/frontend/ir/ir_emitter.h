@@ -266,6 +266,8 @@ public:
     U128 VectorSignedSaturatedNarrowToSigned(size_t original_esize, const U128& a);
     U128 VectorSignedSaturatedNarrowToUnsigned(size_t original_esize, const U128& a);
     U128 VectorSub(size_t esize, const U128& a, const U128& b);
+    Table VectorTable(std::vector<U128> values);
+    U128 VectorTableLookup(const U128& defaults, const Table& table, const U128& indices);
     U128 VectorUnsignedAbsoluteDifference(size_t esize, const U128& a, const U128& b);
     U128 VectorUnsignedSaturatedNarrow(size_t esize, const U128& a);
     U128 VectorZeroExtend(size_t original_esize, const U128& a);

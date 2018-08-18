@@ -401,6 +401,8 @@ OPCODE(VectorSub8,                              U128,           U128,           
 OPCODE(VectorSub16,                             U128,           U128,           U128                                            )
 OPCODE(VectorSub32,                             U128,           U128,           U128                                            )
 OPCODE(VectorSub64,                             U128,           U128,           U128                                            )
+OPCODE(VectorTable,                             Table,          U128,           Opaque,         Opaque,         Opaque          )
+OPCODE(VectorTableLookup,                       U128,           U128,           Table,          U128                            )
 OPCODE(VectorUnsignedAbsoluteDifference8,       U128,           U128,           U128                                            )
 OPCODE(VectorUnsignedAbsoluteDifference16,      U128,           U128,           U128                                            )
 OPCODE(VectorUnsignedAbsoluteDifference32,      U128,           U128,           U128                                            )

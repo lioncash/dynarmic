@@ -2696,6 +2696,56 @@ void EmitX64::EmitVectorSub64(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubq);
 }
 
+void EmitX64::EmitVectorTable(EmitContext&, IR::Inst* inst) {
+    // Do nothing. We *want* to hold on to the refcount for our arguments, so VectorTableLookup can use our arguments.
+    ASSERT_MSG(inst->UseCount() == 1, "Table cannot be used multiple times");
+}
+
+void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
+    ASSERT(inst->GetArg(1).GetInst()->GetOpcode() == IR::Opcode::VectorTable);
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    auto table = ctx.reg_alloc.GetArgumentInfo(inst->GetArg(1).GetInst());
+
+    const size_t table_size = std::count_if(table.begin(), table.end(), [](const auto& elem){ return !elem.IsVoid(); });
+
+    const u32 stack_space = static_cast<u32>((table_size + 2) * 16);
+    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
+    for (size_t i = 0; i < table_size; ++i) {
+        const Xbyak::Xmm table_value = ctx.reg_alloc.UseXmm(table[i]);
+        code.movaps(xword[rsp + ABI_SHADOW_SPACE + i * 16], table_value);
+    }
+    const Xbyak::Xmm defaults = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm indicies = ctx.reg_alloc.UseXmm(args[2]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    ctx.reg_alloc.EndOfAllocScope();
+    ctx.reg_alloc.HostCall(nullptr);
+
+    code.movaps(xword[rsp + ABI_SHADOW_SPACE + (table_size + 0) * 16], defaults);
+    code.movaps(xword[rsp + ABI_SHADOW_SPACE + (table_size + 1) * 16], indicies);
+    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE]);
+    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + (table_size + 0) * 16]);
+    code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + (table_size + 1) * 16]);
+    code.mov(code.ABI_PARAM4.cvt32(), table_size);
+
+    code.CallFunction(static_cast<void(*)(const VectorArray<u8>*, VectorArray<u8>&, const VectorArray<u8>&, size_t)>(
+        [](const VectorArray<u8>* table, VectorArray<u8>& result, const VectorArray<u8>& indicies, size_t table_size) {
+            for (size_t i = 0; i < result.size(); ++i) {
+                const size_t index = indicies[i] / table[0].size();
+                const size_t elem = indicies[i] % table[0].size();
+                if (index < table_size) {
+                    result[i] = table[index][elem];
+                }
+            }
+        }
+    ));
+
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + (table_size + 0) * 16]);
+    code.add(rsp, stack_space + ABI_SHADOW_SPACE);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 static void EmitVectorUnsignedAbsoluteDifference(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

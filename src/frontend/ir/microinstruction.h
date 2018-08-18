@@ -17,6 +17,8 @@ namespace Dynarmic::IR {
 enum class Opcode;
 enum class Type;
 
+constexpr size_t max_arg_count = 4;
+
 /**
  * A representation of a microinstruction. A single ARM/Thumb instruction may be
  * converted into zero or more microinstructions.
@@ -136,7 +138,7 @@ private:
 
     Opcode op;
     size_t use_count = 0;
-    std::array<Value, 3> args;
+    std::array<Value, max_arg_count> args;
 
     // Pointers to related pseudooperations:
     // Since not all combinations are possible, we use a union to save space
