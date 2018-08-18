@@ -511,8 +511,8 @@ INST(FMUL_elt_2,             "FMUL (by element)",                         "01011
 //INST(FMULX_elt_2,            "FMULX (by element)",                        "011111111zLMmmmm1001H0nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Table Lookup
-//INST(TBL,                    "TBL",                                       "0Q001110000mmmmm0LL000nnnnnddddd")
-//INST(TBX,                    "TBX",                                       "0Q001110000mmmmm0LL100nnnnnddddd")
+INST(TBL,                    "TBL",                                       "0Q001110000mmmmm0LL000nnnnnddddd")
+INST(TBX,                    "TBX",                                       "0Q001110000mmmmm0LL100nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Permute
 INST(UZP1,                   "UZP1",                                      "0Q001110zz0mmmmm000110nnnnnddddd")

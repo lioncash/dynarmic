@@ -621,8 +621,8 @@ struct TranslatorVisitor final {
     bool FMULX_elt_2(bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Table Lookup
-    bool TBL(bool Q, Vec Vm, Imm<2> len, Vec Vn, Vec Vd);
-    bool TBX(bool Q, Vec Vm, Imm<2> len, Vec Vn, Vec Vd);
+    bool TBL(bool Q, Vec Vm, Imm<2> len, size_t Vn, Vec Vd);
+    bool TBX(bool Q, Vec Vm, Imm<2> len, size_t Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Permute
     bool UZP1(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
