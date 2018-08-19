@@ -2710,6 +2710,8 @@ void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
     const size_t table_size = std::count_if(table.begin(), table.end(), [](const auto& elem){ return !elem.IsVoid(); });
     const bool is_defaults_zero = !inst->GetArg(0).IsImmediate() && inst->GetArg(0).GetInst()->GetOpcode() == IR::Opcode::ZeroVector;
 
+    // TODO: AVX512VL implementation when available (VPERMB / VPERMI2B / VPERMT2B)
+
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3) && is_defaults_zero && table_size == 1) {
         const Xbyak::Xmm indicies = ctx.reg_alloc.UseScratchXmm(args[2]);
         const Xbyak::Xmm xmm_table0 = ctx.reg_alloc.UseScratchXmm(table[0]);
@@ -2747,13 +2749,9 @@ void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
         code.movaps(masked, code.MConst(xword, 0xF0F0F0F0F0F0F0F0, 0xF0F0F0F0F0F0F0F0));
         code.pand(masked, indicies);
 
-        const Xbyak::Xmm xmm_table0 = ctx.reg_alloc.UseScratchXmm(table[0]);
-        const Xbyak::Xmm xmm_table1 = table_size > 1 ? ctx.reg_alloc.UseScratchXmm(table[1]) : Xbyak::Xmm{};
-        const Xbyak::Xmm xmm_table2 = table_size > 2 ? ctx.reg_alloc.UseScratchXmm(table[2]) : Xbyak::Xmm{};
-        const Xbyak::Xmm xmm_table3 = table_size > 3 ? ctx.reg_alloc.UseScratchXmm(table[3]) : Xbyak::Xmm{};
-        const std::array<Xbyak::Xmm, 4> xmm_table{xmm_table0, xmm_table1, xmm_table2, xmm_table3};
-
         for (size_t i = 0; i < table_size; ++i) {
+            const Xbyak::Xmm xmm_table = ctx.reg_alloc.UseScratchXmm(table[i]);
+
             const u64 max_index = Common::Replicate<u64>(i * 16, 8);
 
             if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
@@ -2762,8 +2760,10 @@ void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
                 code.movaps(xmm0, masked);
                 code.pcmpeqb(xmm0, code.MConst(xword, max_index, max_index));
             }
-            code.pshufb(xmm_table[i], indicies);
-            code.pblendvb(result, xmm_table[i]);
+            code.pshufb(xmm_table, indicies);
+            code.pblendvb(result, xmm_table);
+
+            ctx.reg_alloc.Release(xmm_table);
         }
 
         ctx.reg_alloc.DefineValue(inst, result);
@@ -2775,6 +2775,7 @@ void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
     for (size_t i = 0; i < table_size; ++i) {
         const Xbyak::Xmm table_value = ctx.reg_alloc.UseXmm(table[i]);
         code.movaps(xword[rsp + ABI_SHADOW_SPACE + i * 16], table_value);
+        ctx.reg_alloc.Release(table_value);
     }
     const Xbyak::Xmm defaults = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Xmm indicies = ctx.reg_alloc.UseXmm(args[2]);
