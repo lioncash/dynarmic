@@ -2708,11 +2708,41 @@ void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
     auto table = ctx.reg_alloc.GetArgumentInfo(inst->GetArg(1).GetInst());
 
     const size_t table_size = std::count_if(table.begin(), table.end(), [](const auto& elem){ return !elem.IsVoid(); });
+    const bool is_defaults_zero = !inst->GetArg(0).IsImmediate() && inst->GetArg(0).GetInst()->GetOpcode() == IR::Opcode::ZeroVector;
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3) && is_defaults_zero && table_size == 1) {
+        const Xbyak::Xmm indicies = ctx.reg_alloc.UseScratchXmm(args[2]);
+        const Xbyak::Xmm xmm_table0 = ctx.reg_alloc.UseScratchXmm(table[0]);
+
+        code.paddusb(indicies, code.MConst(xword, 0x7070707070707070, 0x7070707070707070));
+        code.pshufb(xmm_table0, indicies);
+
+        ctx.reg_alloc.DefineValue(inst, xmm_table0);
+        return;
+    }
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && table_size == 1) {
+        const Xbyak::Xmm indicies = ctx.reg_alloc.UseXmm(args[2]);
+        const Xbyak::Xmm defaults = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm xmm_table0 = ctx.reg_alloc.UseScratchXmm(table[0]);
+
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpaddusb(xmm0, indicies, code.MConst(xword, 0x7070707070707070, 0x7070707070707070));
+        } else {
+            code.movaps(xmm0, indicies);
+            code.paddusb(xmm0, code.MConst(xword, 0x7070707070707070, 0x7070707070707070));
+        }
+        code.pshufb(xmm_table0, indicies);
+        code.pblendvb(xmm_table0, defaults);
+
+        ctx.reg_alloc.DefineValue(inst, xmm_table0);
+        return;
+    }
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         const Xbyak::Xmm indicies = ctx.reg_alloc.UseXmm(args[2]);
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-        const Xbyak::Xmm masked = table_size == 1 ? xmm0 : ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm masked = ctx.reg_alloc.ScratchXmm();
 
         code.movaps(masked, code.MConst(xword, 0xF0F0F0F0F0F0F0F0, 0xF0F0F0F0F0F0F0F0));
         code.pand(masked, indicies);
@@ -2726,9 +2756,7 @@ void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
         for (size_t i = 0; i < table_size; ++i) {
             const u64 max_index = Common::Replicate<u64>(i * 16, 8);
 
-            if (table_size == 1) {
-                code.pcmpeqb(masked, code.MConst(xword, max_index, max_index));
-            } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
                 code.vpcmpeqb(xmm0, masked, code.MConst(xword, max_index, max_index));
             } else {
                 code.movaps(xmm0, masked);
