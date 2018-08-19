@@ -2772,13 +2772,16 @@ void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
         for (size_t i = 0; i < table_size; ++i) {
             const Xbyak::Xmm xmm_table = ctx.reg_alloc.UseScratchXmm(table[i]);
 
-            const u64 max_index = Common::Replicate<u64>(i * 16, 8);
+            const u64 table_index = Common::Replicate<u64>(i * 16, 8);
 
-            if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-                code.vpcmpeqb(xmm0, masked, code.MConst(xword, max_index, max_index));
+            if (table_index == 0) {
+                code.pxor(xmm0, xmm0);
+                code.pcmpeqb(xmm0, masked);
+            } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+                code.vpcmpeqb(xmm0, masked, code.MConst(xword, table_index, table_index));
             } else {
-                code.movaps(xmm0, masked);
-                code.pcmpeqb(xmm0, code.MConst(xword, max_index, max_index));
+                code.movaps(xmm0, code.MConst(xword, table_index, table_index));
+                code.pcmpeqb(xmm0, masked);
             }
             code.pshufb(xmm_table, indicies);
             code.pblendvb(result, xmm_table);
