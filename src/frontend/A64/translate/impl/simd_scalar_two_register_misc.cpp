@@ -73,6 +73,22 @@ bool ScalarFPConvertWithRound(TranslatorVisitor& v, bool sz, Vec Vn, Vec Vd,
     v.V_scalar(esize, Vd, result);
     return true;
 }
+
+using NarrowingFn = IR::U128 (IR::IREmitter::*)(size_t, const IR::U128&);
+
+bool SaturatedNarrow(TranslatorVisitor& v, Imm<2> size, Vec Vn, Vec Vd, NarrowingFn fn) {
+    if (size == 0b11) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::U128 operand = v.ir.ZeroExtendToQuad(v.V_scalar(2 * esize, Vn));
+    const IR::U128 result = (v.ir.*fn)(2 * esize, operand);
+
+    v.V_scalar(64, Vd, v.ir.VectorGetElement(64, result, 0));
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::ABS_1(Imm<2> size, Vec Vn, Vec Vd) {
@@ -193,6 +209,14 @@ bool TranslatorVisitor::SCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SQXTN_1(Imm<2> size, Vec Vn, Vec Vd) {
+    return SaturatedNarrow(*this, size, Vn, Vd, &IREmitter::VectorSignedSaturatedNarrowToSigned);
+}
+
+bool TranslatorVisitor::SQXTUN_1(Imm<2> size, Vec Vn, Vec Vd) {
+    return SaturatedNarrow(*this, size, Vn, Vd, &IREmitter::VectorSignedSaturatedNarrowToUnsigned);
+}
+
 bool TranslatorVisitor::UCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     const auto esize = sz ? 64 : 32;
 
@@ -204,6 +228,10 @@ bool TranslatorVisitor::UCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     }
     V_scalar(esize, Vd, element);
     return true;
+}
+
+bool TranslatorVisitor::UQXTN_1(Imm<2> size, Vec Vn, Vec Vd) {
+    return SaturatedNarrow(*this, size, Vn, Vd, &IREmitter::VectorUnsignedSaturatedNarrow);
 }
 
 } // namespace Dynarmic::A64

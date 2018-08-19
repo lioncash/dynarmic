@@ -522,15 +522,15 @@ struct TranslatorVisitor final {
     bool CMEQ_zero_1(Imm<2> size, Vec Vn, Vec Vd);
     bool CMLT_1(Imm<2> size, Vec Vn, Vec Vd);
     bool ABS_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool SQXTN_1(Imm<2> size, Vec Vn, Reg Rd);
+    bool SQXTN_1(Imm<2> size, Vec Vn, Vec Vd);
     bool USQADD_1(Imm<2> size, Vec Vn, Vec Vd);
     bool SQNEG_1(Imm<2> size, Vec Vn, Vec Vd);
     bool CMGE_zero_1(Imm<2> size, Vec Vn, Vec Vd);
     bool CMLE_1(Imm<2> size, Vec Vn, Vec Vd);
     bool NEG_1(Imm<2> size, Vec Vn, Vec Vd);
-    bool SQXTUN_1(Imm<2> size, Vec Vn, Reg Rd);
-    bool UQXTN_1(Imm<2> size, Vec Vn, Reg Rd);
-    bool FCVTXN_1(bool sz, Vec Vn, Reg Rd);
+    bool SQXTUN_1(Imm<2> size, Vec Vn, Vec Vd);
+    bool UQXTN_1(Imm<2> size, Vec Vn, Vec Vd);
+    bool FCVTXN_1(bool sz, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Scalar pairwise
     bool ADDP_pair(Imm<2> size, Vec Vn, Vec Vd);

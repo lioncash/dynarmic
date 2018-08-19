@@ -412,14 +412,14 @@ INST(CMGT_zero_1,            "CMGT (zero)",                               "01011
 INST(CMEQ_zero_1,            "CMEQ (zero)",                               "01011110zz100000100110nnnnnddddd")
 INST(CMLT_1,                 "CMLT (zero)",                               "01011110zz100000101010nnnnnddddd")
 INST(ABS_1,                  "ABS",                                       "01011110zz100000101110nnnnnddddd")
-//INST(SQXTN_1,                "SQXTN, SQXTN2",                             "01011110zz100001010010nnnnnddddd")
+INST(SQXTN_1,                "SQXTN, SQXTN2",                             "01011110zz100001010010nnnnnddddd")
 //INST(USQADD_1,               "USQADD",                                    "01111110zz100000001110nnnnnddddd")
 //INST(SQNEG_1,                "SQNEG",                                     "01111110zz100000011110nnnnnddddd")
 INST(CMGE_zero_1,            "CMGE (zero)",                               "01111110zz100000100010nnnnnddddd")
 INST(CMLE_1,                 "CMLE (zero)",                               "01111110zz100000100110nnnnnddddd")
 INST(NEG_1,                  "NEG (vector)",                              "01111110zz100000101110nnnnnddddd")
-//INST(SQXTUN_1,               "SQXTUN, SQXTUN2",                           "01111110zz100001001010nnnnnddddd")
-//INST(UQXTN_1,                "UQXTN, UQXTN2",                             "01111110zz100001010010nnnnnddddd")
+INST(SQXTUN_1,               "SQXTUN, SQXTUN2",                           "01111110zz100001001010nnnnnddddd")
+INST(UQXTN_1,                "UQXTN, UQXTN2",                             "01111110zz100001010010nnnnnddddd")
 //INST(FCVTXN_1,               "FCVTXN, FCVTXN2",                           "011111100z100001011010nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Scalar pairwise
