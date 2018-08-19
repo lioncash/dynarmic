@@ -2741,6 +2741,26 @@ void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && is_defaults_zero && table_size == 2) {
+        const Xbyak::Xmm indicies = ctx.reg_alloc.UseScratchXmm(args[2]);
+        const Xbyak::Xmm xmm_table0 = ctx.reg_alloc.UseScratchXmm(table[0]);
+        const Xbyak::Xmm xmm_table1 = ctx.reg_alloc.UseScratchXmm(table[1]);
+
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpaddusb(xmm0, indicies, code.MConst(xword, 0x7070707070707070, 0x7070707070707070));
+        } else {
+            code.movaps(xmm0, indicies);
+            code.paddusb(xmm0, code.MConst(xword, 0x7070707070707070, 0x7070707070707070));
+        }
+        code.paddusb(indicies, code.MConst(xword, 0x6060606060606060, 0x6060606060606060));
+        code.pshufb(xmm_table0, xmm0);
+        code.pshufb(xmm_table1, indicies);
+        code.pblendvb(xmm_table0, xmm_table1);
+
+        ctx.reg_alloc.DefineValue(inst, xmm_table0);
+        return;
+    }
+
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         const Xbyak::Xmm indicies = ctx.reg_alloc.UseXmm(args[2]);
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
