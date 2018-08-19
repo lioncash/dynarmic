@@ -83,25 +83,25 @@ static bool IsValuelessType(IR::Type type) {
 }
 
 bool HostLocInfo::IsLocked() const {
-    return is_being_used;
+    return is_being_used_count > 0;
 }
 
 bool HostLocInfo::IsEmpty() const {
-    return !is_being_used && values.empty();
+    return is_being_used_count == 0 && values.empty();
 }
 
 bool HostLocInfo::IsLastUse() const {
-    return !is_being_used && current_references == 1 && accumulated_uses + 1 == total_uses;
+    return is_being_used_count == 0 && current_references == 1 && accumulated_uses + 1 == total_uses;
 }
 
 void HostLocInfo::ReadLock() {
     ASSERT(!is_scratch);
-    is_being_used = true;
+    is_being_used_count++;
 }
 
 void HostLocInfo::WriteLock() {
-    ASSERT(!is_being_used);
-    is_being_used = true;
+    ASSERT(is_being_used_count == 0);
+    is_being_used_count++;
     is_scratch = true;
 }
 
@@ -110,9 +110,25 @@ void HostLocInfo::AddArgReference() {
     ASSERT(accumulated_uses + current_references <= total_uses);
 }
 
-void HostLocInfo::EndOfAllocScope() {
+void HostLocInfo::ReleaseOne() {
+    is_being_used_count--;
+    is_scratch = false;
+
+    if (current_references == 0)
+        return;
+
+    accumulated_uses++;
+    current_references--;
+
+    if (current_references == 0)
+        ReleaseAll();
+}
+
+void HostLocInfo::ReleaseAll() {
     accumulated_uses += current_references;
     current_references = 0;
+
+    ASSERT(total_uses == std::accumulate(values.begin(), values.end(), size_t(0), [](size_t sum, IR::Inst* inst) { return sum + inst->UseCount(); }));
 
     if (total_uses == accumulated_uses) {
         values.clear();
@@ -121,9 +137,7 @@ void HostLocInfo::EndOfAllocScope() {
         max_bit_width = 0;
     }
 
-    ASSERT(total_uses == std::accumulate(values.begin(), values.end(), size_t(0), [](size_t sum, IR::Inst* inst) { return sum + inst->UseCount(); }));
-
-    is_being_used = false;
+    is_being_used_count = 0;
     is_scratch = false;
 }
 
@@ -287,6 +301,12 @@ void RegAlloc::DefineValue(IR::Inst* inst, Argument& arg) {
     DefineValueImpl(inst, arg.value);
 }
 
+void RegAlloc::Release(const Xbyak::Reg& reg) {
+    ASSERT(reg.getKind() == Xbyak::Operand::XMM || reg.getKind() == Xbyak::Operand::REG);
+    const HostLoc hostloc = static_cast<HostLoc>(reg.getIdx() + static_cast<size_t>(reg.getKind() == Xbyak::Operand::XMM ? HostLoc::XMM0 : HostLoc::RAX));
+    LocInfo(hostloc).ReleaseOne();
+}
+
 Xbyak::Reg64 RegAlloc::ScratchGpr(HostLocList desired_locations) {
     return HostLocToReg64(ScratchImpl(desired_locations));
 }
@@ -413,7 +433,7 @@ void RegAlloc::HostCall(IR::Inst* result_def, boost::optional<Argument&> arg0, b
 
 void RegAlloc::EndOfAllocScope() {
     for (auto& iter : hostloc_info) {
-        iter.EndOfAllocScope();
+        iter.ReleaseAll();
     }
 }
 

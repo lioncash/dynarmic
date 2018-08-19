@@ -35,7 +35,8 @@ public:
     void ReadLock();
     void WriteLock();
     void AddArgReference();
-    void EndOfAllocScope();
+    void ReleaseOne();
+    void ReleaseAll();
 
     bool ContainsValue(const IR::Inst* inst) const;
     size_t GetMaxBitWidth() const;
@@ -44,7 +45,7 @@ public:
 
 private:
     // Current instruction state
-    bool is_being_used = false;
+    size_t is_being_used_count = 0;
     bool is_scratch = false;
 
     // Block state
@@ -110,6 +111,8 @@ public:
 
     void DefineValue(IR::Inst* inst, const Xbyak::Reg& reg);
     void DefineValue(IR::Inst* inst, Argument& arg);
+
+    void Release(const Xbyak::Reg& reg);
 
     Xbyak::Reg64 ScratchGpr(HostLocList desired_locations = any_gpr);
     Xbyak::Xmm ScratchXmm(HostLocList desired_locations = any_xmm);
