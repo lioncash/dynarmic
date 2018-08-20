@@ -86,6 +86,41 @@ bool FPMultiplyByElement(TranslatorVisitor& v, bool Q, bool sz, Imm<1> L, Imm<1>
     return true;
 }
 
+using ExtensionFunction = IR::U32 (IREmitter::*)(const IR::UAny&);
+
+bool DotProduct(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H,
+                Vec Vn, Vec Vd, ExtensionFunction extension) {
+    if (size != 0b10) {
+        return v.ReservedValue();
+    }
+
+    const Vec Vm = concatenate(M, Vmlo).ZeroExtend<Vec>();
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+    const size_t elements = datasize / esize;
+    const size_t index = concatenate(H, L).ZeroExtend();
+
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = v.V(128, Vm);
+    IR::U128 result = v.V(datasize, Vd);
+
+    for (size_t i = 0; i < elements; i++) {
+        IR::U32 res_element = v.ir.Imm32(0);
+
+        for (size_t j = 0; j < 4; j++) {
+            const IR::U32 elem1 = (v.ir.*extension)(v.ir.VectorGetElement(8, operand1, 4 * i + j));
+            const IR::U32 elem2 = (v.ir.*extension)(v.ir.VectorGetElement(8, operand2, 4 * index + j));
+
+            res_element = v.ir.Add(res_element, v.ir.Mul(elem1, elem2));
+        }
+
+        res_element = v.ir.Add(v.ir.VectorGetElement(32, result, i), res_element);
+        result = v.ir.VectorSetElement(32, result, i, res_element);
+    }
+
+    v.V(datasize, Vd, result);
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::MLA_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
@@ -110,6 +145,14 @@ bool TranslatorVisitor::FMLS_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> V
 
 bool TranslatorVisitor::FMUL_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     return FPMultiplyByElement(*this, Q, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None);
+}
+
+bool TranslatorVisitor::SDOT_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return DotProduct(*this, Q, size, L, M, Vmlo, H, Vn, Vd, &IREmitter::SignExtendToWord);
+}
+
+bool TranslatorVisitor::UDOT_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return DotProduct(*this, Q, size, L, M, Vmlo, H, Vn, Vd, &IREmitter::ZeroExtendToWord);
 }
 
 } // namespace Dynarmic::A64
