@@ -8,7 +8,7 @@
 
 namespace Dynarmic::A64 {
 
-bool TranslatorVisitor::load_store_register_immediate(bool wback, bool postindex, size_t scale, u64 offset, Imm<2> size, Imm<2> opc, Reg Rn, Reg Rt) {
+static bool LoadStoreRegisterImmediate(TranslatorVisitor& v, bool wback, bool postindex, size_t scale, u64 offset, Imm<2> size, Imm<2> opc, Reg Rn, Reg Rt) {
     MemOp memop;
     bool signed_ = false;
     size_t regsize = 0;
@@ -30,30 +30,30 @@ bool TranslatorVisitor::load_store_register_immediate(bool wback, bool postindex
     const size_t datasize = 8 << scale;
 
     if (memop == MemOp::LOAD && wback && Rn == Rt && Rn != Reg::R31) {
-        return UnpredictableInstruction();
+        return v.UnpredictableInstruction();
     }
     if (memop == MemOp::STORE && wback && Rn == Rt && Rn != Reg::R31) {
-        return UnpredictableInstruction();
+        return v.UnpredictableInstruction();
     }
 
     // TODO: Check SP alignment
-    IR::U64 address = Rn == Reg::SP ? IR::U64(SP(64)) : IR::U64(X(64, Rn));
+    IR::U64 address = Rn == Reg::SP ? IR::U64(v.SP(64)) : IR::U64(v.X(64, Rn));
 
     if (!postindex)
-        address = ir.Add(address, ir.Imm64(offset));
+        address = v.ir.Add(address, v.ir.Imm64(offset));
 
     switch (memop) {
     case MemOp::STORE: {
-        auto data = X(datasize, Rt);
-        Mem(address, datasize / 8, AccType::NORMAL, data);
+        auto data = v.X(datasize, Rt);
+        v.Mem(address, datasize / 8, AccType::NORMAL, data);
         break;
     }
     case MemOp::LOAD: {
-        auto data = Mem(address, datasize / 8, AccType::NORMAL);
+        auto data = v.Mem(address, datasize / 8, AccType::NORMAL);
         if (signed_)
-            X(regsize, Rt, SignExtend(data, regsize));
+            v.X(regsize, Rt, v.SignExtend(data, regsize));
         else
-            X(regsize, Rt, ZeroExtend(data, regsize));
+            v.X(regsize, Rt, v.ZeroExtend(data, regsize));
         break;
     }
     case MemOp::PREFETCH:
@@ -63,11 +63,11 @@ bool TranslatorVisitor::load_store_register_immediate(bool wback, bool postindex
 
     if (wback) {
         if (postindex)
-            address = ir.Add(address, ir.Imm64(offset));
+            address = v.ir.Add(address, v.ir.Imm64(offset));
         if (Rn == Reg::SP)
-            SP(64, address);
+            v.SP(64, address);
         else
-            X(64, Rn, address);
+            v.X(64, Rn, address);
     }
 
     return true;
@@ -79,7 +79,7 @@ bool TranslatorVisitor::STRx_LDRx_imm_1(Imm<2> size, Imm<2> opc, Imm<9> imm9, bo
     const size_t scale = size.ZeroExtend<size_t>();
     const u64 offset = imm9.SignExtend<u64>();
 
-    return load_store_register_immediate(wback, postindex, scale, offset, size, opc, Rn, Rt);
+    return LoadStoreRegisterImmediate(*this, wback, postindex, scale, offset, size, opc, Rn, Rt);
 }
 
 bool TranslatorVisitor::STRx_LDRx_imm_2(Imm<2> size, Imm<2> opc, Imm<12> imm12, Reg Rn, Reg Rt) {
@@ -88,7 +88,7 @@ bool TranslatorVisitor::STRx_LDRx_imm_2(Imm<2> size, Imm<2> opc, Imm<12> imm12, 
     const size_t scale = size.ZeroExtend<size_t>();
     const u64 offset = imm12.ZeroExtend<u64>() << scale;
 
-    return load_store_register_immediate(wback, postindex, scale, offset, size, opc, Rn, Rt);
+    return LoadStoreRegisterImmediate(*this, wback, postindex, scale, offset, size, opc, Rn, Rt);
 }
 
 bool TranslatorVisitor::STURx_LDURx(Imm<2> size, Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt) {
@@ -97,7 +97,7 @@ bool TranslatorVisitor::STURx_LDURx(Imm<2> size, Imm<2> opc, Imm<9> imm9, Reg Rn
     const size_t scale = size.ZeroExtend<size_t>();
     const u64 offset = imm9.SignExtend<u64>();
 
-    return load_store_register_immediate(wback, postindex, scale, offset, size, opc, Rn, Rt);
+    return LoadStoreRegisterImmediate(*this, wback, postindex, scale, offset, size, opc, Rn, Rt);
 }
 
 bool TranslatorVisitor::PRFM_imm([[maybe_unused]] Imm<12> imm12, [[maybe_unused]] Reg Rn, [[maybe_unused]] Reg Rt) {
@@ -112,7 +112,7 @@ bool TranslatorVisitor::PRFM_unscaled_imm([[maybe_unused]] Imm<9> imm9, [[maybe_
     return true;
 }
 
-static bool LoadStoreSIMD(TranslatorVisitor& v, IREmitter& ir, bool wback, bool postindex, size_t scale, u64 offset, MemOp memop, Reg Rn, Vec Vt) {
+static bool LoadStoreSIMD(TranslatorVisitor& v, bool wback, bool postindex, size_t scale, u64 offset, MemOp memop, Reg Rn, Vec Vt) {
     const AccType acctype = AccType::VEC;
     const size_t datasize = 8 << scale;
 
@@ -125,7 +125,7 @@ static bool LoadStoreSIMD(TranslatorVisitor& v, IREmitter& ir, bool wback, bool 
     }
 
     if (!postindex) {
-        address = ir.Add(address, ir.Imm64(offset));
+        address = v.ir.Add(address, v.ir.Imm64(offset));
     }
 
     switch (memop) {
@@ -134,7 +134,7 @@ static bool LoadStoreSIMD(TranslatorVisitor& v, IREmitter& ir, bool wback, bool 
             const IR::U128 data = v.V(128, Vt);
             v.Mem(address, 16, acctype, data);
         } else {
-            const IR::UAny data = ir.VectorGetElement(datasize, v.V(128, Vt), 0);
+            const IR::UAny data = v.ir.VectorGetElement(datasize, v.V(128, Vt), 0);
             v.Mem(address, datasize / 8, acctype, data);
         }
         break;
@@ -144,7 +144,7 @@ static bool LoadStoreSIMD(TranslatorVisitor& v, IREmitter& ir, bool wback, bool 
             v.V(128, Vt, data);
         } else {
             const IR::UAny data = v.Mem(address, datasize / 8, acctype);
-            v.V(128, Vt, ir.ZeroExtendToQuad(data));
+            v.V(128, Vt, v.ir.ZeroExtendToQuad(data));
         }
         break;
     default:
@@ -153,7 +153,7 @@ static bool LoadStoreSIMD(TranslatorVisitor& v, IREmitter& ir, bool wback, bool 
 
     if (wback) {
         if (postindex) {
-            address = ir.Add(address, ir.Imm64(offset));
+            address = v.ir.Add(address, v.ir.Imm64(offset));
         }
         if (Rn == Reg::SP) {
             v.SP(64, address);
@@ -172,7 +172,7 @@ bool TranslatorVisitor::STR_imm_fpsimd_1(Imm<2> size, Imm<1> opc_1, Imm<9> imm9,
     if (scale > 4) return UnallocatedEncoding();
     const u64 offset = imm9.SignExtend<u64>();
 
-    return LoadStoreSIMD(*this, ir, wback, postindex, scale, offset, MemOp::STORE, Rn, Vt);
+    return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::STORE, Rn, Vt);
 }
 
 bool TranslatorVisitor::STR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm12, Reg Rn, Vec Vt) {
@@ -182,7 +182,7 @@ bool TranslatorVisitor::STR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm1
     if (scale > 4) return UnallocatedEncoding();
     const u64 offset = imm12.ZeroExtend<u64>() << scale;
 
-    return LoadStoreSIMD(*this, ir, wback, postindex, scale, offset, MemOp::STORE, Rn, Vt);
+    return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::STORE, Rn, Vt);
 }
 
 bool TranslatorVisitor::LDR_imm_fpsimd_1(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, bool not_postindex, Reg Rn, Vec Vt) {
@@ -192,7 +192,7 @@ bool TranslatorVisitor::LDR_imm_fpsimd_1(Imm<2> size, Imm<1> opc_1, Imm<9> imm9,
     if (scale > 4) return UnallocatedEncoding();
     const u64 offset = imm9.SignExtend<u64>();
 
-    return LoadStoreSIMD(*this, ir, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
+    return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
 }
 
 bool TranslatorVisitor::LDR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm12, Reg Rn, Vec Vt) {
@@ -202,7 +202,7 @@ bool TranslatorVisitor::LDR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm1
     if (scale > 4) return UnallocatedEncoding();
     const u64 offset = imm12.ZeroExtend<u64>() << scale;
 
-    return LoadStoreSIMD(*this, ir, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
+    return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
 }
 
 bool TranslatorVisitor::STUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg Rn, Vec Vt) {
@@ -212,7 +212,7 @@ bool TranslatorVisitor::STUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg 
     if (scale > 4) return UnallocatedEncoding();
     const u64 offset = imm9.SignExtend<u64>();
 
-    return LoadStoreSIMD(*this, ir, wback, postindex, scale, offset, MemOp::STORE, Rn, Vt);
+    return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::STORE, Rn, Vt);
 }
 
 bool TranslatorVisitor::LDUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg Rn, Vec Vt) {
@@ -222,7 +222,7 @@ bool TranslatorVisitor::LDUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg 
     if (scale > 4) return UnallocatedEncoding();
     const u64 offset = imm9.SignExtend<u64>();
 
-    return LoadStoreSIMD(*this, ir, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
+    return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
 }
 
 } // namespace Dynarmic::A64

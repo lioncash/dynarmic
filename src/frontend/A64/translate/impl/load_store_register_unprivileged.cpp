@@ -8,7 +8,7 @@
 
 namespace Dynarmic::A64 {
 
-static bool StoreRegister(TranslatorVisitor& v, IREmitter& ir, const size_t datasize,
+static bool StoreRegister(TranslatorVisitor& v, const size_t datasize,
                           const Imm<9> imm9, const Reg Rn, const Reg Rt) {
     const u64 offset = imm9.SignExtend<u64>();
     AccType acctype = AccType::UNPRIV;
@@ -20,13 +20,13 @@ static bool StoreRegister(TranslatorVisitor& v, IREmitter& ir, const size_t data
     } else {
         address = v.X(64, Rn);
     }
-    address = ir.Add(address, ir.Imm64(offset));
+    address = v.ir.Add(address, v.ir.Imm64(offset));
     IR::UAny data = v.X(datasize, Rt);
     v.Mem(address, datasize / 8, acctype, data);
     return true;
 }
 
-static bool LoadRegister(TranslatorVisitor& v, IREmitter& ir, const size_t datasize,
+static bool LoadRegister(TranslatorVisitor& v, const size_t datasize,
                          const Imm<9> imm9, const Reg Rn, const Reg Rt) {
     const u64 offset = imm9.SignExtend<u64>();
     AccType acctype = AccType::UNPRIV;
@@ -38,7 +38,7 @@ static bool LoadRegister(TranslatorVisitor& v, IREmitter& ir, const size_t datas
     } else {
         address = v.X(64, Rn);
     }
-    address = ir.Add(address, ir.Imm64(offset));
+    address = v.ir.Add(address, v.ir.Imm64(offset));
     IR::UAny data = v.Mem(address, datasize / 8, acctype);
     // max is used to zeroextend < 32 to 32, and > 32 to 64
     const size_t extended_size = std::max<size_t>(32, datasize);
@@ -46,7 +46,7 @@ static bool LoadRegister(TranslatorVisitor& v, IREmitter& ir, const size_t datas
     return true;
 }
 
-static bool LoadRegisterSigned(TranslatorVisitor& v, IREmitter& ir, const size_t datasize,
+static bool LoadRegisterSigned(TranslatorVisitor& v, const size_t datasize,
                                const Imm<2> opc, const Imm<9> imm9, const Reg Rn, const Reg Rt) {
     const u64 offset = imm9.SignExtend<u64>();
     AccType acctype = AccType::UNPRIV;
@@ -72,7 +72,7 @@ static bool LoadRegisterSigned(TranslatorVisitor& v, IREmitter& ir, const size_t
     } else {
         address = v.X(64, Rn);
     }
-    address = ir.Add(address, ir.Imm64(offset));
+    address = v.ir.Add(address, v.ir.Imm64(offset));
 
     switch (memop) {
     case MemOp::STORE:
@@ -95,39 +95,39 @@ static bool LoadRegisterSigned(TranslatorVisitor& v, IREmitter& ir, const size_t
 }
 
 bool TranslatorVisitor::STTRB(Imm<9> imm9, Reg Rn, Reg Rt) {
-    return StoreRegister(*this, ir, 8, imm9, Rn, Rt);
+    return StoreRegister(*this, 8, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::STTRH(Imm<9> imm9, Reg Rn, Reg Rt) {
-    return StoreRegister(*this, ir, 16, imm9, Rn, Rt);
+    return StoreRegister(*this, 16, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::STTR(Imm<2> size, Imm<9> imm9, Reg Rn, Reg Rt) {
     const size_t scale = size.ZeroExtend<size_t>();
     const size_t datasize = 8 << scale;
-    return StoreRegister(*this, ir, datasize, imm9, Rn, Rt);
+    return StoreRegister(*this, datasize, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTRB(Imm<9> imm9, Reg Rn, Reg Rt) {
-    return LoadRegister(*this, ir, 8, imm9, Rn, Rt);
+    return LoadRegister(*this, 8, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTRH(Imm<9> imm9, Reg Rn, Reg Rt) {
-    return LoadRegister(*this, ir, 16, imm9, Rn, Rt);
+    return LoadRegister(*this, 16, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTR(Imm<2> size, Imm<9> imm9, Reg Rn, Reg Rt) {
     const size_t scale = size.ZeroExtend<size_t>();
     const size_t datasize = 8 << scale;
-    return LoadRegister(*this, ir, datasize, imm9, Rn, Rt);
+    return LoadRegister(*this, datasize, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTRSB(Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt) {
-    return LoadRegisterSigned(*this, ir, 8, opc, imm9, Rn, Rt);
+    return LoadRegisterSigned(*this, 8, opc, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTRSH(Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt) {
-    return LoadRegisterSigned(*this, ir, 16, opc, imm9, Rn, Rt);
+    return LoadRegisterSigned(*this, 16, opc, imm9, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDTRSW(Imm<9> imm9, Reg Rn, Reg Rt) {

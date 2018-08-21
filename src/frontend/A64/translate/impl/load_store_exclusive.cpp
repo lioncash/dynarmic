@@ -10,7 +10,7 @@
 
 namespace Dynarmic::A64 {
 
-static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& ir, bool pair, size_t size, bool L, bool o0, boost::optional<Reg> Rs, boost::optional<Reg> Rt2, Reg Rn, Reg Rt) {
+static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& v, bool pair, size_t size, bool L, bool o0, boost::optional<Reg> Rs, boost::optional<Reg> Rt2, Reg Rn, Reg Rt) {
     // Shared Decode
 
     const AccType acctype = o0 ? AccType::ORDERED : AccType::ATOMIC;
@@ -46,9 +46,9 @@ static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& i
     case MemOp::STORE: {
         IR::UAnyU128 data;
         if (pair && elsize == 64) {
-            data = ir.Pack2x64To1x128(v.X(64, Rt), v.X(64, *Rt2));
+            data = v.ir.Pack2x64To1x128(v.X(64, Rt), v.X(64, *Rt2));
         } else if (pair && elsize == 32) {
-            data = ir.Pack2x32To1x64(v.X(32, Rt), v.X(32, *Rt2));
+            data = v.ir.Pack2x32To1x64(v.X(32, Rt), v.X(32, *Rt2));
         } else {
             data = v.X(elsize, Rt);
         }
@@ -57,14 +57,14 @@ static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& i
         break;
     }
     case MemOp::LOAD: {
-        ir.SetExclusive(address, dbytes);
+        v.ir.SetExclusive(address, dbytes);
         IR::UAnyU128 data = v.Mem(address, dbytes, acctype);
         if (pair && elsize == 64) {
-            v.X(64, Rt, ir.VectorGetElement(64, data, 0));
-            v.X(64, *Rt2, ir.VectorGetElement(64, data, 1));
+            v.X(64, Rt, v.ir.VectorGetElement(64, data, 0));
+            v.X(64, *Rt2, v.ir.VectorGetElement(64, data, 1));
         } else if (pair && elsize == 32) {
-            v.X(32, Rt, ir.LeastSignificantWord(data));
-            v.X(32, *Rt2, ir.MostSignificantWord(data).result);
+            v.X(32, Rt, v.ir.LeastSignificantWord(data));
+            v.X(32, *Rt2, v.ir.MostSignificantWord(data).result);
         } else {
             v.X(regsize, Rt, v.ZeroExtend(data, regsize));
         }
@@ -82,7 +82,7 @@ bool TranslatorVisitor::STXR(Imm<2> sz, Reg Rs, Reg Rn, Reg Rt) {
     const size_t size = sz.ZeroExtend<size_t>();
     const bool L = 0;
     const bool o0 = 0;
-    return ExclusiveSharedDecodeAndOperation(*this, ir, pair, size, L, o0, Rs, {}, Rn, Rt);
+    return ExclusiveSharedDecodeAndOperation(*this, pair, size, L, o0, Rs, {}, Rn, Rt);
 }
 
 bool TranslatorVisitor::STLXR(Imm<2> sz, Reg Rs, Reg Rn, Reg Rt) {
@@ -90,7 +90,7 @@ bool TranslatorVisitor::STLXR(Imm<2> sz, Reg Rs, Reg Rn, Reg Rt) {
     const size_t size = sz.ZeroExtend<size_t>();
     const bool L = 0;
     const bool o0 = 1;
-    return ExclusiveSharedDecodeAndOperation(*this, ir, pair, size, L, o0, Rs, {}, Rn, Rt);
+    return ExclusiveSharedDecodeAndOperation(*this, pair, size, L, o0, Rs, {}, Rn, Rt);
 }
 
 bool TranslatorVisitor::STXP(Imm<1> sz, Reg Rs, Reg Rt2, Reg Rn, Reg Rt) {
@@ -98,7 +98,7 @@ bool TranslatorVisitor::STXP(Imm<1> sz, Reg Rs, Reg Rt2, Reg Rn, Reg Rt) {
     const size_t size = concatenate(Imm<1>{1}, sz).ZeroExtend<size_t>();
     const bool L = 0;
     const bool o0 = 0;
-    return ExclusiveSharedDecodeAndOperation(*this, ir, pair, size, L, o0, Rs, Rt2, Rn, Rt);
+    return ExclusiveSharedDecodeAndOperation(*this, pair, size, L, o0, Rs, Rt2, Rn, Rt);
 }
 
 bool TranslatorVisitor::STLXP(Imm<1> sz, Reg Rs, Reg Rt2, Reg Rn, Reg Rt) {
@@ -106,7 +106,7 @@ bool TranslatorVisitor::STLXP(Imm<1> sz, Reg Rs, Reg Rt2, Reg Rn, Reg Rt) {
     const size_t size = concatenate(Imm<1>{1}, sz).ZeroExtend<size_t>();
     const bool L = 0;
     const bool o0 = 1;
-    return ExclusiveSharedDecodeAndOperation(*this, ir, pair, size, L, o0, Rs, Rt2, Rn, Rt);
+    return ExclusiveSharedDecodeAndOperation(*this, pair, size, L, o0, Rs, Rt2, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDXR(Imm<2> sz, Reg Rn, Reg Rt) {
@@ -114,7 +114,7 @@ bool TranslatorVisitor::LDXR(Imm<2> sz, Reg Rn, Reg Rt) {
     const size_t size = sz.ZeroExtend<size_t>();
     const bool L = 1;
     const bool o0 = 0;
-    return ExclusiveSharedDecodeAndOperation(*this, ir, pair, size, L, o0, {}, {}, Rn, Rt);
+    return ExclusiveSharedDecodeAndOperation(*this, pair, size, L, o0, {}, {}, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDAXR(Imm<2> sz, Reg Rn, Reg Rt) {
@@ -122,7 +122,7 @@ bool TranslatorVisitor::LDAXR(Imm<2> sz, Reg Rn, Reg Rt) {
     const size_t size = sz.ZeroExtend<size_t>();
     const bool L = 1;
     const bool o0 = 1;
-    return ExclusiveSharedDecodeAndOperation(*this, ir, pair, size, L, o0, {}, {}, Rn, Rt);
+    return ExclusiveSharedDecodeAndOperation(*this, pair, size, L, o0, {}, {}, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDXP(Imm<1> sz, Reg Rt2, Reg Rn, Reg Rt) {
@@ -130,7 +130,7 @@ bool TranslatorVisitor::LDXP(Imm<1> sz, Reg Rt2, Reg Rn, Reg Rt) {
     const size_t size = concatenate(Imm<1>{1}, sz).ZeroExtend<size_t>();
     const bool L = 1;
     const bool o0 = 0;
-    return ExclusiveSharedDecodeAndOperation(*this, ir, pair, size, L, o0, {}, Rt2, Rn, Rt);
+    return ExclusiveSharedDecodeAndOperation(*this, pair, size, L, o0, {}, Rt2, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDAXP(Imm<1> sz, Reg Rt2, Reg Rn, Reg Rt) {
@@ -138,7 +138,7 @@ bool TranslatorVisitor::LDAXP(Imm<1> sz, Reg Rt2, Reg Rn, Reg Rt) {
     const size_t size = concatenate(Imm<1>{1}, sz).ZeroExtend<size_t>();
     const bool L = 1;
     const bool o0 = 1;
-    return ExclusiveSharedDecodeAndOperation(*this, ir, pair, size, L, o0, {}, Rt2, Rn, Rt);
+    return ExclusiveSharedDecodeAndOperation(*this, pair, size, L, o0, {}, Rt2, Rn, Rt);
 }
 
 static bool OrderedSharedDecodeAndOperation(TranslatorVisitor& v, size_t size, bool L, bool o0, Reg Rn, Reg Rt) {

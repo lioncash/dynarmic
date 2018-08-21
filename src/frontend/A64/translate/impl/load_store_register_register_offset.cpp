@@ -8,7 +8,7 @@
 
 namespace Dynarmic::A64 {
 
-static bool RegSharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& ir, size_t scale, u8 shift, Imm<2> size, Imm<1> opc_1, Imm<1> opc_0, Reg Rm, Imm<3> option, Reg Rn, Reg Rt) {
+static bool RegSharedDecodeAndOperation(TranslatorVisitor& v, size_t scale, u8 shift, Imm<2> size, Imm<1> opc_1, Imm<1> opc_0, Reg Rm, Imm<3> option, Reg Rn, Reg Rt) {
     // Shared Decode
 
     const AccType acctype = AccType::NORMAL;
@@ -47,7 +47,7 @@ static bool RegSharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& ir, siz
     } else {
         address = v.X(64, Rn);
     }
-    address = ir.Add(address, offset);
+    address = v.ir.Add(address, offset);
 
     switch (memop) {
     case MemOp::STORE: {
@@ -81,7 +81,7 @@ bool TranslatorVisitor::STRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> optio
     if (!option.Bit<1>()) {
         return UnallocatedEncoding();
     }
-    return RegSharedDecodeAndOperation(*this, ir, scale, shift, size, opc_1, opc_0, Rm, option, Rn, Rt);
+    return RegSharedDecodeAndOperation(*this, scale, shift, size, opc_1, opc_0, Rm, option, Rn, Rt);
 }
 
 bool TranslatorVisitor::LDRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn, Reg Rt) {
@@ -91,10 +91,10 @@ bool TranslatorVisitor::LDRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> optio
     if (!option.Bit<1>()) {
         return UnallocatedEncoding();
     }
-    return RegSharedDecodeAndOperation(*this, ir, scale, shift, size, opc_1, opc_0, Rm, option, Rn, Rt);
+    return RegSharedDecodeAndOperation(*this, scale, shift, size, opc_1, opc_0, Rm, option, Rn, Rt);
 }
 
-static bool VecSharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& ir, size_t scale, u8 shift, Imm<1> opc_0, Reg Rm, Imm<3> option, Reg Rn, Vec Vt) {
+static bool VecSharedDecodeAndOperation(TranslatorVisitor& v, size_t scale, u8 shift, Imm<1> opc_0, Reg Rm, Imm<3> option, Reg Rn, Vec Vt) {
     // Shared Decode
 
     const AccType acctype = AccType::VEC;
@@ -112,7 +112,7 @@ static bool VecSharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& ir, siz
     } else {
         address = v.X(64, Rn);
     }
-    address = ir.Add(address, offset);
+    address = v.ir.Add(address, offset);
 
     switch (memop) {
     case MemOp::STORE: {
@@ -142,7 +142,7 @@ bool TranslatorVisitor::STR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3>
     if (!option.Bit<1>()) {
         return UnallocatedEncoding();
     }
-    return VecSharedDecodeAndOperation(*this, ir, scale, shift, opc_0, Rm, option, Rn, Vt);
+    return VecSharedDecodeAndOperation(*this, scale, shift, opc_0, Rm, option, Rn, Vt);
 }
 
 bool TranslatorVisitor::LDR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn, Vec Vt) {
@@ -155,7 +155,7 @@ bool TranslatorVisitor::LDR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3>
     if (!option.Bit<1>()) {
         return UnallocatedEncoding();
     }
-    return VecSharedDecodeAndOperation(*this, ir, scale, shift, opc_0, Rm, option, Rn, Vt);
+    return VecSharedDecodeAndOperation(*this, scale, shift, opc_0, Rm, option, Rn, Vt);
 }
 
 } // namespace Dynarmic::A64
