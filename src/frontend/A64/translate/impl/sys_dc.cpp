@@ -8,8 +8,8 @@
 
 namespace Dynarmic::A64 {
 
-static bool DataCacheInstruction(TranslatorVisitor& tv, IREmitter& ir, DataCacheOperation op, const Reg Rt) {
-    ir.DataCacheOperationRaised(op, tv.X(64, Rt));
+static bool DataCacheInstruction(TranslatorVisitor& v, IREmitter& ir, DataCacheOperation op, const Reg Rt) {
+    ir.DataCacheOperationRaised(op, v.X(64, Rt));
     return true;
 }
 

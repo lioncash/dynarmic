@@ -12,7 +12,7 @@
 
 namespace Dynarmic::A64 {
 
-static bool SharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, bool wback, MemOp memop, bool Q, boost::optional<Reg> Rm, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt) {
+static bool SharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& ir, bool wback, MemOp memop, bool Q, boost::optional<Reg> Rm, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt) {
     const size_t datasize = Q ? 128 : 64;
     const size_t esize = 8 << size.ZeroExtend<size_t>();
     const size_t elements = datasize / esize;
@@ -49,31 +49,31 @@ static bool SharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, bool 
         selem = 1;
         break;
     default:
-        return tv.UnallocatedEncoding();
+        return v.UnallocatedEncoding();
     }
     ASSERT(rpt == 1 || selem == 1);
 
     if ((size == 0b11 && !Q) && selem != 1) {
-        return tv.ReservedValue();
+        return v.ReservedValue();
     }
 
     IR::U64 address;
     if (Rn == Reg::SP)
         // TODO: Check SP Alignment
-        address = tv.SP(64);
+        address = v.SP(64);
     else
-        address = tv.X(64, Rn);
+        address = v.X(64, Rn);
 
     IR::U64 offs = ir.Imm64(0);
     if (selem == 1) {
         for (size_t r = 0; r < rpt; r++) {
             const Vec tt = static_cast<Vec>((VecNumber(Vt) + r) % 32);
             if (memop == MemOp::LOAD) {
-                const IR::UAnyU128 vec = tv.Mem(ir.Add(address, offs), ebytes * elements, AccType::VEC);
-                tv.V_scalar(datasize, tt, vec);
+                const IR::UAnyU128 vec = v.Mem(ir.Add(address, offs), ebytes * elements, AccType::VEC);
+                v.V_scalar(datasize, tt, vec);
             } else {
-                const IR::UAnyU128 vec = tv.V_scalar(datasize, tt);
-                tv.Mem(ir.Add(address, offs), ebytes * elements, AccType::VEC, vec);
+                const IR::UAnyU128 vec = v.V_scalar(datasize, tt);
+                v.Mem(ir.Add(address, offs), ebytes * elements, AccType::VEC, vec);
             }
             offs = ir.Add(offs, ir.Imm64(ebytes * elements));
         }
@@ -82,12 +82,12 @@ static bool SharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, bool 
             for (size_t s = 0; s < selem; s++) {
                 const Vec tt = static_cast<Vec>((VecNumber(Vt) + s) % 32);
                 if (memop == MemOp::LOAD) {
-                    const IR::UAny elem = tv.Mem(ir.Add(address, offs), ebytes, AccType::VEC);
-                    const IR::U128 vec = ir.VectorSetElement(esize, tv.V(datasize, tt), e, elem);
-                    tv.V(datasize, tt, vec);
+                    const IR::UAny elem = v.Mem(ir.Add(address, offs), ebytes, AccType::VEC);
+                    const IR::U128 vec = ir.VectorSetElement(esize, v.V(datasize, tt), e, elem);
+                    v.V(datasize, tt, vec);
                 } else {
-                    const IR::UAny elem = ir.VectorGetElement(esize, tv.V(datasize, tt), e);
-                    tv.Mem(ir.Add(address, offs), ebytes, AccType::VEC, elem);
+                    const IR::UAny elem = ir.VectorGetElement(esize, v.V(datasize, tt), e);
+                    v.Mem(ir.Add(address, offs), ebytes, AccType::VEC, elem);
                 }
                 offs = ir.Add(offs, ir.Imm64(ebytes));
             }
@@ -96,11 +96,11 @@ static bool SharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, bool 
 
     if (wback) {
         if (*Rm != Reg::SP)
-            offs = tv.X(64, *Rm);
+            offs = v.X(64, *Rm);
         if (Rn == Reg::SP)
-            tv.SP(64, ir.Add(address, offs));
+            v.SP(64, ir.Add(address, offs));
         else
-            tv.X(64, Rn, ir.Add(address, offs));
+            v.X(64, Rn, ir.Add(address, offs));
     }
 
     return true;

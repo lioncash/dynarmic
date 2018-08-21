@@ -8,9 +8,9 @@
 
 namespace Dynarmic::A64 {
 
-static IR::U8 SanitizeShiftAmount(TranslatorVisitor& tv, IREmitter& ir, size_t datasize,
+static IR::U8 SanitizeShiftAmount(TranslatorVisitor& v, IREmitter& ir, size_t datasize,
                                   const IR::U32U64& amount) {
-    return ir.LeastSignificantByte(ir.And(amount, tv.I(datasize, datasize - 1)));
+    return ir.LeastSignificantByte(ir.And(amount, v.I(datasize, datasize - 1)));
 }
 
 bool TranslatorVisitor::LSLV(bool sf, Reg Rm, Reg Rn, Reg Rd) {

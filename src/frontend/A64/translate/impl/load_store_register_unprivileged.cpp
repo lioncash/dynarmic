@@ -8,7 +8,7 @@
 
 namespace Dynarmic::A64 {
 
-static bool StoreRegister(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize,
+static bool StoreRegister(TranslatorVisitor& v, IREmitter& ir, const size_t datasize,
                           const Imm<9> imm9, const Reg Rn, const Reg Rt) {
     const u64 offset = imm9.SignExtend<u64>();
     AccType acctype = AccType::UNPRIV;
@@ -16,17 +16,17 @@ static bool StoreRegister(TranslatorVisitor& tv, IREmitter& ir, const size_t dat
 
     if (Rn == Reg::SP) {
         // TODO: Check Stack Alignment
-        address = tv.SP(64);
+        address = v.SP(64);
     } else {
-        address = tv.X(64, Rn);
+        address = v.X(64, Rn);
     }
     address = ir.Add(address, ir.Imm64(offset));
-    IR::UAny data = tv.X(datasize, Rt);
-    tv.Mem(address, datasize / 8, acctype, data);
+    IR::UAny data = v.X(datasize, Rt);
+    v.Mem(address, datasize / 8, acctype, data);
     return true;
 }
 
-static bool LoadRegister(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize,
+static bool LoadRegister(TranslatorVisitor& v, IREmitter& ir, const size_t datasize,
                          const Imm<9> imm9, const Reg Rn, const Reg Rt) {
     const u64 offset = imm9.SignExtend<u64>();
     AccType acctype = AccType::UNPRIV;
@@ -34,19 +34,19 @@ static bool LoadRegister(TranslatorVisitor& tv, IREmitter& ir, const size_t data
 
     if (Rn == Reg::SP) {
         // TODO: Check Stack Alignment
-        address = tv.SP(64);
+        address = v.SP(64);
     } else {
-        address = tv.X(64, Rn);
+        address = v.X(64, Rn);
     }
     address = ir.Add(address, ir.Imm64(offset));
-    IR::UAny data = tv.Mem(address, datasize / 8, acctype);
+    IR::UAny data = v.Mem(address, datasize / 8, acctype);
     // max is used to zeroextend < 32 to 32, and > 32 to 64
     const size_t extended_size = std::max<size_t>(32, datasize);
-    tv.X(extended_size, Rt, tv.ZeroExtend(data, extended_size));
+    v.X(extended_size, Rt, v.ZeroExtend(data, extended_size));
     return true;
 }
 
-static bool LoadRegisterSigned(TranslatorVisitor& tv, IREmitter& ir, const size_t datasize,
+static bool LoadRegisterSigned(TranslatorVisitor& v, IREmitter& ir, const size_t datasize,
                                const Imm<2> opc, const Imm<9> imm9, const Reg Rn, const Reg Rt) {
     const u64 offset = imm9.SignExtend<u64>();
     AccType acctype = AccType::UNPRIV;
@@ -68,22 +68,22 @@ static bool LoadRegisterSigned(TranslatorVisitor& tv, IREmitter& ir, const size_
     IR::U64 address;
     if (Rn == Reg::SP) {
         // TODO: Check Stack Alignment
-        address = tv.SP(64);
+        address = v.SP(64);
     } else {
-        address = tv.X(64, Rn);
+        address = v.X(64, Rn);
     }
     address = ir.Add(address, ir.Imm64(offset));
 
     switch (memop) {
     case MemOp::STORE:
-        tv.Mem(address, datasize / 8, acctype, tv.X(datasize, Rt));
+        v.Mem(address, datasize / 8, acctype, v.X(datasize, Rt));
         break;
     case MemOp::LOAD: {
-        IR::UAny data = tv.Mem(address, datasize / 8, acctype);
+        IR::UAny data = v.Mem(address, datasize / 8, acctype);
         if (is_signed) {
-            tv.X(regsize, Rt, tv.SignExtend(data, regsize));
+            v.X(regsize, Rt, v.SignExtend(data, regsize));
         } else {
-            tv.X(regsize, Rt, tv.ZeroExtend(data, regsize));
+            v.X(regsize, Rt, v.ZeroExtend(data, regsize));
         }
         break;
     }

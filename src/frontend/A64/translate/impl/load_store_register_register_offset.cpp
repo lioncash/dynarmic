@@ -8,7 +8,7 @@
 
 namespace Dynarmic::A64 {
 
-static bool RegSharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, size_t scale, u8 shift, Imm<2> size, Imm<1> opc_1, Imm<1> opc_0, Reg Rm, Imm<3> option, Reg Rn, Reg Rt) {
+static bool RegSharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& ir, size_t scale, u8 shift, Imm<2> size, Imm<1> opc_1, Imm<1> opc_0, Reg Rm, Imm<3> option, Reg Rn, Reg Rt) {
     // Shared Decode
 
     const AccType acctype = AccType::NORMAL;
@@ -23,12 +23,12 @@ static bool RegSharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, si
     } else if (size == 0b11) {
         memop = MemOp::PREFETCH;
         if (opc_0 == 1) {
-            return tv.UnallocatedEncoding();
+            return v.UnallocatedEncoding();
         }
     } else {
         memop = MemOp::LOAD;
         if (size == 0b10 && opc_0 == 1) {
-            return tv.UnallocatedEncoding();
+            return v.UnallocatedEncoding();
         }
         regsize = opc_0 == 1 ? 32 : 64;
         signed_ = true;
@@ -38,29 +38,29 @@ static bool RegSharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, si
 
     // Operation
 
-    const IR::U64 offset = tv.ExtendReg(64, Rm, option, shift);
+    const IR::U64 offset = v.ExtendReg(64, Rm, option, shift);
 
     IR::U64 address;
     if (Rn == Reg::SP) {
         // TODO: Check SP alignment
-        address = tv.SP(64);
+        address = v.SP(64);
     } else {
-        address = tv.X(64, Rn);
+        address = v.X(64, Rn);
     }
     address = ir.Add(address, offset);
 
     switch (memop) {
     case MemOp::STORE: {
-        IR::UAny data = tv.X(datasize, Rt);
-        tv.Mem(address, datasize / 8, acctype, data);
+        IR::UAny data = v.X(datasize, Rt);
+        v.Mem(address, datasize / 8, acctype, data);
         break;
     }
     case MemOp::LOAD: {
-        IR::UAny data = tv.Mem(address, datasize / 8, acctype);
+        IR::UAny data = v.Mem(address, datasize / 8, acctype);
         if (signed_) {
-            tv.X(regsize, Rt, tv.SignExtend(data, regsize));
+            v.X(regsize, Rt, v.SignExtend(data, regsize));
         } else {
-            tv.X(regsize, Rt, tv.ZeroExtend(data, regsize));
+            v.X(regsize, Rt, v.ZeroExtend(data, regsize));
         }
         break;
     }
@@ -94,7 +94,7 @@ bool TranslatorVisitor::LDRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> optio
     return RegSharedDecodeAndOperation(*this, ir, scale, shift, size, opc_1, opc_0, Rm, option, Rn, Rt);
 }
 
-static bool VecSharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, size_t scale, u8 shift, Imm<1> opc_0, Reg Rm, Imm<3> option, Reg Rn, Vec Vt) {
+static bool VecSharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& ir, size_t scale, u8 shift, Imm<1> opc_0, Reg Rm, Imm<3> option, Reg Rn, Vec Vt) {
     // Shared Decode
 
     const AccType acctype = AccType::VEC;
@@ -103,26 +103,26 @@ static bool VecSharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, si
 
     // Operation
 
-    const IR::U64 offset = tv.ExtendReg(64, Rm, option, shift);
+    const IR::U64 offset = v.ExtendReg(64, Rm, option, shift);
 
     IR::U64 address;
     if (Rn == Reg::SP) {
         // TODO: Check SP alignment
-        address = tv.SP(64);
+        address = v.SP(64);
     } else {
-        address = tv.X(64, Rn);
+        address = v.X(64, Rn);
     }
     address = ir.Add(address, offset);
 
     switch (memop) {
     case MemOp::STORE: {
-        const IR::UAnyU128 data = tv.V_scalar(datasize, Vt);
-        tv.Mem(address, datasize / 8, acctype, data);
+        const IR::UAnyU128 data = v.V_scalar(datasize, Vt);
+        v.Mem(address, datasize / 8, acctype, data);
         break;
     }
     case MemOp::LOAD: {
-        const IR::UAnyU128 data = tv.Mem(address, datasize / 8, acctype);
-        tv.V_scalar(datasize, Vt, data);
+        const IR::UAnyU128 data = v.Mem(address, datasize / 8, acctype);
+        v.V_scalar(datasize, Vt, data);
         break;
     }
     default:

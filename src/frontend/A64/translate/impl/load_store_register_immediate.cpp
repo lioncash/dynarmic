@@ -112,16 +112,16 @@ bool TranslatorVisitor::PRFM_unscaled_imm([[maybe_unused]] Imm<9> imm9, [[maybe_
     return true;
 }
 
-static bool LoadStoreSIMD(TranslatorVisitor& tv, IREmitter& ir, bool wback, bool postindex, size_t scale, u64 offset, MemOp memop, Reg Rn, Vec Vt) {
+static bool LoadStoreSIMD(TranslatorVisitor& v, IREmitter& ir, bool wback, bool postindex, size_t scale, u64 offset, MemOp memop, Reg Rn, Vec Vt) {
     const AccType acctype = AccType::VEC;
     const size_t datasize = 8 << scale;
 
     IR::U64 address;
     if (Rn == Reg::SP) {
         // TODO: Check SP Alignment
-        address = tv.SP(64);
+        address = v.SP(64);
     } else {
-        address = tv.X(64, Rn);
+        address = v.X(64, Rn);
     }
 
     if (!postindex) {
@@ -131,20 +131,20 @@ static bool LoadStoreSIMD(TranslatorVisitor& tv, IREmitter& ir, bool wback, bool
     switch (memop) {
     case MemOp::STORE:
         if (datasize == 128) {
-            const IR::U128 data = tv.V(128, Vt);
-            tv.Mem(address, 16, acctype, data);
+            const IR::U128 data = v.V(128, Vt);
+            v.Mem(address, 16, acctype, data);
         } else {
-            const IR::UAny data = ir.VectorGetElement(datasize, tv.V(128, Vt), 0);
-            tv.Mem(address, datasize / 8, acctype, data);
+            const IR::UAny data = ir.VectorGetElement(datasize, v.V(128, Vt), 0);
+            v.Mem(address, datasize / 8, acctype, data);
         }
         break;
     case MemOp::LOAD:
         if (datasize == 128) {
-            const IR::U128 data = tv.Mem(address, 16, acctype);
-            tv.V(128, Vt, data);
+            const IR::U128 data = v.Mem(address, 16, acctype);
+            v.V(128, Vt, data);
         } else {
-            const IR::UAny data = tv.Mem(address, datasize / 8, acctype);
-            tv.V(128, Vt, ir.ZeroExtendToQuad(data));
+            const IR::UAny data = v.Mem(address, datasize / 8, acctype);
+            v.V(128, Vt, ir.ZeroExtendToQuad(data));
         }
         break;
     default:
@@ -156,9 +156,9 @@ static bool LoadStoreSIMD(TranslatorVisitor& tv, IREmitter& ir, bool wback, bool
             address = ir.Add(address, ir.Imm64(offset));
         }
         if (Rn == Reg::SP) {
-            tv.SP(64, address);
+            v.SP(64, address);
         } else {
-            tv.X(64, Rn, address);
+            v.X(64, Rn, address);
         }
     }
 

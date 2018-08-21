@@ -10,7 +10,7 @@
 
 namespace Dynarmic::A64 {
 
-static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& ir, bool pair, size_t size, bool L, bool o0, boost::optional<Reg> Rs, boost::optional<Reg> Rt2, Reg Rn, Reg Rt) {
+static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& v, IREmitter& ir, bool pair, size_t size, bool L, bool o0, boost::optional<Reg> Rs, boost::optional<Reg> Rt2, Reg Rn, Reg Rt) {
     // Shared Decode
 
     const AccType acctype = o0 ? AccType::ORDERED : AccType::ATOMIC;
@@ -24,49 +24,49 @@ static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& tv, IREmitter& 
     const size_t dbytes = datasize / 8;
 
     if (memop == MemOp::LOAD && pair && Rt == *Rt2) {
-        return tv.UnpredictableInstruction();
+        return v.UnpredictableInstruction();
     } else if (memop == MemOp::STORE && (*Rs == Rt || (pair && *Rs == *Rt2))) {
-        if (!tv.options.define_unpredictable_behaviour) {
-            return tv.UnpredictableInstruction();
+        if (!v.options.define_unpredictable_behaviour) {
+            return v.UnpredictableInstruction();
         }
         // UNPREDICTABLE: The Constraint_NONE case is executed.
     } else if (memop == MemOp::STORE && *Rs == Rn && Rn != Reg::R31) {
-        return tv.UnpredictableInstruction();
+        return v.UnpredictableInstruction();
     }
 
     IR::U64 address;
     if (Rn == Reg::SP) {
         // TODO: Check SP Alignment
-        address = tv.SP(64);
+        address = v.SP(64);
     } else {
-        address = tv.X(64, Rn);
+        address = v.X(64, Rn);
     }
 
     switch (memop) {
     case MemOp::STORE: {
         IR::UAnyU128 data;
         if (pair && elsize == 64) {
-            data = ir.Pack2x64To1x128(tv.X(64, Rt), tv.X(64, *Rt2));
+            data = ir.Pack2x64To1x128(v.X(64, Rt), v.X(64, *Rt2));
         } else if (pair && elsize == 32) {
-            data = ir.Pack2x32To1x64(tv.X(32, Rt), tv.X(32, *Rt2));
+            data = ir.Pack2x32To1x64(v.X(32, Rt), v.X(32, *Rt2));
         } else {
-            data = tv.X(elsize, Rt);
+            data = v.X(elsize, Rt);
         }
-        IR::U32 status = tv.ExclusiveMem(address, dbytes, acctype, data);
-        tv.X(32, *Rs, status);
+        IR::U32 status = v.ExclusiveMem(address, dbytes, acctype, data);
+        v.X(32, *Rs, status);
         break;
     }
     case MemOp::LOAD: {
         ir.SetExclusive(address, dbytes);
-        IR::UAnyU128 data = tv.Mem(address, dbytes, acctype);
+        IR::UAnyU128 data = v.Mem(address, dbytes, acctype);
         if (pair && elsize == 64) {
-            tv.X(64, Rt, ir.VectorGetElement(64, data, 0));
-            tv.X(64, *Rt2, ir.VectorGetElement(64, data, 1));
+            v.X(64, Rt, ir.VectorGetElement(64, data, 0));
+            v.X(64, *Rt2, ir.VectorGetElement(64, data, 1));
         } else if (pair && elsize == 32) {
-            tv.X(32, Rt, ir.LeastSignificantWord(data));
-            tv.X(32, *Rt2, ir.MostSignificantWord(data).result);
+            v.X(32, Rt, ir.LeastSignificantWord(data));
+            v.X(32, *Rt2, ir.MostSignificantWord(data).result);
         } else {
-            tv.X(regsize, Rt, tv.ZeroExtend(data, regsize));
+            v.X(regsize, Rt, v.ZeroExtend(data, regsize));
         }
         break;
     }
@@ -141,7 +141,7 @@ bool TranslatorVisitor::LDAXP(Imm<1> sz, Reg Rt2, Reg Rn, Reg Rt) {
     return ExclusiveSharedDecodeAndOperation(*this, ir, pair, size, L, o0, {}, Rt2, Rn, Rt);
 }
 
-static bool OrderedSharedDecodeAndOperation(TranslatorVisitor& tv, size_t size, bool L, bool o0, Reg Rn, Reg Rt) {
+static bool OrderedSharedDecodeAndOperation(TranslatorVisitor& v, size_t size, bool L, bool o0, Reg Rn, Reg Rt) {
     // Shared Decode
 
     const AccType acctype = !o0 ? AccType::LIMITEDORDERED : AccType::ORDERED;
@@ -157,20 +157,20 @@ static bool OrderedSharedDecodeAndOperation(TranslatorVisitor& tv, size_t size, 
     IR::U64 address;
     if (Rn == Reg::SP) {
         // TODO: Check SP Alignment
-        address = tv.SP(64);
+        address = v.SP(64);
     } else {
-        address = tv.X(64, Rn);
+        address = v.X(64, Rn);
     }
 
     switch (memop) {
     case MemOp::STORE: {
-        IR::UAny data = tv.X(datasize, Rt);
-        tv.Mem(address, dbytes, acctype, data);
+        IR::UAny data = v.X(datasize, Rt);
+        v.Mem(address, dbytes, acctype, data);
         break;
     }
     case MemOp::LOAD: {
-        IR::UAny data = tv.Mem(address, dbytes, acctype);
-        tv.X(regsize, Rt, tv.ZeroExtend(data, regsize));
+        IR::UAny data = v.Mem(address, dbytes, acctype);
+        v.X(regsize, Rt, v.ZeroExtend(data, regsize));
         break;
     }
     default:
