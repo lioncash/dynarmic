@@ -2806,12 +2806,12 @@ void EmitX64::EmitVectorTableLookup(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.EndOfAllocScope();
     ctx.reg_alloc.HostCall(nullptr);
 
-    code.movaps(xword[rsp + ABI_SHADOW_SPACE + (table_size + 0) * 16], defaults);
-    code.movaps(xword[rsp + ABI_SHADOW_SPACE + (table_size + 1) * 16], indicies);
     code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE]);
     code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + (table_size + 0) * 16]);
     code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + (table_size + 1) * 16]);
     code.mov(code.ABI_PARAM4.cvt32(), table_size);
+    code.movaps(xword[code.ABI_PARAM2], defaults);
+    code.movaps(xword[code.ABI_PARAM3], indicies);
 
     code.CallFunction(static_cast<void(*)(const VectorArray<u8>*, VectorArray<u8>&, const VectorArray<u8>&, size_t)>(
         [](const VectorArray<u8>* table, VectorArray<u8>& result, const VectorArray<u8>& indicies, size_t table_size) {
