@@ -12,6 +12,7 @@
 #include "common/assert.h"
 #include "common/bit_util.h"
 #include "common/common_types.h"
+#include "common/scope_exit.h"
 #include "common/variant_util.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
@@ -328,6 +329,9 @@ void EmitX64::ClearCache() {
 }
 
 void EmitX64::InvalidateBasicBlocks(const std::unordered_set<IR::LocationDescriptor>& locations) {
+    code.EnableWriting();
+    SCOPE_EXIT { code.DisableWriting(); };
+
     for (const auto &descriptor : locations) {
         auto it = block_descriptors.find(descriptor);
         if (it == block_descriptors.end()) {

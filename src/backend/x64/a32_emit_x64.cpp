@@ -22,6 +22,7 @@
 #include "common/assert.h"
 #include "common/bit_util.h"
 #include "common/common_types.h"
+#include "common/scope_exit.h"
 #include "common/variant_util.h"
 #include "frontend/A32/location_descriptor.h"
 #include "frontend/A32/types.h"
@@ -85,6 +86,9 @@ A32EmitX64::A32EmitX64(BlockOfCode& code, A32::UserConfig config, A32::Jit* jit_
 A32EmitX64::~A32EmitX64() = default;
 
 A32EmitX64::BlockDescriptor A32EmitX64::Emit(IR::Block& block) {
+    code.EnableWriting();
+    SCOPE_EXIT { code.DisableWriting(); };
+
     code.align();
     const u8* const entrypoint = code.getCurr();
 

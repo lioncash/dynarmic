@@ -34,6 +34,11 @@ public:
     /// Call when external emitters have finished emitting their preludes.
     void PreludeComplete();
 
+    /// Change permissions to RW. This is required to support systems with W^X enforced.
+    void EnableWriting();
+    /// Change permissions to RX. This is required to support systems with W^X enforced.
+    void DisableWriting();
+
     /// Clears this block of code and resets code pointer to beginning.
     void ClearCache();
     /// Calculates how much space is remaining to use. This is the minimum of near code and far code.

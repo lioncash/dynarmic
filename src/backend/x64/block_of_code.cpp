@@ -15,6 +15,12 @@
 #include "backend/x64/block_of_code.h"
 #include "common/assert.h"
 
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <sys/mman.h>
+#endif
+
 namespace Dynarmic::BackendX64 {
 
 #ifdef _WIN32
@@ -36,16 +42,42 @@ const Xbyak::Reg64 BlockOfCode::ABI_PARAM6 = Xbyak::util::r9;
 const std::array<Xbyak::Reg64, 6> BlockOfCode::ABI_PARAMS = {BlockOfCode::ABI_PARAM1, BlockOfCode::ABI_PARAM2, BlockOfCode::ABI_PARAM3, BlockOfCode::ABI_PARAM4, BlockOfCode::ABI_PARAM5, BlockOfCode::ABI_PARAM6};
 #endif
 
+namespace {
+
 constexpr size_t TOTAL_CODE_SIZE = 128 * 1024 * 1024;
 constexpr size_t FAR_CODE_OFFSET = 100 * 1024 * 1024;
 constexpr size_t CONSTANT_POOL_SIZE = 2 * 1024 * 1024;
 
+class CustomXbyakAllocator : public Xbyak::Allocator {
+public:
+    bool useProtect() const override { return false; }
+};
+
+// This is threadsafe as Xbyak::Allocator does not contain any state; it is a pure interface.
+CustomXbyakAllocator s_allocator;
+
+void ProtectMemory(const void* base, size_t size, bool is_executable) {
+#ifdef _WIN32
+    DWORD oldProtect = 0;
+    VirtualProtect(const_cast<void*>(base), size, is_executable ? PAGE_EXECUTE_READ : PAGE_READWRITE, &oldProtect);
+#else
+    static const size_t pageSize = sysconf(_SC_PAGESIZE);
+    const size_t iaddr = reinterpret_cast<size_t>(base);
+    const size_t roundAddr = iaddr & ~(pageSize - static_cast<size_t>(1));
+    const int mode = is_executable ? (PROT_READ | PROT_EXEC) : (PROT_READ | PROT_WRITE);
+    mprotect(reinterpret_cast<void*>(roundAddr), size + (iaddr - roundAddr), mode);
+#endif
+}
+
+} // anonymous namespace
+
 BlockOfCode::BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi)
-        : Xbyak::CodeGenerator(TOTAL_CODE_SIZE)
+        : Xbyak::CodeGenerator(TOTAL_CODE_SIZE, nullptr, &s_allocator)
         , cb(std::move(cb))
         , jsi(jsi)
         , constant_pool(*this, CONSTANT_POOL_SIZE)
 {
+    EnableWriting();
     GenRunCode();
     exception_handler.Register(*this);
 }
@@ -55,6 +87,15 @@ void BlockOfCode::PreludeComplete() {
     near_code_begin = getCurr();
     far_code_begin = getCurr() + FAR_CODE_OFFSET;
     ClearCache();
+    DisableWriting();
+}
+
+void BlockOfCode::EnableWriting() {
+    ProtectMemory(getCode(), maxSize_, false);
+}
+
+void BlockOfCode::DisableWriting() {
+    ProtectMemory(getCode(), maxSize_, true);
 }
 
 void BlockOfCode::ClearCache() {
