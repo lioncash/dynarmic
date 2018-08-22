@@ -2757,6 +2757,80 @@ void EmitX64::EmitVectorSignedSaturatedAbs64(EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
+void EmitX64::EmitVectorSignedSaturatedDoublingMultiplyReturnHigh16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp, x);
+    code.pmulhw(tmp, y);
+    code.paddw(tmp, tmp);
+    code.pmullw(y, x);
+    code.psrlw(y, 15);
+    code.por(y, tmp);
+
+    code.movdqa(x, code.MConst(xword, 0x8000800080008000, 0x8000800080008000));
+    code.pcmpeqw(x, y);
+    code.movdqa(tmp, x);
+    code.pxor(x, y);
+
+    // Check if any saturation occurred (i.e. if any halfwords in x were
+    // 0x8000 before saturating
+    const Xbyak::Reg64 mask = ctx.reg_alloc.ScratchGpr();
+    code.pmovmskb(mask, tmp);
+    code.test(mask.cvt32(), 0b1010'1010'1010'1010);
+    code.setnz(mask.cvt8());
+    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], mask.cvt8());
+
+    ctx.reg_alloc.DefineValue(inst, x);
+}
+
+void EmitX64::EmitVectorSignedSaturatedDoublingMultiplyReturnHigh32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+    const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+
+    code.movdqa(tmp1, x);
+    code.punpckldq(tmp1, y);
+
+    code.movdqa(tmp2, y);
+    code.punpckldq(tmp2, x);
+
+    code.pmuldq(tmp2, tmp1);
+    code.paddq(tmp2, tmp2);
+
+    code.movdqa(tmp1, x);
+    code.punpckhdq(tmp1, y);
+    code.punpckhdq(y, x);
+
+    code.pmuldq(y, tmp1);
+    code.paddq(y, y);
+
+    code.pshufd(tmp1, tmp2, 0b11101101);
+    code.pshufd(x, y, 0b11101101);
+    code.punpcklqdq(tmp1, x);
+
+    code.movdqa(x, code.MConst(xword, 0x8000000080000000, 0x8000000080000000));
+    code.pcmpeqd(x, tmp1);
+    code.movdqa(tmp2, x);
+    code.pxor(x, tmp1);
+
+    // Check if any saturation occurred (i.e. if any words in x were
+    // 0x80000000 before saturating
+    const Xbyak::Reg64 mask = ctx.reg_alloc.ScratchGpr();
+    code.pmovmskb(mask, tmp2);
+    code.test(mask.cvt32(), 0b1000'1000'1000'1000);
+    code.setnz(mask.cvt8());
+    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], mask.cvt8());
+
+    ctx.reg_alloc.DefineValue(inst, x);
+}
+
 static void EmitVectorSignedSaturatedNarrowToSigned(size_t original_esize, BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm src = ctx.reg_alloc.UseXmm(args[0]);
