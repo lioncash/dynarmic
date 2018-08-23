@@ -878,14 +878,18 @@ public:
         return fmt::format("mrs{} {}, apsr", CondToString(cond), d);
     }
     std::string arm_MSR_imm(Cond cond, int mask, int rotate, Imm8 imm8) {
-        bool write_nzcvq = Common::Bit<1>(mask);
-        bool write_g = Common::Bit<0>(mask);
-        return fmt::format("msr{} apsr_{}{}, #{}", CondToString(cond), write_nzcvq ? "nzcvq" : "", write_g ? "g" : "", ArmExpandImm(rotate, imm8));
+        const bool write_c = Common::Bit<0>(mask);
+        const bool write_x = Common::Bit<1>(mask);
+        const bool write_s = Common::Bit<2>(mask);
+        const bool write_f = Common::Bit<3>(mask);
+        return fmt::format("msr{} cpsr_{}{}{}{}, #{}", CondToString(cond), write_c ? "c" : "", write_x ? "x" : "", write_s ? "s" : "", write_f ? "f" : "", ArmExpandImm(rotate, imm8));
     }
     std::string arm_MSR_reg(Cond cond, int mask, Reg n) {
-        bool write_nzcvq = Common::Bit<1>(mask);
-        bool write_g = Common::Bit<0>(mask);
-        return fmt::format("msr{} apsr_{}{}, {}", CondToString(cond), write_nzcvq ? "nzcvq" : "", write_g ? "g" : "", n);
+        const bool write_c = Common::Bit<0>(mask);
+        const bool write_x = Common::Bit<1>(mask);
+        const bool write_s = Common::Bit<2>(mask);
+        const bool write_f = Common::Bit<3>(mask);
+        return fmt::format("msr{} cpsr_{}{}{}{}, {}", CondToString(cond), write_c ? "c" : "", write_x ? "x" : "", write_s ? "s" : "", write_f ? "f" : "", n);
     }
     std::string arm_RFE() { return "ice"; }
     std::string arm_SETEND(bool E) {

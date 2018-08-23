@@ -292,7 +292,7 @@ void A32EmitX64::EmitA32GetCpsr(A32EmitContext& ctx, IR::Inst* inst) {
         // extract all of their bits together at once with one pext.
         static_assert(offsetof(A32JitState, CPSR_et) + 4 == offsetof(A32JitState, CPSR_ge));
         code.mov(result.cvt64(), qword[r15 + offsetof(A32JitState, CPSR_et)]);
-        code.mov(tmp.cvt64(), 0x8080808000000003ull);
+        code.mov(tmp.cvt64(), 0x80808080'00000003ull);
         code.pext(result.cvt64(), result.cvt64(), tmp.cvt64());
         code.mov(tmp, 0x000f0220);
         code.pdep(result, result, tmp);
@@ -320,6 +320,7 @@ void A32EmitX64::EmitA32SetCpsr(A32EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tBMI2)) {
         Xbyak::Reg32 cpsr = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
         Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
+        Xbyak::Reg32 tmp2 = ctx.reg_alloc.ScratchGpr().cvt32();
 
         // CPSR_q
         code.bt(cpsr, 27);
@@ -339,12 +340,14 @@ void A32EmitX64::EmitA32SetCpsr(A32EmitContext& ctx, IR::Inst* inst) {
         static_assert(offsetof(A32JitState, CPSR_et) + 4 == offsetof(A32JitState, CPSR_ge));
         code.mov(tmp, 0x000f0220);
         code.pext(cpsr, cpsr, tmp);
-        code.mov(tmp.cvt64(), 0x8080808000000003ull);
+        code.mov(tmp.cvt64(), 0x01010101'00000003ull);
         code.pdep(cpsr.cvt64(), cpsr.cvt64(), tmp.cvt64());
-        code.mov(tmp.cvt64(), cpsr.cvt64());
-        code.shr(tmp.cvt64(), 7);
-        code.sub(cpsr.cvt64(), tmp.cvt64());
-        code.mov(qword[r15 + offsetof(A32JitState, CPSR_et)], cpsr.cvt64());
+        // We perform SWAR partitioned subtraction here, to negate the GE bytes.
+        code.mov(tmp.cvt64(), 0x80808080'00000003ull);
+        code.mov(tmp2.cvt64(), tmp.cvt64());
+        code.sub(tmp.cvt64(), cpsr.cvt64());
+        code.xor_(tmp.cvt64(), tmp2.cvt64());
+        code.mov(qword[r15 + offsetof(A32JitState, CPSR_et)], tmp.cvt64());
     } else {
         ctx.reg_alloc.HostCall(nullptr, args[0]);
         code.mov(code.ABI_PARAM2, code.r15);

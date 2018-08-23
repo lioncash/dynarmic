@@ -1062,7 +1062,7 @@ TEST_CASE("Test ARM misc instructions", "[JitX64][A32]") {
 
 TEST_CASE("Test ARM MSR instructions", "[JitX64][A32]") {
     const auto is_msr_valid = [](u32 instr) -> bool {
-        return Bits<18, 19>(instr) != 0;
+        return Bits<16, 19>(instr) != 0;
     };
 
     const auto is_msr_reg_valid = [&is_msr_valid](u32 instr) -> bool {
@@ -1074,8 +1074,8 @@ TEST_CASE("Test ARM MSR instructions", "[JitX64][A32]") {
     };
 
     const std::array<InstructionGenerator, 3> instructions = {{
-        InstructionGenerator("cccc00110010mm001111rrrrvvvvvvvv", is_msr_valid), // MSR (imm)
-        InstructionGenerator("cccc00010010mm00111100000000nnnn", is_msr_reg_valid), // MSR (reg)
+        InstructionGenerator("cccc00110010mmmm1111rrrrvvvvvvvv", is_msr_valid), // MSR (imm)
+        InstructionGenerator("cccc00010010mmmm111100000000nnnn", is_msr_reg_valid), // MSR (reg)
         InstructionGenerator("cccc000100001111dddd000000000000", is_mrs_valid), // MRS
     }};
 
