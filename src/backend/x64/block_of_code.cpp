@@ -51,12 +51,15 @@ constexpr size_t CONSTANT_POOL_SIZE = 2 * 1024 * 1024;
 
 class CustomXbyakAllocator : public Xbyak::Allocator {
 public:
+#ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT
     bool useProtect() const override { return false; }
+#endif
 };
 
 // This is threadsafe as Xbyak::Allocator does not contain any state; it is a pure interface.
 CustomXbyakAllocator s_allocator;
 
+#ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT
 void ProtectMemory(const void* base, size_t size, bool is_executable) {
 #ifdef _WIN32
     DWORD oldProtect = 0;
@@ -69,6 +72,7 @@ void ProtectMemory(const void* base, size_t size, bool is_executable) {
     mprotect(reinterpret_cast<void*>(roundAddr), size + (iaddr - roundAddr), mode);
 #endif
 }
+#endif
 
 } // anonymous namespace
 
@@ -92,11 +96,15 @@ void BlockOfCode::PreludeComplete() {
 }
 
 void BlockOfCode::EnableWriting() {
+#ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT
     ProtectMemory(getCode(), maxSize_, false);
+#endif
 }
 
 void BlockOfCode::DisableWriting() {
+#ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT
     ProtectMemory(getCode(), maxSize_, true);
+#endif
 }
 
 void BlockOfCode::ClearCache() {
