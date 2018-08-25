@@ -364,9 +364,10 @@ bool Inst::WritesToFPSRCumulativeSaturationBit() const {
 }
 
 bool Inst::CausesCPUException() const {
-    return op == Opcode::Breakpoint        ||
-           op == Opcode::A32CallSupervisor ||
-           op == Opcode::A64CallSupervisor ||
+    return op == Opcode::Breakpoint         ||
+           op == Opcode::A32CallSupervisor  ||
+           op == Opcode::A32ExceptionRaised ||
+           op == Opcode::A64CallSupervisor  ||
            op == Opcode::A64ExceptionRaised;
 }
 
