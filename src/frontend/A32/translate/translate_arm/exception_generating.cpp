@@ -11,13 +11,17 @@
 namespace Dynarmic::A32 {
 
 bool ArmTranslatorVisitor::arm_BKPT(Cond cond, Imm12 /*imm12*/, Imm4 /*imm4*/) {
-    if (cond != Cond::AL) {
+    if (cond != Cond::AL && !options.define_unpredictable_behaviour) {
         return UnpredictableInstruction();
     }
+    // UNPREDICTABLE: The instruction executes conditionally.
 
-    ir.ExceptionRaised(Exception::Breakpoint);
-    ir.SetTerm(IR::Term::CheckHalt{IR::Term::ReturnToDispatch{}});
-    return false;
+    if (ConditionPassed(cond)) {
+        ir.ExceptionRaised(Exception::Breakpoint);
+        ir.SetTerm(IR::Term::CheckHalt{IR::Term::ReturnToDispatch{}});
+        return false;
+    }
+    return true;
 }
 
 bool ArmTranslatorVisitor::arm_SVC(Cond cond, Imm24 imm24) {
