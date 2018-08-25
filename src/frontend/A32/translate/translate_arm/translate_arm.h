@@ -9,6 +9,7 @@
 #include "common/bit_util.h"
 #include "frontend/A32/ir_emitter.h"
 #include "frontend/A32/location_descriptor.h"
+#include "frontend/A32/translate/translate.h"
 
 namespace Dynarmic::A32 {
 
@@ -26,12 +27,13 @@ enum class ConditionalState {
 struct ArmTranslatorVisitor final {
     using instruction_return_type = bool;
 
-    explicit ArmTranslatorVisitor(IR::Block& block, LocationDescriptor descriptor) : ir(block, descriptor) {
+    explicit ArmTranslatorVisitor(IR::Block& block, LocationDescriptor descriptor, const TranslationOptions& options) : ir(block, descriptor), options(options) {
         ASSERT_MSG(!descriptor.TFlag(), "The processor must be in Arm mode");
     }
 
     A32::IREmitter ir;
     ConditionalState cond_state = ConditionalState::None;
+    TranslationOptions options;
 
     bool ConditionPassed(Cond cond);
     bool InterpretThisInstruction();

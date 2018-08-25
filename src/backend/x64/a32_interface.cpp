@@ -131,7 +131,7 @@ private:
             PerformCacheInvalidation();
         }
 
-        IR::Block ir_block = A32::Translate(A32::LocationDescriptor{descriptor}, [this](u32 vaddr) { return config.callbacks->MemoryReadCode(vaddr); });
+        IR::Block ir_block = A32::Translate(A32::LocationDescriptor{descriptor}, [this](u32 vaddr) { return config.callbacks->MemoryReadCode(vaddr); }, {config.define_unpredictable_behaviour});
         Optimization::A32GetSetElimination(ir_block);
         Optimization::DeadCodeElimination(ir_block);
         Optimization::A32ConstantMemoryReads(ir_block, config.callbacks);

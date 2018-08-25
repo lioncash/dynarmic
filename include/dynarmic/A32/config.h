@@ -82,6 +82,11 @@ struct UserConfig {
 
     // Coprocessors
     std::array<std::shared_ptr<Coprocessor>, 16> coprocessors;
+
+    /// This option relates to translation. Generally when we run into an unpredictable
+    /// instruction the ExceptionRaised callback is called. If this is true, we define
+    /// definite behaviour for some unpredictable instructions.
+    bool define_unpredictable_behaviour = false;
 };
 
 } // namespace A32

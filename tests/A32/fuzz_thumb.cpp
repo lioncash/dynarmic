@@ -152,7 +152,7 @@ static void RunInstance(size_t run_number, ThumbTestEnv& test_env, ARMul_State& 
         size_t num_insts = 0;
         while (num_insts < instructions_to_execute_count) {
             Dynarmic::A32::LocationDescriptor descriptor = {u32(num_insts * 4), cpsr, Dynarmic::A32::FPSCR{}};
-            Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, [&test_env](u32 vaddr) { return test_env.MemoryReadCode(vaddr); });
+            Dynarmic::IR::Block ir_block = Dynarmic::A32::Translate(descriptor, [&test_env](u32 vaddr) { return test_env.MemoryReadCode(vaddr); }, {});
             Dynarmic::Optimization::A32GetSetElimination(ir_block);
             Dynarmic::Optimization::DeadCodeElimination(ir_block);
             Dynarmic::Optimization::A32ConstantMemoryReads(ir_block, &test_env);

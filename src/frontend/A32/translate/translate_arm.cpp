@@ -28,9 +28,9 @@ static bool CondCanContinue(ConditionalState cond_state, const A32::IREmitter& i
     return std::all_of(ir.block.begin(), ir.block.end(), [](const IR::Inst& inst) { return !inst.WritesToCPSR(); });
 }
 
-IR::Block TranslateArm(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code) {
+IR::Block TranslateArm(LocationDescriptor descriptor, MemoryReadCodeFuncType memory_read_code, const TranslationOptions& options) {
     IR::Block block{descriptor};
-    ArmTranslatorVisitor visitor{block, descriptor};
+    ArmTranslatorVisitor visitor{block, descriptor, options};
 
     bool should_continue = true;
     while (should_continue && CondCanContinue(visitor.cond_state, visitor.ir)) {
@@ -67,7 +67,7 @@ IR::Block TranslateArm(LocationDescriptor descriptor, MemoryReadCodeFuncType mem
 }
 
 bool TranslateSingleArmInstruction(IR::Block& block, LocationDescriptor descriptor, u32 arm_instruction) {
-    ArmTranslatorVisitor visitor{block, descriptor};
+    ArmTranslatorVisitor visitor{block, descriptor, {}};
 
     // TODO: Proper cond handling
 
