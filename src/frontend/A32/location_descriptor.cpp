@@ -11,7 +11,7 @@
 namespace Dynarmic::A32 {
 
 std::ostream& operator<<(std::ostream& o, const LocationDescriptor& loc) {
-    o << fmt::format("{{{},{},{},{}}}",
+    o << fmt::format("{{{:08x},{},{},{:08x}}}",
                      loc.PC(),
                      loc.TFlag() ? "T" : "!T",
                      loc.EFlag() ? "E" : "!E",
