@@ -13,8 +13,8 @@
 namespace Dynarmic::A32 {
 
 const char* CondToString(Cond cond, bool explicit_al) {
-    constexpr std::array<const char*, 15> cond_strs = {
-        "eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al"
+    constexpr std::array<const char*, 16> cond_strs = {
+        "eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "nv",
     };
     return (!explicit_al && cond == Cond::AL) ? "" : cond_strs.at(static_cast<size_t>(cond));
 }
