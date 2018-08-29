@@ -2471,31 +2471,35 @@ void EmitX64::EmitVectorSignExtend32(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         code.pmovsxdq(a, a);
     } else {
-        const Xbyak::Xmm xmm_tmp = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Reg64 gpr_tmp1 = ctx.reg_alloc.ScratchGpr();
-        const Xbyak::Reg64 gpr_tmp2 = ctx.reg_alloc.ScratchGpr();
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-        code.movd(gpr_tmp1.cvt32(), a);
-        code.movsxd(gpr_tmp1, gpr_tmp1.cvt32());
-
-        code.pshufd(a, a, 0b11100101);
-
-        code.movd(gpr_tmp2.cvt32(), a);
-        code.movsxd(gpr_tmp2, gpr_tmp2.cvt32());
-
-        code.movq(a, gpr_tmp1);
-        code.movq(xmm_tmp, gpr_tmp2);
-        code.punpcklqdq(a, xmm_tmp);
+        code.movaps(tmp, a);
+        code.psrad(tmp, 31);
+        code.punpckldq(a, tmp);
     }
 
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
 void EmitX64::EmitVectorSignExtend64(EmitContext& ctx, IR::Inst* inst) {
-    EmitOneArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& a) {
-        result[1] = (a[0] >> 63) ? ~u64(0) : 0;
-        result[0] = a[0];
-    });
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm data = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Reg64 gpr_tmp = ctx.reg_alloc.ScratchGpr();
+
+    code.movq(gpr_tmp, data);
+    code.sar(gpr_tmp, 63);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pinsrq(data, gpr_tmp, 1);
+    } else {
+        const Xbyak::Xmm xmm_tmp = ctx.reg_alloc.ScratchXmm();
+
+        code.movq(xmm_tmp, gpr_tmp);
+        code.punpcklqdq(data, xmm_tmp);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, data);
 }
 
 static void EmitVectorSignedAbsoluteDifference(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
