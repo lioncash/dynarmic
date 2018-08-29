@@ -2465,19 +2465,30 @@ void EmitX64::EmitVectorSignExtend16(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorSignExtend32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
+
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-        const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
         code.pmovsxdq(a, a);
-        ctx.reg_alloc.DefineValue(inst, a);
-        return;
+    } else {
+        const Xbyak::Xmm xmm_tmp = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Reg64 gpr_tmp1 = ctx.reg_alloc.ScratchGpr();
+        const Xbyak::Reg64 gpr_tmp2 = ctx.reg_alloc.ScratchGpr();
+
+        code.movd(gpr_tmp1.cvt32(), a);
+        code.movsxd(gpr_tmp1, gpr_tmp1.cvt32());
+
+        code.pshufd(a, a, 0b11100101);
+
+        code.movd(gpr_tmp2.cvt32(), a);
+        code.movsxd(gpr_tmp2, gpr_tmp2.cvt32());
+
+        code.movq(a, gpr_tmp1);
+        code.movq(xmm_tmp, gpr_tmp2);
+        code.punpcklqdq(a, xmm_tmp);
     }
 
-    EmitOneArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u32>& a) {
-        for (size_t i = 0; i < result.size(); ++i) {
-            result[i] = Common::SignExtend<32, u64>(a[i]);
-        }
-    });
+    ctx.reg_alloc.DefineValue(inst, a);
 }
 
 void EmitX64::EmitVectorSignExtend64(EmitContext& ctx, IR::Inst* inst) {
