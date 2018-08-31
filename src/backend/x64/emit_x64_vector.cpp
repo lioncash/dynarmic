@@ -1503,6 +1503,23 @@ void EmitX64::EmitVectorMinU64(EmitContext& ctx, IR::Inst* inst) {
         return;
     }
 
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm x = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code.vmovdqa(xmm0, code.MConst(xword, 0x8000000000000000, 0x8000000000000000));
+        code.vpsubq(tmp, y, xmm0);
+        code.vpsubq(xmm0, x, xmm0);
+        code.vpcmpgtq(xmm0, tmp, xmm0);
+        code.pblendvb(y, x);
+
+        ctx.reg_alloc.DefineValue(inst, y);
+        return;
+    }
+
     EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& a, const VectorArray<u64>& b){
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), [](auto x, auto y) { return std::min(x, y); });
     });
