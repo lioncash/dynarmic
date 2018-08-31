@@ -1055,12 +1055,17 @@ void EmitX64::EmitVectorInterleaveUpper64(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorLogicalShiftLeft8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     const u8 shift_amount = args[1].GetImmediateU8();
 
-    // TODO: Optimize
-    for (size_t i = 0; i < shift_amount; ++i) {
+    if (shift_amount == 1) {
         code.paddb(result, result);
+    } else if (shift_amount > 0) {
+        const u64 replicand = (0xFFULL << shift_amount) & 0xFF;
+        const u64 mask = Common::Replicate(replicand, Common::BitSize<u8>());
+
+        code.psllw(result, shift_amount);
+        code.pand(result, code.MConst(xword, mask, mask));
     }
 
     ctx.reg_alloc.DefineValue(inst, result);
