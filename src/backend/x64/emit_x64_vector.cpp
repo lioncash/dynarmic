@@ -1102,18 +1102,15 @@ void EmitX64::EmitVectorLogicalShiftLeft64(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorLogicalShiftRight8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-    Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
-    Xbyak::Xmm mask = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
     const u8 shift_amount = args[1].GetImmediateU8();
 
-    // TODO: Optimize
-    code.pcmpeqb(mask, mask); // mask = 0xFF
-    code.paddb(mask, mask); // mask = 0xFE
-    code.pxor(zeros, zeros);
-    for (size_t i = 0; i < shift_amount; ++i) {
-        code.pand(result, mask);
-        code.pavgb(result, zeros);
+    if (shift_amount > 0) {
+        const u64 replicand = 0xFEULL >> shift_amount;
+        const u64 mask = Common::Replicate(replicand, Common::BitSize<u8>());
+
+        code.psrlw(result, shift_amount);
+        code.pand(result, code.MConst(xword, mask, mask));
     }
 
     ctx.reg_alloc.DefineValue(inst, result);
