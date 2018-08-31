@@ -2452,8 +2452,8 @@ void EmitX64::EmitVectorSignExtend16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
-        ctx.reg_alloc.DefineValue(inst, a);
         code.pmovsxwd(a, a);
+        ctx.reg_alloc.DefineValue(inst, a);
     } else {
         const Xbyak::Xmm a = ctx.reg_alloc.UseXmm(args[0]);
         const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
