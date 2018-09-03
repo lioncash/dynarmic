@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <vector>
 
 #include <boost/optional.hpp>
