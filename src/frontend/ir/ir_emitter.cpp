@@ -1496,6 +1496,21 @@ U128 IREmitter::VectorSignedAbsoluteDifference(size_t esize, const U128& a, cons
     return {};
 }
 
+U128 IREmitter::VectorSignedSaturatedAbs(size_t esize, const U128& a) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorSignedSaturatedAbs8, a);
+    case 16:
+        return Inst<U128>(Opcode::VectorSignedSaturatedAbs16, a);
+    case 32:
+        return Inst<U128>(Opcode::VectorSignedSaturatedAbs32, a);
+    case 64:
+        return Inst<U128>(Opcode::VectorSignedSaturatedAbs64, a);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorSignedSaturatedNarrowToSigned(size_t original_esize, const U128& a) {
     switch (original_esize) {
     case 16:

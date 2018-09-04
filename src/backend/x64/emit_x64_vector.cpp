@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <bitset>
+#include <cstdlib>
 #include <functional>
 #include <type_traits>
 
@@ -308,6 +309,52 @@ void EmitX64::EmitVectorSetElement64(EmitContext& ctx, IR::Inst* inst) {
     }
 }
 
+static void VectorAbs8(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& data) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        code.pabsb(data, data);
+    } else {
+        const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
+        code.pxor(temp, temp);
+        code.psubb(temp, data);
+        code.pminub(data, temp);
+    }
+}
+
+static void VectorAbs16(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& data) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        code.pabsw(data, data);
+    } else {
+        const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
+        code.pxor(temp, temp);
+        code.psubw(temp, data);
+        code.pmaxsw(data, temp);
+    }
+}
+
+static void VectorAbs32(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& data) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        code.pabsd(data, data);
+    } else {
+        const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
+        code.movdqa(temp, data);
+        code.psrad(temp, 31);
+        code.pxor(data, temp);
+        code.psubd(data, temp);
+    }
+}
+
+static void VectorAbs64(BlockOfCode& code, EmitContext& ctx, const Xbyak::Xmm& data) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        code.vpabsq(data, data);
+    } else {
+        const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
+        code.pshufd(temp, data, 0b11110101);
+        code.psrad(temp, 31);
+        code.pxor(data, temp);
+        code.psubq(data, temp);
+    }
+}
+
 static void EmitVectorAbs(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockOfCode& code) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -315,46 +362,16 @@ static void EmitVectorAbs(size_t esize, EmitContext& ctx, IR::Inst* inst, BlockO
 
     switch (esize) {
     case 8:
-        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
-            code.pabsb(data, data);
-        } else {
-            const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
-            code.pxor(temp, temp);
-            code.psubb(temp, data);
-            code.pminub(data, temp);
-        }
+        VectorAbs8(code, ctx, data);
         break;
     case 16:
-        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
-            code.pabsw(data, data);
-        } else {
-            const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
-            code.pxor(temp, temp);
-            code.psubw(temp, data);
-            code.pmaxsw(data, temp);
-        }
+        VectorAbs16(code, ctx, data);
         break;
     case 32:
-        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
-            code.pabsd(data, data);
-        } else {
-            const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
-            code.movdqa(temp, data);
-            code.psrad(temp, 31);
-            code.pxor(data, temp);
-            code.psubd(data, temp);
-        }
+        VectorAbs32(code, ctx, data);
         break;
     case 64:
-        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
-            code.vpabsq(data, data);
-        } else {
-            const Xbyak::Xmm temp = ctx.reg_alloc.ScratchXmm();
-            code.pshufd(temp, data, 0b11110101);
-            code.psrad(temp, 31);
-            code.pxor(data, temp);
-            code.psubq(data, temp);
-        }
+        VectorAbs64(code, ctx, data);
         break;
     }
 
@@ -2611,6 +2628,133 @@ void EmitX64::EmitVectorSignedAbsoluteDifference16(EmitContext& ctx, IR::Inst* i
 
 void EmitX64::EmitVectorSignedAbsoluteDifference32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorSignedAbsoluteDifference(32, ctx, inst, code);
+}
+
+static void EmitVectorSignedSaturatedAbs(size_t esize, BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm data = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm data_test = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm sign = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Address mask = [esize, &code] {
+        switch (esize) {
+        case 8:
+            return code.MConst(xword, 0x8080808080808080, 0x8080808080808080);
+        case 16:
+            return code.MConst(xword, 0x8000800080008000, 0x8000800080008000);
+        case 32:
+            return code.MConst(xword, 0x8000000080000000, 0x8000000080000000);
+        case 64:
+            return code.MConst(xword, 0x8000000000000000, 0x8000000000000000);
+        default:
+            UNREACHABLE();
+            return Xbyak::Address{0};
+        }
+    }();
+
+    const u32 test_mask = [esize] {
+        switch (esize) {
+        case 8:
+            return 0b1111'1111'1111'1111;
+        case 16:
+            return 0b1010'1010'1010'1010;
+        case 32:
+            return 0b1000'1000'1000'1000;
+        case 64:
+            return 0b10000000'10000000;
+        default:
+            UNREACHABLE();
+            return 0;
+        }
+    }();
+
+    const auto vector_equality = [esize, &code](const Xbyak::Xmm& x, const Xbyak::Xmm& y) {
+        switch (esize) {
+        case 8:
+            code.pcmpeqb(x, y);
+            break;
+        case 16:
+            code.pcmpeqw(x, y);
+            break;
+        case 32:
+            code.pcmpeqd(x, y);
+            break;
+        case 64:
+            code.pcmpeqq(x, y);
+            break;
+        }
+    };
+
+    // Keep a copy of the initial data for determining whether or not
+    // to set the Q flag
+    code.movdqa(data_test, data);
+
+    switch (esize) {
+    case 8:
+        VectorAbs8(code, ctx, data);
+        break;
+    case 16:
+        VectorAbs16(code, ctx, data);
+        break;
+    case 32:
+        VectorAbs32(code, ctx, data);
+        break;
+    case 64:
+        VectorAbs64(code, ctx, data);
+        break;
+    }
+
+    code.movdqa(sign, mask);
+    vector_equality(sign, data);
+    code.pxor(data, sign);
+
+    // Check if the initial data contained any elements with the value 0x80.
+    // If any exist, then the Q flag needs to be set.
+    const Xbyak::Reg32 bit = ctx.reg_alloc.ScratchGpr().cvt32();
+    code.movdqa(sign, mask);
+    vector_equality(data_test, sign);
+    code.pmovmskb(bit, data_test);
+    code.test(bit, test_mask);
+    code.setnz(bit.cvt8());
+
+    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit.cvt8());
+
+    ctx.reg_alloc.DefineValue(inst, data);
+}
+
+
+void EmitX64::EmitVectorSignedSaturatedAbs8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedAbs(8, code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedAbs16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedAbs(16, code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedAbs32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedAbs(32, code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedAbs64(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorSignedSaturatedAbs(64, code, ctx, inst);
+        return;
+    }
+
+    EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<s64>& result, const VectorArray<s64>& data) {
+        bool qc_flag = false;
+
+        for (size_t i = 0; i < result.size(); i++) {
+            if (static_cast<u64>(data[i]) == 0x8000000000000000) {
+                result[i] = 0x7FFFFFFFFFFFFFFF;
+                qc_flag = true;
+            } else {
+                result[i] = std::abs(data[i]);
+            }
+        }
+
+        return qc_flag;
+    });
 }
 
 static void EmitVectorSignedSaturatedNarrowToSigned(size_t original_esize, BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {

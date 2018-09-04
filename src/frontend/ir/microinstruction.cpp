@@ -347,6 +347,10 @@ bool Inst::ReadsFromFPSRCumulativeSaturationBit() const {
 bool Inst::WritesToFPSRCumulativeSaturationBit() const {
     switch (op) {
     case Opcode::A64OrQC:
+    case Opcode::VectorSignedSaturatedAbs8:
+    case Opcode::VectorSignedSaturatedAbs16:
+    case Opcode::VectorSignedSaturatedAbs32:
+    case Opcode::VectorSignedSaturatedAbs64:
     case Opcode::VectorSignedSaturatedNarrowToSigned16:
     case Opcode::VectorSignedSaturatedNarrowToSigned32:
     case Opcode::VectorSignedSaturatedNarrowToSigned64:
