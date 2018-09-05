@@ -407,7 +407,7 @@ INST(FRSQRTE_2,              "FRSQRTE",                                   "01111
 
 // Data Processing - FP and SIMD - Scalar two-register misc
 //INST(SUQADD_1,               "SUQADD",                                    "01011110zz100000001110nnnnnddddd")
-//INST(SQABS_1,                "SQABS",                                     "01011110zz100000011110nnnnnddddd")
+INST(SQABS_1,                "SQABS",                                     "01011110zz100000011110nnnnnddddd")
 INST(CMGT_zero_1,            "CMGT (zero)",                               "01011110zz100000100010nnnnnddddd")
 INST(CMEQ_zero_1,            "CMEQ (zero)",                               "01011110zz100000100110nnnnnddddd")
 INST(CMLT_1,                 "CMLT (zero)",                               "01011110zz100000101010nnnnnddddd")
