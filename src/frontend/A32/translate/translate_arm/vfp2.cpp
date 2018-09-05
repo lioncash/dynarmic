@@ -441,9 +441,7 @@ bool ArmTranslatorVisitor::vfp2_VCVT_to_u32(Cond cond, bool D, size_t Vd, bool s
     // VCVT{,R}.U32.F64 <Sd>, <Dm>
     if (ConditionPassed(cond)) {
         auto reg_m = ir.GetExtendedRegister(m);
-        auto result = sz
-                      ? ir.FPDoubleToFixedU32(reg_m, 0, round_towards_zero ? FP::RoundingMode::TowardsZero : ir.current_location.FPSCR().RMode())
-                      : ir.FPSingleToFixedU32(reg_m, 0, round_towards_zero ? FP::RoundingMode::TowardsZero : ir.current_location.FPSCR().RMode());
+        auto result = ir.FPToFixedU32(reg_m, 0, round_towards_zero ? FP::RoundingMode::TowardsZero : ir.current_location.FPSCR().RMode());
         ir.SetExtendedRegister(d, result);
     }
     return true;
@@ -456,9 +454,7 @@ bool ArmTranslatorVisitor::vfp2_VCVT_to_s32(Cond cond, bool D, size_t Vd, bool s
     // VCVT{,R}.S32.F64 <Sd>, <Dm>
     if (ConditionPassed(cond)) {
         auto reg_m = ir.GetExtendedRegister(m);
-        auto result = sz
-                      ? ir.FPDoubleToFixedS32(reg_m, 0, round_towards_zero ? FP::RoundingMode::TowardsZero : ir.current_location.FPSCR().RMode())
-                      : ir.FPSingleToFixedS32(reg_m, 0, round_towards_zero ? FP::RoundingMode::TowardsZero : ir.current_location.FPSCR().RMode());
+        auto result = ir.FPToFixedS32(reg_m, 0, round_towards_zero ? FP::RoundingMode::TowardsZero : ir.current_location.FPSCR().RMode());
         ir.SetExtendedRegister(d, result);
     }
     return true;

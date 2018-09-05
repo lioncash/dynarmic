@@ -140,18 +140,14 @@ bool ScalarFPConvertWithRound(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Ve
     const IR::U32U64 operand = v.V_scalar(esize, Vn);
     const IR::U32U64 result = [&]() -> IR::U32U64 {
         if (esize == 64) {
-            if (sign == Signedness::Signed) {
-                return v.ir.FPDoubleToFixedS64(operand, fbits, FP::RoundingMode::TowardsZero);
-            }
-
-            return v.ir.FPDoubleToFixedU64(operand, fbits, FP::RoundingMode::TowardsZero);
+            return sign == Signedness::Signed
+                   ? v.ir.FPToFixedS64(operand, fbits, FP::RoundingMode::TowardsZero)
+                   : v.ir.FPToFixedU64(operand, fbits, FP::RoundingMode::TowardsZero);
         }
 
-        if (sign == Signedness::Signed) {
-            return v.ir.FPSingleToFixedS32(operand, fbits, FP::RoundingMode::TowardsZero);
-        }
-
-        return v.ir.FPSingleToFixedU32(operand, fbits, FP::RoundingMode::TowardsZero);
+        return sign == Signedness::Signed
+               ? v.ir.FPToFixedS32(operand, fbits, FP::RoundingMode::TowardsZero)
+               : v.ir.FPToFixedU32(operand, fbits, FP::RoundingMode::TowardsZero);
     }();
 
     v.V_scalar(esize, Vd, result);

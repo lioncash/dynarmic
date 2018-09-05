@@ -56,18 +56,14 @@ bool ScalarFPConvertWithRound(TranslatorVisitor& v, bool sz, Vec Vn, Vec Vd,
     const IR::U32U64 operand = v.V_scalar(esize, Vn);
     const IR::U32U64 result = [&]() -> IR::U32U64 {
         if (sz) {
-            if (sign == Signedness::Signed) {
-                return v.ir.FPDoubleToFixedS64(operand, 0, rmode);
-            }
-
-            return v.ir.FPDoubleToFixedU64(operand, 0, rmode);
+            return sign == Signedness::Signed
+                   ? v.ir.FPToFixedS64(operand, 0, rmode)
+                   : v.ir.FPToFixedU64(operand, 0, rmode);
         }
 
-        if (sign == Signedness::Signed) {
-            return v.ir.FPSingleToFixedS32(operand, 0, rmode);
-        }
-
-        return v.ir.FPSingleToFixedU32(operand, 0, rmode);
+        return sign == Signedness::Signed
+               ? v.ir.FPToFixedS32(operand, 0, rmode)
+               : v.ir.FPToFixedU32(operand, 0, rmode);
     }();
 
     v.V_scalar(esize, Vd, result);

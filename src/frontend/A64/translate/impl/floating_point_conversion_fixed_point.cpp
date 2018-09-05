@@ -21,18 +21,12 @@ bool TranslatorVisitor::FCVTZS_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec
     }
     const u8 fracbits = 64 - scale.ZeroExtend<u8>();
 
-    const IR::U32U64 fltscale = I(*fltsize, u64(fracbits + (*fltsize == 32 ? 127 : 1023)) << (*fltsize == 32 ? 23 : 52));
-    const IR::U32U64 fltval = ir.FPMul(V_scalar(*fltsize, Vn), fltscale, true);
-
+    const IR::U32U64 fltval = V_scalar(*fltsize, Vn);
     IR::U32U64 intval;
-    if (intsize == 32 && *fltsize == 32) {
-        intval = ir.FPSingleToFixedS32(fltval, 0, FP::RoundingMode::TowardsZero);
-    } else if (intsize == 32 && *fltsize == 64) {
-        intval = ir.FPDoubleToFixedS32(fltval, 0, FP::RoundingMode::TowardsZero);
-    } else if (intsize == 64 && *fltsize == 32) {
-        intval = ir.FPSingleToFixedS64(fltval, 0, FP::RoundingMode::TowardsZero);
-    } else if (intsize == 64 && *fltsize == 64) {
-        intval = ir.FPDoubleToFixedS64(fltval, 0, FP::RoundingMode::TowardsZero);
+    if (intsize == 32) {
+        intval = ir.FPToFixedS32(fltval, fracbits, FP::RoundingMode::TowardsZero);
+    } else if (intsize == 64) {
+        intval = ir.FPToFixedS64(fltval, fracbits, FP::RoundingMode::TowardsZero);
     } else {
         UNREACHABLE();
     }
@@ -52,18 +46,12 @@ bool TranslatorVisitor::FCVTZU_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec
     }
     const u8 fracbits = 64 - scale.ZeroExtend<u8>();
 
-    const IR::U32U64 fltscale = I(*fltsize, u64(fracbits + (*fltsize == 32 ? 127 : 1023)) << (*fltsize == 32 ? 23 : 52));
-    const IR::U32U64 fltval = ir.FPMul(V_scalar(*fltsize, Vn), fltscale, true);
-
+    const IR::U32U64 fltval = V_scalar(*fltsize, Vn);
     IR::U32U64 intval;
-    if (intsize == 32 && *fltsize == 32) {
-        intval = ir.FPSingleToFixedU32(fltval, 0, FP::RoundingMode::TowardsZero);
-    } else if (intsize == 32 && *fltsize == 64) {
-        intval = ir.FPDoubleToFixedU32(fltval, 0, FP::RoundingMode::TowardsZero);
-    } else if (intsize == 64 && *fltsize == 32) {
-        intval = ir.FPSingleToFixedU64(fltval, 0, FP::RoundingMode::TowardsZero);
-    } else if (intsize == 64 && *fltsize == 64) {
-        intval = ir.FPDoubleToFixedU64(fltval, 0, FP::RoundingMode::TowardsZero);
+    if (intsize == 32) {
+        intval = ir.FPToFixedU32(fltval, fracbits, FP::RoundingMode::TowardsZero);
+    } else if (intsize == 64) {
+        intval = ir.FPToFixedU64(fltval, fracbits, FP::RoundingMode::TowardsZero);
     } else {
         UNREACHABLE();
     }

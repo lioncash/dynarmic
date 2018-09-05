@@ -134,14 +134,10 @@ static bool FloaingPointConvertSignedInteger(TranslatorVisitor& v, bool sf, Imm<
     const IR::U32U64 fltval = v.V_scalar(*fltsize, Vn);
     IR::U32U64 intval;
 
-    if (intsize == 32 && *fltsize == 32) {
-        intval = v.ir.FPSingleToFixedS32(fltval, 0, rounding_mode);
-    } else if (intsize == 32 && *fltsize == 64) {
-        intval = v.ir.FPDoubleToFixedS32(fltval, 0, rounding_mode);
-    } else if (intsize == 64 && *fltsize == 32) {
-        intval = v.ir.FPSingleToFixedS64(fltval, 0, rounding_mode);
-    } else if (intsize == 64 && *fltsize == 64) {
-        intval = v.ir.FPDoubleToFixedS64(fltval, 0, rounding_mode);
+    if (intsize == 32) {
+        intval = v.ir.FPToFixedS32(fltval, 0, rounding_mode);
+    } else if (intsize == 64) {
+        intval = v.ir.FPToFixedS64(fltval, 0, rounding_mode);
     } else {
         UNREACHABLE();
     }
@@ -161,14 +157,10 @@ static bool FloaingPointConvertUnsignedInteger(TranslatorVisitor& v, bool sf, Im
     const IR::U32U64 fltval = v.V_scalar(*fltsize, Vn);
     IR::U32U64 intval;
 
-    if (intsize == 32 && *fltsize == 32) {
-        intval = v.ir.FPSingleToFixedU32(fltval, 0, rounding_mode);
-    } else if (intsize == 32 && *fltsize == 64) {
-        intval = v.ir.FPDoubleToFixedU32(fltval, 0, rounding_mode);
-    } else if (intsize == 64 && *fltsize == 32) {
-        intval = v.ir.FPSingleToFixedU64(fltval, 0, rounding_mode);
-    } else if (intsize == 64 && *fltsize == 64) {
-        intval = v.ir.FPDoubleToFixedU64(fltval, 0, rounding_mode);
+    if (intsize == 32) {
+        intval = v.ir.FPToFixedU32(fltval, 0, rounding_mode);
+    } else if (intsize == 64) {
+        intval = v.ir.FPToFixedU64(fltval, 0, rounding_mode);
     } else {
         UNREACHABLE();
     }
