@@ -573,7 +573,7 @@ INST(SADDLP,                 "SADDLP",                                    "0Q001
 //INST(CLS_asimd,              "CLS (vector)",                              "0Q001110zz100000010010nnnnnddddd")
 INST(CNT,                    "CNT",                                       "0Q001110zz100000010110nnnnnddddd")
 INST(SADALP,                 "SADALP",                                    "0Q001110zz100000011010nnnnnddddd")
-//INST(SQABS_2,                "SQABS",                                     "0Q001110zz100000011110nnnnnddddd")
+INST(SQABS_2,                "SQABS",                                     "0Q001110zz100000011110nnnnnddddd")
 INST(CMGT_zero_2,            "CMGT (zero)",                               "0Q001110zz100000100010nnnnnddddd")
 INST(CMEQ_zero_2,            "CMEQ (zero)",                               "0Q001110zz100000100110nnnnnddddd")
 INST(CMLT_2,                 "CMLT (zero)",                               "0Q001110zz100000101010nnnnnddddd")
