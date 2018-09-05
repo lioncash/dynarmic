@@ -722,7 +722,7 @@ INST(MLA_vec,                "MLA (vector)",                              "0Q001
 INST(MUL_vec,                "MUL (vector)",                              "0Q001110zz1mmmmm100111nnnnnddddd")
 INST(SMAXP,                  "SMAXP",                                     "0Q001110zz1mmmmm101001nnnnnddddd")
 INST(SMINP,                  "SMINP",                                     "0Q001110zz1mmmmm101011nnnnnddddd")
-//INST(SQDMULH_vec_2,          "SQDMULH (vector)",                          "0Q001110zz1mmmmm101101nnnnnddddd")
+INST(SQDMULH_vec_2,          "SQDMULH (vector)",                          "0Q001110zz1mmmmm101101nnnnnddddd")
 INST(ADDP_vec,               "ADDP (vector)",                             "0Q001110zz1mmmmm101111nnnnnddddd")
 INST(FMAXNM_2,               "FMAXNM (vector)",                           "0Q0011100z1mmmmm110001nnnnnddddd")
 INST(FMLA_vec_2,             "FMLA (vector)",                             "0Q0011100z1mmmmm110011nnnnnddddd")
