@@ -103,7 +103,7 @@ void DenormalsAreZero(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_
 
 template<size_t fsize>
 void ZeroIfNaN(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Xmm xmm_scratch) {
-    code.pxor(xmm_scratch, xmm_scratch);
+    code.xorps(xmm_scratch, xmm_scratch);
     FCODE(cmpords)(xmm_scratch, xmm_value); // true mask when ordered (i.e.: when not an NaN)
     code.pand(xmm_value, xmm_scratch);
 }
