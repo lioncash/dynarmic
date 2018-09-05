@@ -134,6 +134,66 @@ void EmitX64::EmitSignedSaturatedAdd64(EmitContext& ctx, IR::Inst* inst) {
     EmitSignedSaturatedOp<Op::Add, 64>(code, ctx, inst);
 }
 
+void EmitX64::EmitSignedSaturatedDoublingMultiplyReturnHigh16(EmitContext& ctx, IR::Inst* inst) {
+    auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg32 x = ctx.reg_alloc.UseScratchGpr(args[0]).cvt32();
+    const Xbyak::Reg32 y = ctx.reg_alloc.UseScratchGpr(args[1]).cvt32();
+    const Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
+
+    code.movsx(x, x.cvt16());
+    code.movsx(y, y.cvt16());
+
+    code.imul(x, y);
+    code.lea(y, ptr[x.cvt64() + x.cvt64()]);
+    code.mov(tmp, x);
+    code.shr(tmp, 15);
+    code.xor_(y, x);
+    code.mov(y, 0x7FFF);
+    code.cmovns(y, tmp);
+
+    if (overflow_inst) {
+        code.sets(tmp.cvt8());
+
+        ctx.reg_alloc.DefineValue(overflow_inst, tmp);
+        ctx.EraseInstruction(overflow_inst);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, y);
+}
+
+void EmitX64::EmitSignedSaturatedDoublingMultiplyReturnHigh32(EmitContext& ctx, IR::Inst* inst) {
+    auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg64 x = ctx.reg_alloc.UseScratchGpr(args[0]);
+    const Xbyak::Reg64 y = ctx.reg_alloc.UseScratchGpr(args[1]);
+    const Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
+
+    code.movsxd(x, x.cvt32());
+    code.movsxd(y, y.cvt32());
+
+    code.imul(x, y);
+    code.lea(y, ptr[x + x]);
+    code.mov(tmp, x);
+    code.shr(tmp, 31);
+    code.xor_(y, x);
+    code.mov(y.cvt32(), 0x7FFFFFFF);
+    code.cmovns(y.cvt32(), tmp.cvt32());
+
+    if (overflow_inst) {
+        code.sets(tmp.cvt8());
+
+        ctx.reg_alloc.DefineValue(overflow_inst, tmp);
+        ctx.EraseInstruction(overflow_inst);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, y);
+}
+
 void EmitX64::EmitSignedSaturatedSub8(EmitContext& ctx, IR::Inst* inst) {
     EmitSignedSaturatedOp<Op::Sub, 8>(code, ctx, inst);
 }

@@ -501,6 +501,24 @@ ResultAndOverflow<UAny> IREmitter::SignedSaturatedAdd(const UAny& a, const UAny&
     return {result, overflow};
 }
 
+ResultAndOverflow<UAny> IREmitter::SignedSaturatedDoublingMultiplyReturnHigh(const UAny& a, const UAny& b) {
+    ASSERT(a.GetType() == b.GetType());
+    const auto result = [&]() -> IR::UAny {
+        switch (a.GetType()) {
+        case IR::Type::U16:
+            return Inst<U16>(Opcode::SignedSaturatedDoublingMultiplyReturnHigh16, a, b);
+        case IR::Type::U32:
+            return Inst<U32>(Opcode::SignedSaturatedDoublingMultiplyReturnHigh32, a, b);
+        default:
+            UNREACHABLE();
+            return IR::UAny{};
+        }
+    }();
+
+    const auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
+    return {result, overflow};
+}
+
 ResultAndOverflow<UAny> IREmitter::SignedSaturatedSub(const UAny& a, const UAny& b) {
     ASSERT(a.GetType() == b.GetType());
     const auto result = [&]() -> IR::UAny {

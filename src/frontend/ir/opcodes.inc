@@ -157,6 +157,8 @@ OPCODE(SignedSaturatedAdd8,                                U8,             U8,  
 OPCODE(SignedSaturatedAdd16,                               U16,            U16,            U16                                             )
 OPCODE(SignedSaturatedAdd32,                               U32,            U32,            U32                                             )
 OPCODE(SignedSaturatedAdd64,                               U64,            U64,            U64                                             )
+OPCODE(SignedSaturatedDoublingMultiplyReturnHigh16,        U16,            U16,            U16                                             )
+OPCODE(SignedSaturatedDoublingMultiplyReturnHigh32,        U32,            U32,            U32                                             )
 OPCODE(SignedSaturatedSub8,                                U8,             U8,             U8                                              )
 OPCODE(SignedSaturatedSub16,                               U16,            U16,            U16                                             )
 OPCODE(SignedSaturatedSub32,                               U32,            U32,            U32                                             )
