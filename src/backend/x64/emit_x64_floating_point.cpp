@@ -49,11 +49,9 @@ constexpr u64 f64_non_sign_mask = 0x7fffffffffffffffu;
 constexpr u64 f64_smallest_normal = 0x0010000000000000u;
 
 constexpr u64 f64_penultimate_positive_denormal = 0x000ffffffffffffeu;
-constexpr u64 f64_min_s32 = 0xc1e0000000000000u; // -2147483648 as a double
 constexpr u64 f64_max_s32 = 0x41dfffffffc00000u; // 2147483647 as a double
 constexpr u64 f64_min_u32 = 0x0000000000000000u; // 0 as a double
 constexpr u64 f64_max_u32 = 0x41efffffffe00000u; // 4294967295 as a double
-constexpr u64 f64_min_s64 = 0xc3e0000000000000u; // -2^63 as a double
 constexpr u64 f64_max_s64_lim = 0x43e0000000000000u; // 2^63 as a double (actual maximum unrepresentable)
 constexpr u64 f64_min_u64 = 0x0000000000000000u; // 0 as a double
 constexpr u64 f64_max_u64_lim = 0x43f0000000000000u; // 2^64 as a double (actual maximum unrepresentable)
@@ -1001,7 +999,9 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, s
         if (isize == 64) {
             Xbyak::Label saturate_max, end;
 
-            code.maxsd(src, code.MConst(xword, unsigned_ ? f64_min_u64 : f64_min_s64));
+            if (unsigned_) {
+                code.maxsd(src, code.MConst(xword, f64_min_u64));
+            }
             code.movsd(scratch, code.MConst(xword, unsigned_ ? f64_max_u64_lim : f64_max_s64_lim));
             code.comisd(scratch, src);
             code.jna(saturate_max, code.T_NEAR);
@@ -1027,8 +1027,12 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, s
             code.SwitchToNearCode();
         } else {
             code.minsd(src, code.MConst(xword, unsigned_ ? f64_max_u32 : f64_max_s32));
-            code.maxsd(src, code.MConst(xword, unsigned_ ? f64_min_u32 : f64_min_s32));
-            code.cvttsd2si(result, src); // 64 bit gpr
+            if (unsigned_) {
+                code.maxsd(src, code.MConst(xword, f64_min_u32));
+                code.cvttsd2si(result, src); // 64 bit gpr
+            } else {
+                code.cvttsd2si(result.cvt32(), src);
+            }
         }
 
         ctx.reg_alloc.DefineValue(inst, result);
