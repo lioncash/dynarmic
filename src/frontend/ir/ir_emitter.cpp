@@ -1566,6 +1566,21 @@ U128 IREmitter::VectorSignedSaturatedNarrowToUnsigned(size_t original_esize, con
     return {};
 }
 
+U128 IREmitter::VectorSignedSaturatedNeg(size_t esize, const U128& a) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorSignedSaturatedNeg8, a);
+    case 16:
+        return Inst<U128>(Opcode::VectorSignedSaturatedNeg16, a);
+    case 32:
+        return Inst<U128>(Opcode::VectorSignedSaturatedNeg32, a);
+    case 64:
+        return Inst<U128>(Opcode::VectorSignedSaturatedNeg64, a);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorSub(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 8:

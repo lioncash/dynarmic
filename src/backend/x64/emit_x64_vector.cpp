@@ -2981,6 +2981,127 @@ void EmitX64::EmitVectorSignedSaturatedNarrowToUnsigned64(EmitContext& ctx, IR::
     });
 }
 
+static void EmitVectorSignedSaturatedNeg(size_t esize, BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm data = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm zero = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Address mask = [esize, &code] {
+        switch (esize) {
+        case 8:
+            return code.MConst(xword, 0x8080808080808080, 0x8080808080808080);
+        case 16:
+            return code.MConst(xword, 0x8000800080008000, 0x8000800080008000);
+        case 32:
+            return code.MConst(xword, 0x8000000080000000, 0x8000000080000000);
+        case 64:
+            return code.MConst(xword, 0x8000000000000000, 0x8000000000000000);
+        default:
+            UNREACHABLE();
+            return Xbyak::Address{0};
+        }
+    }();
+
+    const u32 test_mask = [esize] {
+        switch (esize) {
+        case 8:
+            return 0b1111'1111'1111'1111;
+        case 16:
+            return 0b1010'1010'1010'1010;
+        case 32:
+            return 0b1000'1000'1000'1000;
+        case 64:
+            return 0b10000000'10000000;
+        default:
+            UNREACHABLE();
+            return 0;
+        }
+    }();
+
+    const auto vector_equality = [esize, &code](const Xbyak::Xmm& x, const auto& y) {
+        switch (esize) {
+        case 8:
+            code.pcmpeqb(x, y);
+            break;
+        case 16:
+            code.pcmpeqw(x, y);
+            break;
+        case 32:
+            code.pcmpeqd(x, y);
+            break;
+        case 64:
+            code.pcmpeqq(x, y);
+            break;
+        }
+    };
+
+    code.movdqa(tmp, data);
+    vector_equality(tmp, mask);
+
+    // Perform negation
+    code.pxor(zero, zero);
+    switch (esize) {
+    case 8:
+        code.psubsb(zero, data);
+        break;
+    case 16:
+        code.psubsw(zero, data);
+        break;
+    case 32:
+        code.psubd(zero, data);
+        code.pxor(zero, tmp);
+        break;
+    case 64:
+        code.psubq(zero, data);
+        code.pxor(zero, tmp);
+        break;
+    }
+
+    // Check if any elements matched the mask prior to performing saturation. If so, set the Q bit.
+    const Xbyak::Reg64 bit = ctx.reg_alloc.ScratchGpr();
+    code.pmovmskb(bit, tmp);
+    code.test(bit.cvt32(), test_mask);
+    code.setnz(bit.cvt8());
+    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit.cvt8());
+
+    ctx.reg_alloc.DefineValue(inst, zero);
+}
+
+void EmitX64::EmitVectorSignedSaturatedNeg8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedNeg(8, code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedNeg16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedNeg(16, code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedNeg32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedNeg(32, code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedNeg64(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        EmitVectorSignedSaturatedNeg(64, code, ctx, inst);
+        return;
+    }
+
+    EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<s64>& result, const VectorArray<s64>& data) {
+        bool qc_flag = false;
+
+        for (size_t i = 0; i < result.size(); i++) {
+            if (static_cast<u64>(data[i]) == 0x8000000000000000) {
+                result[i] = 0x7FFFFFFFFFFFFFFF;
+                qc_flag = true;
+            } else {
+                result[i] = -data[i];
+            }
+        }
+
+        return qc_flag;
+    });
+}
+
 void EmitX64::EmitVectorSub8(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubb);
 }
