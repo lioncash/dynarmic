@@ -215,6 +215,16 @@ bool TranslatorVisitor::SQABS_1(Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SQNEG_1(Imm<2> size, Vec Vn, Vec Vd) {
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::U128 operand = ir.ZeroExtendToQuad(ir.VectorGetElement(esize, V(128, Vn), 0));
+    const IR::U128 result = ir.VectorSignedSaturatedNeg(esize, operand);
+
+    V(128, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SQXTN_1(Imm<2> size, Vec Vn, Vec Vd) {
     return SaturatedNarrow(*this, size, Vn, Vd, &IREmitter::VectorSignedSaturatedNarrowToSigned);
 }
