@@ -257,6 +257,10 @@ void BlockOfCode::UpdateTicks() {
     mov(qword[r15 + jsi.offsetof_cycles_remaining], ABI_RETURN);
 }
 
+void BlockOfCode::LookupBlock() {
+    cb.LookupBlock->EmitCall(*this);
+}
+
 Xbyak::Address BlockOfCode::MConst(const Xbyak::AddressFrame& frame, u64 lower, u64 upper) {
     return constant_pool.GetConstant(frame, lower, upper);
 }

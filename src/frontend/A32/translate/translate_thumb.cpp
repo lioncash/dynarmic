@@ -370,7 +370,7 @@ struct ThumbTranslatorVisitor final {
         if (d == Reg::PC) {
             ir.ALUWritePC(result.result);
             // Return to dispatch as we can't predict what PC is going to be. Stop compilation.
-            ir.SetTerm(IR::Term::ReturnToDispatch{});
+            ir.SetTerm(IR::Term::FastDispatchHint{});
             return false;
         } else {
             ir.SetRegister(d, result.result);
@@ -400,7 +400,7 @@ struct ThumbTranslatorVisitor final {
         auto result = ir.GetRegister(m);
         if (d == Reg::PC) {
             ir.ALUWritePC(result);
-            ir.SetTerm(IR::Term::ReturnToDispatch{});
+            ir.SetTerm(IR::Term::FastDispatchHint{});
             return false;
         } else {
             ir.SetRegister(d, result);
@@ -775,7 +775,7 @@ struct ThumbTranslatorVisitor final {
         if (m == Reg::R14)
             ir.SetTerm(IR::Term::PopRSBHint{});
         else
-            ir.SetTerm(IR::Term::ReturnToDispatch{});
+            ir.SetTerm(IR::Term::FastDispatchHint{});
         return false;
     }
 
@@ -784,7 +784,7 @@ struct ThumbTranslatorVisitor final {
         ir.PushRSB(ir.current_location.AdvancePC(2));
         ir.BXWritePC(ir.GetRegister(m));
         ir.SetRegister(Reg::LR, ir.Imm32((ir.current_location.PC() + 2) | 1));
-        ir.SetTerm(IR::Term::ReturnToDispatch{});
+        ir.SetTerm(IR::Term::FastDispatchHint{});
         return false;
     }
 

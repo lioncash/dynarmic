@@ -84,7 +84,7 @@ bool TranslatorVisitor::MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, I
     case SystemRegisterEncoding::FPCR:
         ir.SetFPCR(X(32, Rt));
         ir.SetPC(ir.Imm64(ir.current_location->PC() + 4));
-        ir.SetTerm(IR::Term::ReturnToDispatch{});
+        ir.SetTerm(IR::Term::FastDispatchHint{});
         return false;
     case SystemRegisterEncoding::FPSR:
         ir.SetFPSR(X(32, Rt));

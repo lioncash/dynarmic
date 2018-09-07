@@ -87,6 +87,9 @@ struct UserConfig {
     /// instruction the ExceptionRaised callback is called. If this is true, we define
     /// definite behaviour for some unpredictable instructions.
     bool define_unpredictable_behaviour = false;
+
+    /// This enables the fast dispatcher.
+    bool enable_fast_dispatch = true;
 };
 
 } // namespace A32

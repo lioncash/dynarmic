@@ -52,7 +52,7 @@ bool ArmTranslatorVisitor::arm_BLX_reg(Cond cond, Reg m) {
         ir.PushRSB(ir.current_location.AdvancePC(4));
         ir.BXWritePC(ir.GetRegister(m));
         ir.SetRegister(Reg::LR, ir.Imm32(ir.current_location.PC() + 4));
-        ir.SetTerm(IR::Term::ReturnToDispatch{});
+        ir.SetTerm(IR::Term::FastDispatchHint{});
         return false;
     }
     return true;
@@ -65,7 +65,7 @@ bool ArmTranslatorVisitor::arm_BX(Cond cond, Reg m) {
         if (m == Reg::R14)
             ir.SetTerm(IR::Term::PopRSBHint{});
         else
-            ir.SetTerm(IR::Term::ReturnToDispatch{});
+            ir.SetTerm(IR::Term::FastDispatchHint{});
         return false;
     }
     return true;

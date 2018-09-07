@@ -66,7 +66,7 @@ bool ArmTranslatorVisitor::arm_LDR_lit(Cond cond, bool U, Reg t, Imm12 imm12) {
 
         if (t == Reg::PC) {
             ir.LoadWritePC(data);
-            ir.SetTerm(IR::Term::ReturnToDispatch{});
+            ir.SetTerm(IR::Term::FastDispatchHint{});
             return false;
         }
 
@@ -96,7 +96,7 @@ bool ArmTranslatorVisitor::arm_LDR_imm(Cond cond, bool P, bool U, bool W, Reg n,
             if (!P && W && n == Reg::R13)
                 ir.SetTerm(IR::Term::PopRSBHint{});
             else
-                ir.SetTerm(IR::Term::ReturnToDispatch{});
+                ir.SetTerm(IR::Term::FastDispatchHint{});
             return false;
         }
 
@@ -121,7 +121,7 @@ bool ArmTranslatorVisitor::arm_LDR_reg(Cond cond, bool P, bool U, bool W, Reg n,
 
         if (t == Reg::PC) {
             ir.LoadWritePC(data);
-            ir.SetTerm(IR::Term::ReturnToDispatch{});
+            ir.SetTerm(IR::Term::FastDispatchHint{});
             return false;
         }
 
@@ -623,7 +623,7 @@ static bool LDMHelper(A32::IREmitter& ir, bool W, Reg n, RegList list, IR::U32 s
         if (n == Reg::R13)
             ir.SetTerm(IR::Term::PopRSBHint{});
         else
-            ir.SetTerm(IR::Term::ReturnToDispatch{});
+            ir.SetTerm(IR::Term::FastDispatchHint{});
         return false;
     }
     return true;

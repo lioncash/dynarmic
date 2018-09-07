@@ -32,6 +32,7 @@
 
 static Dynarmic::A32::UserConfig GetUserConfig(ThumbTestEnv* testenv) {
     Dynarmic::A32::UserConfig user_config;
+    user_config.enable_fast_dispatch = false;
     user_config.callbacks = testenv;
     return user_config;
 }

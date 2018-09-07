@@ -57,8 +57,11 @@ public:
     /// Code emitter: Makes saved host MXCSR the current MXCSR
     void SwitchMxcsrOnExit();
     /// Code emitter: Updates cycles remaining my calling cb.AddTicks and cb.GetTicksRemaining
-    /// @note this clobbers ABI callee-save registers
+    /// @note this clobbers ABI caller-save registers
     void UpdateTicks();
+    /// Code emitter: Performs a block lookup based on current state
+    /// @note this clobbers ABI caller-save registers
+    void LookupBlock();
 
     /// Code emitter: Calls the function
     template <typename FunctionPointer>

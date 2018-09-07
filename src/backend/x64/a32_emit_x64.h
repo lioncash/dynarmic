@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <array>
+
 #include <boost/optional.hpp>
 
 #include "backend/x64/a32_jitstate.h"
@@ -49,6 +51,16 @@ protected:
     A32::Jit* jit_interface;
     BlockRangeInformation<u32> block_ranges;
 
+    struct FastDispatchEntry {
+        u64 location_descriptor;
+        const void* code_ptr;
+    };
+    static_assert(sizeof(FastDispatchEntry) == 0x10);
+    static constexpr u64 fast_dispatch_table_mask = 0xFFFF0;
+    static constexpr size_t fast_dispatch_table_size = 0x10000;
+    std::array<FastDispatchEntry, fast_dispatch_table_size> fast_dispatch_table;
+    void ClearFastDispatchTable();
+
     const void* read_memory_8;
     const void* read_memory_16;
     const void* read_memory_32;
@@ -58,6 +70,10 @@ protected:
     const void* write_memory_32;
     const void* write_memory_64;
     void GenMemoryAccessors();
+
+    const void* terminal_handler_pop_rsb_hint;
+    const void* terminal_handler_fast_dispatch_hint = nullptr;
+    void GenTerminalHandlers();
 
     // Microinstruction emitters
 #define OPCODE(...)
