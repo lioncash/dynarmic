@@ -497,7 +497,7 @@ INST(FCVTZU_fix_1,           "FCVTZU (vector, fixed-point)",              "01111
 //INST(SQDMLAL_elt_1,          "SQDMLAL, SQDMLAL2 (by element)",            "01011111zzLMmmmm0011H0nnnnnddddd")
 //INST(SQDMLSL_elt_1,          "SQDMLSL, SQDMLSL2 (by element)",            "01011111zzLMmmmm0111H0nnnnnddddd")
 //INST(SQDMULL_elt_1,          "SQDMULL, SQDMULL2 (by element)",            "01011111zzLMmmmm1011H0nnnnnddddd")
-//INST(SQDMULH_elt_1,          "SQDMULH (by element)",                      "01011111zzLMmmmm1100H0nnnnnddddd")
+INST(SQDMULH_elt_1,          "SQDMULH (by element)",                      "01011111zzLMmmmm1100H0nnnnnddddd")
 //INST(SQRDMULH_elt_1,         "SQRDMULH (by element)",                     "01011111zzLMmmmm1101H0nnnnnddddd")
 //INST(FMLA_elt_1,             "FMLA (by element)",                         "0101111100LMmmmm0001H0nnnnnddddd")
 INST(FMLA_elt_2,             "FMLA (by element)",                         "010111111zLMmmmm0001H0nnnnnddddd")

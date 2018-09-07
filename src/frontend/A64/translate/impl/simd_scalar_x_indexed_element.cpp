@@ -4,6 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
+#include <utility>
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
@@ -56,6 +57,31 @@ bool TranslatorVisitor::FMLS_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm
 
 bool TranslatorVisitor::FMUL_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     return MultiplyByElement(*this, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None);
+}
+
+bool TranslatorVisitor::SQDMULH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    if (size == 0b00 || size == 0b11) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const auto [index, Vmhi] = [=] {
+        if (size == 0b01) {
+            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
+        }
+
+        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
+    }();
+    const Vec Vm = concatenate(Vmhi, Vmlo).ZeroExtend<Vec>();
+
+    const IR::UAny operand1 = V_scalar(esize, Vn);
+    const IR::UAny operand2 = ir.VectorGetElement(esize, V(128, Vm), index);
+    const auto result = ir.SignedSaturatedDoublingMultiplyReturnHigh(operand1, operand2);
+
+    ir.OrQC(result.overflow);
+
+    V_scalar(esize, Vd, result.result);
+    return true;
 }
 
 } // namespace Dynarmic::A64
