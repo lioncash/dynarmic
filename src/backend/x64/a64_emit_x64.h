@@ -53,6 +53,16 @@ protected:
     A64::Jit* jit_interface;
     BlockRangeInformation<u64> block_ranges;
 
+    struct FastDispatchEntry {
+        u64 location_descriptor;
+        const void* code_ptr;
+    };
+    static_assert(sizeof(FastDispatchEntry) == 0x10);
+    static constexpr u64 fast_dispatch_table_mask = 0xFFFFF0;
+    static constexpr size_t fast_dispatch_table_size = 0x100000;
+    std::array<FastDispatchEntry, fast_dispatch_table_size> fast_dispatch_table;
+    void ClearFastDispatchTable();
+
     void (*memory_read_128)();
     void (*memory_write_128)();
     void GenMemory128Accessors();
@@ -60,6 +70,10 @@ protected:
     std::map<std::tuple<size_t, int, int>, void(*)()> read_fallbacks;
     std::map<std::tuple<size_t, int, int>, void(*)()> write_fallbacks;
     void GenFastmemFallbacks();
+
+    const void* terminal_handler_pop_rsb_hint;
+    const void* terminal_handler_fast_dispatch_hint = nullptr;
+    void GenTerminalHandlers();
 
     void EmitDirectPageTableMemoryRead(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize);
     void EmitDirectPageTableMemoryWrite(A64EmitContext& ctx, IR::Inst* inst, size_t bitsize);

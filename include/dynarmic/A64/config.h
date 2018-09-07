@@ -163,6 +163,9 @@ struct UserConfig {
     /// definite behaviour for some unpredictable instructions.
     bool define_unpredictable_behaviour = false;
 
+    /// This enables the fast dispatcher.
+    bool enable_fast_dispatch = true;
+
     // The below options relate to accuracy of floating-point emulation.
 
     /// Determines how accurate NaN handling is.

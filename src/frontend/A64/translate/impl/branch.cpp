@@ -44,7 +44,7 @@ bool TranslatorVisitor::BLR(Reg Rn) {
     ir.PushRSB(ir.current_location->AdvancePC(4));
 
     ir.SetPC(target);
-    ir.SetTerm(IR::Term::ReturnToDispatch{});
+    ir.SetTerm(IR::Term::FastDispatchHint{});
     return false;
 }
 
@@ -52,7 +52,7 @@ bool TranslatorVisitor::BR(Reg Rn) {
     auto target = X(64, Rn);
 
     ir.SetPC(target);
-    ir.SetTerm(IR::Term::ReturnToDispatch{});
+    ir.SetTerm(IR::Term::FastDispatchHint{});
     return false;
 }
 

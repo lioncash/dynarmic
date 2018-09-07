@@ -64,11 +64,12 @@ bool A64EmitContext::AccurateNaN() const {
 }
 
 A64EmitX64::A64EmitX64(BlockOfCode& code, A64::UserConfig conf, A64::Jit* jit_interface)
-    : EmitX64(code), conf(conf), jit_interface{jit_interface}
-{
+        : EmitX64(code), conf(conf), jit_interface{jit_interface} {
     GenMemory128Accessors();
     GenFastmemFallbacks();
+    GenTerminalHandlers();
     code.PreludeComplete();
+    ClearFastDispatchTable();
 }
 
 A64EmitX64::~A64EmitX64() = default;
@@ -134,10 +135,16 @@ A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) {
 void A64EmitX64::ClearCache() {
     EmitX64::ClearCache();
     block_ranges.ClearCache();
+    ClearFastDispatchTable();
 }
 
 void A64EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u64>& ranges) {
     InvalidateBasicBlocks(block_ranges.InvalidateRanges(ranges));
+    ClearFastDispatchTable();
+}
+
+void A64EmitX64::ClearFastDispatchTable() {
+    fast_dispatch_table.fill({0xFFFFFFFFFFFFFFFFull, nullptr});
 }
 
 void A64EmitX64::GenMemory128Accessors() {
@@ -287,6 +294,62 @@ void A64EmitX64::GenFastmemFallbacks() {
                 PerfMapRegister(write_fallbacks[std::make_tuple(bitsize, vaddr_idx, value_idx)], code.getCurr(), fmt::format("a64_write_fallback_{}", bitsize));
             }
         }
+    }
+}
+
+void A64EmitX64::GenTerminalHandlers() {
+    // PC ends up in rbp, location_descriptor ends up in rbx
+    const auto calculate_location_descriptor = [this] {
+        // This calculation has to match up with A64::LocationDescriptor::UniqueHash
+        // TODO: Optimization is available here based on known state of FPSCR_mode and CPSR_et.
+        code.mov(rbp, qword[r15 + offsetof(A64JitState, pc)]);
+        code.mov(rcx, A64::LocationDescriptor::PC_MASK);
+        code.and_(rcx, rbp);
+        code.mov(ebx, dword[r15 + offsetof(A64JitState, fpcr)]);
+        code.and_(ebx, A64::LocationDescriptor::FPCR_MASK);
+        code.shl(ebx, 37);
+        code.or_(rbx, rcx);
+    };
+
+    Xbyak::Label fast_dispatch_cache_miss, rsb_cache_miss;
+
+    code.align();
+    terminal_handler_pop_rsb_hint = code.getCurr<const void*>();
+    calculate_location_descriptor();
+    code.mov(eax, dword[r15 + offsetof(A64JitState, rsb_ptr)]);
+    code.sub(eax, 1);
+    code.and_(eax, u32(A64JitState::RSBPtrMask));
+    code.mov(dword[r15 + offsetof(A64JitState, rsb_ptr)], eax);
+    code.cmp(rbx, qword[r15 + offsetof(A64JitState, rsb_location_descriptors) + rax * sizeof(u64)]);
+    if (conf.enable_fast_dispatch) {
+        code.jne(rsb_cache_miss);
+    } else {
+        code.jne(code.GetReturnFromRunCodeAddress());
+    }
+    code.mov(rax, qword[r15 + offsetof(A64JitState, rsb_codeptrs) + rax * sizeof(u64)]);
+    code.jmp(rax);
+    PerfMapRegister(terminal_handler_pop_rsb_hint, code.getCurr(), "a64_terminal_handler_pop_rsb_hint");
+
+    if (conf.enable_fast_dispatch) {
+        code.align();
+        terminal_handler_fast_dispatch_hint = code.getCurr<const void*>();
+        calculate_location_descriptor();
+        code.L(rsb_cache_miss);
+        code.mov(r12, reinterpret_cast<u64>(fast_dispatch_table.data()));
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE42)) {
+            code.crc32(rbp, r12d);
+        }
+        code.and_(ebp, fast_dispatch_table_mask);
+        code.lea(rbp, ptr[r12 + rbp]);
+        code.cmp(rbx, qword[rbp + offsetof(FastDispatchEntry, location_descriptor)]);
+        code.jne(fast_dispatch_cache_miss);
+        code.jmp(ptr[rbp + offsetof(FastDispatchEntry, code_ptr)]);
+        code.L(fast_dispatch_cache_miss);
+        code.mov(qword[rbp + offsetof(FastDispatchEntry, location_descriptor)], rbx);
+        code.LookupBlock();
+        code.mov(ptr[rbp + offsetof(FastDispatchEntry, code_ptr)], rax);
+        code.jmp(rax);
+        PerfMapRegister(terminal_handler_fast_dispatch_hint, code.getCurr(), "a64_terminal_handler_fast_dispatch_hint");
     }
 }
 
@@ -1051,27 +1114,15 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::LinkBlockFast terminal, IR::Location
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::PopRSBHint, IR::LocationDescriptor) {
-    // This calculation has to match up with A64::LocationDescriptor::UniqueHash
-    // TODO: Optimization is available here based on known state of FPSCR_mode and CPSR_et.
-    code.mov(rcx, A64::LocationDescriptor::PC_MASK);
-    code.and_(rcx, qword[r15 + offsetof(A64JitState, pc)]);
-    code.mov(ebx, dword[r15 + offsetof(A64JitState, fpcr)]);
-    code.and_(ebx, A64::LocationDescriptor::FPCR_MASK);
-    code.shl(ebx, 37);
-    code.or_(rbx, rcx);
-
-    code.mov(eax, dword[r15 + offsetof(A64JitState, rsb_ptr)]);
-    code.sub(eax, 1);
-    code.and_(eax, u32(A64JitState::RSBPtrMask));
-    code.mov(dword[r15 + offsetof(A64JitState, rsb_ptr)], eax);
-    code.cmp(rbx, qword[r15 + offsetof(A64JitState, rsb_location_descriptors) + rax * sizeof(u64)]);
-    code.jne(code.GetReturnFromRunCodeAddress());
-    code.mov(rax, qword[r15 + offsetof(A64JitState, rsb_codeptrs) + rax * sizeof(u64)]);
-    code.jmp(rax);
+    code.jmp(terminal_handler_pop_rsb_hint);
 }
 
-void A64EmitX64::EmitTerminalImpl(IR::Term::FastDispatchHint, IR::LocationDescriptor initial_location) {
-    EmitTerminalImpl(IR::Term::ReturnToDispatch{}, initial_location);
+void A64EmitX64::EmitTerminalImpl(IR::Term::FastDispatchHint, IR::LocationDescriptor) {
+    if (conf.enable_fast_dispatch) {
+        code.jmp(terminal_handler_fast_dispatch_hint);
+    } else {
+        code.ReturnFromRunCode();
+    }
 }
 
 void A64EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor initial_location) {
