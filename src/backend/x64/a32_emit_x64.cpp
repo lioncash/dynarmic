@@ -1230,14 +1230,8 @@ void A32EmitX64::EmitTerminalImpl(IR::Term::PopRSBHint, IR::LocationDescriptor) 
     code.or_(ebx, dword[r15 + offsetof(A32JitState, CPSR_et)]);
     code.or_(rbx, rcx);
 
-    code.mov(eax, dword[r15 + offsetof(A32JitState, rsb_ptr)]);
-    code.sub(eax, 1);
-    code.and_(eax, u32(A32JitState::RSBPtrMask));
-    code.mov(dword[r15 + offsetof(A32JitState, rsb_ptr)], eax);
-    code.cmp(rbx, qword[r15 + offsetof(A32JitState, rsb_location_descriptors) + rax * sizeof(u64)]);
-    code.jne(code.GetReturnFromRunCodeAddress());
-    code.mov(rax, qword[r15 + offsetof(A32JitState, rsb_codeptrs) + rax * sizeof(u64)]);
-    code.jmp(rax);
+void A32EmitX64::EmitTerminalImpl(IR::Term::FastDispatchHint, IR::LocationDescriptor initial_location) {
+    EmitTerminalImpl(IR::Term::ReturnToDispatch{}, initial_location);
 }
 
 void A32EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor initial_location) {

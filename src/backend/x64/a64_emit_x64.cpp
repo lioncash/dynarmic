@@ -1070,6 +1070,10 @@ void A64EmitX64::EmitTerminalImpl(IR::Term::PopRSBHint, IR::LocationDescriptor) 
     code.jmp(rax);
 }
 
+void A64EmitX64::EmitTerminalImpl(IR::Term::FastDispatchHint, IR::LocationDescriptor initial_location) {
+    EmitTerminalImpl(IR::Term::ReturnToDispatch{}, initial_location);
+}
+
 void A64EmitX64::EmitTerminalImpl(IR::Term::If terminal, IR::LocationDescriptor initial_location) {
     switch (terminal.if_) {
     case IR::Cond::AL:

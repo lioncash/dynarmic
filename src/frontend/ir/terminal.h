@@ -29,7 +29,7 @@ struct Interpret {
 
 /**
  * This terminal instruction returns control to the dispatcher.
- * The dispatcher will use the value in R15 to determine what comes next.
+ * The dispatcher will use the current cpu state to determine what comes next.
  */
 struct ReturnToDispatch {};
 
@@ -57,13 +57,20 @@ struct LinkBlockFast {
 };
 
 /**
- * This terminal instruction checks the top of the Return Stack Buffer against R15.
- * If RSB lookup fails, control is returned to the dispatcher.
+ * This terminal instruction checks the top of the Return Stack Buffer against the current
+ * location descriptor. If RSB lookup fails, control is returned to the dispatcher.
  * This is an optimization for faster function calls. A backend that doesn't support
  * this optimization or doesn't have a RSB may choose to implement this exactly as
  * ReturnToDispatch.
  */
 struct PopRSBHint {};
+
+/**
+ * This terminal instruction performs a lookup of the current location descriptor in the
+ * fast dispatch lookup table. A backend that doesn't support this optimization may choose
+ * to implement this exactly as ReturnToDispatch.
+ */
+struct FastDispatchHint {};
 
 struct If;
 struct CheckBit;
@@ -76,6 +83,7 @@ using Terminal = boost::variant<
         LinkBlock,
         LinkBlockFast,
         PopRSBHint,
+        FastDispatchHint,
         boost::recursive_wrapper<If>,
         boost::recursive_wrapper<CheckBit>,
         boost::recursive_wrapper<CheckHalt>
