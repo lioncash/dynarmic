@@ -147,6 +147,31 @@ bool TranslatorVisitor::FMUL_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> V
     return FPMultiplyByElement(*this, Q, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None);
 }
 
+bool TranslatorVisitor::SQDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    if (size == 0b00 || size == 0b11) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t idxsize = H == 1 ? 128 : 64;
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+    const auto [index, Vmhi] = [=] {
+        if (size == 0b01) {
+            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
+        }
+
+        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
+    }();
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(idxsize, concatenate(Vmhi, Vmlo).ZeroExtend<Vec>());
+    const IR::U128 index_vector = ir.VectorBroadcast(esize, ir.VectorGetElement(esize, operand2, index));
+    const IR::U128 result = ir.VectorSignedSaturatedDoublingMultiplyReturnHigh(esize, operand1, index_vector);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SDOT_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     return DotProduct(*this, Q, size, L, M, Vmlo, H, Vn, Vd, &IREmitter::SignExtendToWord);
 }

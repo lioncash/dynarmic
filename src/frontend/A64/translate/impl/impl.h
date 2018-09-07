@@ -897,7 +897,7 @@ struct TranslatorVisitor final {
     bool MUL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool SMULL_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool SQDMULL_elt_2(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
-    bool SQDMULH_elt_2(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool SQDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool SQRDMULH_elt_2(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
     bool SDOT_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMLA_elt_3(bool Q, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
