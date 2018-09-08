@@ -610,7 +610,7 @@ INST(FRINTZ_2,               "FRINTZ (vector)",                           "0Q001
 INST(FCVTPS_4,               "FCVTPS (vector)",                           "0Q0011101z100001101010nnnnnddddd")
 //INST(FCVTZS_int_3,           "FCVTZS (vector, integer)",                  "0Q00111011111001101110nnnnnddddd")
 INST(FCVTZS_int_4,           "FCVTZS (vector, integer)",                  "0Q0011101z100001101110nnnnnddddd")
-//INST(URECPE,                 "URECPE",                                    "0Q0011101z100001110010nnnnnddddd")
+INST(URECPE,                 "URECPE",                                    "0Q0011101z100001110010nnnnnddddd")
 //INST(FRECPE_3,               "FRECPE",                                    "0Q00111011111001110110nnnnnddddd")
 INST(FRECPE_4,               "FRECPE",                                    "0Q0011101z100001110110nnnnnddddd")
 INST(REV32_asimd,            "REV32 (vector)",                            "0Q101110zz100000000010nnnnnddddd")
