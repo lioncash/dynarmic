@@ -147,6 +147,33 @@ bool TranslatorVisitor::FMUL_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> V
     return FPMultiplyByElement(*this, Q, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None);
 }
 
+bool TranslatorVisitor::SMULL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    if (size == 0b00 || size == 0b11) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t idxsize = H == 1 ? 128 : 64;
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = 64;
+    const auto [index, Vmhi] = [=] {
+        if (size == 0b01) {
+            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
+        }
+
+        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
+    }();
+
+    const IR::U128 operand1 = Vpart(datasize, Vn, Q);
+    const IR::U128 operand2 = V(idxsize, concatenate(Vmhi, Vmlo).ZeroExtend<Vec>());
+    const IR::U128 index_vector = ir.VectorBroadcast(esize, ir.VectorGetElement(esize, operand2, index));
+    const IR::U128 result = ir.VectorMultiply(2 * esize,
+                                              ir.VectorSignExtend(esize, operand1),
+                                              ir.VectorSignExtend(esize, index_vector));
+
+    V(128, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SQDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     if (size == 0b00 || size == 0b11) {
         return UnallocatedEncoding();
