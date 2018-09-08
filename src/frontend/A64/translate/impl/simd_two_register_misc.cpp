@@ -659,6 +659,20 @@ bool TranslatorVisitor::URECPE(bool Q, bool sz, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::URSQRTE(bool Q, bool sz, Vec Vn, Vec Vd) {
+    if (sz) {
+        return ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = V(datasize, Vn);
+    const IR::U128 result = ir.VectorUnsignedRecipSqrtEstimate(operand);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SCVTF_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return IntegerConvertToFloat(*this, Q, sz, Vn, Vd, Signedness::Signed);
 }
