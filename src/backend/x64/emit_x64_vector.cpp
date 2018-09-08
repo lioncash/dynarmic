@@ -780,13 +780,16 @@ void EmitX64::EmitVectorExtractLower(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
-    const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
 
     const u8 position = args[2].GetImmediateU8();
     ASSERT(position % 8 == 0);
 
-    code.punpcklqdq(xmm_a, xmm_b);
-    code.psrldq(xmm_a, position / 8);
+    if (position != 0) {
+        const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+
+        code.punpcklqdq(xmm_a, xmm_b);
+        code.psrldq(xmm_a, position / 8);
+    }
     code.movq(xmm_a, xmm_a);
 
     ctx.reg_alloc.DefineValue(inst, xmm_a);
