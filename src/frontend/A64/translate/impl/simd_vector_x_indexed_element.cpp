@@ -128,7 +128,7 @@ enum class Signedness {
 };
 
 bool MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo,
-                  Imm<1> H, Vec Vn, Vec Vd, Signedness sign) {
+                  Imm<1> H, Vec Vn, Vec Vd, ExtraBehavior extra_behavior, Signedness sign) {
     if (size == 0b00 || size == 0b11) {
         return v.UnallocatedEncoding();
     }
@@ -158,8 +158,20 @@ bool MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M,
     const IR::U128 operand2 = v.V(idxsize, concatenate(Vmhi, Vmlo).ZeroExtend<Vec>());
     const IR::U128 index_vector = v.ir.VectorBroadcast(esize, v.ir.VectorGetElement(esize, operand2, index));
 
-    const auto [extended_op1, extended_index] = extend_operands(operand1, index_vector);
-    const IR::U128 result = v.ir.VectorMultiply(2 * esize, extended_op1, extended_index);
+    const IR::U128 result = [&] {
+        const auto [extended_op1, extended_index] = extend_operands(operand1, index_vector);
+        const IR::U128 product = v.ir.VectorMultiply(2 * esize, extended_op1, extended_index);
+        if (extra_behavior == ExtraBehavior::None) {
+            return product;
+        }
+
+        const IR::U128 operand3 = v.V(2 * datasize, Vd);
+        if (extra_behavior == ExtraBehavior::Accumulate) {
+            return v.ir.VectorAdd(2 * esize, operand3, product);
+        }
+
+        return v.ir.VectorSub(2 * esize, operand3, product);
+    }();
 
     v.V(2 * datasize, Vd, result);
     return true;
@@ -190,8 +202,16 @@ bool TranslatorVisitor::FMUL_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> V
     return FPMultiplyByElement(*this, Q, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None);
 }
 
+bool TranslatorVisitor::SMLAL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Accumulate, Signedness::Signed);
+}
+
+bool TranslatorVisitor::SMLSL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Subtract, Signedness::Signed);
+}
+
 bool TranslatorVisitor::SMULL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
-    return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, Signedness::Signed);
+    return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SQDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
@@ -227,8 +247,16 @@ bool TranslatorVisitor::UDOT_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4>
     return DotProduct(*this, Q, size, L, M, Vmlo, H, Vn, Vd, &IREmitter::ZeroExtendToWord);
 }
 
+bool TranslatorVisitor::UMLAL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Accumulate, Signedness::Unsigned);
+}
+
+bool TranslatorVisitor::UMLSL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Subtract, Signedness::Unsigned);
+}
+
 bool TranslatorVisitor::UMULL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
-    return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, Signedness::Unsigned);
+    return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None, Signedness::Unsigned);
 }
 
 } // namespace Dynarmic::A64
