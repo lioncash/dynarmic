@@ -158,7 +158,9 @@ void A32EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u32>& rang
 }
 
 void A32EmitX64::ClearFastDispatchTable() {
-    fast_dispatch_table.fill({0xFFFFFFFFFFFFFFFFull, nullptr});
+    if (config.enable_fast_dispatch) {
+        fast_dispatch_table.fill({0xFFFFFFFFFFFFFFFFull, nullptr});
+    }
 }
 
 void A32EmitX64::GenMemoryAccessors() {

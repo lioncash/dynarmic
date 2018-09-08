@@ -144,7 +144,9 @@ void A64EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u64>& rang
 }
 
 void A64EmitX64::ClearFastDispatchTable() {
-    fast_dispatch_table.fill({0xFFFFFFFFFFFFFFFFull, nullptr});
+    if (conf.enable_fast_dispatch) {
+        fast_dispatch_table.fill({0xFFFFFFFFFFFFFFFFull, nullptr});
+    }
 }
 
 void A64EmitX64::GenMemory128Accessors() {
