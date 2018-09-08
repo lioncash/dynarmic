@@ -105,7 +105,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x5670 /* 0xABCD = A.BC(D) */
+	VERSION = 0x5710 /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -786,6 +786,7 @@ inline RegExp operator-(const RegExp& e, size_t disp)
 
 // 2nd parameter for constructor of CodeArray(maxSize, userPtr, alloc)
 void *const AutoGrow = (void*)1; //-V566
+void *const DontSetProtectRWE = (void*)2; //-V566
 
 class CodeArray {
 	enum Type {
@@ -825,6 +826,7 @@ protected:
 	size_t size_;
 	bool isCalledCalcJmpAddress_;
 
+	bool useProtect() const { return alloc_->useProtect(); }
 	/*
 		allocate new memory and copy old data to the new area
 	*/
@@ -848,7 +850,6 @@ protected:
 			uint64 disp = i->getVal(top_);
 			rewrite(i->codeOffset, disp, i->jmpSize);
 		}
-		if (alloc_->useProtect() && !protect(top_, size_, PROTECT_RWE)) throw Error(ERR_CANT_PROTECT);
 		isCalledCalcJmpAddress_ = true;
 	}
 public:
@@ -858,7 +859,7 @@ public:
 		PROTECT_RE = 2 // read/exec
 	};
 	explicit CodeArray(size_t maxSize, void *userPtr = 0, Allocator *allocator = 0)
-		: type_(userPtr == AutoGrow ? AUTO_GROW : userPtr ? USER_BUF : ALLOC_BUF)
+		: type_(userPtr == AutoGrow ? AUTO_GROW : (userPtr == 0 || userPtr == DontSetProtectRWE) ? ALLOC_BUF : USER_BUF)
 		, alloc_(allocator ? allocator : (Allocator*)&defaultAllocator_)
 		, maxSize_(maxSize)
 		, top_(type_ == USER_BUF ? reinterpret_cast<uint8*>(userPtr) : alloc_->alloc((std::max<size_t>)(maxSize, 1)))
@@ -866,7 +867,7 @@ public:
 		, isCalledCalcJmpAddress_(false)
 	{
 		if (maxSize_ > 0 && top_ == 0) throw Error(ERR_CANT_ALLOC);
-		if ((type_ == ALLOC_BUF && alloc_->useProtect()) && !protect(top_, maxSize, PROTECT_RWE)) {
+		if ((type_ == ALLOC_BUF && userPtr != DontSetProtectRWE && useProtect()) && !setProtectMode(PROTECT_RWE, false)) {
 			alloc_->free(top_);
 			throw Error(ERR_CANT_PROTECT);
 		}
@@ -874,10 +875,19 @@ public:
 	virtual ~CodeArray()
 	{
 		if (isAllocType()) {
-			if (alloc_->useProtect()) protect(top_, maxSize_, PROTECT_RW);
+			if (useProtect()) setProtectModeRW(false);
 			alloc_->free(top_);
 		}
 	}
+	bool setProtectMode(ProtectMode mode, bool throwException = true)
+	{
+		bool isOK = protect(top_, maxSize_, mode);
+		if (isOK) return true;
+		if (throwException) throw Error(ERR_CANT_PROTECT);
+		return false;
+	}
+	bool setProtectModeRE(bool throwException = true) { return setProtectMode(PROTECT_RE, throwException); }
+	bool setProtectModeRW(bool throwException = true) { return setProtectMode(PROTECT_RW, throwException); }
 	void resetSize()
 	{
 		size_ = 0;
@@ -995,6 +1005,9 @@ public:
 		size_t pageSize = sysconf(_SC_PAGESIZE);
 		size_t iaddr = reinterpret_cast<size_t>(addr);
 		size_t roundAddr = iaddr & ~(pageSize - static_cast<size_t>(1));
+#ifndef NDEBUG
+		if (pageSize != 4096) fprintf(stderr, "large page(%zd) is used. not tested enough.\n", pageSize);
+#endif
 		return mprotect(reinterpret_cast<void*>(roundAddr), size + (iaddr - roundAddr), mode) == 0;
 #else
 		return true;
@@ -1500,7 +1513,7 @@ private:
 		if ((a > 0 && a != v) + (b > 0 && b != v) + (c > 0 && c != v) > 0) return Error(err);
 		return v;
 	}
-	int evex(const Reg& reg, const Reg& base, const Operand *v, int type, int code, bool x = false, bool b = false, int aaa = 0, uint32 VL = 0)
+	int evex(const Reg& reg, const Reg& base, const Operand *v, int type, int code, bool x = false, bool b = false, int aaa = 0, uint32 VL = 0, bool Hi16Vidx = false)
 	{
 		if (!(type & (T_EVEX | T_MUST_EVEX))) throw Error(ERR_EVEX_IS_INVALID);
 		int w = (type & T_EW1) ? 1 : 0;
@@ -1543,7 +1556,7 @@ private:
 				}
 			}
 		}
-		bool Vp = !(v ? v->isExtIdx2() : 0);
+		bool Vp = !((v ? v->isExtIdx2() : 0) | Hi16Vidx);
 		bool z = reg.hasZero() || base.hasZero() || (v ? v->hasZero() : false);
 		if (aaa == 0) aaa = verifyDuplicate(base.getOpmaskIdx(), reg.getOpmaskIdx(), (v ? v->getOpmaskIdx() : 0), ERR_OPMASK_IS_ALREADY_SET);
 		db(0x62);
@@ -1935,9 +1948,10 @@ private:
 			const Address& addr = op2.getAddress();
 			const RegExp& regExp = addr.getRegExp();
 			const Reg& base = regExp.getBase();
+			const Reg& index = regExp.getIndex();
 			if (BIT == 64 && addr.is32bit()) db(0x67);
 			int disp8N = 0;
-			bool x = regExp.getIndex().isExtIdx();
+			bool x = index.isExtIdx();
 			if ((type & T_MUST_EVEX) || r.hasEvex() || (p1 && p1->hasEvex()) || addr.isBroadcast() || addr.getOpmaskIdx()) {
 				int aaa = addr.getOpmaskIdx();
 				if (aaa && !(type & T_M_K)) throw Error(ERR_INVALID_OPMASK_WITH_MEMORY);
@@ -1946,8 +1960,8 @@ private:
 					if (!(type & (T_B32 | T_B64))) throw Error(ERR_INVALID_BROADCAST);
 					b = true;
 				}
-				int VL = regExp.isVsib() ? regExp.getIndex().getBit() : 0;
-				disp8N = evex(r, base, p1, type, code, x, b, aaa, VL);
+				int VL = regExp.isVsib() ? index.getBit() : 0;
+				disp8N = evex(r, base, p1, type, code, x, b, aaa, VL, index.isExtIdx2());
 			} else {
 				vex(r, base, p1, type, code, x);
 			}
@@ -2148,6 +2162,7 @@ public:
 #endif
 	void L(const std::string& label) { labelMgr_.defineSlabel(label); }
 	void L(const Label& label) { labelMgr_.defineClabel(label); }
+	Label L() { Label label; L(label); return label; }
 	void inLocalLabel() { labelMgr_.enterLocal(); }
 	void outLocalLabel() { labelMgr_.leaveLocal(); }
 	/*
@@ -2436,11 +2451,16 @@ public:
 		MUST call ready() to complete generating code if you use AutoGrow mode.
 		It is not necessary for the other mode if hasUndefinedLabel() is true.
 	*/
-	void ready()
+	void ready(ProtectMode mode = PROTECT_RWE)
 	{
 		if (hasUndefinedLabel()) throw Error(ERR_LABEL_IS_NOT_FOUND);
-		if (isAutoGrow()) calcJmpAddress();
+		if (isAutoGrow()) {
+			calcJmpAddress();
+			if (useProtect()) setProtectMode(mode);
+		}
 	}
+	// set read/exec
+	void readyRE() { return ready(PROTECT_RE); }
 #ifdef XBYAK_TEST
 	void dump(bool doClear = true)
 	{
