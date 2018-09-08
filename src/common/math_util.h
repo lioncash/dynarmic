@@ -35,4 +35,14 @@ constexpr T Sum(T first, Ts&&... rest) {
  */
 u8 RecipEstimate(u64 a);
 
+/**
+ * Input is a u0.9 fixed point number. Only values in [0.25, 1.0) are valid.
+ * Output is a u0.8 fixed point number, with an implied 1 prefixed.
+ * i.e.: The output is a value in [1.0, 2.0).
+ *
+ * @see RecipSqrtEstimate() within the ARMv8 architecture reference manual
+ *      for a general overview of the requirements of the algorithm.
+ */
+u8 RecipSqrtEstimate(u64 a);
+
 } // namespace Dynarmic::Common

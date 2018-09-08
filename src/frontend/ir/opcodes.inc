@@ -419,6 +419,7 @@ OPCODE(VectorUnsignedAbsoluteDifference8,                  U128,           U128,
 OPCODE(VectorUnsignedAbsoluteDifference16,                 U128,           U128,           U128                                            )
 OPCODE(VectorUnsignedAbsoluteDifference32,                 U128,           U128,           U128                                            )
 OPCODE(VectorUnsignedRecipEstimate,                        U128,           U128                                                            )
+OPCODE(VectorUnsignedRecipSqrtEstimate,                    U128,           U128                                                            )
 OPCODE(VectorUnsignedSaturatedNarrow16,                    U128,           U128                                                            )
 OPCODE(VectorUnsignedSaturatedNarrow32,                    U128,           U128                                                            )
 OPCODE(VectorUnsignedSaturatedNarrow64,                    U128,           U128                                                            )

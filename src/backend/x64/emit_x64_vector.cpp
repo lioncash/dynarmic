@@ -3337,6 +3337,22 @@ void EmitX64::EmitVectorUnsignedRecipEstimate(EmitContext& ctx, IR::Inst* inst) 
     });
 }
 
+void EmitX64::EmitVectorUnsignedRecipSqrtEstimate(EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallback(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<u32>& a) {
+        for (size_t i = 0; i < result.size(); i++) {
+            if ((a[i] & 0xC0000000) == 0) {
+                result[i] = 0xFFFFFFFF;
+                continue;
+            }
+
+            const u32 input = Common::Bits<23, 31>(a[i]);
+            const u32 estimate = Common::RecipSqrtEstimate(input);
+
+            result[i] = (0b100000000 | estimate) << 23;
+        }
+    });
+}
+
 void EmitX64::EmitVectorUnsignedSaturatedNarrow16(EmitContext& ctx, IR::Inst* inst) {
     EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u16>& a) {
         bool qc_flag = false;
