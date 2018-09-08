@@ -16,6 +16,7 @@
 #include "common/assert.h"
 #include "common/bit_util.h"
 #include "common/common_types.h"
+#include "common/math_util.h"
 #include "common/mp/function_info.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/microinstruction.h"
@@ -3318,6 +3319,22 @@ void EmitX64::EmitVectorUnsignedAbsoluteDifference16(EmitContext& ctx, IR::Inst*
 
 void EmitX64::EmitVectorUnsignedAbsoluteDifference32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorUnsignedAbsoluteDifference(32, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorUnsignedRecipEstimate(EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallback(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<u32>& a) {
+        for (size_t i = 0; i < result.size(); i++) {
+            if ((a[i] & 0x80000000) == 0) {
+                result[i] = 0xFFFFFFFF;
+                continue;
+            }
+
+            const u32 input = Common::Bits<23, 31>(a[i]);
+            const u32 estimate = Common::RecipEstimate(input);
+
+            result[i] = (0b100000000 | estimate) << 23;
+        }
+    });
 }
 
 void EmitX64::EmitVectorUnsignedSaturatedNarrow16(EmitContext& ctx, IR::Inst* inst) {

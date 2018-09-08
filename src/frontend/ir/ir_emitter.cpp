@@ -1619,6 +1619,10 @@ U128 IREmitter::VectorUnsignedAbsoluteDifference(size_t esize, const U128& a, co
     return {};
 }
 
+U128 IREmitter::VectorUnsignedRecipEstimate(const U128& a) {
+    return Inst<U128>(Opcode::VectorUnsignedRecipEstimate, a);
+}
+
 U128 IREmitter::VectorUnsignedSaturatedNarrow(size_t esize, const U128& a) {
     switch (esize) {
     case 16:

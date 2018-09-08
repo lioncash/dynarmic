@@ -4,7 +4,6 @@
  * General Public License version 2 or any later version.
  */
 
-#include <array>
 #include <tuple>
 
 #include "common/assert.h"
@@ -16,31 +15,9 @@
 #include "common/fp/process_exception.h"
 #include "common/fp/process_nan.h"
 #include "common/fp/unpacked.h"
+#include "common/math_util.h"
 
 namespace Dynarmic::FP {
-
-constexpr u64 lut_offset = 256;
-
-/// Input is a u0.9 fixed point number. Only values in [0.5, 1.0) are valid.
-/// Output is a u0.8 fixed point number, with an implied 1 prefixed.
-/// i.e.: The output is a value in [1.0, 2.0).
-static u8 RecipEstimate(u64 a) {
-    using LUT = std::array<u8, 256>;
-
-    static const LUT lut = [] {
-        LUT result{};
-        for (u64 i = 0; i < result.size(); i++) {
-            u64 a = i + lut_offset;
-
-            a = a * 2 + 1;
-            u64 b = (1u << 19) / a;
-            result[i] = static_cast<u8>((b + 1) / 2);
-        }
-        return result;
-    }();
-
-    return lut[a - lut_offset];
-}
 
 template<typename FPT>
 FPT FPRecipEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
@@ -92,7 +69,7 @@ FPT FPRecipEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
     }
 
     const u64 scaled = value.mantissa >> (normalized_point_position - 8);
-    u64 estimate = static_cast<u64>(RecipEstimate(scaled)) << (FPInfo<FPT>::explicit_mantissa_width - 8);
+    u64 estimate = static_cast<u64>(Common::RecipEstimate(scaled)) << (FPInfo<FPT>::explicit_mantissa_width - 8);
     int result_exponent = -(value.exponent + 1);
     if (result_exponent < FPInfo<FPT>::exponent_min) {
         switch (result_exponent) {

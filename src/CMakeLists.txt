@@ -52,6 +52,7 @@ add_library(dynarmic
     common/llvm_disassemble.cpp
     common/llvm_disassemble.h
     common/macro_util.h
+    common/math_util.cpp
     common/math_util.h
     common/memory_pool.cpp
     common/memory_pool.h
