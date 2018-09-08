@@ -844,7 +844,7 @@ INST(MLA_elt,                "MLA (by element)",                          "0Q101
 //INST(UMLAL_elt,              "UMLAL, UMLAL2 (by element)",                "0Q101111zzLMmmmm0010H0nnnnnddddd")
 INST(MLS_elt,                "MLS (by element)",                          "0Q101111zzLMmmmm0100H0nnnnnddddd")
 //INST(UMLSL_elt,              "UMLSL, UMLSL2 (by element)",                "0Q101111zzLMmmmm0110H0nnnnnddddd")
-//INST(UMULL_elt,              "UMULL, UMULL2 (by element)",                "0Q101111zzLMmmmm1010H0nnnnnddddd")
+INST(UMULL_elt,              "UMULL, UMULL2 (by element)",                "0Q101111zzLMmmmm1010H0nnnnnddddd")
 //INST(SQRDMLAH_elt_2,         "SQRDMLAH (by element)",                     "0Q101111zzLMmmmm1101H0nnnnnddddd")
 INST(UDOT_elt,               "UDOT (by element)",                         "0Q101111zzLMmmmm1110H0nnnnnddddd")
 //INST(SQRDMLSH_elt_2,         "SQRDMLSH (by element)",                     "0Q101111zzLMmmmm1111H0nnnnnddddd")

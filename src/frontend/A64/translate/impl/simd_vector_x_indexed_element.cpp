@@ -121,6 +121,49 @@ bool DotProduct(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M, I
     v.V(datasize, Vd, result);
     return true;
 }
+
+enum class Signedness {
+    Signed,
+    Unsigned
+};
+
+bool MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo,
+                  Imm<1> H, Vec Vn, Vec Vd, Signedness sign) {
+    if (size == 0b00 || size == 0b11) {
+        return v.UnallocatedEncoding();
+    }
+
+    const size_t idxsize = H == 1 ? 128 : 64;
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = 64;
+    const auto [index, Vmhi] = [=] {
+        if (size == 0b01) {
+            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
+        }
+
+        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
+    }();
+
+    const auto extend_operands = [&](const IR::U128& lhs, const IR::U128& rhs) {
+        if (sign == Signedness::Signed) {
+            return std::make_pair(v.ir.VectorSignExtend(esize, lhs),
+                                  v.ir.VectorSignExtend(esize, rhs));
+        }
+
+        return std::make_pair(v.ir.VectorZeroExtend(esize, lhs),
+                              v.ir.VectorZeroExtend(esize, rhs));
+    };
+
+    const IR::U128 operand1 = v.Vpart(datasize, Vn, Q);
+    const IR::U128 operand2 = v.V(idxsize, concatenate(Vmhi, Vmlo).ZeroExtend<Vec>());
+    const IR::U128 index_vector = v.ir.VectorBroadcast(esize, v.ir.VectorGetElement(esize, operand2, index));
+
+    const auto [extended_op1, extended_index] = extend_operands(operand1, index_vector);
+    const IR::U128 result = v.ir.VectorMultiply(2 * esize, extended_op1, extended_index);
+
+    v.V(2 * datasize, Vd, result);
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::MLA_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
@@ -148,30 +191,7 @@ bool TranslatorVisitor::FMUL_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> V
 }
 
 bool TranslatorVisitor::SMULL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
-    if (size == 0b00 || size == 0b11) {
-        return UnallocatedEncoding();
-    }
-
-    const size_t idxsize = H == 1 ? 128 : 64;
-    const size_t esize = 8 << size.ZeroExtend();
-    const size_t datasize = 64;
-    const auto [index, Vmhi] = [=] {
-        if (size == 0b01) {
-            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
-        }
-
-        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
-    }();
-
-    const IR::U128 operand1 = Vpart(datasize, Vn, Q);
-    const IR::U128 operand2 = V(idxsize, concatenate(Vmhi, Vmlo).ZeroExtend<Vec>());
-    const IR::U128 index_vector = ir.VectorBroadcast(esize, ir.VectorGetElement(esize, operand2, index));
-    const IR::U128 result = ir.VectorMultiply(2 * esize,
-                                              ir.VectorSignExtend(esize, operand1),
-                                              ir.VectorSignExtend(esize, index_vector));
-
-    V(128, Vd, result);
-    return true;
+    return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SQDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
@@ -205,6 +225,10 @@ bool TranslatorVisitor::SDOT_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4>
 
 bool TranslatorVisitor::UDOT_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     return DotProduct(*this, Q, size, L, M, Vmlo, H, Vn, Vd, &IREmitter::ZeroExtendToWord);
+}
+
+bool TranslatorVisitor::UMULL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, Signedness::Unsigned);
 }
 
 } // namespace Dynarmic::A64
