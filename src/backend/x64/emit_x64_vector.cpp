@@ -3487,7 +3487,7 @@ void EmitX64::EmitVectorUnsignedSaturatedAccumulateSigned32(EmitContext& ctx, IR
     EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, EmitVectorUnsignedSaturatedAccumulateSigned<s32>);
 }
 
-void EmitX64::EmitVectorUnsignedSaturatedAccumulateSigned64([[maybe_unused]] EmitContext& ctx, [[maybe_unused]] IR::Inst* inst) {
+void EmitX64::EmitVectorUnsignedSaturatedAccumulateSigned64(EmitContext& ctx, IR::Inst* inst) {
     EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& lhs, const VectorArray<u64>& rhs) {
         bool qc_flag = false;
 
