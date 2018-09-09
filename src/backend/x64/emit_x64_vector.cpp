@@ -616,6 +616,43 @@ void EmitX64::EmitVectorBroadcast64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, a);
 }
 
+template <typename T>
+static void EmitVectorCountLeadingZeros(VectorArray<T>& result, const VectorArray<T>& data) {
+    for (size_t i = 0; i < result.size(); i++) {
+        T element = data[i];
+
+        size_t count = Common::BitSize<T>();
+        while (element != 0) {
+            element >>= 1;
+            --count;
+        }
+
+        result[i] = static_cast<T>(count);
+    }
+}
+
+void EmitX64::EmitVectorCountLeadingZeros8(EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallback(code, ctx, inst, EmitVectorCountLeadingZeros<u8>);
+}
+
+void EmitX64::EmitVectorCountLeadingZeros16(EmitContext& ctx, IR::Inst* inst) {
+    EmitOneArgumentFallback(code, ctx, inst, EmitVectorCountLeadingZeros<u16>);
+}
+
+void EmitX64::EmitVectorCountLeadingZeros32(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512CD) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm data = ctx.reg_alloc.UseScratchXmm(args[0]);
+        code.vplzcntd(data, data);
+
+        ctx.reg_alloc.DefineValue(inst, data);
+        return;
+    }
+
+    EmitOneArgumentFallback(code, ctx, inst, EmitVectorCountLeadingZeros<u32>);
+}
+
 void EmitX64::EmitVectorDeinterleaveEven8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm lhs = ctx.reg_alloc.UseScratchXmm(args[0]);

@@ -209,6 +209,7 @@ public:
     U128 VectorArithmeticShiftRight(size_t esize, const U128& a, u8 shift_amount);
     U128 VectorBroadcast(size_t esize, const UAny& a);
     U128 VectorBroadcastLower(size_t esize, const UAny& a);
+    U128 VectorCountLeadingZeros(size_t esize, const U128& a);
     U128 VectorEor(const U128& a, const U128& b);
     U128 VectorDeinterleaveEven(size_t esize, const U128& a, const U128& b);
     U128 VectorDeinterleaveOdd(size_t esize, const U128& a, const U128& b);
