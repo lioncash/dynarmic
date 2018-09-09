@@ -3445,6 +3445,73 @@ void EmitX64::EmitVectorUnsignedRecipSqrtEstimate(EmitContext& ctx, IR::Inst* in
     });
 }
 
+// Simple generic case for 8, 16, and 32-bit values. 64-bit values
+// will need to be special-cased as we can't simply use a larger integral size.
+template <typename T, typename U = std::make_unsigned_t<T>>
+bool EmitVectorUnsignedSaturatedAccumulateSigned(VectorArray<U>& result, const VectorArray<T>& lhs, const VectorArray<T>& rhs) {
+    static_assert(std::is_signed_v<T>, "T must be signed.");
+    static_assert(sizeof(T) < 64, "T must be less than 64 bits in size.");
+
+    bool qc_flag = false;
+
+    for (size_t i = 0; i < result.size(); i++) {
+        // We treat rhs' members as unsigned, so cast to unsigned before signed to inhibit sign-extension.
+        // We use the unsigned equivalent of T, as we want zero-extension to occur, rather than a plain move.
+        const s64 x = s64{lhs[i]};
+        const s64 y = static_cast<s64>(static_cast<std::make_unsigned_t<U>>(rhs[i]));
+        const s64 sum = x + y;
+
+        if (sum > std::numeric_limits<U>::max()) {
+            result[i] = std::numeric_limits<U>::max();
+            qc_flag = true;
+        } else if (sum < 0) {
+            result[i] = std::numeric_limits<U>::min();
+            qc_flag = true;
+        } else {
+            result[i] = static_cast<U>(sum);
+        }
+    }
+
+    return qc_flag;
+}
+
+void EmitX64::EmitVectorUnsignedSaturatedAccumulateSigned8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, EmitVectorUnsignedSaturatedAccumulateSigned<s8>);
+}
+
+void EmitX64::EmitVectorUnsignedSaturatedAccumulateSigned16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, EmitVectorUnsignedSaturatedAccumulateSigned<s16>);
+}
+
+void EmitX64::EmitVectorUnsignedSaturatedAccumulateSigned32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, EmitVectorUnsignedSaturatedAccumulateSigned<s32>);
+}
+
+void EmitX64::EmitVectorUnsignedSaturatedAccumulateSigned64([[maybe_unused]] EmitContext& ctx, [[maybe_unused]] IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& lhs, const VectorArray<u64>& rhs) {
+        bool qc_flag = false;
+
+        for (size_t i = 0; i < result.size(); i++) {
+            const u64 x = lhs[i];
+            const u64 y = rhs[i];
+            const u64 res = x + y;
+
+            // Check sign bits to determine if an overflow occurred.
+            if ((~x & y & ~res) & 0x8000000000000000) {
+                result[i] = UINT64_MAX;
+                qc_flag = true;
+            } else if ((x & ~y & res) & 0x8000000000000000) {
+                result[i] = 0;
+                qc_flag = true;
+            } else {
+                result[i] = res;
+            }
+        }
+
+        return qc_flag;
+    });
+}
+
 void EmitX64::EmitVectorUnsignedSaturatedNarrow16(EmitContext& ctx, IR::Inst* inst) {
     EmitOneArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u16>& a) {
         bool qc_flag = false;

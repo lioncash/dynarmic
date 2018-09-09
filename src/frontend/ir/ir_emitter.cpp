@@ -1642,6 +1642,21 @@ U128 IREmitter::VectorUnsignedRecipSqrtEstimate(const U128& a) {
     return Inst<U128>(Opcode::VectorUnsignedRecipSqrtEstimate, a);
 }
 
+U128 IREmitter::VectorUnsignedSaturatedAccumulateSigned(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 8:
+        return Inst<U128>(Opcode::VectorUnsignedSaturatedAccumulateSigned8, a, b);
+    case 16:
+        return Inst<U128>(Opcode::VectorUnsignedSaturatedAccumulateSigned16, a, b);
+    case 32:
+        return Inst<U128>(Opcode::VectorUnsignedSaturatedAccumulateSigned32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::VectorUnsignedSaturatedAccumulateSigned64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::VectorUnsignedSaturatedNarrow(size_t esize, const U128& a) {
     switch (esize) {
     case 16:
