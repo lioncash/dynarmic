@@ -8,8 +8,7 @@
 
 #include "common/common_types.h"
 
-namespace Dynarmic {
-namespace IR {
+namespace Dynarmic::IR {
 
 enum class Cond {
     EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL, NV,
@@ -20,5 +19,4 @@ inline Cond invert(Cond c) {
 	return static_cast<Cond>(static_cast<size_t>(c) ^ 1);
 }
 
-} // namespace IR
-} // namespace Dynarmic
+} // namespace Dynarmic::IR
