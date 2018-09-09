@@ -460,7 +460,7 @@ bool TranslatorVisitor::FNEG_2(bool Q, bool sz, Vec Vn, Vec Vd) {
     const size_t mask_value = esize == 64 ? 0x8000000000000000 : 0x8000000080000000;
 
     const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 mask = ir.VectorBroadcast(esize, I(esize, mask_value));
+    const IR::U128 mask = Q ? ir.VectorBroadcast(esize, I(esize, mask_value)) : ir.VectorBroadcastLower(esize, I(esize, mask_value));
     const IR::U128 result = ir.VectorEor(operand, mask);
 
     V(datasize, Vd, result);

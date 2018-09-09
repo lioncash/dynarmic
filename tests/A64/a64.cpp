@@ -8,7 +8,10 @@
 
 #include <dynarmic/A64/exclusive_monitor.h>
 
+#include "common/fp/fpsr.h"
 #include "testenv.h"
+
+namespace FP = Dynarmic::FP;
 
 TEST_CASE("A64: ADD", "[a64]") {
     A64TestEnv env;
@@ -449,4 +452,23 @@ TEST_CASE("A64: FMADD (0x80800000)", "[a64]") {
     jit.Run();
 
     REQUIRE(jit.GetVector(25) == Vector{0x80000000, 0});
+}
+
+TEST_CASE("A64: FNEG failed to zero upper", "[a64]") {
+    A64TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem.emplace_back(0x2ea0fb50); // FNEG.2S V16, V26
+    env.code_mem.emplace_back(0x2e207a1c); // SQNEG.8B V28, V16
+    env.code_mem.emplace_back(0x14000000); // B .
+
+    jit.SetPC(0);
+    jit.SetVector(26, {0x071286fde8f34a90, 0x837cffa8be382f60});
+    jit.SetFpcr(0x01000000);
+
+    env.ticks_left = 6;
+    jit.Run();
+
+    REQUIRE(jit.GetVector(28) == Vector{0x79ee7a03980db670, 0});
+    REQUIRE(FP::FPSR{jit.GetFpsr()}.QC() == false);
 }
