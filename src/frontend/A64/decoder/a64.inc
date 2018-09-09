@@ -406,7 +406,7 @@ INST(FRSQRTE_2,              "FRSQRTE",                                   "01111
 //INST(SQRDMLSH_vec_2,         "SQRDMLSH (vector)",                         "0Q101110zz0mmmmm100011nnnnnddddd")
 
 // Data Processing - FP and SIMD - Scalar two-register misc
-//INST(SUQADD_1,               "SUQADD",                                    "01011110zz100000001110nnnnnddddd")
+INST(SUQADD_1,               "SUQADD",                                    "01011110zz100000001110nnnnnddddd")
 INST(SQABS_1,                "SQABS",                                     "01011110zz100000011110nnnnnddddd")
 INST(CMGT_zero_1,            "CMGT (zero)",                               "01011110zz100000100010nnnnnddddd")
 INST(CMEQ_zero_1,            "CMEQ (zero)",                               "01011110zz100000100110nnnnnddddd")
@@ -569,7 +569,7 @@ INST(UDOT_vec,               "UDOT (vector)",                             "0Q101
 INST(REV64_asimd,            "REV64",                                     "0Q001110zz100000000010nnnnnddddd")
 INST(REV16_asimd,            "REV16 (vector)",                            "0Q001110zz100000000110nnnnnddddd")
 INST(SADDLP,                 "SADDLP",                                    "0Q001110zz100000001010nnnnnddddd")
-//INST(SUQADD_2,               "SUQADD",                                    "0Q001110zz100000001110nnnnnddddd")
+INST(SUQADD_2,               "SUQADD",                                    "0Q001110zz100000001110nnnnnddddd")
 //INST(CLS_asimd,              "CLS (vector)",                              "0Q001110zz100000010010nnnnnddddd")
 INST(CNT,                    "CNT",                                       "0Q001110zz100000010110nnnnnddddd")
 INST(SADALP,                 "SADALP",                                    "0Q001110zz100000011010nnnnnddddd")

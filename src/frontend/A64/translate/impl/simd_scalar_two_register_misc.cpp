@@ -233,6 +233,18 @@ bool TranslatorVisitor::SQXTUN_1(Imm<2> size, Vec Vn, Vec Vd) {
     return SaturatedNarrow(*this, size, Vn, Vd, &IREmitter::VectorSignedSaturatedNarrowToUnsigned);
 }
 
+bool TranslatorVisitor::SUQADD_1(Imm<2> size, Vec Vn, Vec Vd) {
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = 64;
+
+    const IR::U128 operand1 = ir.ZeroExtendToQuad(ir.VectorGetElement(esize, V(datasize, Vn), 0));
+    const IR::U128 operand2 = ir.ZeroExtendToQuad(ir.VectorGetElement(esize, V(datasize, Vd), 0));
+    const IR::U128 result = ir.VectorSignedSaturatedAccumulateUnsigned(esize, operand1, operand2);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::UCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     const auto esize = sz ? 64 : 32;
 
