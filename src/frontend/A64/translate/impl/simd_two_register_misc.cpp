@@ -193,6 +193,25 @@ bool PairedAddLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vn, Vec Vd, Si
 
 } // Anonymous namespace
 
+bool TranslatorVisitor::CLZ_asimd(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = V(datasize, Vn);
+    IR::U128 result = ir.VectorCountLeadingZeros(esize, operand);
+
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::CNT(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     if (size != 0b00) {
         return ReservedValue();

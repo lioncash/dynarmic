@@ -616,7 +616,7 @@ INST(FRECPE_4,               "FRECPE",                                    "0Q001
 INST(REV32_asimd,            "REV32 (vector)",                            "0Q101110zz100000000010nnnnnddddd")
 INST(UADDLP,                 "UADDLP",                                    "0Q101110zz100000001010nnnnnddddd")
 INST(USQADD_2,               "USQADD",                                    "0Q101110zz100000001110nnnnnddddd")
-//INST(CLZ_asimd,              "CLZ (vector)",                              "0Q101110zz100000010010nnnnnddddd")
+INST(CLZ_asimd,              "CLZ (vector)",                              "0Q101110zz100000010010nnnnnddddd")
 INST(UADALP,                 "UADALP",                                    "0Q101110zz100000011010nnnnnddddd")
 INST(SQNEG_2,                "SQNEG",                                     "0Q101110zz100000011110nnnnnddddd")
 INST(CMGE_zero_2,            "CMGE (zero)",                               "0Q101110zz100000100010nnnnnddddd")
