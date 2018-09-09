@@ -181,6 +181,7 @@ add_library(dynarmic
     frontend/decoder/matcher.h
     frontend/ir/basic_block.cpp
     frontend/ir/basic_block.h
+    frontend/ir/cond.h
     frontend/ir/ir_emitter.cpp
     frontend/ir/ir_emitter.h
     frontend/ir/location_descriptor.cpp
