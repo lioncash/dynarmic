@@ -262,4 +262,16 @@ bool TranslatorVisitor::UQXTN_1(Imm<2> size, Vec Vn, Vec Vd) {
     return SaturatedNarrow(*this, size, Vn, Vd, &IREmitter::VectorUnsignedSaturatedNarrow);
 }
 
+bool TranslatorVisitor::USQADD_1(Imm<2> size, Vec Vn, Vec Vd) {
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = 64;
+
+    const IR::U128 operand1 = ir.ZeroExtendToQuad(ir.VectorGetElement(esize, V(datasize, Vn), 0));
+    const IR::U128 operand2 = ir.ZeroExtendToQuad(ir.VectorGetElement(esize, V(datasize, Vd), 0));
+    const IR::U128 result = ir.VectorUnsignedSaturatedAccumulateSigned(esize, operand1, operand2);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64

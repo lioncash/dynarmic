@@ -645,6 +645,22 @@ bool TranslatorVisitor::SUQADD_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::USQADD_2(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    if (size == 0b11 && !Q) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vd);
+    const IR::U128 result = ir.VectorUnsignedSaturatedAccumulateSigned(esize, operand1, operand2);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SADALP(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     return PairedAddLong(*this, Q, size, Vn, Vd, Signedness::Signed, PairedAddLongExtraBehavior::Accumulate);
 }
