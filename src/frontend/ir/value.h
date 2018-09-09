@@ -10,14 +10,22 @@
 
 #include "common/assert.h"
 #include "common/common_types.h"
-#include "frontend/A32/types.h"
-#include "frontend/A64/types.h"
-#include "frontend/ir/cond.h"
 #include "frontend/ir/type.h"
+
+namespace Dynarmic::A32 {
+enum class ExtReg;
+enum class Reg;
+}
+
+namespace Dynarmic::A64 {
+enum class Reg;
+enum class Vec;
+}
 
 namespace Dynarmic::IR {
 
 class Inst;
+enum class Cond;
 
 /**
  * A representation of a value in the IR.

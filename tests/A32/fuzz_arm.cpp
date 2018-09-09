@@ -25,6 +25,7 @@
 #include "frontend/A32/location_descriptor.h"
 #include "frontend/A32/PSR.h"
 #include "frontend/A32/translate/translate.h"
+#include "frontend/A32/types.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/location_descriptor.h"
 #include "ir_opt/passes.h"

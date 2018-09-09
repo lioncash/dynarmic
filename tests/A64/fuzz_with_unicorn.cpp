@@ -19,6 +19,7 @@
 #include "frontend/A64/decoder/a64.h"
 #include "frontend/A64/location_descriptor.h"
 #include "frontend/A64/translate/translate.h"
+#include "frontend/A64/types.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/opcodes.h"
 #include "fuzz_util.h"
