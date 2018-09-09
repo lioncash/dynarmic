@@ -265,6 +265,7 @@ public:
     U128 VectorSignExtend(size_t original_esize, const U128& a);
     U128 VectorSignedAbsoluteDifference(size_t esize, const U128& a, const U128& b);
     U128 VectorSignedSaturatedAbs(size_t esize, const U128& a);
+    U128 VectorSignedSaturatedAccumulateUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorSignedSaturatedDoublingMultiplyReturnHigh(size_t esize, const U128& a, const U128& b);
     U128 VectorSignedSaturatedNarrowToSigned(size_t original_esize, const U128& a);
     U128 VectorSignedSaturatedNarrowToUnsigned(size_t original_esize, const U128& a);

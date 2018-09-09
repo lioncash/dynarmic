@@ -100,6 +100,34 @@ static void EmitOneArgumentFallbackWithSaturation(BlockOfCode& code, EmitContext
 }
 
 template <typename Lambda>
+static void EmitTwoArgumentFallbackWithSaturation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
+    const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
+    constexpr u32 stack_space = 3 * 16;
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm arg2 = ctx.reg_alloc.UseXmm(args[1]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    ctx.reg_alloc.EndOfAllocScope();
+
+    ctx.reg_alloc.HostCall(nullptr);
+    code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
+    code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+    code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
+    code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
+
+    code.movaps(xword[code.ABI_PARAM2], arg1);
+    code.movaps(xword[code.ABI_PARAM3], arg2);
+    code.CallFunction(fn);
+    code.movaps(result, xword[rsp + ABI_SHADOW_SPACE + 0 * 16]);
+
+    code.add(rsp, stack_space + ABI_SHADOW_SPACE);
+
+    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], code.ABI_RETURN.cvt8());
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+template <typename Lambda>
 static void EmitTwoArgumentFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
     const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
     constexpr u32 stack_space = 3 * 16;
@@ -2757,6 +2785,70 @@ void EmitX64::EmitVectorSignedSaturatedAbs64(EmitContext& ctx, IR::Inst* inst) {
                 qc_flag = true;
             } else {
                 result[i] = std::abs(data[i]);
+            }
+        }
+
+        return qc_flag;
+    });
+}
+
+// Simple generic case for 8, 16, and 32-bit values. 64-bit values
+// will need to be special-cased as we can't simply use a larger integral size.
+template <typename T>
+static bool EmitSignedSaturatedAccumulateUnsigned(VectorArray<T>& result, const VectorArray<T>& lhs, const VectorArray<T>& rhs) {
+    static_assert(std::is_signed_v<T>, "T must be signed.");
+    static_assert(sizeof(T) < 64, "T must be less than 64 bits in size.");
+
+    bool qc_flag = false;
+
+    for (size_t i = 0; i < result.size(); i++) {
+        // We treat lhs' members as unsigned, so cast to unsigned before signed to inhibit sign-extension.
+        // We use the unsigned equivalent of T, as we want zero-extension to occur, rather than a plain move.
+        const s64 x = static_cast<s64>(static_cast<std::make_unsigned_t<T>>(lhs[i]));
+        const s64 y = rhs[i];
+        const s64 sum = x + y;
+
+        if (sum > std::numeric_limits<T>::max()) {
+            result[i] = std::numeric_limits<T>::max();
+            qc_flag = true;
+        } else if (sum < std::numeric_limits<T>::min()) {
+            result[i] = std::numeric_limits<T>::min();
+            qc_flag = true;
+        } else {
+            result[i] = static_cast<T>(sum);
+        }
+    }
+
+    return qc_flag;
+}
+
+void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, EmitSignedSaturatedAccumulateUnsigned<s8>);
+}
+
+void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, EmitSignedSaturatedAccumulateUnsigned<s16>);
+}
+
+void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, EmitSignedSaturatedAccumulateUnsigned<s32>);
+}
+
+void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& lhs, const VectorArray<u64>& rhs) {
+        bool qc_flag = false;
+
+        for (size_t i = 0; i < result.size(); i++) {
+            const u64 x = lhs[i];
+            const u64 y = rhs[i];
+            const u64 res = x + y;
+
+            // Check sign bits to determine if an overflow occurred.
+            if (((x & res) | (~y & res) | (x & ~y)) & 0x8000000000000000) {
+                result[i] = static_cast<u64>(INT64_MAX);
+                qc_flag = true;
+            } else {
+                result[i] = res;
             }
         }
 
