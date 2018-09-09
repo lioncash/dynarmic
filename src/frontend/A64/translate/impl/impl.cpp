@@ -205,7 +205,8 @@ void TranslatorVisitor::V(size_t bitsize, Vec vec, IR::U128 value) {
         ir.SetS(vec, value);
         return;
     case 64:
-        ir.SetD(vec, value);
+        // TODO: Remove VectorZeroUpper when possible.
+        ir.SetD(vec, ir.VectorZeroUpper(value));
         return;
     case 128:
         ir.SetQ(vec, value);
