@@ -2724,22 +2724,6 @@ static void EmitVectorSignedSaturatedAbs(size_t esize, BlockOfCode& code, EmitCo
         }
     }();
 
-    const u32 test_mask = [esize] {
-        switch (esize) {
-        case 8:
-            return 0b1111'1111'1111'1111;
-        case 16:
-            return 0b1010'1010'1010'1010;
-        case 32:
-            return 0b1000'1000'1000'1000;
-        case 64:
-            return 0b10000000'10000000;
-        default:
-            UNREACHABLE();
-            return 0;
-        }
-    }();
-
     const auto vector_equality = [esize, &code](const Xbyak::Xmm& x, const Xbyak::Xmm& y) {
         switch (esize) {
         case 8:
@@ -2786,10 +2770,7 @@ static void EmitVectorSignedSaturatedAbs(size_t esize, BlockOfCode& code, EmitCo
     code.movdqa(sign, mask);
     vector_equality(data_test, sign);
     code.pmovmskb(bit, data_test);
-    code.test(bit, test_mask);
-    code.setnz(bit.cvt8());
-
-    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit.cvt8());
+    code.or_(code.dword[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit);
 
     ctx.reg_alloc.DefineValue(inst, data);
 }
@@ -2914,11 +2895,9 @@ void EmitX64::EmitVectorSignedSaturatedDoublingMultiplyReturnHigh16(EmitContext&
 
     // Check if any saturation occurred (i.e. if any halfwords in x were
     // 0x8000 before saturating
-    const Xbyak::Reg64 mask = ctx.reg_alloc.ScratchGpr();
+    const Xbyak::Reg32 mask = ctx.reg_alloc.ScratchGpr().cvt32();
     code.pmovmskb(mask, tmp);
-    code.test(mask.cvt32(), 0b1010'1010'1010'1010);
-    code.setnz(mask.cvt8());
-    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], mask.cvt8());
+    code.or_(code.dword[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], mask);
 
     ctx.reg_alloc.DefineValue(inst, x);
 }
@@ -2958,11 +2937,9 @@ void EmitX64::EmitVectorSignedSaturatedDoublingMultiplyReturnHigh32(EmitContext&
 
     // Check if any saturation occurred (i.e. if any words in x were
     // 0x80000000 before saturating
-    const Xbyak::Reg64 mask = ctx.reg_alloc.ScratchGpr();
+    const Xbyak::Reg32 mask = ctx.reg_alloc.ScratchGpr().cvt32();
     code.pmovmskb(mask, tmp2);
-    code.test(mask.cvt32(), 0b1000'1000'1000'1000);
-    code.setnz(mask.cvt8());
-    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], mask.cvt8());
+    code.or_(code.dword[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], mask);
 
     ctx.reg_alloc.DefineValue(inst, x);
 }
@@ -2998,18 +2975,10 @@ static void EmitVectorSignedSaturatedNarrowToSigned(size_t original_esize, Block
     }
 
     const Xbyak::Reg32 bit = ctx.reg_alloc.ScratchGpr().cvt32();
-
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        code.pxor(reconstructed, src);
-        code.ptest(reconstructed, reconstructed);
-    } else {
-        code.pcmpeqd(reconstructed, src);
-        code.movmskps(bit, reconstructed);
-        code.cmp(bit, 0xF);
-    }
-
-    code.setnz(bit.cvt8());
-    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit.cvt8());
+    code.pcmpeqd(reconstructed, src);
+    code.movmskps(bit, reconstructed);
+    code.xor_(bit, 0b1111);
+    code.or_(code.dword[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit);
 
     ctx.reg_alloc.DefineValue(inst, dest);
 }
@@ -3062,18 +3031,10 @@ static void EmitVectorSignedSaturatedNarrowToUnsigned(size_t original_esize, Blo
     }
 
     const Xbyak::Reg32 bit = ctx.reg_alloc.ScratchGpr().cvt32();
-
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        code.pxor(reconstructed, src);
-        code.ptest(reconstructed, reconstructed);
-    } else {
-        code.pcmpeqd(reconstructed, src);
-        code.movmskps(bit, reconstructed);
-        code.cmp(bit, 0xF);
-    }
-
-    code.setnz(bit.cvt8());
-    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit.cvt8());
+    code.pcmpeqd(reconstructed, src);
+    code.movmskps(bit, reconstructed);
+    code.xor_(bit, 0b1111);
+    code.or_(code.dword[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit);
 
     ctx.reg_alloc.DefineValue(inst, dest);
 }
@@ -3133,22 +3094,6 @@ static void EmitVectorSignedSaturatedNeg(size_t esize, BlockOfCode& code, EmitCo
         }
     }();
 
-    const u32 test_mask = [esize] {
-        switch (esize) {
-        case 8:
-            return 0b1111'1111'1111'1111;
-        case 16:
-            return 0b1010'1010'1010'1010;
-        case 32:
-            return 0b1000'1000'1000'1000;
-        case 64:
-            return 0b10000000'10000000;
-        default:
-            UNREACHABLE();
-            return 0;
-        }
-    }();
-
     const auto vector_equality = [esize, &code](const Xbyak::Xmm& x, const auto& y) {
         switch (esize) {
         case 8:
@@ -3189,11 +3134,9 @@ static void EmitVectorSignedSaturatedNeg(size_t esize, BlockOfCode& code, EmitCo
     }
 
     // Check if any elements matched the mask prior to performing saturation. If so, set the Q bit.
-    const Xbyak::Reg64 bit = ctx.reg_alloc.ScratchGpr();
+    const Xbyak::Reg32 bit = ctx.reg_alloc.ScratchGpr().cvt32();
     code.pmovmskb(bit, tmp);
-    code.test(bit.cvt32(), test_mask);
-    code.setnz(bit.cvt8());
-    code.or_(code.byte[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit.cvt8());
+    code.or_(code.dword[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit);
 
     ctx.reg_alloc.DefineValue(inst, zero);
 }

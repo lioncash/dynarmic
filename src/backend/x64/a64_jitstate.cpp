@@ -106,7 +106,7 @@ u32 A64JitState::GetFpsr() const {
     fpsr |= FPSCR_IDC;
     fpsr |= FPSCR_UFC;
     fpsr |= fpsr_exc;
-    fpsr |= (fpsr_qc & 1) << 27;
+    fpsr |= (fpsr_qc == 0 ? 0 : 1) << 27;
     return fpsr;
 }
 
