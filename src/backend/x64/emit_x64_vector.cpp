@@ -2853,25 +2853,71 @@ void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned32(EmitContext& ctx, IR
 }
 
 void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned64(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& lhs, const VectorArray<u64>& rhs) {
-        bool qc_flag = false;
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-        for (size_t i = 0; i < result.size(); i++) {
-            const u64 x = lhs[i];
-            const u64 y = rhs[i];
-            const u64 res = x + y;
+    const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+    code.movdqa(xmm0, y);
+    ctx.reg_alloc.Release(y);
 
-            // Check sign bits to determine if an overflow occurred.
-            if (((x & res) | (~y & res) | (x & ~y)) & 0x8000000000000000) {
-                result[i] = static_cast<u64>(INT64_MAX);
-                qc_flag = true;
-            } else {
-                result[i] = res;
-            }
-        }
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-        return qc_flag;
-    });
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        code.vpaddq(result, x, xmm0);
+    } else {
+        code.movdqa(result, x);
+        code.paddq(result, xmm0);
+    }
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        // xmm0 = majority(~y, x, res)
+        //  y   x   res xmm0
+        //  0   0   0   0
+        //  0   0   1   1
+        //  0   1   0   1
+        //  0   1   1   1
+        //  1   0   0   0
+        //  1   0   1   0
+        //  1   1   0   0
+        //  1   1   1   1
+        code.vpternlogd(xmm0, x, result, 0b10001110);
+        code.vpsraq(xmm0, xmm0, 63);
+        code.movdqa(tmp, xmm0);
+    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        code.vpor(tmp, x, result);
+        code.pand(x, result);
+        code.pblendvb(tmp, x);
+        code.psrad(tmp, 31);
+        code.pshufd(tmp, tmp, 0b11110101);
+        code.movdqa(xmm0, tmp);
+    } else {
+        code.movdqa(tmp, x);
+        code.por(tmp, result);
+        code.pand(x, result);
+        code.pand(x, xmm0);
+        code.pandn(xmm0, tmp);
+        code.por(xmm0, x);
+        code.psrad(xmm0, 31);
+        code.pshufd(xmm0, xmm0, 0b11110101);
+        code.movdqa(tmp, xmm0);
+    }
+
+    const Xbyak::Reg32 mask = ctx.reg_alloc.ScratchGpr().cvt32();
+    code.pmovmskb(mask, xmm0);
+    code.or_(code.dword[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], mask);
+
+    code.psrlq(tmp, 1);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        code.pblendvb(result, tmp);
+    } else {
+        code.pandn(xmm0, result);
+        code.por(xmm0, tmp);
+        code.movdqa(result, xmm0);
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitVectorSignedSaturatedDoublingMultiplyReturnHigh16(EmitContext& ctx, IR::Inst* inst) {
