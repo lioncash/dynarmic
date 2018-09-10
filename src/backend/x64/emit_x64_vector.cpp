@@ -2815,7 +2815,7 @@ void EmitX64::EmitVectorSignedSaturatedAbs64(EmitContext& ctx, IR::Inst* inst) {
 template <typename T>
 static bool EmitSignedSaturatedAccumulateUnsigned(VectorArray<T>& result, const VectorArray<T>& lhs, const VectorArray<T>& rhs) {
     static_assert(std::is_signed_v<T>, "T must be signed.");
-    static_assert(sizeof(T) < 64, "T must be less than 64 bits in size.");
+    static_assert(Common::BitSize<T>() < 64, "T must be less than 64 bits in size.");
 
     bool qc_flag = false;
 
@@ -3476,7 +3476,7 @@ void EmitX64::EmitVectorUnsignedRecipSqrtEstimate(EmitContext& ctx, IR::Inst* in
 template <typename T, typename U = std::make_unsigned_t<T>>
 bool EmitVectorUnsignedSaturatedAccumulateSigned(VectorArray<U>& result, const VectorArray<T>& lhs, const VectorArray<T>& rhs) {
     static_assert(std::is_signed_v<T>, "T must be signed.");
-    static_assert(sizeof(T) < 64, "T must be less than 64 bits in size.");
+    static_assert(Common::BitSize<T>() < 64, "T must be less than 64 bits in size.");
 
     bool qc_flag = false;
 
