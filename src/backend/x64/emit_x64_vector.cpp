@@ -2810,49 +2810,8 @@ void EmitX64::EmitVectorSignedSaturatedAbs64(EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
-// Simple generic case for 8, 16, and 32-bit values. 64-bit values
-// will need to be special-cased as we can't simply use a larger integral size.
-template <typename T>
-static bool EmitSignedSaturatedAccumulateUnsigned(VectorArray<T>& result, const VectorArray<T>& lhs, const VectorArray<T>& rhs) {
-    static_assert(std::is_signed_v<T>, "T must be signed.");
-    static_assert(Common::BitSize<T>() < 64, "T must be less than 64 bits in size.");
-
-    bool qc_flag = false;
-
-    for (size_t i = 0; i < result.size(); i++) {
-        // We treat lhs' members as unsigned, so cast to unsigned before signed to inhibit sign-extension.
-        // We use the unsigned equivalent of T, as we want zero-extension to occur, rather than a plain move.
-        const s64 x = static_cast<s64>(static_cast<std::make_unsigned_t<T>>(lhs[i]));
-        const s64 y = rhs[i];
-        const s64 sum = x + y;
-
-        if (sum > std::numeric_limits<T>::max()) {
-            result[i] = std::numeric_limits<T>::max();
-            qc_flag = true;
-        } else if (sum < std::numeric_limits<T>::min()) {
-            result[i] = std::numeric_limits<T>::min();
-            qc_flag = true;
-        } else {
-            result[i] = static_cast<T>(sum);
-        }
-    }
-
-    return qc_flag;
-}
-
-void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned8(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, EmitSignedSaturatedAccumulateUnsigned<s8>);
-}
-
-void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned16(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, EmitSignedSaturatedAccumulateUnsigned<s16>);
-}
-
-void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned32(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, EmitSignedSaturatedAccumulateUnsigned<s32>);
-}
-
-void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned64(EmitContext& ctx, IR::Inst* inst) {
+template<size_t bit_width>
+static void EmitVectorSignedSaturatedAccumulateUnsigned(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
@@ -2863,51 +2822,110 @@ void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned64(EmitContext& ctx, IR
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-        code.vpaddq(result, x, xmm0);
-    } else {
-        code.movdqa(result, x);
-        code.paddq(result, xmm0);
+    switch (bit_width) {
+    case 8:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpaddb(result, x, xmm0);
+        } else {
+            code.movdqa(result, x);
+            code.paddb(result, xmm0);
+        }
+        break;
+    case 16:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpaddw(result, x, xmm0);
+        } else {
+            code.movdqa(result, x);
+            code.paddw(result, xmm0);
+        }
+        break;
+    case 32:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpaddd(result, x, xmm0);
+        } else {
+            code.movdqa(result, x);
+            code.paddd(result, xmm0);
+        }
+        break;
+    case 64:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpaddq(result, x, xmm0);
+        } else {
+            code.movdqa(result, x);
+            code.paddq(result, xmm0);
+        }
+        break;
     }
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
         // xmm0 = majority(~y, x, res)
-        //  y   x   res xmm0
-        //  0   0   0   0
-        //  0   0   1   1
-        //  0   1   0   1
-        //  0   1   1   1
-        //  1   0   0   0
-        //  1   0   1   0
-        //  1   1   0   0
-        //  1   1   1   1
         code.vpternlogd(xmm0, x, result, 0b10001110);
-        code.vpsraq(xmm0, xmm0, 63);
-        code.movdqa(tmp, xmm0);
     } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
         code.vpor(tmp, x, result);
         code.pand(x, result);
-        code.pblendvb(tmp, x);
-        code.psrad(tmp, 31);
-        code.pshufd(tmp, tmp, 0b11110101);
-        code.movdqa(xmm0, tmp);
+        code.vpblendvb(xmm0, tmp, x, xmm0);
     } else {
         code.movdqa(tmp, x);
-        code.por(tmp, result);
-        code.pand(x, result);
-        code.pand(x, xmm0);
-        code.pandn(xmm0, tmp);
-        code.por(xmm0, x);
+        code.pxor(x, result);
+        code.pand(tmp, result);
+        code.pandn(xmm0, x);
+        code.por(xmm0, tmp);
+    }
+
+    ctx.reg_alloc.Release(x);
+
+    switch (bit_width) {
+    case 8:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+            code.pcmpeqb(tmp2, tmp2);
+            code.pxor(tmp, tmp);
+            code.vpblendvb(xmm0, tmp, tmp2, xmm0);
+            ctx.reg_alloc.Release(tmp2);
+        } else {
+            code.pand(xmm0, code.MConst(xword, 0x8080808080808080, 0x8080808080808080));
+            code.movdqa(tmp, xmm0);
+            code.psrlw(tmp, 7);
+            code.pxor(xmm0, xmm0);
+            code.psubb(xmm0, tmp);
+        }
+        break;
+    case 16:
+        code.psraw(xmm0, 15);
+        break;
+    case 32:
         code.psrad(xmm0, 31);
-        code.pshufd(xmm0, xmm0, 0b11110101);
-        code.movdqa(tmp, xmm0);
+        break;
+    case 64:
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+            code.vpsraq(xmm0, xmm0, 63);
+        } else {
+            code.psrad(xmm0, 31);
+            code.pshufd(xmm0, xmm0, 0b11110101);
+        }
+        break;
+    }
+
+    code.movdqa(tmp, xmm0);
+    switch (bit_width) {
+    case 8:
+        code.paddb(tmp, tmp);
+        code.psrlw(tmp, 1);
+        break;
+    case 16:
+        code.psrlw(tmp, 1);
+        break;
+    case 32:
+        code.psrld(tmp, 1);
+        break;
+    case 64:
+        code.psrlq(tmp, 1);
+        break;
     }
 
     const Xbyak::Reg32 mask = ctx.reg_alloc.ScratchGpr().cvt32();
     code.pmovmskb(mask, xmm0);
     code.or_(code.dword[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], mask);
-
-    code.psrlq(tmp, 1);
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
         code.pblendvb(result, tmp);
@@ -2918,6 +2936,22 @@ void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned64(EmitContext& ctx, IR
     }
 
     ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned8(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedAccumulateUnsigned<8>(code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned16(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedAccumulateUnsigned<16>(code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned32(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedAccumulateUnsigned<32>(code, ctx, inst);
+}
+
+void EmitX64::EmitVectorSignedSaturatedAccumulateUnsigned64(EmitContext& ctx, IR::Inst* inst) {
+    EmitVectorSignedSaturatedAccumulateUnsigned<64>(code, ctx, inst);
 }
 
 void EmitX64::EmitVectorSignedSaturatedDoublingMultiplyReturnHigh16(EmitContext& ctx, IR::Inst* inst) {
