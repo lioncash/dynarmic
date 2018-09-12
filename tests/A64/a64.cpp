@@ -472,3 +472,25 @@ TEST_CASE("A64: FNEG failed to zero upper", "[a64]") {
     REQUIRE(jit.GetVector(28) == Vector{0x79ee7a03980db670, 0});
     REQUIRE(FP::FPSR{jit.GetFpsr()}.QC() == false);
 }
+
+TEST_CASE("A64: FRSQRTS", "[a64]") {
+    A64TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem.emplace_back(0x5eb8fcad); // FRSQRTS S13, S5, S24
+    env.code_mem.emplace_back(0x14000000); // B .
+
+    // These particular values result in an intermediate value during
+    // the calculation that is close to infinity. We want to verify
+    // that this special case is handled appropriately.
+
+    jit.SetPC(0);
+    jit.SetVector(5, {0xfc6a0206, 0});
+    jit.SetVector(24, {0xfc6a0206, 0});
+    jit.SetFpcr(0x00400000);
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetVector(13) == Vector{0xff7fffff, 0});
+}

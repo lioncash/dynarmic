@@ -873,8 +873,58 @@ void EmitX64::EmitFPRSqrtEstimate64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPRSqrtEstimate<u64>(code, ctx, inst);
 }
 
-template<typename FPT>
+template<size_t fsize>
 static void EmitFPRSqrtStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        Xbyak::Label end, fallback;
+
+        const Xbyak::Xmm operand1 = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm operand2 = ctx.reg_alloc.UseXmm(args[1]);
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+
+        code.vmovaps(result, code.MConst(xword, FP::FPValue<FPT, false, 0, 3>()));
+        FCODE(vfnmadd231s)(result, operand1, operand2);
+
+        // Detect if the intermediate result is infinity or NaN or nearly an infinity.
+        // Why do we need to care about infinities? This is because x86 doesn't allow us
+        // to fuse the divide-by-two with the rest of the FMA operation. Therefore the
+        // intermediate value may overflow and we would like to handle this case.
+        const Xbyak::Reg32 tmp = ctx.reg_alloc.ScratchGpr().cvt32();
+        code.vpextrw(tmp, result, fsize == 32 ? 1 : 3);
+        code.and_(tmp.cvt16(), fsize == 32 ? 0x7f80 : 0x7ff0);
+        code.cmp(tmp.cvt16(), fsize == 32 ? 0x7f00 : 0x7fe0);
+        ctx.reg_alloc.Release(tmp);
+
+        code.jae(fallback, code.T_NEAR);
+
+        FCODE(vmuls)(result, result, code.MConst(xword, FP::FPValue<FPT, false, -1, 1>()));
+        code.L(end);
+
+        code.SwitchToFarCode();
+        code.L(fallback);
+
+        code.sub(rsp, 8);
+        ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+        code.movq(code.ABI_PARAM1, operand1);
+        code.movq(code.ABI_PARAM2, operand2);
+        code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+        code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+        code.CallFunction(&FP::FPRSqrtStepFused<FPT>);
+        code.movq(result, code.ABI_RETURN);
+        ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+        code.add(rsp, 8);
+
+        code.jmp(end, code.T_NEAR);
+        code.SwitchToNearCode();
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0], args[1]);
     code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
@@ -883,11 +933,11 @@ static void EmitFPRSqrtStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* 
 }
 
 void EmitX64::EmitFPRSqrtStepFused32(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPRSqrtStepFused<u32>(code, ctx, inst);
+    EmitFPRSqrtStepFused<32>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPRSqrtStepFused64(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPRSqrtStepFused<u64>(code, ctx, inst);
+    EmitFPRSqrtStepFused<64>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPSqrt32(EmitContext& ctx, IR::Inst* inst) {
