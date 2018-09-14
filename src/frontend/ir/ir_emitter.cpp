@@ -1527,6 +1527,24 @@ U128 IREmitter::VectorSignedAbsoluteDifference(size_t esize, const U128& a, cons
     return {};
 }
 
+UpperAndLower IREmitter::VectorSignedMultiply(size_t esize, const U128& a, const U128& b) {
+    const Value multiply = [&] {
+        switch (esize) {
+        case 16:
+            return Inst(Opcode::VectorSignedMultiply16, a, b);
+        case 32:
+            return Inst(Opcode::VectorSignedMultiply32, a, b);
+        }
+        UNREACHABLE();
+        return Value{};
+    }();
+
+    return {
+        Inst<U128>(Opcode::GetUpperFromOp, multiply),
+        Inst<U128>(Opcode::GetLowerFromOp, multiply),
+    };
+}
+
 U128 IREmitter::VectorSignedSaturatedAbs(size_t esize, const U128& a) {
     switch (esize) {
     case 8:

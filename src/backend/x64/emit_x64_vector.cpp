@@ -2702,6 +2702,129 @@ void EmitX64::EmitVectorSignedAbsoluteDifference32(EmitContext& ctx, IR::Inst* i
     EmitVectorSignedAbsoluteDifference(32, ctx, inst, code);
 }
 
+void EmitX64::EmitVectorSignedMultiply16(EmitContext& ctx, IR::Inst* inst) {
+    const auto upper_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetUpperFromOp);
+    const auto lower_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetLowerFromOp);
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm x = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+
+    if (upper_inst) {
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpmulhw(result, x, y);
+        } else {
+            code.movdqa(result, x);
+            code.pmulhw(result, y);
+        }
+
+        ctx.reg_alloc.DefineValue(upper_inst, result);
+        ctx.EraseInstruction(upper_inst);
+    }
+
+    if (lower_inst) {
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpmullw(result, x, y);
+        } else {
+            code.movdqa(result, x);
+            code.pmullw(result, y);
+        }
+        ctx.reg_alloc.DefineValue(lower_inst, result);
+        ctx.EraseInstruction(lower_inst);
+    }
+}
+
+void EmitX64::EmitVectorSignedMultiply32(EmitContext& ctx, IR::Inst* inst) {
+    const auto upper_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetUpperFromOp);
+    const auto lower_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetLowerFromOp);
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    if (lower_inst && !upper_inst && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        const Xbyak::Xmm x = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+
+        code.vpmulld(result, x, y);
+
+        ctx.reg_alloc.DefineValue(lower_inst, result);
+        ctx.EraseInstruction(lower_inst);
+        return;
+    }
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+        if (lower_inst) {
+            const Xbyak::Xmm lower_result = ctx.reg_alloc.ScratchXmm();
+            code.vpmulld(lower_result, x, y);
+            ctx.reg_alloc.DefineValue(lower_inst, lower_result);
+            ctx.EraseInstruction(lower_inst);
+        }
+
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+
+        code.vpmuldq(result, x, y);
+        code.vpsrlq(x, x, 32);
+        code.vpsrlq(y, y, 32);
+        code.vpmuldq(x, x, y);
+        code.shufps(result, x, 0b11011101);
+
+        ctx.reg_alloc.DefineValue(upper_inst, result);
+        ctx.EraseInstruction(upper_inst);
+        return;
+    }
+
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm sign_correction = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm upper_result = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm lower_result = ctx.reg_alloc.ScratchXmm();
+
+    // calculate sign correction
+    code.movdqa(tmp, x);
+    code.movdqa(sign_correction, y);
+    code.psrad(tmp, 31);
+    code.psrad(sign_correction, 31);
+    code.pand(tmp, y);
+    code.pand(sign_correction, x);
+    code.paddd(sign_correction, tmp);
+    code.pand(sign_correction, code.MConst(xword, 0x7FFFFFFF7FFFFFFF, 0x7FFFFFFF7FFFFFFF));
+
+    // calculate unsigned multiply
+    code.movdqa(tmp, x);
+    code.pmuludq(tmp, y);
+    code.psrlq(x, 32);
+    code.psrlq(y, 32);
+    code.pmuludq(x, y);
+
+    // put everything into place
+    code.pcmpeqw(upper_result, upper_result);
+    code.pcmpeqw(lower_result, lower_result);
+    code.psllq(upper_result, 32);
+    code.psrlq(lower_result, 32);
+    code.pand(upper_result, x);
+    code.pand(lower_result, tmp);
+    code.psrlq(tmp, 32);
+    code.psllq(x, 32);
+    code.por(upper_result, tmp);
+    code.por(lower_result, x);
+    code.psubd(upper_result, sign_correction);
+
+    if (upper_inst) {
+        ctx.reg_alloc.DefineValue(upper_inst, upper_result);
+        ctx.EraseInstruction(upper_inst);
+    }
+    if (lower_inst) {
+        ctx.reg_alloc.DefineValue(lower_inst, lower_result);
+        ctx.EraseInstruction(lower_inst);
+    }
+}
+
 static void EmitVectorSignedSaturatedAbs(size_t esize, BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -3471,6 +3594,117 @@ void EmitX64::EmitVectorUnsignedAbsoluteDifference16(EmitContext& ctx, IR::Inst*
 
 void EmitX64::EmitVectorUnsignedAbsoluteDifference32(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorUnsignedAbsoluteDifference(32, ctx, inst, code);
+}
+
+void EmitX64::EmitVectorUnsignedMultiply16(EmitContext& ctx, IR::Inst* inst) {
+    const auto upper_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetUpperFromOp);
+    const auto lower_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetLowerFromOp);
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm x = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+
+    if (upper_inst) {
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpmulhuw(result, x, y);
+        } else {
+            code.movdqa(result, x);
+            code.pmulhuw(result, y);
+        }
+
+        ctx.reg_alloc.DefineValue(upper_inst, result);
+        ctx.EraseInstruction(upper_inst);
+    }
+
+    if (lower_inst) {
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpmullw(result, x, y);
+        } else {
+            code.movdqa(result, x);
+            code.pmullw(result, y);
+        }
+        ctx.reg_alloc.DefineValue(lower_inst, result);
+        ctx.EraseInstruction(lower_inst);
+    }
+}
+
+void EmitX64::EmitVectorUnsignedMultiply32(EmitContext& ctx, IR::Inst* inst) {
+    const auto upper_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetUpperFromOp);
+    const auto lower_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetLowerFromOp);
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    if (lower_inst && !upper_inst && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        const Xbyak::Xmm x = ctx.reg_alloc.UseXmm(args[0]);
+        const Xbyak::Xmm y = ctx.reg_alloc.UseXmm(args[1]);
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+
+        code.vpmulld(result, x, y);
+
+        ctx.reg_alloc.DefineValue(lower_inst, result);
+        ctx.EraseInstruction(lower_inst);
+        return;
+    }
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+        if (lower_inst) {
+            const Xbyak::Xmm lower_result = ctx.reg_alloc.ScratchXmm();
+            code.vpmulld(lower_result, x, y);
+            ctx.reg_alloc.DefineValue(lower_inst, lower_result);
+            ctx.EraseInstruction(lower_inst);
+        }
+
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+
+        code.vpmuludq(result, x, y);
+        code.vpsrlq(x, x, 32);
+        code.vpsrlq(y, y, 32);
+        code.vpmuludq(x, x, y);
+        code.shufps(result, x, 0b11011101);
+
+        ctx.reg_alloc.DefineValue(upper_inst, result);
+        ctx.EraseInstruction(upper_inst);
+        return;
+    }
+
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+    const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm upper_result = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm lower_result = ctx.reg_alloc.ScratchXmm();
+
+    // calculate unsigned multiply
+    code.movdqa(tmp, x);
+    code.pmuludq(tmp, y);
+    code.psrlq(x, 32);
+    code.psrlq(y, 32);
+    code.pmuludq(x, y);
+
+    // put everything into place
+    code.pcmpeqw(upper_result, upper_result);
+    code.pcmpeqw(lower_result, lower_result);
+    code.psllq(upper_result, 32);
+    code.psrlq(lower_result, 32);
+    code.pand(upper_result, x);
+    code.pand(lower_result, tmp);
+    code.psrlq(tmp, 32);
+    code.psllq(x, 32);
+    code.por(upper_result, tmp);
+    code.por(lower_result, x);
+
+    if (upper_inst) {
+        ctx.reg_alloc.DefineValue(upper_inst, upper_result);
+        ctx.EraseInstruction(upper_inst);
+    }
+    if (lower_inst) {
+        ctx.reg_alloc.DefineValue(lower_inst, lower_result);
+        ctx.EraseInstruction(lower_inst);
+    }
 }
 
 void EmitX64::EmitVectorUnsignedRecipEstimate(EmitContext& ctx, IR::Inst* inst) {

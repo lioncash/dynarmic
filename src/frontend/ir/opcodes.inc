@@ -79,6 +79,8 @@ OPCODE(GetCarryFromOp,                                     U1,             Opaqu
 OPCODE(GetOverflowFromOp,                                  U1,             Opaque                                                          )
 OPCODE(GetGEFromOp,                                        U32,            Opaque                                                          )
 OPCODE(GetNZCVFromOp,                                      NZCV,           Opaque                                                          )
+OPCODE(GetUpperFromOp,                                     U128,           Opaque                                                          )
+OPCODE(GetLowerFromOp,                                     U128,           Opaque                                                          )
 
 OPCODE(NZCVFromPackedFlags,                                NZCV,           U32                                                             )
 
@@ -396,6 +398,8 @@ OPCODE(VectorSignExtend64,                                 U128,           U128 
 OPCODE(VectorSignedAbsoluteDifference8,                    U128,           U128,           U128                                            )
 OPCODE(VectorSignedAbsoluteDifference16,                   U128,           U128,           U128                                            )
 OPCODE(VectorSignedAbsoluteDifference32,                   U128,           U128,           U128                                            )
+OPCODE(VectorSignedMultiply16,                             Void,           U128,           U128                                            )
+OPCODE(VectorSignedMultiply32,                             Void,           U128,           U128                                            )
 OPCODE(VectorSignedSaturatedAbs8,                          U128,           U128                                                            )
 OPCODE(VectorSignedSaturatedAbs16,                         U128,           U128                                                            )
 OPCODE(VectorSignedSaturatedAbs32,                         U128,           U128                                                            )
@@ -425,6 +429,8 @@ OPCODE(VectorTableLookup,                                  U128,           U128,
 OPCODE(VectorUnsignedAbsoluteDifference8,                  U128,           U128,           U128                                            )
 OPCODE(VectorUnsignedAbsoluteDifference16,                 U128,           U128,           U128                                            )
 OPCODE(VectorUnsignedAbsoluteDifference32,                 U128,           U128,           U128                                            )
+OPCODE(VectorUnsignedMultiply16,                           Void,           U128,           U128                                            )
+OPCODE(VectorUnsignedMultiply32,                           Void,           U128,           U128                                            )
 OPCODE(VectorUnsignedRecipEstimate,                        U128,           U128                                                            )
 OPCODE(VectorUnsignedRecipSqrtEstimate,                    U128,           U128                                                            )
 OPCODE(VectorUnsignedSaturatedAccumulateSigned8,           U128,           U128,           U128                                            )

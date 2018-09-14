@@ -437,6 +437,8 @@ bool Inst::IsAPseudoOperation() const {
     case Opcode::GetOverflowFromOp:
     case Opcode::GetGEFromOp:
     case Opcode::GetNZCVFromOp:
+    case Opcode::GetUpperFromOp:
+    case Opcode::GetLowerFromOp:
         return true;
 
     default:
@@ -470,7 +472,7 @@ bool Inst::AreAllArgsImmediates() const {
 }
 
 bool Inst::HasAssociatedPseudoOperation() const {
-    return carry_inst || overflow_inst || ge_inst || nzcv_inst;
+    return carry_inst || overflow_inst || ge_inst || nzcv_inst || upper_inst || lower_inst;
 }
 
 Inst* Inst::GetAssociatedPseudoOperation(Opcode opcode) {
@@ -488,6 +490,12 @@ Inst* Inst::GetAssociatedPseudoOperation(Opcode opcode) {
     case Opcode::GetNZCVFromOp:
         ASSERT(!nzcv_inst || nzcv_inst->GetOpcode() == Opcode::GetNZCVFromOp);
         return nzcv_inst;
+    case Opcode::GetUpperFromOp:
+        ASSERT(!upper_inst || upper_inst->GetOpcode() == Opcode::GetUpperFromOp);
+        return upper_inst;
+    case Opcode::GetLowerFromOp:
+        ASSERT(!lower_inst || lower_inst->GetOpcode() == Opcode::GetLowerFromOp);
+        return lower_inst;
     default:
         break;
     }
@@ -574,6 +582,14 @@ void Inst::Use(const Value& value) {
         ASSERT_MSG(value.GetInst()->MayGetNZCVFromOp(), "This value doesn't support the GetNZCVFromOp pseduo-op");
         value.GetInst()->nzcv_inst = this;
         break;
+    case Opcode::GetUpperFromOp:
+        ASSERT_MSG(!value.GetInst()->upper_inst, "Only one of each type of pseudo-op allowed");
+        value.GetInst()->upper_inst = this;
+        break;
+    case Opcode::GetLowerFromOp:
+        ASSERT_MSG(!value.GetInst()->lower_inst, "Only one of each type of pseudo-op allowed");
+        value.GetInst()->lower_inst = this;
+        break;
     default:
         break;
     }
@@ -598,6 +614,14 @@ void Inst::UndoUse(const Value& value) {
     case Opcode::GetNZCVFromOp:
         ASSERT(value.GetInst()->nzcv_inst->GetOpcode() == Opcode::GetNZCVFromOp);
         value.GetInst()->nzcv_inst = nullptr;
+        break;
+    case Opcode::GetUpperFromOp:
+        ASSERT(value.GetInst()->upper_inst->GetOpcode() == Opcode::GetUpperFromOp);
+        value.GetInst()->upper_inst = nullptr;
+        break;
+    case Opcode::GetLowerFromOp:
+        ASSERT(value.GetInst()->lower_inst->GetOpcode() == Opcode::GetLowerFromOp);
+        value.GetInst()->lower_inst = nullptr;
         break;
     default:
         break;

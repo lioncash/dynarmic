@@ -107,6 +107,14 @@ void EmitX64::EmitGetGEFromOp(EmitContext&, IR::Inst*) {
     ASSERT_MSG(false, "should never happen");
 }
 
+void EmitX64::EmitGetUpperFromOp(EmitContext&, IR::Inst*) {
+    ASSERT_MSG(false, "should never happen");
+}
+
+void EmitX64::EmitGetLowerFromOp(EmitContext&, IR::Inst*) {
+    ASSERT_MSG(false, "should never happen");
+}
+
 void EmitX64::EmitGetNZCVFromOp(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

@@ -52,6 +52,11 @@ struct ResultAndGE {
     U32 ge;
 };
 
+struct UpperAndLower {
+    U128 upper;
+    U128 lower;
+};
+
 /**
  * Convenience class to construct a basic block of the intermediate representation.
  * `block` is the resulting block.
@@ -265,6 +270,7 @@ public:
     U128 VectorShuffleWords(const U128& a, u8 mask);
     U128 VectorSignExtend(size_t original_esize, const U128& a);
     U128 VectorSignedAbsoluteDifference(size_t esize, const U128& a, const U128& b);
+    UpperAndLower VectorSignedMultiply(size_t esize, const U128& a, const U128& b);
     U128 VectorSignedSaturatedAbs(size_t esize, const U128& a);
     U128 VectorSignedSaturatedAccumulateUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorSignedSaturatedDoublingMultiplyReturnHigh(size_t esize, const U128& a, const U128& b);

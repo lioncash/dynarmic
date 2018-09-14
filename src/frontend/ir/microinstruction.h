@@ -145,9 +145,13 @@ private:
     union {
         Inst* carry_inst = nullptr;
         Inst* ge_inst;
+        Inst* upper_inst;
     };
     Inst* overflow_inst = nullptr;
-    Inst* nzcv_inst = nullptr;
+    union {
+        Inst* nzcv_inst = nullptr;
+        Inst* lower_inst;
+    };
 };
 
 } // namespace Dynarmic::IR
