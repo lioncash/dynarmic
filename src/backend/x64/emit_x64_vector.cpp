@@ -3936,7 +3936,7 @@ void EmitX64::EmitVectorUnsignedRecipSqrtEstimate(EmitContext& ctx, IR::Inst* in
 // Simple generic case for 8, 16, and 32-bit values. 64-bit values
 // will need to be special-cased as we can't simply use a larger integral size.
 template <typename T, typename U = std::make_unsigned_t<T>>
-bool EmitVectorUnsignedSaturatedAccumulateSigned(VectorArray<U>& result, const VectorArray<T>& lhs, const VectorArray<T>& rhs) {
+static bool EmitVectorUnsignedSaturatedAccumulateSigned(VectorArray<U>& result, const VectorArray<T>& lhs, const VectorArray<T>& rhs) {
     static_assert(std::is_signed_v<T>, "T must be signed.");
     static_assert(Common::BitSize<T>() < 64, "T must be less than 64 bits in size.");
 
