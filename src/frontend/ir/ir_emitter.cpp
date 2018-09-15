@@ -1575,15 +1575,23 @@ U128 IREmitter::VectorSignedSaturatedAccumulateUnsigned(size_t esize, const U128
     return {};
 }
 
-U128 IREmitter::VectorSignedSaturatedDoublingMultiplyReturnHigh(size_t esize, const U128& a, const U128& b) {
-    switch (esize) {
-    case 16:
-        return Inst<U128>(Opcode::VectorSignedSaturatedDoublingMultiplyReturnHigh16, a, b);
-    case 32:
-        return Inst<U128>(Opcode::VectorSignedSaturatedDoublingMultiplyReturnHigh32, a, b);
-    }
-    UNREACHABLE();
-    return {};
+UpperAndLower IREmitter::VectorSignedSaturatedDoublingMultiply(size_t esize, const U128& a, const U128& b) {
+    const Value multiply = [&] {
+        switch (esize) {
+        case 16:
+            return Inst(Opcode::VectorSignedSaturatedDoublingMultiply16, a, b);
+        case 32:
+            return Inst(Opcode::VectorSignedSaturatedDoublingMultiply32, a, b);
+        default:
+            UNREACHABLE();
+            return Value{};
+        }
+    }();
+
+    return {
+        Inst<U128>(Opcode::GetUpperFromOp, multiply),
+        Inst<U128>(Opcode::GetLowerFromOp, multiply),
+    };
 }
 
 U128 IREmitter::VectorSignedSaturatedNarrowToSigned(size_t original_esize, const U128& a) {

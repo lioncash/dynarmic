@@ -494,3 +494,45 @@ TEST_CASE("A64: FRSQRTS", "[a64]") {
 
     REQUIRE(jit.GetVector(13) == Vector{0xff7fffff, 0});
 }
+
+TEST_CASE("A64: SQDMULH.8H (saturate)", "[a64]") {
+    A64TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem.emplace_back(0x4e62b420); // SQDMULH.8H V0, V1, V2
+    env.code_mem.emplace_back(0x14000000); // B .
+
+    // Make sure that saturating values are tested
+
+    jit.SetPC(0);
+    jit.SetVector(1, {0x7fff80007ffe8001, 0x7fff80007ffe8001});
+    jit.SetVector(2, {0x7fff80007ffe8001, 0x80007fff80017ffe});
+    jit.SetFpsr(0);
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetVector(0) == Vector{0x7ffe7fff7ffc7ffe, 0x8001800180028002});
+    REQUIRE(FP::FPSR{jit.GetFpsr()}.QC() == true);
+}
+
+TEST_CASE("A64: SQDMULH.4S (saturate)", "[a64]") {
+    A64TestEnv env;
+    Dynarmic::A64::Jit jit{Dynarmic::A64::UserConfig{&env}};
+
+    env.code_mem.emplace_back(0x4ea2b420); // SQDMULH.4S V0, V1, V2
+    env.code_mem.emplace_back(0x14000000); // B .
+
+    // Make sure that saturating values are tested
+
+    jit.SetPC(0);
+    jit.SetVector(1, {0x7fffffff80000000, 0x7fffffff80000000});
+    jit.SetVector(2, {0x7fffffff80000000, 0x800000007fffffff});
+    jit.SetFpsr(0);
+
+    env.ticks_left = 2;
+    jit.Run();
+
+    REQUIRE(jit.GetVector(0) == Vector{0x7ffffffe7fffffff, 0x8000000180000001});
+    REQUIRE(FP::FPSR{jit.GetFpsr()}.QC() == true);
+}

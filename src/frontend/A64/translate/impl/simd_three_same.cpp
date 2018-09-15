@@ -432,7 +432,7 @@ bool TranslatorVisitor::SQDMULH_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec V
 
     const IR::U128 operand1 = V(datasize, Vn);
     const IR::U128 operand2 = V(datasize, Vm);
-    const IR::U128 result = ir.VectorSignedSaturatedDoublingMultiplyReturnHigh(esize, operand1, operand2);
+    const IR::U128 result = ir.VectorSignedSaturatedDoublingMultiply(esize, operand1, operand2).upper;
 
     V(datasize, Vd, result);
     return true;
