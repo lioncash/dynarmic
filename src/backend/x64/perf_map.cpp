@@ -45,7 +45,7 @@ void OpenFile() {
 } // anonymous namespace
 
 namespace detail {
-void PerfMapRegister(const void* start, const void* end, const std::string& friendly_name) {
+void PerfMapRegister(const void* start, const void* end, std::string_view friendly_name) {
     std::lock_guard guard{mutex};
 
     if (!file) {
@@ -79,7 +79,7 @@ void PerfMapClear() {
 namespace Dynarmic::BackendX64 {
 
 namespace detail {
-void PerfMapRegister(const void*, const void*, const std::string&) {}
+void PerfMapRegister(const void*, const void*, std::string_view) {}
 } // namespace detail
 
 void PerfMapClear() {}

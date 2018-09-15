@@ -8,17 +8,18 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 #include "common/cast_util.h"
 
 namespace Dynarmic::BackendX64 {
 
 namespace detail {
-void PerfMapRegister(const void* start, const void* end, const std::string& friendly_name);
+void PerfMapRegister(const void* start, const void* end, std::string_view friendly_name);
 } // namespace detail
 
 template<typename T>
-void PerfMapRegister(T start, const void* end, const std::string& friendly_name) {
+void PerfMapRegister(T start, const void* end, std::string_view friendly_name) {
     detail::PerfMapRegister(Common::BitCast<const void*>(start), end, friendly_name);
 }
 
