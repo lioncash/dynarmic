@@ -3194,7 +3194,7 @@ void EmitX64::EmitVectorSignedSaturatedDoublingMultiply32(EmitContext& ctx, IR::
             const Xbyak::Xmm lower_result = ctx.reg_alloc.ScratchXmm();
             
             code.vpsllq(lower_result, even, 32);
-            code.vblendps(lower_result, lower_result, even, 0b0101);
+            code.vblendps(lower_result, lower_result, odds, 0b0101);
 
             ctx.reg_alloc.DefineValue(lower_inst, lower_result);
             ctx.EraseInstruction(lower_inst);

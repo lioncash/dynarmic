@@ -763,7 +763,7 @@ INST(MLS_vec,                "MLS (vector)",                              "0Q101
 INST(PMUL,                   "PMUL",                                      "0Q101110zz1mmmmm100111nnnnnddddd")
 INST(UMAXP,                  "UMAXP",                                     "0Q101110zz1mmmmm101001nnnnnddddd")
 INST(UMINP,                  "UMINP",                                     "0Q101110zz1mmmmm101011nnnnnddddd")
-//INST(SQRDMULH_vec_2,         "SQRDMULH (vector)",                         "0Q101110zz1mmmmm101101nnnnnddddd")
+INST(SQRDMULH_vec_2,         "SQRDMULH (vector)",                         "0Q101110zz1mmmmm101101nnnnnddddd")
 INST(FMAXNMP_vec_2,          "FMAXNMP (vector)",                          "0Q1011100z1mmmmm110001nnnnnddddd")
 //INST(FMLAL_vec_2,            "FMLAL, FMLAL2 (vector)",                    "0Q1011100z1mmmmm110011nnnnnddddd")
 INST(FADDP_vec_2,            "FADDP (vector)",                            "0Q1011100z1mmmmm110101nnnnnddddd")

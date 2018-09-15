@@ -438,6 +438,23 @@ bool TranslatorVisitor::SQDMULH_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec V
     return true;
 }
 
+bool TranslatorVisitor::SQRDMULH_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b00 || size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+    const IR::UpperAndLower multiply = ir.VectorSignedSaturatedDoublingMultiply(esize, operand1, operand2);
+    const IR::U128 result = ir.VectorAdd(esize, multiply.upper, ir.VectorLogicalShiftRight(esize, multiply.lower, static_cast<u8>(esize - 1)));
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::ADD_vector(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     if (size == 0b11 && !Q) return ReservedValue();
     const size_t esize = 8 << size.ZeroExtend<size_t>();
