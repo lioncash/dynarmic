@@ -410,6 +410,8 @@ OPCODE(VectorSignedSaturatedAccumulateUnsigned32,          U128,           U128,
 OPCODE(VectorSignedSaturatedAccumulateUnsigned64,          U128,           U128,           U128                                            )
 OPCODE(VectorSignedSaturatedDoublingMultiply16,            Void,           U128,           U128                                            )
 OPCODE(VectorSignedSaturatedDoublingMultiply32,            Void,           U128,           U128                                            )
+OPCODE(VectorSignedSaturatedDoublingMultiplyLong16,        U128,           U128,           U128                                            )
+OPCODE(VectorSignedSaturatedDoublingMultiplyLong32,        U128,           U128,           U128                                            )
 OPCODE(VectorSignedSaturatedNarrowToSigned16,              U128,           U128                                                            )
 OPCODE(VectorSignedSaturatedNarrowToSigned32,              U128,           U128                                                            )
 OPCODE(VectorSignedSaturatedNarrowToSigned64,              U128,           U128                                                            )

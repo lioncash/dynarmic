@@ -3262,6 +3262,85 @@ void EmitX64::EmitVectorSignedSaturatedDoublingMultiply32(EmitContext& ctx, IR::
     }
 }
 
+void EmitX64::EmitVectorSignedSaturatedDoublingMultiplyLong16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    code.punpcklwd(x, x);
+    code.punpcklwd(y, y);
+    code.pmaddwd(x, y);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        code.vpcmpeqd(y, x, code.MConst(xword, 0x8000000080000000, 0x8000000080000000));
+        code.vpxor(x, x, y);
+    } else {
+        code.movdqa(y, code.MConst(xword, 0x8000000080000000, 0x8000000080000000));
+        code.pcmpeqd(y, x);
+        code.pxor(x, y);
+    }
+
+    const Xbyak::Reg32 bit = ctx.reg_alloc.ScratchGpr().cvt32();
+    code.pmovmskb(bit, y);
+    code.or_(code.dword[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit);
+
+    ctx.reg_alloc.DefineValue(inst, x);
+}
+
+void EmitX64::EmitVectorSignedSaturatedDoublingMultiplyLong32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm x = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm y = ctx.reg_alloc.UseScratchXmm(args[1]);
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        code.vpmovsxdq(x, x);
+        code.vpmovsxdq(y, y);
+        code.vpmuldq(x, x, y);
+        code.vpaddq(x, x, x);
+    } else {
+        const Xbyak::Reg64 a = ctx.reg_alloc.ScratchGpr();
+        const Xbyak::Reg64 b = ctx.reg_alloc.ScratchGpr();
+        const Xbyak::Reg64 c = ctx.reg_alloc.ScratchGpr();
+        const Xbyak::Reg64 d = ctx.reg_alloc.ScratchGpr();
+
+        code.movq(c, x);
+        code.movq(d, y);
+        code.movsxd(a, c.cvt32());
+        code.movsxd(b, d.cvt32());
+        code.sar(c, 32);
+        code.sar(d, 32);
+        code.imul(a, b);
+        code.imul(c, d);
+        code.movq(x, a);
+        code.movq(y, c);
+        code.punpcklqdq(x, y);
+        code.paddq(x, x);
+
+        ctx.reg_alloc.Release(a);
+        ctx.reg_alloc.Release(b);
+        ctx.reg_alloc.Release(c);
+        ctx.reg_alloc.Release(d);
+    }
+
+    const Xbyak::Reg32 bit = ctx.reg_alloc.ScratchGpr().cvt32();
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        code.vpcmpeqq(y, x, code.MConst(xword, 0x8000000000000000, 0x8000000000000000));
+        code.vpxor(x, x, y);
+        code.vpmovmskb(bit, y);
+    } else {
+        code.movdqa(y, code.MConst(xword, 0x8000000000000000, 0x8000000000000000));
+        code.pcmpeqd(y, x);
+        code.shufps(y, y, 0b11110101);
+        code.pxor(x, y);
+        code.pmovmskb(bit, y);
+    }
+    code.or_(code.dword[code.r15 + code.GetJitStateInfo().offsetof_fpsr_qc], bit);
+
+    ctx.reg_alloc.DefineValue(inst, x);
+}
+
 static void EmitVectorSignedSaturatedNarrowToSigned(size_t original_esize, BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm src = ctx.reg_alloc.UseXmm(args[0]);
