@@ -369,6 +369,10 @@ bool Inst::WritesToFPSRCumulativeSaturationBit() const {
     case Opcode::VectorSignedSaturatedNeg16:
     case Opcode::VectorSignedSaturatedNeg32:
     case Opcode::VectorSignedSaturatedNeg64:
+    case Opcode::VectorSignedSaturatedShiftLeft8:
+    case Opcode::VectorSignedSaturatedShiftLeft16:
+    case Opcode::VectorSignedSaturatedShiftLeft32:
+    case Opcode::VectorSignedSaturatedShiftLeft64:
     case Opcode::VectorUnsignedSaturatedAccumulateSigned8:
     case Opcode::VectorUnsignedSaturatedAccumulateSigned16:
     case Opcode::VectorUnsignedSaturatedAccumulateSigned32:

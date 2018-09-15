@@ -3572,6 +3572,70 @@ void EmitX64::EmitVectorSignedSaturatedNeg64(EmitContext& ctx, IR::Inst* inst) {
     });
 }
 
+// MSVC requires the capture within the saturate lambda, but it's
+// determined to be unnecessary via clang and GCC.
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-lambda-capture"
+#endif
+template <typename T, typename U = std::make_unsigned_t<T>>
+static bool VectorSignedSaturatedShiftLeft(VectorArray<T>& dst, const VectorArray<T>& data, const VectorArray<T>& shift_values) {
+    static_assert(std::is_signed_v<T>, "T must be signed.");
+
+    bool qc_flag = false;
+
+    constexpr size_t bit_size_minus_one = Common::BitSize<T>() - 1;
+
+    const auto saturate = [bit_size_minus_one](T value) {
+        return static_cast<T>((static_cast<U>(value) >> bit_size_minus_one) + (U{1} << bit_size_minus_one) - 1);
+    };
+
+    for (size_t i = 0; i < dst.size(); i++) {
+        const T element = data[i];
+        const T shift = std::clamp<T>(static_cast<T>(Common::SignExtend<8>(shift_values[i] & 0xFF)),
+                                      -static_cast<T>(bit_size_minus_one), std::numeric_limits<T>::max());
+
+        if (element == 0) {
+            dst[i] = 0;
+        } else if (shift < 0) {
+            dst[i] = static_cast<T>(element >> -shift);
+        } else if (static_cast<U>(shift) > bit_size_minus_one) {
+            dst[i] = saturate(element);
+            qc_flag = true;
+        } else {
+            const T shifted = element << shift;
+
+            if ((shifted >> shift) != element) {
+                dst[i] = saturate(element);
+                qc_flag = true;
+            } else {
+                dst[i] = shifted;
+            }
+        }
+    }
+
+    return qc_flag;
+}
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+void EmitX64::EmitVectorSignedSaturatedShiftLeft8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, VectorSignedSaturatedShiftLeft<s8>);
+}
+
+void EmitX64::EmitVectorSignedSaturatedShiftLeft16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, VectorSignedSaturatedShiftLeft<s16>);
+}
+
+void EmitX64::EmitVectorSignedSaturatedShiftLeft32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, VectorSignedSaturatedShiftLeft<s32>);
+}
+
+void EmitX64::EmitVectorSignedSaturatedShiftLeft64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, VectorSignedSaturatedShiftLeft<s64>);
+}
+
 void EmitX64::EmitVectorSub8(EmitContext& ctx, IR::Inst* inst) {
     EmitVectorOperation(code, ctx, inst, &Xbyak::CodeGenerator::psubb);
 }
