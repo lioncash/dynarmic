@@ -437,11 +437,8 @@ INST(FMINP_pair_2,           "FMINP (scalar)",                            "01111
 
 // Data Processing - FP and SIMD - SIMD Scalar three different
 //INST(SQDMLAL_vec_1,          "SQDMLAL, SQDMLAL2 (vector)",                "01011110zz1mmmmm100100nnnnnddddd")
-//INST(SQDMLAL_vec_2,          "SQDMLAL, SQDMLAL2 (vector)",                "0Q001110zz1mmmmm100100nnnnnddddd")
 //INST(SQDMLSL_vec_1,          "SQDMLSL, SQDMLSL2 (vector)",                "01011110zz1mmmmm101100nnnnnddddd")
-//INST(SQDMLSL_vec_2,          "SQDMLSL, SQDMLSL2 (vector)",                "0Q001110zz1mmmmm101100nnnnnddddd")
 //INST(SQDMULL_vec_1,          "SQDMULL, SQDMULL2 (vector)",                "01011110zz1mmmmm110100nnnnnddddd")
-//INST(SQDMULL_vec_2,          "SQDMULL, SQDMULL2 (vector)",                "0Q001110zz1mmmmm110100nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Scalar three same
 INST(SQADD_1,                "SQADD",                                     "01011110zz1mmmmm000011nnnnnddddd")
@@ -699,6 +696,9 @@ INST(UABDL,                  "UABDL, UABDL2",                             "0Q101
 INST(UMLAL_vec,              "UMLAL, UMLAL2 (vector)",                    "0Q101110zz1mmmmm100000nnnnnddddd")
 INST(UMLSL_vec,              "UMLSL, UMLSL2 (vector)",                    "0Q101110zz1mmmmm101000nnnnnddddd")
 INST(UMULL_vec,              "UMULL, UMULL2 (vector)",                    "0Q101110zz1mmmmm110000nnnnnddddd")
+//INST(SQDMLAL_vec_2,          "SQDMLAL, SQDMLAL2 (vector)",                "0Q001110zz1mmmmm100100nnnnnddddd")
+//INST(SQDMLSL_vec_2,          "SQDMLSL, SQDMLSL2 (vector)",                "0Q001110zz1mmmmm101100nnnnnddddd")
+INST(SQDMULL_vec_2,          "SQDMULL, SQDMULL2 (vector)",                "0Q001110zz1mmmmm110100nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD three same
 INST(SHADD,                  "SHADD",                                     "0Q001110zz1mmmmm000001nnnnnddddd")

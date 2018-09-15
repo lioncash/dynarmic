@@ -249,4 +249,20 @@ bool TranslatorVisitor::USUBL(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return LongOperation(*this, Q, size, Vm, Vn, Vd, LongOperationBehavior::Subtraction, Signedness::Unsigned);
 }
 
+bool TranslatorVisitor::SQDMULL_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b00 || size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t part = Q ? 1 : 0;
+
+    const IR::U128 operand1 = Vpart(64, Vn, part);
+    const IR::U128 operand2 = Vpart(64, Vm, part);
+    const IR::U128 result = ir.VectorSignedSaturatedDoublingMultiplyLong(esize, operand1, operand2);
+
+    V(128, Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64

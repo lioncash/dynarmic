@@ -546,11 +546,8 @@ struct TranslatorVisitor final {
 
     // Data Processing - FP and SIMD - SIMD Scalar three different
     bool SQDMLAL_vec_1(Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool SQDMLAL_vec_2(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
     bool SQDMLSL_vec_1(Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool SQDMLSL_vec_2(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
     bool SQDMULL_vec_1(Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
-    bool SQDMULL_vec_2(bool Q, Imm<2> size, Reg Rm, Reg Rn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Scalar three same
     bool SQADD_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
@@ -770,6 +767,9 @@ struct TranslatorVisitor final {
     bool UMLAL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool UMLSL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
     bool UMULL_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SQDMLAL_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SQDMLSL_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
+    bool SQDMULL_vec_2(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD three same
     bool SHADD(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd);
