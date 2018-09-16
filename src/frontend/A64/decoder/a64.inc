@@ -567,7 +567,7 @@ INST(REV64_asimd,            "REV64",                                     "0Q001
 INST(REV16_asimd,            "REV16 (vector)",                            "0Q001110zz100000000110nnnnnddddd")
 INST(SADDLP,                 "SADDLP",                                    "0Q001110zz100000001010nnnnnddddd")
 INST(SUQADD_2,               "SUQADD",                                    "0Q001110zz100000001110nnnnnddddd")
-//INST(CLS_asimd,              "CLS (vector)",                              "0Q001110zz100000010010nnnnnddddd")
+INST(CLS_asimd,              "CLS (vector)",                              "0Q001110zz100000010010nnnnnddddd")
 INST(CNT,                    "CNT",                                       "0Q001110zz100000010110nnnnnddddd")
 INST(SADALP,                 "SADALP",                                    "0Q001110zz100000011010nnnnnddddd")
 INST(SQABS_2,                "SQABS",                                     "0Q001110zz100000011110nnnnnddddd")

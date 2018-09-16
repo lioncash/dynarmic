@@ -193,6 +193,28 @@ bool PairedAddLong(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vn, Vec Vd, Si
 
 } // Anonymous namespace
 
+bool TranslatorVisitor::CLS_asimd(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
+    if (size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand = V(datasize, Vn);
+    const IR::U128 shifted = ir.VectorArithmeticShiftRight(esize, operand, static_cast<u8>(esize));
+    const IR::U128 xored = ir.VectorEor(operand, shifted);
+    const IR::U128 clz = ir.VectorCountLeadingZeros(esize, xored);
+    IR::U128 result = ir.VectorSub(esize, clz, ir.VectorBroadcast(esize, I(esize, 1)));
+
+    if (datasize == 64) {
+        result = ir.VectorZeroUpper(result);
+    }
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::CLZ_asimd(bool Q, Imm<2> size, Vec Vn, Vec Vd) {
     if (size == 0b11) {
         return ReservedValue();
