@@ -198,6 +198,23 @@ bool TranslatorVisitor::RSHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) 
     return ShiftRightNarrowing(*this, Q, immh, immb, Vn, Vd, Rounding::Round, Narrowing::Truncation, Signedness::Unsigned);
 }
 
+bool TranslatorVisitor::SQSHL_imm_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (!Q && immh.Bit<3>()) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << Common::HighestSetBit(immh.ZeroExtend());
+    const size_t datasize = Q ? 128 : 64;
+    const size_t shift = concatenate(immh, immb).ZeroExtend() - esize;
+
+    const IR::U128 operand = V(datasize, Vn);
+    const IR::U128 shift_vec = ir.VectorBroadcast(esize, I(esize, shift));
+    const IR::U128 result = ir.VectorSignedSaturatedShiftLeft(esize, operand, shift_vec);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return ShiftRightNarrowing(*this, Q, immh, immb, Vn, Vd, Rounding::None, Narrowing::SaturateToSigned, Signedness::Signed);
 }
