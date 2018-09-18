@@ -293,14 +293,14 @@ bool Inst::ReadsFromAndWritesToFPSRCumulativeExceptionBits() const {
     case Opcode::FPSingleToFixedS64:
     case Opcode::FPSingleToFixedU32:
     case Opcode::FPSingleToFixedU64:
-    case Opcode::FPU32ToSingle:
-    case Opcode::FPS32ToSingle:
-    case Opcode::FPU32ToDouble:
-    case Opcode::FPU64ToDouble:
-    case Opcode::FPU64ToSingle:
-    case Opcode::FPS32ToDouble:
-    case Opcode::FPS64ToDouble:
-    case Opcode::FPS64ToSingle:
+    case Opcode::FPFixedU32ToSingle:
+    case Opcode::FPFixedS32ToSingle:
+    case Opcode::FPFixedU32ToDouble:
+    case Opcode::FPFixedU64ToDouble:
+    case Opcode::FPFixedU64ToSingle:
+    case Opcode::FPFixedS32ToDouble:
+    case Opcode::FPFixedS64ToDouble:
+    case Opcode::FPFixedS64ToSingle:
     case Opcode::FPVectorAdd32:
     case Opcode::FPVectorAdd64:
     case Opcode::FPVectorDiv32:

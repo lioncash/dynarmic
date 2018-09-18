@@ -21,14 +21,10 @@ bool TranslatorVisitor::SCVTF_float_int(bool sf, Imm<2> type, Reg Rn, Vec Vd) {
     const IR::U32U64 intval = X(intsize, Rn);
     IR::U32U64 fltval;
 
-    if (intsize == 32 && *fltsize == 32) {
-        fltval = ir.FPS32ToSingle(intval, false, true);
-    } else if (intsize == 32 && *fltsize == 64) {
-        fltval = ir.FPS32ToDouble(intval, false, true);
-    } else if (intsize == 64 && *fltsize == 32) {
-        fltval = ir.FPS64ToSingle(intval, false, true);
-    } else if (intsize == 64 && *fltsize == 64) {
-        fltval = ir.FPS64ToDouble(intval, false, true);
+    if (*fltsize == 32) {
+        fltval = ir.FPSignedFixedToSingle(intval, 0, ir.current_location->FPCR().RMode());
+    } else if (*fltsize == 64) {
+        fltval = ir.FPSignedFixedToDouble(intval, 0, ir.current_location->FPCR().RMode());
     } else {
         UNREACHABLE();
     }
@@ -48,14 +44,10 @@ bool TranslatorVisitor::UCVTF_float_int(bool sf, Imm<2> type, Reg Rn, Vec Vd) {
     const IR::U32U64 intval = X(intsize, Rn);
     IR::U32U64 fltval;
 
-    if (intsize == 32 && *fltsize == 32) {
-        fltval = ir.FPU32ToSingle(intval, false, true);
-    } else if (intsize == 32 && *fltsize == 64) {
-        fltval = ir.FPU32ToDouble(intval, false, true);
-    } else if (intsize == 64 && *fltsize == 32) {
-        fltval = ir.FPU64ToSingle(intval, false, true);
-    } else if (intsize == 64 && *fltsize == 64) {
-        fltval = ir.FPU64ToDouble(intval, false, true);
+    if (*fltsize == 32) {
+        fltval = ir.FPUnsignedFixedToSingle(intval, 0, ir.current_location->FPCR().RMode());
+    } else if (*fltsize == 64) {
+        fltval = ir.FPUnsignedFixedToDouble(intval, 0, ir.current_location->FPCR().RMode());
     } else {
         UNREACHABLE();
     }

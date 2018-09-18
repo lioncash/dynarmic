@@ -1201,82 +1201,115 @@ void EmitX64::EmitFPSingleToFixedU64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPToFixed(code, ctx, inst, 32, true, 64);
 }
 
-void EmitX64::EmitFPS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPFixedS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 from = ctx.reg_alloc.UseGpr(args[0]).cvt32();
-    Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
-    bool round_to_nearest = args[1].GetImmediateU1();
-    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
 
-    code.cvtsi2ss(to, from);
+    const Xbyak::Reg32 from = ctx.reg_alloc.UseGpr(args[0]).cvt32();
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const size_t fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
 
-    ctx.reg_alloc.DefineValue(inst, to);
+    code.cvtsi2ss(result, from);
+
+    if (fbits != 0) {
+        const u32 scale_factor = static_cast<u32>((127 - fbits) << 23);
+        code.mulss(result, code.MConst(xword, scale_factor));
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPFixedU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    const Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
-    const bool round_to_nearest = args[1].GetImmediateU1();
-    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const size_t fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
         const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
-        code.vcvtusi2ss(to, to, from.cvt32());
+        code.vcvtusi2ss(result, result, from.cvt32());
     } else {
         // We are using a 64-bit GPR register to ensure we don't end up treating the input as signed
         const Xbyak::Reg64 from = ctx.reg_alloc.UseScratchGpr(args[0]);
         code.mov(from.cvt32(), from.cvt32()); // TODO: Verify if this is necessary
-        code.cvtsi2ss(to, from);
+        code.cvtsi2ss(result, from);
     }
 
-    ctx.reg_alloc.DefineValue(inst, to);
+    if (fbits != 0) {
+        const u32 scale_factor = static_cast<u32>((127 - fbits) << 23);
+        code.mulss(result, code.MConst(xword, scale_factor));
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Reg32 from = ctx.reg_alloc.UseGpr(args[0]).cvt32();
-    Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
-    bool round_to_nearest = args[1].GetImmediateU1();
-    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
-
-    code.cvtsi2sd(to, from);
-
-    ctx.reg_alloc.DefineValue(inst, to);
-}
-
-void EmitX64::EmitFPS64ToDouble(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPFixedS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Reg32 from = ctx.reg_alloc.UseGpr(args[0]).cvt32();
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-    const bool round_to_nearest = args[1].GetImmediateU1();
-    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
+    const size_t fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
 
     code.cvtsi2sd(result, from);
 
+    if (fbits != 0) {
+        const u64 scale_factor = static_cast<u64>((1023 - fbits) << 52);
+        code.mulsd(result, code.MConst(xword, scale_factor));
+    }
+
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPS64ToSingle(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPFixedS64ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-    const bool round_to_nearest = args[1].GetImmediateU1();
-    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
+    const size_t fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
 
-    code.cvtsi2ss(result, from);
+    code.cvtsi2sd(result, from);
+
+    if (fbits != 0) {
+        const u64 scale_factor = static_cast<u64>((1023 - fbits) << 52);
+        code.mulsd(result, code.MConst(xword, scale_factor));
+    }
 
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPFixedS64ToSingle(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const size_t fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+
+    code.cvtsi2ss(result, from);
+
+    if (fbits != 0) {
+        const u32 scale_factor = static_cast<u32>((127 - fbits) << 23);
+        code.mulss(result, code.MConst(xword, scale_factor));
+    }
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitFPFixedU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
-    const bool round_to_nearest = args[1].GetImmediateU1();
-    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
+    const size_t fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
         const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
@@ -1288,16 +1321,22 @@ void EmitX64::EmitFPU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
         code.cvtsi2sd(to, from);
     }
 
+    if (fbits != 0) {
+        const u64 scale_factor = static_cast<u64>((1023 - fbits) << 52);
+        code.mulsd(to, code.MConst(xword, scale_factor));
+    }
+
     ctx.reg_alloc.DefineValue(inst, to);
 }
 
-void EmitX64::EmitFPU64ToDouble(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPFixedU64ToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-    const bool round_to_nearest = args[1].GetImmediateU1();
-    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
+    const size_t fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
         code.vcvtusi2sd(result, result, from);
@@ -1314,15 +1353,21 @@ void EmitX64::EmitFPU64ToDouble(EmitContext& ctx, IR::Inst* inst) {
         }
     }
 
+    if (fbits != 0) {
+        const u64 scale_factor = static_cast<u64>((1023 - fbits) << 52);
+        code.mulsd(result, code.MConst(xword, scale_factor));
+    }
+
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-void EmitX64::EmitFPU64ToSingle(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitFPFixedU64ToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-    const bool round_to_nearest = args[1].GetImmediateU1();
-    ASSERT_MSG(!round_to_nearest, "round_to_nearest unimplemented");
+    const size_t fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
         const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
@@ -1350,6 +1395,11 @@ void EmitX64::EmitFPU64ToSingle(EmitContext& ctx, IR::Inst* inst) {
         code.addss(result, result);
 
         code.L(end);
+    }
+
+    if (fbits != 0) {
+        const u32 scale_factor = static_cast<u32>((127 - fbits) << 23);
+        code.mulss(result, code.MConst(xword, scale_factor));
     }
 
     ctx.reg_alloc.DefineValue(inst, result);

@@ -316,14 +316,10 @@ public:
     U64 FPToFixedS64(const U32U64& a, size_t fbits, FP::RoundingMode rounding);
     U32 FPToFixedU32(const U32U64& a, size_t fbits, FP::RoundingMode rounding);
     U64 FPToFixedU64(const U32U64& a, size_t fbits, FP::RoundingMode rounding);
-    U32 FPS32ToSingle(const U32& a, bool round_to_nearest, bool fpcr_controlled);
-    U32 FPU32ToSingle(const U32& a, bool round_to_nearest, bool fpcr_controlled);
-    U64 FPS32ToDouble(const U32& a, bool round_to_nearest, bool fpcr_controlled);
-    U64 FPS64ToDouble(const U64& a, bool round_to_nearest, bool fpcr_controlled);
-    U32 FPS64ToSingle(const U64& a, bool round_to_nearest, bool fpcr_controlled);
-    U64 FPU32ToDouble(const U32& a, bool round_to_nearest, bool fpcr_controlled);
-    U64 FPU64ToDouble(const U64& a, bool round_to_nearest, bool fpcr_controlled);
-    U32 FPU64ToSingle(const U64& a, bool round_to_nearest, bool fpcr_controlled);
+    U32 FPSignedFixedToSingle(const U32U64& a, size_t fbits, FP::RoundingMode rounding);
+    U32 FPUnsignedFixedToSingle(const U32U64& a, size_t fbits, FP::RoundingMode rounding);
+    U64 FPSignedFixedToDouble(const U32U64& a, size_t fbits, FP::RoundingMode rounding);
+    U64 FPUnsignedFixedToDouble(const U32U64& a, size_t fbits, FP::RoundingMode rounding);
 
     U128 FPVectorAbs(size_t esize, const U128& a);
     U128 FPVectorAdd(size_t esize, const U128& a, const U128& b);

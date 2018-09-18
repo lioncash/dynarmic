@@ -414,20 +414,20 @@ bool ArmTranslatorVisitor::vfp2_VCVT_f_to_f(Cond cond, bool D, size_t Vd, bool s
 bool ArmTranslatorVisitor::vfp2_VCVT_to_float(Cond cond, bool D, size_t Vd, bool sz, bool is_signed, bool M, size_t Vm) {
     ExtReg d = ToExtReg(sz, Vd, D);
     ExtReg m = ToExtReg(false, Vm, M);
-    bool round_to_nearest = false;
+    FP::RoundingMode rounding_mode = ir.current_location.FPSCR().RMode();
     // VCVT.F32.{S32,U32} <Sd>, <Sm>
     // VCVT.F64.{S32,U32} <Sd>, <Dm>
     if (ConditionPassed(cond)) {
         auto reg_m = ir.GetExtendedRegister(m);
         if (sz) {
             auto result = is_signed
-                        ? ir.FPS32ToDouble(reg_m, round_to_nearest, true)
-                        : ir.FPU32ToDouble(reg_m, round_to_nearest, true);
+                        ? ir.FPSignedFixedToDouble(reg_m, 0, rounding_mode)
+                        : ir.FPUnsignedFixedToDouble(reg_m, 0, rounding_mode);
             ir.SetExtendedRegister(d, result);
         } else {
             auto result = is_signed
-                        ? ir.FPS32ToSingle(reg_m, round_to_nearest, true)
-                        : ir.FPU32ToSingle(reg_m, round_to_nearest, true);
+                        ? ir.FPSignedFixedToSingle(reg_m, 0, rounding_mode)
+                        : ir.FPUnsignedFixedToSingle(reg_m, 0, rounding_mode);
             ir.SetExtendedRegister(d, result);
         }
     }

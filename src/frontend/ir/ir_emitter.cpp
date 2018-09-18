@@ -1960,44 +1960,28 @@ U64 IREmitter::FPToFixedU64(const U32U64& a, size_t fbits, FP::RoundingMode roun
     return Inst<U64>(opcode, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
 }
 
-U32 IREmitter::FPS32ToSingle(const U32& a, bool round_to_nearest, bool fpcr_controlled) {
-    ASSERT(fpcr_controlled);
-    return Inst<U32>(Opcode::FPS32ToSingle, a, Imm1(round_to_nearest));
+U32 IREmitter::FPSignedFixedToSingle(const U32U64& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= (a.GetType() == Type::U32 ? 32 : 64));
+    const Opcode opcode = a.GetType() == Type::U32 ? Opcode::FPFixedS32ToSingle : Opcode::FPFixedS64ToSingle;
+    return Inst<U32>(opcode, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
 }
 
-U64 IREmitter::FPS64ToDouble(const U64& a, bool round_to_nearest, bool fpcr_controlled) {
-    ASSERT(fpcr_controlled);
-    return Inst<U64>(Opcode::FPS64ToDouble, a, Imm1(round_to_nearest));
+U32 IREmitter::FPUnsignedFixedToSingle(const U32U64& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= (a.GetType() == Type::U32 ? 32 : 64));
+    const Opcode opcode = a.GetType() == Type::U32 ? Opcode::FPFixedU32ToSingle : Opcode::FPFixedU64ToSingle;
+    return Inst<U32>(opcode, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
 }
 
-U32 IREmitter::FPS64ToSingle(const U64& a, bool round_to_nearest, bool fpcr_controlled) {
-    ASSERT(fpcr_controlled);
-    return Inst<U32>(Opcode::FPS64ToSingle, a, Imm1(round_to_nearest));
+U64 IREmitter::FPSignedFixedToDouble(const U32U64& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= (a.GetType() == Type::U32 ? 32 : 64));
+    const Opcode opcode = a.GetType() == Type::U32 ? Opcode::FPFixedS32ToDouble : Opcode::FPFixedS64ToDouble;
+    return Inst<U64>(opcode, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
 }
 
-U32 IREmitter::FPU32ToSingle(const U32& a, bool round_to_nearest, bool fpcr_controlled) {
-    ASSERT(fpcr_controlled);
-    return Inst<U32>(Opcode::FPU32ToSingle, a, Imm1(round_to_nearest));
-}
-
-U64 IREmitter::FPS32ToDouble(const U32& a, bool round_to_nearest, bool fpcr_controlled) {
-    ASSERT(fpcr_controlled);
-    return Inst<U64>(Opcode::FPS32ToDouble, a, Imm1(round_to_nearest));
-}
-
-U64 IREmitter::FPU32ToDouble(const U32& a, bool round_to_nearest, bool fpcr_controlled) {
-    ASSERT(fpcr_controlled);
-    return Inst<U64>(Opcode::FPU32ToDouble, a, Imm1(round_to_nearest));
-}
-
-U64 IREmitter::FPU64ToDouble(const U64& a, bool round_to_nearest, bool fpcr_controlled) {
-    ASSERT(fpcr_controlled);
-    return Inst<U64>(Opcode::FPU64ToDouble, a, Imm1(round_to_nearest));
-}
-
-U32 IREmitter::FPU64ToSingle(const U64& a, bool round_to_nearest, bool fpcr_controlled) {
-    ASSERT(fpcr_controlled);
-    return Inst<U32>(Opcode::FPU64ToSingle, a, Imm1(round_to_nearest));
+U64 IREmitter::FPUnsignedFixedToDouble(const U32U64& a, size_t fbits, FP::RoundingMode rounding) {
+    ASSERT(fbits <= (a.GetType() == Type::U32 ? 32 : 64));
+    const Opcode opcode = a.GetType() == Type::U32 ? Opcode::FPFixedU32ToDouble : Opcode::FPFixedU64ToDouble;
+    return Inst<U64>(opcode, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)));
 }
 
 U128 IREmitter::FPVectorAbs(size_t esize, const U128& a) {

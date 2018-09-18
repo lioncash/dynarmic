@@ -195,13 +195,12 @@ bool TranslatorVisitor::NEG_1(Imm<2> size, Vec Vn, Vec Vd) {
 bool TranslatorVisitor::SCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     const auto esize = sz ? 64 : 32;
 
-    IR::U32U64 element = V_scalar(esize, Vn);
-    if (esize == 32) {
-        element = ir.FPS32ToSingle(element, false, true);
-    } else {
-        element = ir.FPS64ToDouble(element, false, true);
-    }
-    V_scalar(esize, Vd, element);
+    const IR::U32U64 element = V_scalar(esize, Vn);
+    const IR::U32U64 result = esize == 32
+                            ? IR::U32U64(ir.FPSignedFixedToSingle(element, 0, ir.current_location->FPCR().RMode()))
+                            : IR::U32U64(ir.FPSignedFixedToDouble(element, 0, ir.current_location->FPCR().RMode()));
+
+    V_scalar(esize, Vd, result);
     return true;
 }
 
@@ -248,13 +247,12 @@ bool TranslatorVisitor::SUQADD_1(Imm<2> size, Vec Vn, Vec Vd) {
 bool TranslatorVisitor::UCVTF_int_2(bool sz, Vec Vn, Vec Vd) {
     const auto esize = sz ? 64 : 32;
 
-    IR::U32U64 element = V_scalar(esize, Vn);
-    if (esize == 32) {
-        element = ir.FPU32ToSingle(element, false, true);
-    } else {
-        element = ir.FPU64ToDouble(element, false, true);
-    }
-    V_scalar(esize, Vd, element);
+    const IR::U32U64 element = V_scalar(esize, Vn);
+    const IR::U32U64 result = esize == 32
+                            ? IR::U32U64(ir.FPUnsignedFixedToSingle(element, 0, ir.current_location->FPCR().RMode()))
+                            : IR::U32U64(ir.FPUnsignedFixedToDouble(element, 0, ir.current_location->FPCR().RMode()));
+
+    V_scalar(esize, Vd, result);
     return true;
 }
 
