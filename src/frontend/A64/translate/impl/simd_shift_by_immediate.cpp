@@ -153,6 +153,29 @@ bool ShiftLeftLong(TranslatorVisitor& v, bool Q, Imm<4> immh, Imm<3> immb, Vec V
     v.V(2 * datasize, Vd, result);
     return true;
 }
+
+bool SaturatingShiftLeft(TranslatorVisitor& v, bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd, Signedness sign) {
+    if (!Q && immh.Bit<3>()) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << Common::HighestSetBit(immh.ZeroExtend());
+    const size_t datasize = Q ? 128 : 64;
+    const size_t shift = concatenate(immh, immb).ZeroExtend() - esize;
+
+    const IR::U128 operand = v.V(datasize, Vn);
+    const IR::U128 shift_vec = v.ir.VectorBroadcast(esize, v.I(esize, shift));
+    const IR::U128 result = [&] {
+        if (sign == Signedness::Signed) {
+            return v.ir.VectorSignedSaturatedShiftLeft(esize, operand, shift_vec);
+        }
+
+        return v.ir.VectorUnsignedSaturatedShiftLeft(esize, operand, shift_vec);
+    }();
+
+    v.V(datasize, Vd, result);
+    return true;
+}
 } // Anonymous namespace
 
 bool TranslatorVisitor::SSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
@@ -199,20 +222,7 @@ bool TranslatorVisitor::RSHRN(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) 
 }
 
 bool TranslatorVisitor::SQSHL_imm_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (!Q && immh.Bit<3>()) {
-        return ReservedValue();
-    }
-
-    const size_t esize = 8 << Common::HighestSetBit(immh.ZeroExtend());
-    const size_t datasize = Q ? 128 : 64;
-    const size_t shift = concatenate(immh, immb).ZeroExtend() - esize;
-
-    const IR::U128 operand = V(datasize, Vn);
-    const IR::U128 shift_vec = ir.VectorBroadcast(esize, I(esize, shift));
-    const IR::U128 result = ir.VectorSignedSaturatedShiftLeft(esize, operand, shift_vec);
-
-    V(datasize, Vd, result);
-    return true;
+    return SaturatingShiftLeft(*this, Q, immh, immb, Vn, Vd, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
@@ -229,6 +239,10 @@ bool TranslatorVisitor::SQSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec 
 
 bool TranslatorVisitor::SQRSHRUN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return ShiftRightNarrowing(*this, Q, immh, immb, Vn, Vd, Rounding::Round, Narrowing::SaturateToUnsigned, Signedness::Signed);
+}
+
+bool TranslatorVisitor::UQSHL_imm_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return SaturatingShiftLeft(*this, Q, immh, immb, Vn, Vd, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::UQSHRN_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
