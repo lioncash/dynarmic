@@ -878,8 +878,8 @@ INST(SHA512SU0,              "SHA512SU0",                                 "11001
 INST(SM4E,                   "SM4E",                                      "1100111011000000100001nnnnnddddd")
 
 // Data Processing - FP and SIMD - Conversion between floating point and fixed point
-//INST(SCVTF_float_fix,        "SCVTF (scalar, fixed-point)",               "z0011110yy000010ppppppnnnnnddddd")
-//INST(UCVTF_float_fix,        "UCVTF (scalar, fixed-point)",               "z0011110yy000011ppppppnnnnnddddd")
+INST(SCVTF_float_fix,        "SCVTF (scalar, fixed-point)",               "z0011110yy000010ppppppnnnnnddddd")
+INST(UCVTF_float_fix,        "UCVTF (scalar, fixed-point)",               "z0011110yy000011ppppppnnnnnddddd")
 INST(FCVTZS_float_fix,       "FCVTZS (scalar, fixed-point)",              "z0011110yy011000ppppppnnnnnddddd")
 INST(FCVTZU_float_fix,       "FCVTZU (scalar, fixed-point)",              "z0011110yy011001ppppppnnnnnddddd")
 

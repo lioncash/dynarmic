@@ -10,6 +10,62 @@
 
 namespace Dynarmic::A64 {
 
+bool TranslatorVisitor::SCVTF_float_fix(bool sf, Imm<2> type, Imm<6> scale, Reg Rn, Vec Vd) {
+    const size_t intsize = sf ? 64 : 32;
+    const auto fltsize = FPGetDataSize(type);
+    if (!fltsize || *fltsize == 16) {
+        return UnallocatedEncoding();
+    }
+    if (!sf && !scale.Bit<5>()) {
+        return UnallocatedEncoding();
+    }
+    const u8 fracbits = 64 - scale.ZeroExtend<u8>();
+    const FP::RoundingMode rounding_mode = ir.current_location->FPCR().RMode();
+
+    const IR::U32U64 intval = X(intsize, Rn);
+    const IR::U32U64 fltval = [&]() -> IR::U32U64 {
+        switch (*fltsize) {
+        case 32:
+            return ir.FPSignedFixedToSingle(intval, fracbits, rounding_mode);
+        case 64:
+            return ir.FPSignedFixedToDouble(intval, fracbits, rounding_mode);
+        }
+        UNREACHABLE();
+        return {};
+    }();
+
+    V_scalar(*fltsize, Vd, fltval);
+    return true;
+}
+
+bool TranslatorVisitor::UCVTF_float_fix(bool sf, Imm<2> type, Imm<6> scale, Reg Rn, Vec Vd) {
+    const size_t intsize = sf ? 64 : 32;
+    const auto fltsize = FPGetDataSize(type);
+    if (!fltsize || *fltsize == 16) {
+        return UnallocatedEncoding();
+    }
+    if (!sf && !scale.Bit<5>()) {
+        return UnallocatedEncoding();
+    }
+    const u8 fracbits = 64 - scale.ZeroExtend<u8>();
+    const FP::RoundingMode rounding_mode = ir.current_location->FPCR().RMode();
+
+    const IR::U32U64 intval = X(intsize, Rn);
+    const IR::U32U64 fltval = [&]() -> IR::U32U64 {
+        switch (*fltsize) {
+        case 32:
+            return ir.FPUnsignedFixedToSingle(intval, fracbits, rounding_mode);
+        case 64:
+            return ir.FPUnsignedFixedToDouble(intval, fracbits, rounding_mode);
+        }
+        UNREACHABLE();
+        return {};
+    }();
+
+    V_scalar(*fltsize, Vd, fltval);
+    return true;
+}
+
 bool TranslatorVisitor::FCVTZS_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec Vn, Reg Rd) {
     const size_t intsize = sf ? 64 : 32;
     const auto fltsize = FPGetDataSize(type);
