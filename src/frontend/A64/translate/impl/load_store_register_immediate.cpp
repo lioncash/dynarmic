@@ -169,7 +169,11 @@ bool TranslatorVisitor::STR_imm_fpsimd_1(Imm<2> size, Imm<1> opc_1, Imm<9> imm9,
     const bool wback = true;
     const bool postindex = !not_postindex;
     const size_t scale = concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) return UnallocatedEncoding();
+
+    if (scale > 4) {
+        return UnallocatedEncoding();
+    }
+
     const u64 offset = imm9.SignExtend<u64>();
 
     return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::STORE, Rn, Vt);
@@ -179,7 +183,11 @@ bool TranslatorVisitor::STR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm1
     const bool wback = false;
     const bool postindex = false;
     const size_t scale = concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) return UnallocatedEncoding();
+
+    if (scale > 4) {
+        return UnallocatedEncoding();
+    }
+
     const u64 offset = imm12.ZeroExtend<u64>() << scale;
 
     return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::STORE, Rn, Vt);
@@ -189,7 +197,11 @@ bool TranslatorVisitor::LDR_imm_fpsimd_1(Imm<2> size, Imm<1> opc_1, Imm<9> imm9,
     const bool wback = true;
     const bool postindex = !not_postindex;
     const size_t scale = concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) return UnallocatedEncoding();
+
+    if (scale > 4) {
+        return UnallocatedEncoding();
+    }
+
     const u64 offset = imm9.SignExtend<u64>();
 
     return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
@@ -199,7 +211,11 @@ bool TranslatorVisitor::LDR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm1
     const bool wback = false;
     const bool postindex = false;
     const size_t scale = concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) return UnallocatedEncoding();
+
+    if (scale > 4) {
+        return UnallocatedEncoding();
+    }
+
     const u64 offset = imm12.ZeroExtend<u64>() << scale;
 
     return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
@@ -209,7 +225,11 @@ bool TranslatorVisitor::STUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg 
     const bool wback = false;
     const bool postindex = false;
     const size_t scale = concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) return UnallocatedEncoding();
+
+    if (scale > 4) {
+        return UnallocatedEncoding();
+    }
+
     const u64 offset = imm9.SignExtend<u64>();
 
     return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::STORE, Rn, Vt);
@@ -219,7 +239,11 @@ bool TranslatorVisitor::LDUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg 
     const bool wback = false;
     const bool postindex = false;
     const size_t scale = concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) return UnallocatedEncoding();
+
+    if (scale > 4) {
+        return UnallocatedEncoding();
+    }
+
     const u64 offset = imm9.SignExtend<u64>();
 
     return LoadStoreSIMD(*this, wback, postindex, scale, offset, MemOp::LOAD, Rn, Vt);
