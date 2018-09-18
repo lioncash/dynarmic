@@ -4100,6 +4100,58 @@ void EmitX64::EmitVectorUnsignedSaturatedNarrow64(EmitContext& ctx, IR::Inst* in
     });
 }
 
+template <typename T, typename S = std::make_signed_t<T>>
+static bool VectorUnsignedSaturatedShiftLeft(VectorArray<T>& dst, const VectorArray<T>& data, const VectorArray<T>& shift_values) {
+    static_assert(std::is_unsigned_v<T>, "T must be an unsigned type.");
+
+    bool qc_flag = false;
+
+    constexpr size_t bit_size = Common::BitSize<T>();
+    constexpr S negative_bit_size = -static_cast<S>(bit_size);
+
+    for (size_t i = 0; i < dst.size(); i++) {
+        const T element = data[i];
+        const S shift = std::clamp(static_cast<S>(Common::SignExtend<8>(shift_values[i] & 0xFF)),
+                                   negative_bit_size, std::numeric_limits<S>::max());
+
+        if (element == 0 || shift <= negative_bit_size) {
+            dst[i] = 0;
+        } else if (shift < 0) {
+            dst[i] = static_cast<T>(element >> -shift);
+        } else if (shift >= static_cast<S>(bit_size)) {
+            dst[i] = std::numeric_limits<T>::max();
+            qc_flag = true;
+        } else {
+            const T shifted = element << shift;
+
+            if ((shifted >> shift) != element) {
+                dst[i] = std::numeric_limits<T>::max();
+                qc_flag = true;
+            } else {
+                dst[i] = shifted;
+            }
+        }
+    }
+
+    return qc_flag;
+}
+
+void EmitX64::EmitVectorUnsignedSaturatedShiftLeft8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, VectorUnsignedSaturatedShiftLeft<u8>);
+}
+
+void EmitX64::EmitVectorUnsignedSaturatedShiftLeft16(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, VectorUnsignedSaturatedShiftLeft<u16>);
+}
+
+void EmitX64::EmitVectorUnsignedSaturatedShiftLeft32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, VectorUnsignedSaturatedShiftLeft<u32>);
+}
+
+void EmitX64::EmitVectorUnsignedSaturatedShiftLeft64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallbackWithSaturation(code, ctx, inst, VectorUnsignedSaturatedShiftLeft<u64>);
+}
+
 void EmitX64::EmitVectorZeroExtend8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm a = ctx.reg_alloc.UseScratchXmm(args[0]);
