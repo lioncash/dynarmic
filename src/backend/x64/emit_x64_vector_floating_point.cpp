@@ -123,6 +123,15 @@ void HandleNaNs(BlockOfCode& code, EmitContext& ctx, std::array<Xbyak::Xmm, narg
     code.SwitchToNearCode();
 }
 
+template<size_t fsize>
+Xbyak::Address GetVectorOf(BlockOfCode& code, u64 value) {
+    if constexpr (fsize == 32) {
+        return code.MConst(xword, (value << 32) | value, (value << 32) | value);
+    } else {
+        return code.MConst(xword, value, value);
+    }
+}
+
 template<size_t fsize, u64 value>
 Xbyak::Address GetVectorOf(BlockOfCode& code) {
     if constexpr (fsize == 32) {
@@ -535,6 +544,181 @@ void EmitX64::EmitFPVectorEqual64(EmitContext& ctx, IR::Inst* inst) {
     code.cmpeqpd(a, b);
 
     ctx.reg_alloc.DefineValue(inst, a);
+}
+
+void EmitX64::EmitFPVectorFromSignedFixed32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const int fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+
+    code.cvtdq2ps(xmm, xmm);
+
+    if (fbits != 0) {
+        code.mulps(xmm, GetVectorOf<32>(code, static_cast<u32>(127 - fbits) << 23));
+    }
+
+    ctx.reg_alloc.DefineValue(inst, xmm);
+}
+
+void EmitX64::EmitFPVectorFromSignedFixed64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const int fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ)) {
+        code.vcvtqq2pd(xmm, xmm);
+    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
+        const Xbyak::Xmm xmm_tmp = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
+
+        // First quadword
+        code.movq(tmp, xmm);
+        code.cvtsi2sd(xmm, tmp);
+
+        // Second quadword
+        code.pextrq(tmp, xmm, 1);
+        code.cvtsi2sd(xmm_tmp, tmp);
+
+        // Combine
+        code.unpcklpd(xmm, xmm_tmp);
+    } else {
+        const Xbyak::Xmm high_xmm = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm xmm_tmp = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
+
+        // First quadword
+        code.movhlps(high_xmm, xmm);
+        code.movq(tmp, xmm);
+        code.cvtsi2sd(xmm, tmp);
+
+        // Second quadword
+        code.movq(tmp, high_xmm);
+        code.cvtsi2sd(xmm_tmp, tmp);
+
+        // Combine
+        code.unpcklpd(xmm, xmm_tmp);
+    }
+
+    if (fbits != 0) {
+        code.mulpd(xmm, GetVectorOf<64>(code, static_cast<u64>(1023 - fbits) << 52));
+    }
+
+    ctx.reg_alloc.DefineValue(inst, xmm);
+}
+
+void EmitX64::EmitFPVectorFromUnsignedFixed32(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const int fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        code.vcvtudq2ps(xmm, xmm);
+    } else {
+        const Xbyak::Address mem_4B000000 = code.MConst(xword, 0x4B0000004B000000, 0x4B0000004B000000);
+        const Xbyak::Address mem_53000000 = code.MConst(xword, 0x5300000053000000, 0x5300000053000000);
+        const Xbyak::Address mem_D3000080 = code.MConst(xword, 0xD3000080D3000080, 0xD3000080D3000080);
+
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vpblendw(tmp, xmm, mem_4B000000, 0b10101010);
+            code.vpsrld(xmm, xmm, 16);
+            code.vpblendw(xmm, xmm, mem_53000000, 0b10101010);
+            code.vaddps(xmm, xmm, mem_D3000080);
+            code.vaddps(xmm, tmp, xmm);
+        } else {
+            const Xbyak::Address mem_0xFFFF = code.MConst(xword, 0x0000FFFF0000FFFF, 0x0000FFFF0000FFFF);
+
+            code.movdqa(tmp, mem_0xFFFF);
+
+            code.pand(tmp, xmm);
+            code.por(tmp, mem_4B000000);
+            code.psrld(xmm, 16);
+            code.por(xmm, mem_53000000);
+            code.addps(xmm, mem_D3000080);
+            code.addps(xmm, tmp);
+        }
+    }
+
+    if (fbits != 0) {
+        code.mulps(xmm, GetVectorOf<32>(code, static_cast<u32>(127 - fbits) << 23));
+    }
+
+    if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
+        code.pand(xmm, code.MConst(xword, 0x7FFFFFFF7FFFFFFF, 0x7FFFFFFF7FFFFFFF));
+    }
+
+    ctx.reg_alloc.DefineValue(inst, xmm);
+}
+
+void EmitX64::EmitFPVectorFromUnsignedFixed64(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const int fbits = args[1].GetImmediateU8();
+    const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        code.vcvtuqq2pd(xmm, xmm);
+    } else {
+        const Xbyak::Address unpack = code.MConst(xword, 0x4530000043300000, 0);
+        const Xbyak::Address subtrahend = code.MConst(xword, 0x4330000000000000, 0x4530000000000000);
+
+        const Xbyak::Xmm unpack_reg = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm subtrahend_reg = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
+
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            code.vmovapd(unpack_reg, unpack);
+            code.vmovapd(subtrahend_reg, subtrahend);
+
+            code.vunpcklps(tmp1, xmm, unpack_reg);
+            code.vsubpd(tmp1, tmp1, subtrahend_reg);
+
+            code.vpermilps(xmm, xmm, 0b01001110);
+
+            code.vunpcklps(xmm, xmm, unpack_reg);
+            code.vsubpd(xmm, xmm, subtrahend_reg);
+
+            code.vhaddpd(xmm, tmp1, xmm);
+        } else {
+            const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
+
+            code.movapd(unpack_reg, unpack);
+            code.movapd(subtrahend_reg, subtrahend);
+
+            code.pshufd(tmp1, xmm, 0b01001110);
+
+            code.punpckldq(xmm, unpack_reg);
+            code.subpd(xmm, subtrahend_reg);
+            code.pshufd(tmp2, xmm, 0b01001110);
+            code.addpd(xmm, tmp2);
+
+            code.punpckldq(tmp1, unpack_reg);
+            code.subpd(tmp1, subtrahend_reg);
+
+            code.pshufd(unpack_reg, tmp1, 0b01001110);
+            code.addpd(unpack_reg, tmp1);
+
+            code.unpcklpd(xmm, unpack_reg);
+        }
+    }
+
+    if (fbits != 0) {
+        code.mulpd(xmm, GetVectorOf<64>(code, static_cast<u64>(1023 - fbits) << 52));
+    }
+
+    if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
+        code.pand(xmm, code.MConst(xword, 0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF));
+    }
+
+    ctx.reg_alloc.DefineValue(inst, xmm);
 }
 
 void EmitX64::EmitFPVectorGreater32(EmitContext& ctx, IR::Inst* inst) {
@@ -1042,56 +1226,6 @@ void EmitX64::EmitFPVectorRSqrtStepFused64(EmitContext& ctx, IR::Inst* inst) {
     EmitRSqrtStepFused<64>(code, ctx, inst);
 }
 
-void EmitX64::EmitFPVectorS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
-
-    code.cvtdq2ps(xmm, xmm);
-
-    ctx.reg_alloc.DefineValue(inst, xmm);
-}
-
-void EmitX64::EmitFPVectorS64ToDouble(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
-
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ)) {
-        code.vcvtqq2pd(xmm, xmm);
-    } else if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41)) {
-        const Xbyak::Xmm xmm_tmp = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
-
-        // First quadword
-        code.movq(tmp, xmm);
-        code.cvtsi2sd(xmm, tmp);
-
-        // Second quadword
-        code.pextrq(tmp, xmm, 1);
-        code.cvtsi2sd(xmm_tmp, tmp);
-
-        // Combine
-        code.unpcklpd(xmm, xmm_tmp);
-    } else {
-        const Xbyak::Xmm high_xmm = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Xmm xmm_tmp = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
-
-        // First quadword
-        code.movhlps(high_xmm, xmm);
-        code.movq(tmp, xmm);
-        code.cvtsi2sd(xmm, tmp);
-
-        // Second quadword
-        code.movq(tmp, high_xmm);
-        code.cvtsi2sd(xmm_tmp, tmp);
-
-        // Combine
-        code.unpcklpd(xmm, xmm_tmp);
-    }
-
-    ctx.reg_alloc.DefineValue(inst, xmm);
-}
-
 void EmitX64::EmitFPVectorSub32(EmitContext& ctx, IR::Inst* inst) {
     EmitThreeOpVectorOperation<32, DefaultIndexer>(code, ctx, inst, &Xbyak::CodeGenerator::subps);
 }
@@ -1155,103 +1289,6 @@ void EmitX64::EmitFPVectorToUnsignedFixed32(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPVectorToUnsignedFixed64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPVectorToFixed<64, true>(code, ctx, inst);
-}
-
-void EmitX64::EmitFPVectorU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
-
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
-        code.vcvtudq2ps(xmm, xmm);
-    } else {
-        const Xbyak::Address mem_4B000000 = code.MConst(xword, 0x4B0000004B000000, 0x4B0000004B000000);
-        const Xbyak::Address mem_53000000 = code.MConst(xword, 0x5300000053000000, 0x5300000053000000);
-        const Xbyak::Address mem_D3000080 = code.MConst(xword, 0xD3000080D3000080, 0xD3000080D3000080);
-
-        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
-
-        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-            code.vpblendw(tmp, xmm, mem_4B000000, 0b10101010);
-            code.vpsrld(xmm, xmm, 16);
-            code.vpblendw(xmm, xmm, mem_53000000, 0b10101010);
-            code.vaddps(xmm, xmm, mem_D3000080);
-            code.vaddps(xmm, tmp, xmm);
-        } else {
-            const Xbyak::Address mem_0xFFFF = code.MConst(xword, 0x0000FFFF0000FFFF, 0x0000FFFF0000FFFF);
-
-            code.movdqa(tmp, mem_0xFFFF);
-
-            code.pand(tmp, xmm);
-            code.por(tmp, mem_4B000000);
-            code.psrld(xmm, 16);
-            code.por(xmm, mem_53000000);
-            code.addps(xmm, mem_D3000080);
-            code.addps(xmm, tmp);
-        }
-    }
-
-    if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
-        code.pand(xmm, code.MConst(xword, 0x7FFFFFFF7FFFFFFF, 0x7FFFFFFF7FFFFFFF));
-    }
-
-    ctx.reg_alloc.DefineValue(inst, xmm);
-}
-
-void EmitX64::EmitFPVectorU64ToDouble(EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
-
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
-        code.vcvtuqq2pd(xmm, xmm);
-    } else {
-        const Xbyak::Address unpack = code.MConst(xword, 0x4530000043300000, 0);
-        const Xbyak::Address subtrahend = code.MConst(xword, 0x4330000000000000, 0x4530000000000000);
-
-        const Xbyak::Xmm unpack_reg = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Xmm subtrahend_reg = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Xmm tmp1 = ctx.reg_alloc.ScratchXmm();
-
-        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-            code.vmovapd(unpack_reg, unpack);
-            code.vmovapd(subtrahend_reg, subtrahend);
-
-            code.vunpcklps(tmp1, xmm, unpack_reg);
-            code.vsubpd(tmp1, tmp1, subtrahend_reg);
-
-            code.vpermilps(xmm, xmm, 0b01001110);
-
-            code.vunpcklps(xmm, xmm, unpack_reg);
-            code.vsubpd(xmm, xmm, subtrahend_reg);
-
-            code.vhaddpd(xmm, tmp1, xmm);
-        } else {
-            const Xbyak::Xmm tmp2 = ctx.reg_alloc.ScratchXmm();
-
-            code.movapd(unpack_reg, unpack);
-            code.movapd(subtrahend_reg, subtrahend);
-
-            code.pshufd(tmp1, xmm, 0b01001110);
-
-            code.punpckldq(xmm, unpack_reg);
-            code.subpd(xmm, subtrahend_reg);
-            code.pshufd(tmp2, xmm, 0b01001110);
-            code.addpd(xmm, tmp2);
-
-            code.punpckldq(tmp1, unpack_reg);
-            code.subpd(tmp1, subtrahend_reg);
-
-            code.pshufd(unpack_reg, tmp1, 0b01001110);
-            code.addpd(unpack_reg, tmp1);
-
-            code.unpcklpd(xmm, unpack_reg);
-        }
-    }
-
-    if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
-        code.pand(xmm, code.MConst(xword, 0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF));
-    }
-
-    ctx.reg_alloc.DefineValue(inst, xmm);
 }
 
 } // namespace Dynarmic::BackendX64

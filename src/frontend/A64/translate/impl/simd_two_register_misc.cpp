@@ -94,15 +94,13 @@ bool IntegerConvertToFloat(TranslatorVisitor& v, bool Q, bool sz, Vec Vn, Vec Vd
     }
 
     const size_t datasize = Q ? 128 : 64;
+    const size_t esize = sz ? 64 : 32;
+    const FP::RoundingMode rounding_mode = v.ir.current_location->FPCR().RMode();
 
     const IR::U128 operand = v.V(datasize, Vn);
-    const IR::U128 result = [&] {
-        if (signedness == Signedness::Signed) {
-            return sz ? v.ir.FPVectorS64ToDouble(operand) : v.ir.FPVectorS32ToSingle(operand);
-        }
-
-        return sz ? v.ir.FPVectorU64ToDouble(operand) : v.ir.FPVectorU32ToSingle(operand);
-    }();
+    const IR::U128 result = signedness == Signedness::Signed
+                          ? v.ir.FPVectorFromSignedFixed(esize, operand, 0, rounding_mode) 
+                          : v.ir.FPVectorFromUnsignedFixed(esize, operand, 0, rounding_mode);
 
     v.V(datasize, Vd, result);
     return true;

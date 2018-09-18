@@ -325,6 +325,8 @@ public:
     U128 FPVectorAdd(size_t esize, const U128& a, const U128& b);
     U128 FPVectorDiv(size_t esize, const U128& a, const U128& b);
     U128 FPVectorEqual(size_t esize, const U128& a, const U128& b);
+    U128 FPVectorFromSignedFixed(size_t esize, const U128& a, size_t fbits, FP::RoundingMode rounding);
+    U128 FPVectorFromUnsignedFixed(size_t esize, const U128& a, size_t fbits, FP::RoundingMode rounding);
     U128 FPVectorGreater(size_t esize, const U128& a, const U128& b);
     U128 FPVectorGreaterEqual(size_t esize, const U128& a, const U128& b);
     U128 FPVectorMax(size_t esize, const U128& a, const U128& b);
@@ -339,13 +341,9 @@ public:
     U128 FPVectorRoundInt(size_t esize, const U128& operand, FP::RoundingMode rounding, bool exact);
     U128 FPVectorRSqrtEstimate(size_t esize, const U128& a);
     U128 FPVectorRSqrtStepFused(size_t esize, const U128& a, const U128& b);
-    U128 FPVectorS32ToSingle(const U128& a);
-    U128 FPVectorS64ToDouble(const U128& a);
     U128 FPVectorSub(size_t esize, const U128& a, const U128& b);
     U128 FPVectorToSignedFixed(size_t esize, const U128& a, size_t fbits, FP::RoundingMode rounding);
     U128 FPVectorToUnsignedFixed(size_t esize, const U128& a, size_t fbits, FP::RoundingMode rounding);
-    U128 FPVectorU32ToSingle(const U128& a);
-    U128 FPVectorU64ToDouble(const U128& a);
 
     void Breakpoint();
 
