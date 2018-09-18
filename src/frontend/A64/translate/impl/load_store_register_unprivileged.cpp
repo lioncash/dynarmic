@@ -11,9 +11,9 @@ namespace Dynarmic::A64 {
 static bool StoreRegister(TranslatorVisitor& v, const size_t datasize,
                           const Imm<9> imm9, const Reg Rn, const Reg Rt) {
     const u64 offset = imm9.SignExtend<u64>();
-    AccType acctype = AccType::UNPRIV;
-    IR::U64 address;
+    const AccType acctype = AccType::UNPRIV;
 
+    IR::U64 address;
     if (Rn == Reg::SP) {
         // TODO: Check Stack Alignment
         address = v.SP(64);
@@ -21,7 +21,8 @@ static bool StoreRegister(TranslatorVisitor& v, const size_t datasize,
         address = v.X(64, Rn);
     }
     address = v.ir.Add(address, v.ir.Imm64(offset));
-    IR::UAny data = v.X(datasize, Rt);
+
+    const IR::UAny data = v.X(datasize, Rt);
     v.Mem(address, datasize / 8, acctype, data);
     return true;
 }
@@ -29,9 +30,9 @@ static bool StoreRegister(TranslatorVisitor& v, const size_t datasize,
 static bool LoadRegister(TranslatorVisitor& v, const size_t datasize,
                          const Imm<9> imm9, const Reg Rn, const Reg Rt) {
     const u64 offset = imm9.SignExtend<u64>();
-    AccType acctype = AccType::UNPRIV;
-    IR::U64 address;
+    const AccType acctype = AccType::UNPRIV;
 
+    IR::U64 address;
     if (Rn == Reg::SP) {
         // TODO: Check Stack Alignment
         address = v.SP(64);
@@ -39,7 +40,8 @@ static bool LoadRegister(TranslatorVisitor& v, const size_t datasize,
         address = v.X(64, Rn);
     }
     address = v.ir.Add(address, v.ir.Imm64(offset));
-    IR::UAny data = v.Mem(address, datasize / 8, acctype);
+
+    const IR::UAny data = v.Mem(address, datasize / 8, acctype);
     // max is used to zeroextend < 32 to 32, and > 32 to 64
     const size_t extended_size = std::max<size_t>(32, datasize);
     v.X(extended_size, Rt, v.ZeroExtend(data, extended_size));
@@ -49,7 +51,8 @@ static bool LoadRegister(TranslatorVisitor& v, const size_t datasize,
 static bool LoadRegisterSigned(TranslatorVisitor& v, const size_t datasize,
                                const Imm<2> opc, const Imm<9> imm9, const Reg Rn, const Reg Rt) {
     const u64 offset = imm9.SignExtend<u64>();
-    AccType acctype = AccType::UNPRIV;
+    const AccType acctype = AccType::UNPRIV;
+
     MemOp memop;
     bool is_signed;
     size_t regsize;
@@ -79,7 +82,7 @@ static bool LoadRegisterSigned(TranslatorVisitor& v, const size_t datasize,
         v.Mem(address, datasize / 8, acctype, v.X(datasize, Rt));
         break;
     case MemOp::LOAD: {
-        IR::UAny data = v.Mem(address, datasize / 8, acctype);
+        const IR::UAny data = v.Mem(address, datasize / 8, acctype);
         if (is_signed) {
             v.X(regsize, Rt, v.SignExtend(data, regsize));
         } else {
@@ -132,9 +135,9 @@ bool TranslatorVisitor::LDTRSH(Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt) {
 
 bool TranslatorVisitor::LDTRSW(Imm<9> imm9, Reg Rn, Reg Rt) {
     const u64 offset = imm9.SignExtend<u64>();
-    AccType acctype = AccType::UNPRIV;
-    IR::U64 address;
+    const AccType acctype = AccType::UNPRIV;
 
+    IR::U64 address;
     if (Rn == Reg::SP) {
         // TODO: Check Stack Alignment
         address = SP(64);
@@ -142,7 +145,8 @@ bool TranslatorVisitor::LDTRSW(Imm<9> imm9, Reg Rn, Reg Rt) {
         address = X(64, Rn);
     }
     address = ir.Add(address, ir.Imm64(offset));
-    IR::UAny data = Mem(address, 4, acctype);
+
+    const IR::UAny data = Mem(address, 4, acctype);
     X(64, Rt, SignExtend(data, 64));
     return true;
 }
