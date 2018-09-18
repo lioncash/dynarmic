@@ -9,15 +9,14 @@
 namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::CSEL(bool sf, Reg Rm, Cond cond, Reg Rn, Reg Rd) {
-    size_t datasize = sf ? 64 : 32;
+    const size_t datasize = sf ? 64 : 32;
 
-    IR::U32U64 operand1 = X(datasize, Rn);
-    IR::U32U64 operand2 = X(datasize, Rm);
+    const IR::U32U64 operand1 = X(datasize, Rn);
+    const IR::U32U64 operand2 = X(datasize, Rm);
 
-    IR::U32U64 result = ir.ConditionalSelect(cond, operand1, operand2);
+    const IR::U32U64 result = ir.ConditionalSelect(cond, operand1, operand2);
 
     X(datasize, Rd, result);
-
     return true;
 }
 
