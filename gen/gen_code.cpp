@@ -76,7 +76,7 @@ void putX_X_XM(bool omitOnly)
 			{ 0xC2, "cmpss", T_0F | T_F3, true, true, 2 },
 			{ 0x5A, "cvtsd2ss", T_0F | T_F2 | T_EVEX | T_EW1 | T_N8 | T_ER_X, false, true, 2 },
 			{ 0x5A, "cvtss2sd", T_0F | T_F3 | T_EVEX | T_EW0 | T_N4 | T_SAE_X, false, true, 2 },
-			{ 0x21, "insertps", T_0F3A | T_66 | T_W0 | T_EVEX | T_EW0, true, true, 2 },
+			{ 0x21, "insertps", T_0F3A | T_66 | T_W0 | T_EVEX | T_EW0 | T_N4, true, true, 2 },
 			{ 0x63, "packsswb", T_0F | T_66 | T_YMM | T_EVEX, false, true, 2 },
 			{ 0x6B, "packssdw", T_0F | T_66 | T_YMM | T_EVEX | T_EW0 | T_B32, false, true, 2 },
 			{ 0x67, "packuswb", T_0F | T_66 | T_YMM | T_EVEX, false, true, 2 },
@@ -1491,16 +1491,16 @@ void put()
 			int idx;
 			int type;
 		} tbl[] = {
-			{ "pslldq", 0x73, 7, T_0F | T_66 | T_YMM | T_EVEX  },
-			{ "psrldq", 0x73, 3, T_0F | T_66 | T_YMM | T_EVEX   },
-			{ "psllw", 0x71, 6, T_0F | T_66 | T_YMM | T_EVEX   },
-			{ "pslld", 0x72, 6, T_0F | T_66 | T_YMM | T_EVEX | T_EW0 | T_B32   },
-			{ "psllq", 0x73, 6, T_0F | T_66 | T_YMM | T_EVEX | T_EW1 | T_B64   },
-			{ "psraw", 0x71, 4, T_0F | T_66 | T_YMM | T_EVEX  },
-			{ "psrad", 0x72, 4, T_0F | T_66 | T_YMM | T_EVEX | T_EW0 | T_B32  },
-			{ "psrlw", 0x71, 2, T_0F | T_66 | T_YMM | T_EVEX  },
-			{ "psrld", 0x72, 2, T_0F | T_66 | T_YMM | T_EVEX | T_EW0 | T_B32  },
-			{ "psrlq", 0x73, 2, T_0F | T_66 | T_YMM | T_EVEX | T_EW1 | T_B64  },
+			{ "pslldq", 0x73, 7, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX },
+			{ "psrldq", 0x73, 3, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX },
+			{ "psllw", 0x71, 6, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX },
+			{ "pslld", 0x72, 6, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX | T_EW0 | T_B32 },
+			{ "psllq", 0x73, 6, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX | T_EW1 | T_B64 },
+			{ "psraw", 0x71, 4, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX },
+			{ "psrad", 0x72, 4, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX | T_EW0 | T_B32 },
+			{ "psrlw", 0x71, 2, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX },
+			{ "psrld", 0x72, 2, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX | T_EW0 | T_B32 },
+			{ "psrlq", 0x73, 2, T_0F | T_66 | T_YMM | T_EVEX | T_MEM_EVEX | T_EW1 | T_B64 },
 		};
 		for (size_t i = 0; i < NUM_OF_ARRAY(tbl); i++) {
 			const Tbl& p = tbl[i];
