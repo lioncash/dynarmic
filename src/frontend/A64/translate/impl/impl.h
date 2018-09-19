@@ -600,21 +600,21 @@ struct TranslatorVisitor final {
     bool FCVTZU_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Scalar x indexed element
-    bool SQDMLAL_elt_1(Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
-    bool SQDMLSL_elt_1(Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
-    bool SQDMULL_elt_1(Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
+    bool SQDMLAL_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Reg Rn, Vec Vd);
+    bool SQDMLSL_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Reg Rn, Vec Vd);
+    bool SQDMULL_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Reg Rn, Vec Vd);
     bool SQDMULH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool SQRDMULH_elt_1(Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool SQRDMULH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMLA_elt_1(Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMLA_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMLS_elt_1(Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMLS_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMUL_elt_1(Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMUL_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool SQRDMLAH_elt_1(Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool SQRDMLSH_elt_1(Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMULX_elt_1(bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMULX_elt_2(bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool SQRDMLAH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
+    bool SQRDMLSH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
+    bool FMULX_elt_1(Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
+    bool FMULX_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD Table Lookup
     bool TBL(bool Q, Vec Vm, Imm<2> len, size_t Vn, Vec Vd);
@@ -891,36 +891,36 @@ struct TranslatorVisitor final {
 
     // Data Processing - FP and SIMD - SIMD vector x indexed element
     bool SMLAL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool SQDMLAL_elt_2(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
+    bool SQDMLAL_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Reg Rn, Vec Vd);
     bool SMLSL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool SQDMLSL_elt_2(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
+    bool SQDMLSL_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Reg Rn, Vec Vd);
     bool MUL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool SMULL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vm, Imm<1> H, Vec Vn, Vec Vd);
-    bool SQDMULL_elt_2(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Reg Rn, Vec Vd);
+    bool SQDMULL_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Reg Rn, Vec Vd);
     bool SQDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool SQRDMULH_elt_2(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool SQRDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool SDOT_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool FMLA_elt_3(bool Q, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool FMLA_elt_3(bool Q, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMLA_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool FMLS_elt_3(bool Q, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool FMLS_elt_3(bool Q, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMLS_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool FMUL_elt_3(bool Q, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool FMUL_elt_3(bool Q, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool FMUL_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool FMLAL_elt_1(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMLAL_elt_2(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMLSL_elt_1(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMLSL_elt_2(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool FMLAL_elt_1(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
+    bool FMLAL_elt_2(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
+    bool FMLSL_elt_1(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
+    bool FMLSL_elt_2(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool MLA_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool UMLAL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool MLS_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool UMLSL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool UMULL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool SQRDMLAH_elt_2(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
+    bool SQRDMLAH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
     bool UDOT_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
-    bool SQRDMLSH_elt_2(bool Q, Imm<2> size, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMULX_elt_3(bool Q, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FMULX_elt_4(bool Q, bool sz, bool L, bool M, Vec Vm, bool H, Vec Vn, Vec Vd);
-    bool FCMLA_elt(bool Q, Imm<2> size, bool L, bool M, Vec Vm, Imm<2> rot, bool H, Vec Vn, Vec Vd);
+    bool SQRDMLSH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
+    bool FMULX_elt_3(bool Q, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
+    bool FMULX_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd);
+    bool FCMLA_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<2> rot, Imm<1> H, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - Cryptographic three register
     bool SM3TT1A(Vec Vm, Imm<2> imm2, Vec Vn, Vec Vd);
