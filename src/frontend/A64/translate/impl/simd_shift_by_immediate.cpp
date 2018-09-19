@@ -5,6 +5,7 @@
  */
 
 #include "common/bit_util.h"
+#include "common/fp/rounding_mode.h"
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
@@ -28,6 +29,11 @@ enum class Narrowing {
     Truncation,
     SaturateToUnsigned,
     SaturateToSigned,
+};
+
+enum class FloatConversionDirection {
+    FixedToFloat,
+    FloatToFixed,
 };
 
 IR::U128 PerformRoundingCorrection(TranslatorVisitor& v, size_t esize, u64 round_value, IR::U128 original, IR::U128 shifted) {
@@ -176,6 +182,45 @@ bool SaturatingShiftLeft(TranslatorVisitor& v, bool Q, Imm<4> immh, Imm<3> immb,
     v.V(datasize, Vd, result);
     return true;
 }
+
+bool ConvertFloat(TranslatorVisitor& v, bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd, Signedness signedness, FloatConversionDirection direction, FP::RoundingMode rounding_mode) {
+    if (immh == 0b0000) {
+        return v.DecodeError();
+    }
+
+    if (immh == 0b0001 || immh == 0b0010 || immh == 0b0011) {
+        return v.ReservedValue();
+    }
+
+    if (immh.Bit<3>() && !Q) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8 << Common::HighestSetBit(immh.ZeroExtend());
+    const size_t datasize = Q ? 128 : 64;
+
+    const u8 fbits = static_cast<u8>(esize * 2) - concatenate(immh, immb).ZeroExtend<u8>();
+
+    const IR::U128 operand = v.V(datasize, Vn);
+    const IR::U128 result = [&] {
+        switch (direction) {
+        case FloatConversionDirection::FixedToFloat:
+            return signedness == Signedness::Signed
+                 ? v.ir.FPVectorFromSignedFixed(esize, operand, fbits, rounding_mode)
+                 : v.ir.FPVectorFromUnsignedFixed(esize, operand, fbits, rounding_mode);
+        case FloatConversionDirection::FloatToFixed:
+            return signedness == Signedness::Signed
+                 ? v.ir.FPVectorToSignedFixed(esize, operand, fbits, rounding_mode)
+                 : v.ir.FPVectorToUnsignedFixed(esize, operand, fbits, rounding_mode);
+        }
+        UNREACHABLE();
+        return IR::U128{};
+    }();
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 } // Anonymous namespace
 
 bool TranslatorVisitor::SSHR_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
@@ -327,6 +372,22 @@ bool TranslatorVisitor::SLI_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) 
 
     V(datasize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::SCVTF_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ConvertFloat(*this, Q, immh, immb, Vn, Vd, Signedness::Signed, FloatConversionDirection::FixedToFloat, ir.current_location->FPCR().RMode());
+}
+
+bool TranslatorVisitor::UCVTF_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ConvertFloat(*this, Q, immh, immb, Vn, Vd, Signedness::Unsigned, FloatConversionDirection::FixedToFloat, ir.current_location->FPCR().RMode());
+}
+
+bool TranslatorVisitor::FCVTZS_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ConvertFloat(*this, Q, immh, immb, Vn, Vd, Signedness::Signed, FloatConversionDirection::FloatToFixed, FP::RoundingMode::TowardsZero);
+}
+
+bool TranslatorVisitor::FCVTZU_fix_2(bool Q, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ConvertFloat(*this, Q, immh, immb, Vn, Vd, Signedness::Unsigned, FloatConversionDirection::FloatToFixed, FP::RoundingMode::TowardsZero);
 }
 
 } // namespace Dynarmic::A64

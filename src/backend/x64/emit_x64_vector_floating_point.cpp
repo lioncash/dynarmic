@@ -1241,7 +1241,7 @@ void EmitFPVectorToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     const size_t fbits = inst->GetArg(1).GetU8();
     const auto rounding = static_cast<FP::RoundingMode>(inst->GetArg(2).GetU8());
 
-    using fbits_list = mp::vllift<std::make_index_sequence<fsize>>;
+    using fbits_list = mp::vllift<std::make_index_sequence<fsize + 1>>;
     using rounding_list = mp::list<
         std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieEven>,
         std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsPlusInfinity>,
