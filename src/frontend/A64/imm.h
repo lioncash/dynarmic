@@ -51,12 +51,28 @@ public:
         return static_cast<T>(Common::Bits<begin_bit, end_bit>(value));
     }
 
-    bool operator==(const Imm<bit_size>& other) const {
+    bool operator==(Imm other) const {
         return value == other.value;
     }
 
-    bool operator!=(const Imm<bit_size>& other) const {
-        return value != other.value;
+    bool operator!=(Imm other) const {
+        return !operator==(other);
+    }
+
+    bool operator<(Imm other) const {
+        return value < other.value;
+    }
+
+    bool operator<=(Imm other) const {
+        return value <= other.value;
+    }
+
+    bool operator>(Imm other) const {
+        return value > other.value;
+    }
+
+    bool operator>=(Imm other) const {
+        return value >= other.value;
     }
 
 private:
@@ -67,23 +83,63 @@ private:
 };
 
 template <size_t bit_size>
-bool operator==(u32 a, const Imm<bit_size>& b) {
+bool operator==(u32 a, Imm<bit_size> b) {
     return Imm<bit_size>{a} == b;
 }
 
 template <size_t bit_size>
-bool operator==(const Imm<bit_size>& a, u32 b) {
+bool operator==(Imm<bit_size> a, u32 b) {
     return Imm<bit_size>{b} == a;
 }
 
 template <size_t bit_size>
-bool operator!=(u32 a, const Imm<bit_size>& b) {
-    return Imm<bit_size>{a} != b;
+bool operator!=(u32 a, Imm<bit_size> b) {
+    return !operator==(a, b);
 }
 
 template <size_t bit_size>
-bool operator!=(const Imm<bit_size>& a, u32 b) {
-    return Imm<bit_size>{b} != a;
+bool operator!=(Imm<bit_size> a, u32 b) {
+    return !operator==(a, b);
+}
+
+template <size_t bit_size>
+bool operator<(u32 a, Imm<bit_size> b) {
+    return Imm<bit_size>{a} < b;
+}
+
+template <size_t bit_size>
+bool operator<(Imm<bit_size> a, u32 b) {
+    return a < Imm<bit_size>{b};
+}
+
+template <size_t bit_size>
+bool operator<=(u32 a, Imm<bit_size> b) {
+    return !operator<(b, a);
+}
+
+template <size_t bit_size>
+bool operator<=(Imm<bit_size> a, u32 b) {
+    return !operator<(b, a);
+}
+
+template <size_t bit_size>
+bool operator>(u32 a, Imm<bit_size> b) {
+    return operator<(b, a);
+}
+
+template <size_t bit_size>
+bool operator>(Imm<bit_size> a, u32 b) {
+    return operator<(b, a);
+}
+
+template <size_t bit_size>
+bool operator>=(u32 a, Imm<bit_size> b) {
+    return !operator<(a, b);
+}
+
+template <size_t bit_size>
+bool operator>=(Imm<bit_size> a, u32 b) {
+    return !operator<(a, b);
 }
 
 /**
