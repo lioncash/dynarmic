@@ -8,6 +8,12 @@
 
 namespace Dynarmic::A64 {
 
+bool TranslatorVisitor::BRK([[maybe_unused]] Imm<16> imm16) {
+    ir.ExceptionRaised(Exception::Breakpoint);
+    ir.SetTerm(IR::Term::CheckHalt{IR::Term::ReturnToDispatch{}});
+    return false;
+}
+
 bool TranslatorVisitor::SVC(Imm<16> imm16) {
     ir.PushRSB(ir.current_location->AdvancePC(4));
     ir.SetPC(ir.Imm64(ir.current_location->PC() + 4));

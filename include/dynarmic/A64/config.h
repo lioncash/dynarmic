@@ -38,6 +38,8 @@ enum class Exception {
     SendEventLocal,
     /// A YIELD instruction was executed.
     Yield,
+    /// A BRK instruction was executed.
+    Breakpoint,
 };
 
 enum class DataCacheOperation {

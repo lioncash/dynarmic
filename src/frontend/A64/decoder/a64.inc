@@ -34,7 +34,7 @@ INST(B_cond,                 "B.cond",                                    "01010
 INST(SVC,                    "SVC",                                       "11010100000iiiiiiiiiiiiiiii00001")
 //INST(HVC,                    "HVC",                                       "11010100000iiiiiiiiiiiiiiii00010")
 //INST(SMC,                    "SMC",                                       "11010100000iiiiiiiiiiiiiiii00011")
-//INST(BRK,                    "BRK",                                       "11010100001iiiiiiiiiiiiiiii00000")
+INST(BRK,                    "BRK",                                       "11010100001iiiiiiiiiiiiiiii00000")
 //INST(HLT,                    "HLT",                                       "11010100010iiiiiiiiiiiiiiii00000")
 //INST(DCPS1,                  "DCPS1",                                     "11010100101iiiiiiiiiiiiiiii00001")
 //INST(DCPS2,                  "DCPS2",                                     "11010100101iiiiiiiiiiiiiiii00010")
