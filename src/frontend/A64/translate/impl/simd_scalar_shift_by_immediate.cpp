@@ -4,6 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
+#include "common/fp/rounding_mode.h"
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
@@ -16,6 +17,11 @@ enum class ShiftExtraBehavior {
 enum class Signedness {
     Signed,
     Unsigned,
+};
+
+enum class FloatConversionDirection {
+    FixedToFloat,
+    FloatToFixed,
 };
 
 bool ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
@@ -121,7 +127,7 @@ bool ShiftAndInsert(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec 
     return true;
 }
 
-bool ScalarFPConvertWithRound(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd, Signedness sign) {
+bool ScalarFPConvertWithRound(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd, Signedness sign, FloatConversionDirection direction, FP::RoundingMode rounding_mode) {
     const u32 immh_value = immh.ZeroExtend();
 
     if ((immh_value & 0b1110) == 0b0000) {
@@ -139,15 +145,32 @@ bool ScalarFPConvertWithRound(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Ve
 
     const IR::U32U64 operand = v.V_scalar(esize, Vn);
     const IR::U32U64 result = [&]() -> IR::U32U64 {
-        if (esize == 64) {
+        switch (direction) {
+        case FloatConversionDirection::FloatToFixed:
+            if (esize == 64) {
+                return sign == Signedness::Signed
+                       ? v.ir.FPToFixedS64(operand, fbits, rounding_mode)
+                       : v.ir.FPToFixedU64(operand, fbits, rounding_mode);
+            }
+
             return sign == Signedness::Signed
-                   ? v.ir.FPToFixedS64(operand, fbits, FP::RoundingMode::TowardsZero)
-                   : v.ir.FPToFixedU64(operand, fbits, FP::RoundingMode::TowardsZero);
+                   ? v.ir.FPToFixedS32(operand, fbits, rounding_mode)
+                   : v.ir.FPToFixedU32(operand, fbits, rounding_mode);
+
+        case FloatConversionDirection::FixedToFloat:
+            if (esize == 64) {
+                return sign == Signedness::Signed
+                       ? v.ir.FPSignedFixedToDouble(operand, fbits, rounding_mode)
+                       : v.ir.FPUnsignedFixedToDouble(operand, fbits, rounding_mode);
+            }
+
+            return sign == Signedness::Signed
+                   ? v.ir.FPSignedFixedToSingle(operand, fbits, rounding_mode)
+                   : v.ir.FPUnsignedFixedToSingle(operand, fbits, rounding_mode);
         }
 
-        return sign == Signedness::Signed
-               ? v.ir.FPToFixedS32(operand, fbits, FP::RoundingMode::TowardsZero)
-               : v.ir.FPToFixedU32(operand, fbits, FP::RoundingMode::TowardsZero);
+        UNREACHABLE();
+        return {};
     }();
 
     v.V_scalar(esize, Vd, result);
@@ -156,11 +179,19 @@ bool ScalarFPConvertWithRound(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Ve
 } // Anonymous namespace
 
 bool TranslatorVisitor::FCVTZS_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    return ScalarFPConvertWithRound(*this, immh, immb, Vn, Vd, Signedness::Signed);
+    return ScalarFPConvertWithRound(*this, immh, immb, Vn, Vd, Signedness::Signed, FloatConversionDirection::FloatToFixed, FP::RoundingMode::TowardsZero);
 }
 
 bool TranslatorVisitor::FCVTZU_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    return ScalarFPConvertWithRound(*this, immh, immb, Vn, Vd, Signedness::Unsigned);
+    return ScalarFPConvertWithRound(*this, immh, immb, Vn, Vd, Signedness::Unsigned, FloatConversionDirection::FloatToFixed, FP::RoundingMode::TowardsZero);
+}
+
+bool TranslatorVisitor::SCVTF_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, immh, immb, Vn, Vd, Signedness::Signed, FloatConversionDirection::FixedToFloat, ir.current_location->FPCR().RMode());
+}
+
+bool TranslatorVisitor::UCVTF_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ScalarFPConvertWithRound(*this, immh, immb, Vn, Vd, Signedness::Unsigned, FloatConversionDirection::FixedToFloat, ir.current_location->FPCR().RMode());
 }
 
 bool TranslatorVisitor::SLI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
