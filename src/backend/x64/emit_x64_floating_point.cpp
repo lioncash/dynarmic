@@ -1039,7 +1039,8 @@ void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, size_t fsize, bool unsigned_, size_t isize) {
+template<size_t fsize, bool unsigned_, size_t isize>
+static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const size_t fbits = args[1].GetImmediateU8();
@@ -1065,7 +1066,7 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, s
         const Xbyak::Xmm scratch = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr().cvt64();
 
-        if (fsize == 64) {
+        if constexpr (fsize == 64) {
             if (fbits != 0) {
                 const u64 scale_factor = static_cast<u64>((fbits + 1023) << 52);
                 code.mulsd(src, code.MConst(xword, scale_factor));
@@ -1084,7 +1085,7 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, s
 
         ZeroIfNaN<64>(code, src, scratch);
 
-        if (isize == 64) {
+        if constexpr (isize == 64) {
             Xbyak::Label saturate_max, end;
 
             if (unsigned_) {
@@ -1128,9 +1129,7 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, s
         return;
     }
 
-    using fsize_list = mp::list<mp::vlift<size_t(32)>, mp::vlift<size_t(64)>>;
-    using unsigned_list = mp::list<mp::vlift<true>, mp::vlift<false>>;
-    using isize_list = mp::list<mp::vlift<size_t(32)>, mp::vlift<size_t(64)>>;
+    using fbits_list = mp::vllift<std::make_index_sequence<isize + 1>>;
     using rounding_list = mp::list<
         std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieEven>,
         std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsPlusInfinity>,
@@ -1139,66 +1138,64 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, s
         std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieAwayFromZero>
     >;
 
-    using key_type = std::tuple<size_t, bool, size_t, FP::RoundingMode>;
-    using value_type = u64(*)(u64, u8, FP::FPSR&, FP::FPCR);
+    using key_type = std::tuple<size_t, FP::RoundingMode>;
+    using value_type = u64(*)(u64, FP::FPSR&, FP::FPCR);
 
     static const auto lut = mp::GenerateLookupTableFromList<key_type, value_type>(
         [](auto args) {
             return std::pair<key_type, value_type>{
                 mp::to_tuple<decltype(args)>,
                 static_cast<value_type>(
-                    [](u64 input, u8 fbits, FP::FPSR& fpsr, FP::FPCR fpcr) {
+                    [](u64 input, FP::FPSR& fpsr, FP::FPCR fpcr) {
                         constexpr auto t = mp::to_tuple<decltype(args)>;
-                        constexpr size_t fsize = std::get<0>(t);
-                        constexpr bool unsigned_ = std::get<1>(t);
-                        constexpr size_t isize = std::get<2>(t);
-                        constexpr FP::RoundingMode rounding_mode = std::get<3>(t);
-                        using InputSize = mp::unsigned_integer_of_size<fsize>;
+                        constexpr size_t fbits = std::get<0>(t);
+                        constexpr FP::RoundingMode rounding_mode = std::get<1>(t);
+                        using FPT = mp::unsigned_integer_of_size<fsize>;
 
-                        return FP::FPToFixed<InputSize>(isize, static_cast<InputSize>(input), fbits, unsigned_, fpcr, rounding_mode, fpsr);
+                        return FP::FPToFixed<FPT>(isize, static_cast<FPT>(input), fbits, unsigned_, fpcr, rounding_mode, fpsr);
                     }
                 )
             };
         },
-        mp::cartesian_product<fsize_list, unsigned_list, isize_list, rounding_list>{}
+        mp::cartesian_product<fbits_list, rounding_list>{}
     );
 
-    ctx.reg_alloc.HostCall(inst, args[0], args[1]);
-    code.lea(code.ABI_PARAM3, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
-    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
-    code.CallFunction(lut.at(std::make_tuple(fsize, unsigned_, isize, rounding)));
+    ctx.reg_alloc.HostCall(inst, args[0]);
+    code.lea(code.ABI_PARAM2, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+    code.CallFunction(lut.at(std::make_tuple(fbits, rounding)));
 }
 
 void EmitX64::EmitFPDoubleToFixedS32(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPToFixed(code, ctx, inst, 64, false, 32);
+    EmitFPToFixed<64, false, 32>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPDoubleToFixedS64(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPToFixed(code, ctx, inst, 64, false, 64);
+    EmitFPToFixed<64, false, 64>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPDoubleToFixedU32(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPToFixed(code, ctx, inst, 64, true, 32);
+    EmitFPToFixed<64, true, 32>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPDoubleToFixedU64(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPToFixed(code, ctx, inst, 64, true, 64);
+    EmitFPToFixed<64, true, 64>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPSingleToFixedS32(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPToFixed(code, ctx, inst, 32, false, 32);
+    EmitFPToFixed<32, false, 32>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPSingleToFixedS64(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPToFixed(code, ctx, inst, 32, false, 64);
+    EmitFPToFixed<32, false, 64>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPSingleToFixedU32(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPToFixed(code, ctx, inst, 32, true, 32);
+    EmitFPToFixed<32, true, 32>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPSingleToFixedU64(EmitContext& ctx, IR::Inst* inst) {
-    EmitFPToFixed(code, ctx, inst, 32, true, 64);
+    EmitFPToFixed<32, true, 64>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPFixedS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
