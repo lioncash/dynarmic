@@ -707,9 +707,9 @@ void A64EmitX64::EmitA64SetExclusive(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 static Xbyak::RegExp EmitVAddrLookup(BlockOfCode& code, A64EmitContext& ctx, Xbyak::Label& abort, Xbyak::Reg64 vaddr, boost::optional<Xbyak::Reg64> arg_scratch = {}) {
-    constexpr size_t PAGE_BITS = 12;
-    constexpr size_t PAGE_SIZE = 1 << PAGE_BITS;
-    const size_t valid_page_index_bits = ctx.conf.page_table_address_space_bits - PAGE_BITS;
+    constexpr size_t page_bits = 12;
+    constexpr size_t page_size = 1 << page_bits;
+    const size_t valid_page_index_bits = ctx.conf.page_table_address_space_bits - page_bits;
     const size_t unused_top_bits = 64 - ctx.conf.page_table_address_space_bits;
 
     Xbyak::Reg64 page_table = arg_scratch.value_or_eval([&]{ return ctx.reg_alloc.ScratchGpr(); });
@@ -717,18 +717,18 @@ static Xbyak::RegExp EmitVAddrLookup(BlockOfCode& code, A64EmitContext& ctx, Xby
     code.mov(page_table, reinterpret_cast<u64>(ctx.conf.page_table));
     code.mov(tmp, vaddr);
     if (unused_top_bits == 0) {
-        code.shr(tmp, int(PAGE_BITS));
+        code.shr(tmp, int(page_bits));
     } else if (ctx.conf.silently_mirror_page_table) {
         if (valid_page_index_bits >= 32) {
             code.shl(tmp, int(unused_top_bits));
-            code.shr(tmp, int(unused_top_bits + PAGE_BITS));
+            code.shr(tmp, int(unused_top_bits + page_bits));
         } else {
-            code.shr(tmp, int(PAGE_BITS));
+            code.shr(tmp, int(page_bits));
             code.and_(tmp, u32((1 << valid_page_index_bits) - 1));
         }
     } else {
         ASSERT(valid_page_index_bits < 32);
-        code.shr(tmp, int(PAGE_BITS));
+        code.shr(tmp, int(page_bits));
         code.test(tmp, u32(-(1 << valid_page_index_bits)));
         code.jnz(abort, code.T_NEAR);
     }
@@ -736,7 +736,7 @@ static Xbyak::RegExp EmitVAddrLookup(BlockOfCode& code, A64EmitContext& ctx, Xby
     code.test(page_table, page_table);
     code.jz(abort, code.T_NEAR);
     code.mov(tmp, vaddr);
-    code.and_(tmp, static_cast<u32>(PAGE_SIZE - 1));
+    code.and_(tmp, static_cast<u32>(page_size - 1));
     return page_table + tmp;
 }
 
