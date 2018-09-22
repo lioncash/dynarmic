@@ -636,6 +636,74 @@ void EmitX64::EmitVectorCountLeadingZeros8(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorCountLeadingZeros16(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm data = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code.vpsrlw(tmp, data, 1);
+        code.vpor(data, data, tmp);
+        code.vpsrlw(tmp, data, 2);
+        code.vpor(data, data, tmp);
+        code.vpsrlw(tmp, data, 4);
+        code.vpor(data, data, tmp);
+        code.vpsrlw(tmp, data, 8);
+        code.vpor(data, data, tmp);
+        code.vpcmpeqw(zeros, zeros, zeros);
+        code.vpcmpeqw(tmp, tmp, tmp);
+        code.vpcmpeqw(zeros, zeros, data);
+        code.vpmullw(data, data, code.MConst(xword, 0xf0d3f0d3f0d3f0d3, 0xf0d3f0d3f0d3f0d3));
+        code.vpsllw(tmp, tmp, 15);
+        code.vpsllw(zeros, zeros, 7);
+        code.vpsrlw(data, data, 12);
+        code.vmovdqa(result, code.MConst(xword, 0x0903060a040b0c10, 0x0f080e0207050d01));
+        code.vpor(tmp, tmp, zeros);
+        code.vpor(data, data, tmp);
+        code.vpshufb(result, result, data);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSSE3)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm data = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm zeros = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code.movdqa(tmp, data);
+        code.psrlw(tmp, 1);
+        code.por(data, tmp);
+        code.movdqa(tmp, data);
+        code.psrlw(tmp, 2);
+        code.por(data, tmp);
+        code.movdqa(tmp, data);
+        code.psrlw(tmp, 4);
+        code.por(data, tmp);
+        code.movdqa(tmp, data);
+        code.psrlw(tmp, 8);
+        code.por(data, tmp);
+        code.pcmpeqw(zeros, zeros);
+        code.pcmpeqw(tmp, tmp);
+        code.pcmpeqw(zeros, data);
+        code.pmullw(data, code.MConst(xword, 0xf0d3f0d3f0d3f0d3, 0xf0d3f0d3f0d3f0d3));
+        code.psllw(tmp, 15);
+        code.psllw(zeros, 7);
+        code.psrlw(data, 12);
+        code.movdqa(result, code.MConst(xword, 0x0903060a040b0c10, 0x0f080e0207050d01));
+        code.por(tmp, zeros);
+        code.por(data, tmp);
+        code.pshufb(result, data);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
     EmitOneArgumentFallback(code, ctx, inst, EmitVectorCountLeadingZeros<u16>);
 }
 
