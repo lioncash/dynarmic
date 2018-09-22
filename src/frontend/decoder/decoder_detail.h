@@ -36,16 +36,17 @@ private:
      * A '1' in a bitstring indicates that a one must be present at that bit position.
      */
     static auto GetMaskAndExpect(const char* const bitstring) {
+        const auto one = static_cast<opcode_type>(1);
         opcode_type mask = 0, expect = 0;
         for (size_t i = 0; i < opcode_bitsize; i++) {
             const size_t bit_position = opcode_bitsize - i - 1;
             switch (bitstring[i]) {
             case '0':
-                mask |= 1 << bit_position;
+                mask |= one << bit_position;
                 break;
             case '1':
-                expect |= 1 << bit_position;
-                mask |= 1 << bit_position;
+                expect |= one << bit_position;
+                mask |= one << bit_position;
                 break;
             default:
                 // Ignore
@@ -62,6 +63,7 @@ private:
      */
     template<size_t N>
     static auto GetArgInfo(const char* const bitstring) {
+        const auto one = static_cast<opcode_type>(1);
         std::array<opcode_type, N> masks = {};
         std::array<size_t, N> shifts = {};
         size_t arg_index = 0;
@@ -84,7 +86,7 @@ private:
                 }
 
                 ASSERT(arg_index < N);
-                masks[arg_index] |= 1 << bit_position;
+                masks[arg_index] |= one << bit_position;
                 shifts[arg_index] = bit_position;
             }
         }
