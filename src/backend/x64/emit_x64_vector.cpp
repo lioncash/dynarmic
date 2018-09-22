@@ -632,6 +632,44 @@ static void EmitVectorCountLeadingZeros(VectorArray<T>& result, const VectorArra
 }
 
 void EmitX64::EmitVectorCountLeadingZeros8(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm data_hi = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm data_lo = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp_hi = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp_lo = ctx.reg_alloc.ScratchXmm();
+
+        code.vpsllw(data_lo, data_hi, 8);
+        code.vpsrlw(tmp_hi, data_hi, 1);
+        code.vpsrlw(tmp_lo, data_lo, 1);
+        code.vpor(data_hi, data_hi, tmp_hi);
+        code.vpor(data_lo, data_lo, tmp_lo);
+        code.vpsrlw(tmp_hi, data_hi, 2);
+        code.vpsrlw(tmp_lo, data_lo, 2);
+        code.vpor(data_hi, data_hi, tmp_hi);
+        code.vpor(data_lo, data_lo, tmp_lo);
+        code.vpsrlw(tmp_hi, data_hi, 4);
+        code.vpsrlw(tmp_lo, data_lo, 4);
+        code.vpor(data_hi, data_hi, tmp_hi);
+        code.vpor(data_lo, data_lo, tmp_lo);
+        code.vpsrlw(data_hi, data_hi, 8);
+        code.vpsrlw(data_lo, data_lo, 8);
+        code.vmovdqa(result, code.MConst(xword, 0xe700e700e700e700, 0xe700e700e700e700));
+        code.vpmullw(data_hi, data_hi, result);
+        code.vpmullw(data_lo, data_lo, result);
+        code.vpsrlw(data_hi, data_hi, 12);
+        code.vpsrlw(data_lo, data_lo, 12);
+        code.vpsllw(data_hi, data_hi, 8);
+        code.vpor(data_hi, data_hi, data_lo);
+        code.vmovdqa(result, code.MConst(xword, 0xaaaa05aaaaaa0008, 0x030702aa06aa0104));
+        code.vpshufb(result, result, data_hi);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
     EmitOneArgumentFallback(code, ctx, inst, EmitVectorCountLeadingZeros<u8>);
 }
 
