@@ -1094,11 +1094,7 @@ void EmitFPVectorRoundInt(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
         }();
 
         EmitTwoOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, const Xbyak::Xmm& xmm_a){
-            if constexpr (fsize == 32) {
-                code.roundps(result, xmm_a, round_imm);
-            } else {
-                code.roundpd(result, xmm_a, round_imm);
-            }
+            FCODE(roundp)(result, xmm_a, round_imm);
         });
 
         return;
