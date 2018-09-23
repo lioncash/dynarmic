@@ -1377,6 +1377,31 @@ void EmitX64::EmitVectorLogicalVShiftS16(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitX64::EmitVectorLogicalVShiftS32(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm left_shift = ctx.reg_alloc.UseScratchXmm(args[1]);
+        const Xbyak::Xmm right_shift = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code.vmovdqa(tmp, code.MConst(xword, 0x000000FF000000FF, 0x000000FF000000FF));
+        code.vpxor(right_shift, right_shift, right_shift);
+        code.vpsubd(right_shift, right_shift, left_shift);
+
+        code.vpslld(xmm0, left_shift, 24);
+
+        code.vpand(right_shift, right_shift, tmp);
+        code.vpand(left_shift, left_shift, tmp);
+
+        code.vpsravd(tmp, result, right_shift);
+        code.vpsllvd(result, result, left_shift);
+        code.blendvps(result, tmp);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
     EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s32>& a, const VectorArray<s32>& b) {
         std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s32>);
     });
