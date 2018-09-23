@@ -212,6 +212,7 @@ public:
     U128 VectorAdd(size_t esize, const U128& a, const U128& b);
     U128 VectorAnd(const U128& a, const U128& b);
     U128 VectorArithmeticShiftRight(size_t esize, const U128& a, u8 shift_amount);
+    U128 VectorArithmeticVShift(size_t esize, const U128& a, const U128& b);
     U128 VectorBroadcast(size_t esize, const UAny& a);
     U128 VectorBroadcastLower(size_t esize, const UAny& a);
     U128 VectorCountLeadingZeros(size_t esize, const U128& a);
@@ -237,8 +238,7 @@ public:
     U128 VectorLessUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorLogicalShiftLeft(size_t esize, const U128& a, u8 shift_amount);
     U128 VectorLogicalShiftRight(size_t esize, const U128& a, u8 shift_amount);
-    U128 VectorLogicalVShiftSigned(size_t esize, const U128& a, const U128& b);
-    U128 VectorLogicalVShiftUnsigned(size_t esize, const U128& a, const U128& b);
+    U128 VectorLogicalVShift(size_t esize, const U128& a, const U128& b);
     U128 VectorMaxSigned(size_t esize, const U128& a, const U128& b);
     U128 VectorMaxUnsigned(size_t esize, const U128& a, const U128& b);
     U128 VectorMinSigned(size_t esize, const U128& a, const U128& b);

@@ -510,6 +510,134 @@ void EmitX64::EmitVectorArithmeticShiftRight64(EmitContext& ctx, IR::Inst* inst)
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+template <typename T>
+static constexpr T VShift(T x, T y) {
+    const s8 shift_amount = static_cast<s8>(static_cast<u8>(y));
+    const s64 bit_size = static_cast<s64>(Common::BitSize<T>());
+
+    if constexpr (std::is_signed_v<T>) {
+        if (shift_amount >= bit_size) {
+            return 0;
+        }
+
+        if (shift_amount <= -bit_size) {
+            // Parentheses necessary, as MSVC doesn't appear to consider cast parentheses
+            // as a grouping in terms of precedence, causing warning C4554 to fire. See:
+            // https://developercommunity.visualstudio.com/content/problem/144783/msvc-2017-does-not-understand-that-static-cast-cou.html
+            return x >> (T(bit_size - 1));
+        }
+    } else if (shift_amount <= -bit_size || shift_amount >= bit_size) {
+        return 0;
+    }
+
+    if (shift_amount < 0) {
+        return x >> T(-shift_amount);
+    }
+
+    using unsigned_type = std::make_unsigned_t<T>;
+    return static_cast<T>(static_cast<unsigned_type>(x) << static_cast<unsigned_type>(shift_amount));
+}
+
+void EmitX64::EmitVectorArithmeticVShift8(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s8>& result, const VectorArray<s8>& a, const VectorArray<s8>& b) {
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), VShift<s8>);
+    });
+}
+
+void EmitX64::EmitVectorArithmeticVShift16(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512BW)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm left_shift = ctx.reg_alloc.UseScratchXmm(args[1]);
+        const Xbyak::Xmm right_shift = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code.vmovdqa(tmp, code.MConst(xword, 0x00FF00FF00FF00FF, 0x00FF00FF00FF00FF));
+        code.vpxor(right_shift, right_shift, right_shift);
+        code.vpsubw(right_shift, right_shift, left_shift);
+
+        code.vpsllw(xmm0, left_shift, 8);
+        code.vpsraw(xmm0, xmm0, 15);
+
+        code.vpand(right_shift, right_shift, tmp);
+        code.vpand(left_shift, left_shift, tmp);
+
+        code.vpsravw(tmp, result, right_shift);
+        code.vpsllvw(result, result, left_shift);
+        code.pblendvb(result, tmp);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s16>& result, const VectorArray<s16>& a, const VectorArray<s16>& b) {
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), VShift<s16>);
+    });
+}
+
+void EmitX64::EmitVectorArithmeticVShift32(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm left_shift = ctx.reg_alloc.UseScratchXmm(args[1]);
+        const Xbyak::Xmm right_shift = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code.vmovdqa(tmp, code.MConst(xword, 0x000000FF000000FF, 0x000000FF000000FF));
+        code.vpxor(right_shift, right_shift, right_shift);
+        code.vpsubd(right_shift, right_shift, left_shift);
+
+        code.vpslld(xmm0, left_shift, 24);
+
+        code.vpand(right_shift, right_shift, tmp);
+        code.vpand(left_shift, left_shift, tmp);
+
+        code.vpsravd(tmp, result, right_shift);
+        code.vpsllvd(result, result, left_shift);
+        code.blendvps(result, tmp);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s32>& a, const VectorArray<s32>& b) {
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), VShift<s32>);
+    });
+}
+
+void EmitX64::EmitVectorArithmeticVShift64(EmitContext& ctx, IR::Inst* inst) {
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
+        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm left_shift = ctx.reg_alloc.UseScratchXmm(args[1]);
+        const Xbyak::Xmm right_shift = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+
+        code.vmovdqa(tmp, code.MConst(xword, 0x00000000000000FF, 0x00000000000000FF));
+        code.vpxor(right_shift, right_shift, right_shift);
+        code.vpsubq(right_shift, right_shift, left_shift);
+
+        code.vpsllq(xmm0, left_shift, 56);
+
+        code.vpand(right_shift, right_shift, tmp);
+        code.vpand(left_shift, left_shift, tmp);
+
+        code.vpsravq(tmp, result, right_shift);
+        code.vpsllvq(result, result, left_shift);
+        code.blendvpd(result, tmp);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
+    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s64>& result, const VectorArray<s64>& a, const VectorArray<s64>& b) {
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), VShift<s64>);
+    });
+}
+
 void EmitX64::EmitVectorBroadcastLower8(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -1336,141 +1464,13 @@ void EmitX64::EmitVectorLogicalShiftRight64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-template <typename T>
-static constexpr T LogicalVShift(T x, T y) {
-    const s8 shift_amount = static_cast<s8>(static_cast<u8>(y));
-    const s64 bit_size = static_cast<s64>(Common::BitSize<T>());
-
-    if constexpr (std::is_signed_v<T>) {
-        if (shift_amount >= bit_size) {
-            return 0;
-        }
-
-        if (shift_amount <= -bit_size) {
-            // Parentheses necessary, as MSVC doesn't appear to consider cast parentheses
-            // as a grouping in terms of precedence, causing warning C4554 to fire. See:
-            // https://developercommunity.visualstudio.com/content/problem/144783/msvc-2017-does-not-understand-that-static-cast-cou.html
-            return x >> (T(bit_size - 1));
-        }
-    } else if (shift_amount <= -bit_size || shift_amount >= bit_size) {
-        return 0;
-    }
-
-    if (shift_amount < 0) {
-        return x >> T(-shift_amount);
-    }
-
-    using unsigned_type = std::make_unsigned_t<T>;
-    return static_cast<T>(static_cast<unsigned_type>(x) << static_cast<unsigned_type>(shift_amount));
-}
-
-void EmitX64::EmitVectorLogicalVShiftS8(EmitContext& ctx, IR::Inst* inst) {
-    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s8>& result, const VectorArray<s8>& a, const VectorArray<s8>& b) {
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s8>);
-    });
-}
-
-void EmitX64::EmitVectorLogicalVShiftS16(EmitContext& ctx, IR::Inst* inst) {
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512BW)) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-        const Xbyak::Xmm left_shift = ctx.reg_alloc.UseScratchXmm(args[1]);
-        const Xbyak::Xmm right_shift = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
-
-        code.vmovdqa(tmp, code.MConst(xword, 0x00FF00FF00FF00FF, 0x00FF00FF00FF00FF));
-        code.vpxor(right_shift, right_shift, right_shift);
-        code.vpsubw(right_shift, right_shift, left_shift);
-
-        code.vpsllw(xmm0, left_shift, 8);
-        code.vpsraw(xmm0, xmm0, 15);
-
-        code.vpand(right_shift, right_shift, tmp);
-        code.vpand(left_shift, left_shift, tmp);
-
-        code.vpsravw(tmp, result, right_shift);
-        code.vpsllvw(result, result, left_shift);
-        code.pblendvb(result, tmp);
-
-        ctx.reg_alloc.DefineValue(inst, result);
-        return;
-    }
-
-    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s16>& result, const VectorArray<s16>& a, const VectorArray<s16>& b) {
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s16>);
-    });
-}
-
-void EmitX64::EmitVectorLogicalVShiftS32(EmitContext& ctx, IR::Inst* inst) {
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-        const Xbyak::Xmm left_shift = ctx.reg_alloc.UseScratchXmm(args[1]);
-        const Xbyak::Xmm right_shift = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
-
-        code.vmovdqa(tmp, code.MConst(xword, 0x000000FF000000FF, 0x000000FF000000FF));
-        code.vpxor(right_shift, right_shift, right_shift);
-        code.vpsubd(right_shift, right_shift, left_shift);
-
-        code.vpslld(xmm0, left_shift, 24);
-
-        code.vpand(right_shift, right_shift, tmp);
-        code.vpand(left_shift, left_shift, tmp);
-
-        code.vpsravd(tmp, result, right_shift);
-        code.vpsllvd(result, result, left_shift);
-        code.blendvps(result, tmp);
-
-        ctx.reg_alloc.DefineValue(inst, result);
-        return;
-    }
-
-    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s32>& result, const VectorArray<s32>& a, const VectorArray<s32>& b) {
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s32>);
-    });
-}
-
-void EmitX64::EmitVectorLogicalVShiftS64(EmitContext& ctx, IR::Inst* inst) {
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-
-        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-        const Xbyak::Xmm left_shift = ctx.reg_alloc.UseScratchXmm(args[1]);
-        const Xbyak::Xmm right_shift = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
-
-        code.vmovdqa(tmp, code.MConst(xword, 0x00000000000000FF, 0x00000000000000FF));
-        code.vpxor(right_shift, right_shift, right_shift);
-        code.vpsubq(right_shift, right_shift, left_shift);
-
-        code.vpsllq(xmm0, left_shift, 56);
-
-        code.vpand(right_shift, right_shift, tmp);
-        code.vpand(left_shift, left_shift, tmp);
-
-        code.vpsravq(tmp, result, right_shift);
-        code.vpsllvq(result, result, left_shift);
-        code.blendvpd(result, tmp);
-
-        ctx.reg_alloc.DefineValue(inst, result);
-        return;
-    }
-
-    EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<s64>& result, const VectorArray<s64>& a, const VectorArray<s64>& b) {
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<s64>);
-    });
-}
-
-void EmitX64::EmitVectorLogicalVShiftU8(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLogicalVShift8(EmitContext& ctx, IR::Inst* inst) {
     EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u8>& result, const VectorArray<u8>& a, const VectorArray<u8>& b) {
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u8>);
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), VShift<u8>);
     });
 }
 
-void EmitX64::EmitVectorLogicalVShiftU16(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLogicalVShift16(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512BW)) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -1494,11 +1494,11 @@ void EmitX64::EmitVectorLogicalVShiftU16(EmitContext& ctx, IR::Inst* inst) {
     }
 
     EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u16>& result, const VectorArray<u16>& a, const VectorArray<u16>& b) {
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u16>);
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), VShift<u16>);
     });
 }
 
-void EmitX64::EmitVectorLogicalVShiftU32(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLogicalVShift32(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -1522,11 +1522,11 @@ void EmitX64::EmitVectorLogicalVShiftU32(EmitContext& ctx, IR::Inst* inst) {
     }
 
     EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u32>& result, const VectorArray<u32>& a, const VectorArray<u32>& b) {
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u32>);
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), VShift<u32>);
     });
 }
 
-void EmitX64::EmitVectorLogicalVShiftU64(EmitContext& ctx, IR::Inst* inst) {
+void EmitX64::EmitVectorLogicalVShift64(EmitContext& ctx, IR::Inst* inst) {
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX2)) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
@@ -1550,7 +1550,7 @@ void EmitX64::EmitVectorLogicalVShiftU64(EmitContext& ctx, IR::Inst* inst) {
     }
 
     EmitTwoArgumentFallback(code, ctx, inst, [](VectorArray<u64>& result, const VectorArray<u64>& a, const VectorArray<u64>& b) {
-        std::transform(a.begin(), a.end(), b.begin(), result.begin(), LogicalVShift<u64>);
+        std::transform(a.begin(), a.end(), b.begin(), result.begin(), VShift<u64>);
     });
 }
 
