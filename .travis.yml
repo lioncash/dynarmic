@@ -43,6 +43,6 @@ matrix:
     - env: NAME="macOS Build"
       os: osx
       sudo: false
-      osx_image: xcode9.4
+      osx_image: xcode10
       install: ./.travis/build-x86_64-macos/deps.sh
       script: ./.travis/build-x86_64-macos/build.sh
