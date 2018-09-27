@@ -30,11 +30,11 @@ void ExclusiveMonitor::Mark(size_t processor_id, VAddr address, size_t size) {
 }
 
 void ExclusiveMonitor::Lock() {
-    while (is_locked.test_and_set()) {}
+    while (is_locked.test_and_set(std::memory_order_acquire)) {}
 }
 
 void ExclusiveMonitor::Unlock() {
-    is_locked.clear();
+    is_locked.clear(std::memory_order_release);
 }
 
 bool ExclusiveMonitor::CheckAndClear(size_t processor_id, VAddr address, size_t size) {
