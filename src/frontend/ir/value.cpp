@@ -155,4 +155,23 @@ Cond Value::GetCond() const {
     return inner.imm_cond;
 }
 
+u64 Value::GetImmediateAsU64() const {
+    ASSERT(IsImmediate());
+
+    switch (GetType()) {
+    case IR::Type::U1:
+        return u64(GetU1());
+    case IR::Type::U8:
+        return u64(GetU8());
+    case IR::Type::U16:
+        return u64(GetU16());
+    case IR::Type::U32:
+        return u64(GetU32());
+    case IR::Type::U64:
+        return u64(GetU64());
+    default:
+        ASSERT_MSG(false, "GetImmediateAsU64 called on an incompatible Value type.");
+    }
+}
+
 } // namespace Dynarmic::IR

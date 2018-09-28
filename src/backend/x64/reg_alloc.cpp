@@ -26,23 +26,6 @@ namespace Dynarmic::BackendX64 {
         }                                                               \
     }()
 
-static u64 ImmediateToU64(const IR::Value& imm) {
-    switch (imm.GetType()) {
-    case IR::Type::U1:
-        return u64(imm.GetU1());
-    case IR::Type::U8:
-        return u64(imm.GetU8());
-    case IR::Type::U16:
-        return u64(imm.GetU16());
-    case IR::Type::U32:
-        return u64(imm.GetU32());
-    case IR::Type::U64:
-        return u64(imm.GetU64());
-    default:
-        ASSERT_MSG(false, "This should never happen.");
-    }
-}
-
 static bool CanExchange(HostLoc a, HostLoc b) {
     return HostLocIsGPR(a) && HostLocIsGPR(b);
 }
@@ -179,14 +162,14 @@ bool Argument::IsVoid() const {
 bool Argument::FitsInImmediateU32() const {
     if (!IsImmediate())
         return false;
-    u64 imm = ImmediateToU64(value);
+    const u64 imm = value.GetImmediateAsU64();
     return imm < 0x100000000;
 }
 
 bool Argument::FitsInImmediateS32() const {
     if (!IsImmediate())
         return false;
-    s64 imm = static_cast<s64>(ImmediateToU64(value));
+    const s64 imm = static_cast<s64>(value.GetImmediateAsU64());
     return -s64(0x80000000) <= imm && imm <= s64(0x7FFFFFFF);
 }
 
@@ -195,31 +178,30 @@ bool Argument::GetImmediateU1() const {
 }
 
 u8 Argument::GetImmediateU8() const {
-    u64 imm = ImmediateToU64(value);
+    const u64 imm = value.GetImmediateAsU64();
     ASSERT(imm < 0x100);
     return u8(imm);
 }
 
 u16 Argument::GetImmediateU16() const {
-    u64 imm = ImmediateToU64(value);
+    const u64 imm = value.GetImmediateAsU64();
     ASSERT(imm < 0x10000);
     return u16(imm);
 }
 
 u32 Argument::GetImmediateU32() const {
-    u64 imm = ImmediateToU64(value);
+    const u64 imm = value.GetImmediateAsU64();
     ASSERT(imm < 0x100000000);
     return u32(imm);
 }
 
 u64 Argument::GetImmediateS32() const {
     ASSERT(FitsInImmediateS32());
-    u64 imm = ImmediateToU64(value);
-    return imm;
+    return value.GetImmediateAsU64();
 }
 
 u64 Argument::GetImmediateU64() const {
-    return ImmediateToU64(value);
+    return value.GetImmediateAsU64();
 }
 
 IR::Cond Argument::GetImmediateCond() const {
@@ -502,8 +484,8 @@ HostLoc RegAlloc::LoadImmediate(IR::Value imm, HostLoc host_loc) {
     ASSERT_MSG(imm.IsImmediate(), "imm is not an immediate");
 
     if (HostLocIsGPR(host_loc)) {
-        Xbyak::Reg64 reg = HostLocToReg64(host_loc);
-        u64 imm_value = ImmediateToU64(imm);
+        const Xbyak::Reg64 reg = HostLocToReg64(host_loc);
+        const u64 imm_value = imm.GetImmediateAsU64();
         if (imm_value == 0)
             code.xor_(reg.cvt32(), reg.cvt32());
         else
@@ -512,8 +494,8 @@ HostLoc RegAlloc::LoadImmediate(IR::Value imm, HostLoc host_loc) {
     }
 
     if (HostLocIsXMM(host_loc)) {
-        Xbyak::Xmm reg = HostLocToXmm(host_loc);
-        u64 imm_value = ImmediateToU64(imm);
+        const Xbyak::Xmm reg = HostLocToXmm(host_loc);
+        const u64 imm_value = imm.GetImmediateAsU64();
         if (imm_value == 0)
             MAYBE_AVX(xorps, reg, reg);
         else
