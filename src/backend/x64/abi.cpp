@@ -20,6 +20,7 @@
 #include <xbyak.h>
 
 #include "backend/x64/abi.h"
+#include "backend/x64/block_of_code.h"
 #include "common/common_types.h"
 #include "common/iterator_util.h"
 
@@ -58,7 +59,7 @@ static FrameInfo CalculateFrameInfo(size_t num_gprs, size_t num_xmms, size_t fra
 }
 
 template<typename RegisterArrayT>
-void ABI_PushRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size, const RegisterArrayT& regs) {
+void ABI_PushRegistersAndAdjustStack(BlockOfCode& code, size_t frame_size, const RegisterArrayT& regs) {
     using namespace Xbyak::util;
 
     const size_t num_gprs = std::count_if(regs.begin(), regs.end(), HostLocIsGPR);
@@ -79,14 +80,18 @@ void ABI_PushRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_si
     size_t xmm_offset = frame_info.xmm_offset;
     for (HostLoc xmm : regs) {
         if (HostLocIsXMM(xmm)) {
-            code.movaps(code.xword[rsp + xmm_offset], HostLocToXmm(xmm));
+            if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+                code.vmovaps(code.xword[rsp + xmm_offset], HostLocToXmm(xmm));
+            } else {
+                code.movaps(code.xword[rsp + xmm_offset], HostLocToXmm(xmm));
+            }
             xmm_offset += XMM_SIZE;
         }
     }
 }
 
 template<typename RegisterArrayT>
-void ABI_PopRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size, const RegisterArrayT& regs) {
+void ABI_PopRegistersAndAdjustStack(BlockOfCode& code, size_t frame_size, const RegisterArrayT& regs) {
     using namespace Xbyak::util;
 
     const size_t num_gprs = std::count_if(regs.begin(), regs.end(), HostLocIsGPR);
@@ -97,7 +102,11 @@ void ABI_PopRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_siz
     size_t xmm_offset = frame_info.xmm_offset;
     for (HostLoc xmm : regs) {
         if (HostLocIsXMM(xmm)) {
-            code.movaps(HostLocToXmm(xmm), code.xword[rsp + xmm_offset]);
+            if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+                code.vmovaps(HostLocToXmm(xmm), code.xword[rsp + xmm_offset]);
+            } else {
+                code.movaps(HostLocToXmm(xmm), code.xword[rsp + xmm_offset]);
+            }
             xmm_offset += XMM_SIZE;
         }
     }
@@ -113,29 +122,29 @@ void ABI_PopRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_siz
     }
 }
 
-void ABI_PushCalleeSaveRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size) {
+void ABI_PushCalleeSaveRegistersAndAdjustStack(BlockOfCode& code, size_t frame_size) {
     ABI_PushRegistersAndAdjustStack(code, frame_size, ABI_ALL_CALLEE_SAVE);
 }
 
-void ABI_PopCalleeSaveRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size) {
+void ABI_PopCalleeSaveRegistersAndAdjustStack(BlockOfCode& code, size_t frame_size) {
     ABI_PopRegistersAndAdjustStack(code, frame_size, ABI_ALL_CALLEE_SAVE);
 }
 
-void ABI_PushCallerSaveRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size) {
+void ABI_PushCallerSaveRegistersAndAdjustStack(BlockOfCode& code, size_t frame_size) {
     ABI_PushRegistersAndAdjustStack(code, frame_size, ABI_ALL_CALLER_SAVE);
 }
 
-void ABI_PopCallerSaveRegistersAndAdjustStack(Xbyak::CodeGenerator& code, size_t frame_size) {
+void ABI_PopCallerSaveRegistersAndAdjustStack(BlockOfCode& code, size_t frame_size) {
     ABI_PopRegistersAndAdjustStack(code, frame_size, ABI_ALL_CALLER_SAVE);
 }
 
-void ABI_PushCallerSaveRegistersAndAdjustStackExcept(Xbyak::CodeGenerator& code, HostLoc exception) {
+void ABI_PushCallerSaveRegistersAndAdjustStackExcept(BlockOfCode& code, HostLoc exception) {
     std::vector<HostLoc> regs;
     std::remove_copy(ABI_ALL_CALLER_SAVE.begin(), ABI_ALL_CALLER_SAVE.end(), std::back_inserter(regs), exception);
     ABI_PushRegistersAndAdjustStack(code, 0, regs);
 }
 
-void ABI_PopCallerSaveRegistersAndAdjustStackExcept(Xbyak::CodeGenerator& code, HostLoc exception) {
+void ABI_PopCallerSaveRegistersAndAdjustStackExcept(BlockOfCode& code, HostLoc exception) {
     std::vector<HostLoc> regs;
     std::remove_copy(ABI_ALL_CALLER_SAVE.begin(), ABI_ALL_CALLER_SAVE.end(), std::back_inserter(regs), exception);
     ABI_PopRegistersAndAdjustStack(code, 0, regs);
