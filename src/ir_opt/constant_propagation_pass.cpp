@@ -11,10 +11,42 @@
 #include "ir_opt/passes.h"
 
 namespace Dynarmic::Optimization {
+namespace {
+
+// Folds EOR operations based on:
+//
+// 1. imm_x ^ imm_y -> result
+// 2. x ^ 0 -> x
+// 3. 0 ^ y -> y
+//
+void FoldEOR(IR::Inst& inst, bool is_32_bit) {
+    const auto lhs = inst.GetArg(0);
+    const auto rhs = inst.GetArg(1);
+
+    const bool is_lhs_immediate = lhs.IsImmediate();
+    const bool is_rhs_immediate = rhs.IsImmediate();
+
+    if (is_lhs_immediate && is_rhs_immediate) {
+        const u64 result = lhs.GetImmediateAsU64() ^ rhs.GetImmediateAsU64();
+
+        if (is_32_bit) {
+            inst.ReplaceUsesWith(IR::Value{static_cast<u32>(result)});
+        } else {
+            inst.ReplaceUsesWith(IR::Value{result});
+        }
+    } else if (is_lhs_immediate && lhs.GetImmediateAsU64() == 0) {
+        inst.ReplaceUsesWith(rhs);
+    } else if (is_rhs_immediate && rhs.GetImmediateAsU64() == 0) {
+        inst.ReplaceUsesWith(lhs);
+    }
+}
+} // Anonymous namespace
 
 void ConstantPropagation(IR::Block& block) {
     for (auto& inst : block) {
-        switch (inst.GetOpcode()) {
+        const auto opcode = inst.GetOpcode();
+
+        switch (opcode) {
         case IR::Opcode::LogicalShiftLeft32:
         case IR::Opcode::LogicalShiftRight32:
         case IR::Opcode::ArithmeticShiftRight32:
@@ -33,6 +65,10 @@ void ConstantPropagation(IR::Block& block) {
             }
             break;
         }
+        case IR::Opcode::Eor32:
+        case IR::Opcode::Eor64:
+            FoldEOR(inst, opcode == IR::Opcode::Eor32);
+            break;
         case IR::Opcode::ZeroExtendByteToWord: {
             if (!inst.AreAllArgsImmediates())
                 break;
