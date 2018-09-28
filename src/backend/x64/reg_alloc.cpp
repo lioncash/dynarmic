@@ -17,6 +17,15 @@
 
 namespace Dynarmic::BackendX64 {
 
+#define MAYBE_AVX(OPCODE, ...)                                          \
+    [&] {                                                               \
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {              \
+            code.v##OPCODE(__VA_ARGS__);                                \
+        } else {                                                        \
+            code.OPCODE(__VA_ARGS__);                                   \
+        }                                                               \
+    }()
+
 static u64 ImmediateToU64(const IR::Value& imm) {
     switch (imm.GetType()) {
     case IR::Type::U1:
@@ -506,9 +515,9 @@ HostLoc RegAlloc::LoadImmediate(IR::Value imm, HostLoc host_loc) {
         Xbyak::Xmm reg = HostLocToXmm(host_loc);
         u64 imm_value = ImmediateToU64(imm);
         if (imm_value == 0)
-            code.pxor(reg, reg);
+            MAYBE_AVX(xorps, reg, reg);
         else
-            code.movdqa(reg, code.MConst(code.xword, imm_value)); // TODO: movaps/movapd more appropriate sometimes
+            MAYBE_AVX(movaps, reg, code.MConst(code.xword, imm_value));
         return host_loc;
     }
 
@@ -594,7 +603,7 @@ const HostLocInfo& RegAlloc::LocInfo(HostLoc loc) const {
 
 void RegAlloc::EmitMove(size_t bit_width, HostLoc to, HostLoc from) {
     if (HostLocIsXMM(to) && HostLocIsXMM(from)) {
-        code.movaps(HostLocToXmm(to), HostLocToXmm(from));
+        MAYBE_AVX(movaps, HostLocToXmm(to), HostLocToXmm(from));
     } else if (HostLocIsGPR(to) && HostLocIsGPR(from)) {
         ASSERT(bit_width != 128);
         if (bit_width == 64) {
@@ -605,31 +614,31 @@ void RegAlloc::EmitMove(size_t bit_width, HostLoc to, HostLoc from) {
     } else if (HostLocIsXMM(to) && HostLocIsGPR(from)) {
         ASSERT(bit_width != 128);
         if (bit_width == 64) {
-            code.movq(HostLocToXmm(to), HostLocToReg64(from));
+            MAYBE_AVX(movq, HostLocToXmm(to), HostLocToReg64(from));
         } else {
-            code.movd(HostLocToXmm(to), HostLocToReg64(from).cvt32());
+            MAYBE_AVX(movd, HostLocToXmm(to), HostLocToReg64(from).cvt32());
         }
     } else if (HostLocIsGPR(to) && HostLocIsXMM(from)) {
         ASSERT(bit_width != 128);
         if (bit_width == 64) {
-            code.movq(HostLocToReg64(to), HostLocToXmm(from));
+            MAYBE_AVX(movq, HostLocToReg64(to), HostLocToXmm(from));
         } else {
-            code.movd(HostLocToReg64(to).cvt32(), HostLocToXmm(from));
+            MAYBE_AVX(movd, HostLocToReg64(to).cvt32(), HostLocToXmm(from));
         }
     } else if (HostLocIsXMM(to) && HostLocIsSpill(from)) {
         Xbyak::Address spill_addr = spill_to_addr(from);
         ASSERT(spill_addr.getBit() >= bit_width);
         switch (bit_width) {
         case 128:
-            code.movaps(HostLocToXmm(to), spill_addr);
+            MAYBE_AVX(movaps, HostLocToXmm(to), spill_addr);
             break;
         case 64:
-            code.movsd(HostLocToXmm(to), spill_addr);
+            MAYBE_AVX(movsd, HostLocToXmm(to), spill_addr);
             break;
         case 32:
         case 16:
         case 8:
-            code.movss(HostLocToXmm(to), spill_addr);
+            MAYBE_AVX(movss, HostLocToXmm(to), spill_addr);
             break;
         default:
             UNREACHABLE();
@@ -639,15 +648,15 @@ void RegAlloc::EmitMove(size_t bit_width, HostLoc to, HostLoc from) {
         ASSERT(spill_addr.getBit() >= bit_width);
         switch (bit_width) {
         case 128:
-            code.movaps(spill_addr, HostLocToXmm(from));
+            MAYBE_AVX(movaps, spill_addr, HostLocToXmm(from));
             break;
         case 64:
-            code.movsd(spill_addr, HostLocToXmm(from));
+            MAYBE_AVX(movsd, spill_addr, HostLocToXmm(from));
             break;
         case 32:
         case 16:
         case 8:
-            code.movss(spill_addr, HostLocToXmm(from));
+            MAYBE_AVX(movss, spill_addr, HostLocToXmm(from));
             break;
         default:
             UNREACHABLE();
