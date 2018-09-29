@@ -13,7 +13,43 @@
 namespace Dynarmic::Optimization {
 namespace {
 
-// Folds EOR operations based on:
+// Folds AND operations based on the following:
+//
+// 1. imm_x & imm_y -> result
+// 2. x & 0 -> 0
+// 3. 0 & y -> 0
+// 4. x & y -> y (where x has all bits set to 1)
+// 5. x & y -> x (where y has all bits set to 1)
+//
+void FoldAND(IR::Inst& inst, bool is_32_bit) {
+    const auto lhs = inst.GetArg(0);
+    const auto rhs = inst.GetArg(1);
+
+    const bool is_lhs_immediate = lhs.IsImmediate();
+    const bool is_rhs_immediate = rhs.IsImmediate();
+
+    if (is_lhs_immediate && is_rhs_immediate) {
+        const u64 result = lhs.GetImmediateAsU64() & rhs.GetImmediateAsU64();
+
+        if (is_32_bit) {
+            inst.ReplaceUsesWith(IR::Value{static_cast<u32>(result)});
+        } else {
+            inst.ReplaceUsesWith(IR::Value{result});
+        }
+    } else if ((is_lhs_immediate && lhs.GetImmediateAsU64() == 0) || (is_rhs_immediate && rhs.GetImmediateAsU64() == 0)) {
+        if (is_32_bit) {
+            inst.ReplaceUsesWith(IR::Value{u32{0}});
+        } else {
+            inst.ReplaceUsesWith(IR::Value{u64{0}});
+        }
+    } else if (is_lhs_immediate && lhs.HasAllBitsSet()) {
+        inst.ReplaceUsesWith(rhs);
+    } else if (is_rhs_immediate && rhs.HasAllBitsSet()) {
+        inst.ReplaceUsesWith(lhs);
+    }
+}
+
+// Folds EOR operations based on the following:
 //
 // 1. imm_x ^ imm_y -> result
 // 2. x ^ 0 -> x
@@ -65,6 +101,10 @@ void ConstantPropagation(IR::Block& block) {
             }
             break;
         }
+        case IR::Opcode::And32:
+        case IR::Opcode::And64:
+            FoldAND(inst, opcode == IR::Opcode::And32);
+            break;
         case IR::Opcode::Eor32:
         case IR::Opcode::Eor64:
             FoldEOR(inst, opcode == IR::Opcode::Eor32);
