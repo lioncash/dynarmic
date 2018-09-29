@@ -77,6 +77,21 @@ void FoldEOR(IR::Inst& inst, bool is_32_bit) {
     }
 }
 
+// Folds NOT operations if the contained value is an immediate.
+void FoldNOT(IR::Inst& inst, bool is_32_bit) {
+    const auto operand = inst.GetArg(0);
+
+    if (operand.IsImmediate()) {
+        const u64 result = ~operand.GetImmediateAsU64();
+
+        if (is_32_bit) {
+            inst.ReplaceUsesWith(IR::Value{static_cast<u32>(result)});
+        } else {
+            inst.ReplaceUsesWith(IR::Value{result});
+        }
+    }
+}
+
 // Folds OR operations based on the following:
 //
 // 1. imm_x | imm_y -> result
@@ -140,6 +155,10 @@ void ConstantPropagation(IR::Block& block) {
         case IR::Opcode::Or32:
         case IR::Opcode::Or64:
             FoldOR(inst, opcode == IR::Opcode::Or32);
+            break;
+        case IR::Opcode::Not32:
+        case IR::Opcode::Not64:
+            FoldNOT(inst, opcode == IR::Opcode::Not32);
             break;
         case IR::Opcode::ZeroExtendByteToWord: {
             if (!inst.AreAllArgsImmediates())
