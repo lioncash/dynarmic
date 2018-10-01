@@ -174,4 +174,24 @@ u64 Value::GetImmediateAsU64() const {
     }
 }
 
+bool Value::HasAllBitsSet() const {
+    ASSERT(IsImmediate());
+
+    switch (GetType()) {
+    case IR::Type::U1:
+        return GetU1();
+    case IR::Type::U8:
+        return GetU8() == 0xFF;
+    case IR::Type::U16:
+        return GetU16() == 0xFFFF;
+    case IR::Type::U32:
+        return GetU32() == 0xFFFFFFFF;
+    case IR::Type::U64:
+        return GetU64() == 0xFFFFFFFFFFFFFFFF;
+    default:
+        ASSERT_MSG(false, "HasAllBitsSet called on an incompatible Value type.");
+        return false;
+    }
+}
+
 } // namespace Dynarmic::IR
