@@ -4,8 +4,9 @@
 Format String Syntax
 ********************
 
-Formatting functions such as :ref:`fmt::format() <format>` and :ref:`fmt::print() <print>`
-use the same format string syntax described in this section.
+Formatting functions such as :ref:`fmt::format() <format>` and
+:ref:`fmt::print() <print>` use the same format string syntax described in this
+section.
 
 Format strings contain "replacement fields" surrounded by curly braces ``{}``.
 Anything that is not contained in braces is considered literal text, which is
@@ -35,6 +36,8 @@ If the numerical arg_ids in a format string are 0, 1, 2, ... in sequence,
 they can all be omitted (not just some) and the numbers 0, 1, 2, ... will be
 automatically inserted in that order.
 
+Named arguments can be referred to by their names or indices.
+
 Some simple format string examples::
 
    "First, thou shalt count to {0}" // References the first argument
@@ -51,8 +54,8 @@ described in the next section.
 
 A *format_spec* field can also include nested replacement fields in certain
 positions within it. These nested replacement fields can contain only an
-argument id; format specifications are not allowed. This allows the
-formatting of a value to be dynamically specified.
+argument id; format specifications are not allowed. This allows the formatting
+of a value to be dynamically specified.
 
 See the :ref:`formatexamples` section for some examples.
 
@@ -73,7 +76,7 @@ The general form of a *standard format specifier* is:
 
 .. productionlist:: sf
    format_spec: [[`fill`]`align`][`sign`]["#"]["0"][`width`]["." `precision`][`type`]
-   fill: <a character other than '{' or '}'>
+   fill: <a character other than '{', '}' or '\0'>
    align: "<" | ">" | "=" | "^"
    sign: "+" | "-" | " "
    width: `integer` | "{" `arg_id` "}"
@@ -81,11 +84,11 @@ The general form of a *standard format specifier* is:
    type: `int_type` | "a" | "A" | "c" | "e" | "E" | "f" | "F" | "g" | "G" | "p" | "s"
    int_type: "b" | "B" | "d" | "n" | "o" | "x" | "X"
 
-The *fill* character can be any character other than '{' or '}'.  The presence
-of a fill character is signaled by the character following it, which must be
-one of the alignment options.  If the second character of *format_spec* is not
-a valid alignment option, then it is assumed that both the fill character and
-the alignment option are absent.
+The *fill* character can be any character other than '{', '}' or '\\0'. The
+presence of a fill character is signaled by the character following it, which
+must be one of the alignment options.  If the second character of *format_spec*
+is not a valid alignment option, then it is assumed that both the fill character
+and the alignment option are absent.
 
 The meaning of the various alignment options is as follows:
 
@@ -360,7 +363,12 @@ Replacing ``%x`` and ``%o`` and converting the value to different bases::
    // Result: "int: 42;  hex: 2a;  oct: 52; bin: 101010"
    // with 0x or 0 or 0b as prefix:
    format("int: {0:d};  hex: {0:#x};  oct: {0:#o};  bin: {0:#b}", 42);
-   // Result: "int: 42;  hex: 0x2a;  oct: 052;  bin: 0b101010"   
+   // Result: "int: 42;  hex: 0x2a;  oct: 052;  bin: 0b101010"
+
+Padded hex byte with prefix and always prints both hex characters::
+
+   format("{:#04x}", 0);
+   // Result: "0x00"
 
 .. ifconfig:: False
 
