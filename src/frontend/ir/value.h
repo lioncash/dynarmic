@@ -74,6 +74,14 @@ public:
      */
     u64 GetImmediateAsU64() const;
 
+    /**
+     * Determines whether or not the contained constant value has all bits set.
+     *
+     * @pre The value contains either a U1, U8, U16, U32, or U64 value.
+     *      Breaking this precondition will cause an assertion to be invoked.
+     */
+    bool HasAllBitsSet() const;
+
 private:
     Type type;
 
