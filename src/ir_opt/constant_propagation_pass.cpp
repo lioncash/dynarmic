@@ -36,7 +36,7 @@ void FoldAND(IR::Inst& inst, bool is_32_bit) {
         } else {
             inst.ReplaceUsesWith(IR::Value{result});
         }
-    } else if ((is_lhs_immediate && lhs.GetImmediateAsU64() == 0) || (is_rhs_immediate && rhs.GetImmediateAsU64() == 0)) {
+    } else if (lhs.IsZero() || rhs.IsZero()) {
         if (is_32_bit) {
             inst.ReplaceUsesWith(IR::Value{u32{0}});
         } else {
@@ -59,10 +59,7 @@ void FoldEOR(IR::Inst& inst, bool is_32_bit) {
     const auto lhs = inst.GetArg(0);
     const auto rhs = inst.GetArg(1);
 
-    const bool is_lhs_immediate = lhs.IsImmediate();
-    const bool is_rhs_immediate = rhs.IsImmediate();
-
-    if (is_lhs_immediate && is_rhs_immediate) {
+    if (lhs.IsImmediate() && rhs.IsImmediate()) {
         const u64 result = lhs.GetImmediateAsU64() ^ rhs.GetImmediateAsU64();
 
         if (is_32_bit) {
@@ -70,9 +67,9 @@ void FoldEOR(IR::Inst& inst, bool is_32_bit) {
         } else {
             inst.ReplaceUsesWith(IR::Value{result});
         }
-    } else if (is_lhs_immediate && lhs.GetImmediateAsU64() == 0) {
+    } else if (lhs.IsZero()) {
         inst.ReplaceUsesWith(rhs);
-    } else if (is_rhs_immediate && rhs.GetImmediateAsU64() == 0) {
+    } else if (rhs.IsZero()) {
         inst.ReplaceUsesWith(lhs);
     }
 }
@@ -102,10 +99,7 @@ void FoldOR(IR::Inst& inst, bool is_32_bit) {
     const auto lhs = inst.GetArg(0);
     const auto rhs = inst.GetArg(1);
 
-    const bool is_lhs_immediate = lhs.IsImmediate();
-    const bool is_rhs_immediate = rhs.IsImmediate();
-
-    if (is_lhs_immediate && is_rhs_immediate) {
+    if (lhs.IsImmediate() && rhs.IsImmediate()) {
         const u64 result = lhs.GetImmediateAsU64() | rhs.GetImmediateAsU64();
 
         if (is_32_bit) {
@@ -113,9 +107,9 @@ void FoldOR(IR::Inst& inst, bool is_32_bit) {
         } else {
             inst.ReplaceUsesWith(IR::Value{result});
         }
-    } else if (is_lhs_immediate && lhs.GetImmediateAsU64() == 0) {
+    } else if (lhs.IsZero()) {
         inst.ReplaceUsesWith(rhs);
-    } else if (is_rhs_immediate && rhs.GetImmediateAsU64() == 0) {
+    } else if (rhs.IsZero()) {
         inst.ReplaceUsesWith(lhs);
     }
 }

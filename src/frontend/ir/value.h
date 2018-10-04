@@ -67,12 +67,42 @@ public:
     Cond GetCond() const;
 
     /**
-     * Retrieves the immediate of a Value instance.
+     * Retrieves the immediate of a Value instance as a signed 64-bit value.
+     *
+     * @pre The value contains either a U1, U8, U16, U32, or U64 value.
+     *      Breaking this precondition will cause an assertion to be invoked.
+     */
+    s64 GetImmediateAsS64() const;
+
+    /**
+     * Retrieves the immediate of a Value instance as an unsigned 64-bit value.
      *
      * @pre The value contains either a U1, U8, U16, U32, or U64 value.
      *      Breaking this precondition will cause an assertion to be invoked.
      */
     u64 GetImmediateAsU64() const;
+
+    /**
+     * Determines whether or not the contained value matches the provided signed one.
+     *
+     * Note that this function will always return false if the contained
+     * value is not a a constant value. In other words, if IsImmediate()
+     * would return false on an instance, then so will this function.
+     *
+     * @param value The value to check against the contained value.
+     */
+    bool IsSignedImmediate(s64 value) const;
+
+    /**
+     * Determines whether or not the contained value matches the provided unsigned one.
+     *
+     * Note that this function will always return false if the contained
+     * value is not a a constant value. In other words, if IsImmediate()
+     * would return false on an instance, then so will this function.
+     *
+     * @param value The value to check against the contained value.
+     */
+    bool IsUnsignedImmediate(u64 value) const;
 
     /**
      * Determines whether or not the contained constant value has all bits set.
@@ -81,6 +111,15 @@ public:
      *      Breaking this precondition will cause an assertion to be invoked.
      */
     bool HasAllBitsSet() const;
+
+    /**
+     * Whether or not the current value contains a representation of zero.
+     *
+     * Note that this function will always return false if the contained
+     * value is not a a constant value. In other words, if IsImmediate()
+     * would return false on an instance, then so will this function.
+     */
+    bool IsZero() const;
 
 private:
     Type type;
