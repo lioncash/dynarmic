@@ -5,6 +5,7 @@
  */
 
 #include "common/assert.h"
+#include "common/bit_util.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/opcodes.h"
 #include "frontend/ir/type.h"
@@ -153,6 +154,25 @@ Cond Value::GetCond() const {
         return inner.inst->GetArg(0).GetCond();
     ASSERT(type == Type::Cond);
     return inner.imm_cond;
+}
+
+s64 Value::GetImmediateAsS64() const {
+    ASSERT(IsImmediate());
+
+    switch (GetType()) {
+    case IR::Type::U1:
+        return s64(GetU1());
+    case IR::Type::U8:
+        return s64(Common::SignExtend<8, u64>(GetU8()));
+    case IR::Type::U16:
+        return s64(Common::SignExtend<16, u64>(GetU16()));
+    case IR::Type::U32:
+        return s64(Common::SignExtend<32, u64>(GetU32()));
+    case IR::Type::U64:
+        return s64(GetU64());
+    default:
+        ASSERT_MSG(false, "GetImmediateAsS64 called on an incompatible Value type.");
+    }
 }
 
 u64 Value::GetImmediateAsU64() const {

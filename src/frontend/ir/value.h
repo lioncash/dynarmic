@@ -67,7 +67,15 @@ public:
     Cond GetCond() const;
 
     /**
-     * Retrieves the immediate of a Value instance.
+     * Retrieves the immediate of a Value instance as a signed 64-bit value.
+     *
+     * @pre The value contains either a U1, U8, U16, U32, or U64 value.
+     *      Breaking this precondition will cause an assertion to be invoked.
+     */
+    s64 GetImmediateAsS64() const;
+
+    /**
+     * Retrieves the immediate of a Value instance as an unsigned 64-bit value.
      *
      * @pre The value contains either a U1, U8, U16, U32, or U64 value.
      *      Breaking this precondition will cause an assertion to be invoked.
