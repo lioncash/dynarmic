@@ -194,4 +194,8 @@ bool Value::HasAllBitsSet() const {
     }
 }
 
+bool Value::IsZero() const {
+    return IsImmediate() && GetImmediateAsU64() == 0;
+}
+
 } // namespace Dynarmic::IR

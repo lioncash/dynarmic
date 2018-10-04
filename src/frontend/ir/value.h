@@ -82,6 +82,15 @@ public:
      */
     bool HasAllBitsSet() const;
 
+    /**
+     * Whether or not the current value contains a representation of zero.
+     *
+     * Note that this function will always return false if the contained
+     * value is not a a constant value. In other words, if IsImmediate()
+     * would return false on an instance, then so will this function.
+     */
+    bool IsZero() const;
+
 private:
     Type type;
 
