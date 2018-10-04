@@ -194,6 +194,14 @@ u64 Value::GetImmediateAsU64() const {
     }
 }
 
+bool Value::IsSignedImmediate(s64 value) const {
+    return IsImmediate() && GetImmediateAsS64() == value;
+}
+
+bool Value::IsUnsignedImmediate(u64 value) const {
+    return IsImmediate() && GetImmediateAsU64() == value;
+}
+
 bool Value::HasAllBitsSet() const {
     ASSERT(IsImmediate());
 
@@ -215,7 +223,7 @@ bool Value::HasAllBitsSet() const {
 }
 
 bool Value::IsZero() const {
-    return IsImmediate() && GetImmediateAsU64() == 0;
+    return IsUnsignedImmediate(0);
 }
 
 } // namespace Dynarmic::IR

@@ -83,6 +83,28 @@ public:
     u64 GetImmediateAsU64() const;
 
     /**
+     * Determines whether or not the contained value matches the provided signed one.
+     *
+     * Note that this function will always return false if the contained
+     * value is not a a constant value. In other words, if IsImmediate()
+     * would return false on an instance, then so will this function.
+     *
+     * @param value The value to check against the contained value.
+     */
+    bool IsSignedImmediate(s64 value) const;
+
+    /**
+     * Determines whether or not the contained value matches the provided unsigned one.
+     *
+     * Note that this function will always return false if the contained
+     * value is not a a constant value. In other words, if IsImmediate()
+     * would return false on an instance, then so will this function.
+     *
+     * @param value The value to check against the contained value.
+     */
+    bool IsUnsignedImmediate(u64 value) const;
+
+    /**
      * Determines whether or not the contained constant value has all bits set.
      *
      * @pre The value contains either a U1, U8, U16, U32, or U64 value.
