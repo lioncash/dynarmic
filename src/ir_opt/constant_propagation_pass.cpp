@@ -123,6 +123,15 @@ void FoldSignExtendXToWord(IR::Inst& inst) {
     inst.ReplaceUsesWith(IR::Value{static_cast<u32>(value)});
 }
 
+void FoldSignExtendXToLong(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const s64 value = inst.GetArg(0).GetImmediateAsS64();
+    inst.ReplaceUsesWith(IR::Value{static_cast<u64>(value)});
+}
+
 void FoldZeroExtendXToWord(IR::Inst& inst) {
     if (!inst.AreAllArgsImmediates()) {
         return;
@@ -184,6 +193,11 @@ void ConstantPropagation(IR::Block& block) {
         case IR::Opcode::SignExtendByteToWord:
         case IR::Opcode::SignExtendHalfToWord:
             FoldSignExtendXToWord(inst);
+            break;
+        case IR::Opcode::SignExtendByteToLong:
+        case IR::Opcode::SignExtendHalfToLong:
+        case IR::Opcode::SignExtendWordToLong:
+            FoldSignExtendXToLong(inst);
             break;
         case IR::Opcode::ZeroExtendByteToWord:
         case IR::Opcode::ZeroExtendHalfToWord:
