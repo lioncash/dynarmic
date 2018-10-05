@@ -114,6 +114,15 @@ void FoldOR(IR::Inst& inst, bool is_32_bit) {
     }
 }
 
+void FoldSignExtendXToWord(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const s64 value = inst.GetArg(0).GetImmediateAsS64();
+    inst.ReplaceUsesWith(IR::Value{static_cast<u32>(value)});
+}
+
 void FoldZeroExtendXToWord(IR::Inst& inst) {
     if (!inst.AreAllArgsImmediates()) {
         return;
@@ -171,6 +180,10 @@ void ConstantPropagation(IR::Block& block) {
         case IR::Opcode::Not32:
         case IR::Opcode::Not64:
             FoldNOT(inst, opcode == IR::Opcode::Not32);
+            break;
+        case IR::Opcode::SignExtendByteToWord:
+        case IR::Opcode::SignExtendHalfToWord:
+            FoldSignExtendXToWord(inst);
             break;
         case IR::Opcode::ZeroExtendByteToWord:
         case IR::Opcode::ZeroExtendHalfToWord:
