@@ -113,6 +113,15 @@ void FoldOR(IR::Inst& inst, bool is_32_bit) {
         inst.ReplaceUsesWith(lhs);
     }
 }
+
+void FoldZeroExtendXToWord(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const u64 value = inst.GetArg(0).GetImmediateAsU64();
+    inst.ReplaceUsesWith(IR::Value{static_cast<u32>(value)});
+}
 } // Anonymous namespace
 
 void ConstantPropagation(IR::Block& block) {
@@ -154,24 +163,10 @@ void ConstantPropagation(IR::Block& block) {
         case IR::Opcode::Not64:
             FoldNOT(inst, opcode == IR::Opcode::Not32);
             break;
-        case IR::Opcode::ZeroExtendByteToWord: {
-            if (!inst.AreAllArgsImmediates())
-                break;
-
-            u8 byte = inst.GetArg(0).GetU8();
-            u32 value = static_cast<u32>(byte);
-            inst.ReplaceUsesWith(IR::Value{value});
+        case IR::Opcode::ZeroExtendByteToWord:
+        case IR::Opcode::ZeroExtendHalfToWord:
+            FoldZeroExtendXToWord(inst);
             break;
-        }
-        case IR::Opcode::ZeroExtendHalfToWord: {
-            if (!inst.AreAllArgsImmediates())
-                break;
-
-            u16 half = inst.GetArg(0).GetU16();
-            u32 value = static_cast<u32>(half);
-            inst.ReplaceUsesWith(IR::Value{value});
-            break;
-        }
         default:
             break;
         }
