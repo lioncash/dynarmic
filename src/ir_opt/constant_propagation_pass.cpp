@@ -122,6 +122,15 @@ void FoldZeroExtendXToWord(IR::Inst& inst) {
     const u64 value = inst.GetArg(0).GetImmediateAsU64();
     inst.ReplaceUsesWith(IR::Value{static_cast<u32>(value)});
 }
+
+void FoldZeroExtendXToLong(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const u64 value = inst.GetArg(0).GetImmediateAsU64();
+    inst.ReplaceUsesWith(IR::Value{value});
+}
 } // Anonymous namespace
 
 void ConstantPropagation(IR::Block& block) {
@@ -166,6 +175,11 @@ void ConstantPropagation(IR::Block& block) {
         case IR::Opcode::ZeroExtendByteToWord:
         case IR::Opcode::ZeroExtendHalfToWord:
             FoldZeroExtendXToWord(inst);
+            break;
+        case IR::Opcode::ZeroExtendByteToLong:
+        case IR::Opcode::ZeroExtendHalfToLong:
+        case IR::Opcode::ZeroExtendWordToLong:
+            FoldZeroExtendXToLong(inst);
             break;
         default:
             break;
