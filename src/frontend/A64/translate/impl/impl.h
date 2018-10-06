@@ -77,6 +77,10 @@ struct TranslatorVisitor final {
     bool ADR(Imm<2> immlo, Imm<19> immhi, Reg Rd);
     bool ADRP(Imm<2> immlo, Imm<19> immhi, Reg Rd);
 
+    // Data processing - Immediate - Add/Sub (with tag)
+    bool ADDG(Imm<6> offset_imm, Imm<4> tag_offset, Reg Rn, Reg Rd);
+    bool SUBG(Imm<6> offset_imm, Imm<4> tag_offset, Reg Rn, Reg Rd);
+
     // Data processing - Immediate - Add/Sub
     bool ADD_imm(bool sf, Imm<2> shift, Imm<12> imm12, Reg Rn, Reg Rd);
     bool ADDS_imm(bool sf, Imm<2> shift, Imm<12> imm12, Reg Rn, Reg Rd);
@@ -134,16 +138,27 @@ struct TranslatorVisitor final {
     bool AUTIA_2();
     bool AUTIB_1(bool Z, Reg Rn, Reg Rd);
     bool AUTIB_2();
+    bool BTI(Imm<2> upper_op2);
     bool ESB();
     bool PSB();
+    bool TSB();
+    bool CSDB();
     bool CLREX(Imm<4> CRm);
     bool DSB(Imm<4> CRm);
+    bool SSBB();
+    bool PSSBB();
     bool DMB(Imm<4> CRm);
     bool ISB(Imm<4> CRm);
     bool SYS(Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt);
+    bool SB();
     bool MSR_reg(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt);
     bool SYSL(Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt);
     bool MRS(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt);
+
+    // System - PSTATE
+    bool CFINV();
+    bool XAFlag();
+    bool AXFlag();
 
     // SYS: Data Cache
     bool DC_IVAC(Reg Rt);
@@ -155,6 +170,13 @@ struct TranslatorVisitor final {
     bool DC_CVAU(Reg Rt);
     bool DC_CVAP(Reg Rt);
     bool DC_CIVAC(Reg Rt);
+
+    // Data processing - Register - Rotate right into flags
+    bool RMIF(Imm<6> lsb, Reg Rn, Imm<4> mask);
+    
+    // Data processing - Register - Evaluate into flags
+    bool SETF8(Reg Rn);
+    bool SETF16(Reg Rn);
 
     // Unconditonal branch (Register)
     bool BR(Reg Rn);
@@ -242,6 +264,9 @@ struct TranslatorVisitor final {
     // Loads and stores - Load/Store register pair
     bool STP_LDP_gen(Imm<2> opc, bool not_postindex, bool wback, Imm<1> L, Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
     bool STP_LDP_fpsimd(Imm<2> opc, bool not_postindex, bool wback, Imm<1> L, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
+    bool STGP_1(Imm<7> offset_imm, Reg Rt2, Reg Rn, Reg Rt);
+    bool STGP_2(Imm<7> offset_imm, Reg Rt2, Reg Rn, Reg Rt);
+    bool STGP_3(Imm<7> offset_imm, Reg Rt2, Reg Rn, Reg Rt);
 
     // Loads and stores - Load/Store register (immediate)
     bool STRx_LDRx_imm_1(Imm<2> size, Imm<2> opc, Imm<9> imm9, bool not_postindex, Reg Rn, Reg Rt);
@@ -305,6 +330,23 @@ struct TranslatorVisitor final {
     bool STR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn, Vec Vt);
     bool LDR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn, Vec Vt);
 
+    // Loads and stores - Load/Store memory tags
+    bool STG_1(Imm<9> imm9, Reg Rn);
+    bool STG_2(Imm<9> imm9, Reg Rn);
+    bool STG_3(Imm<9> imm9, Reg Rn);
+    bool LDG(Imm<9> offset_imm, Reg Rn, Reg Rt);
+    bool STZG_1(Imm<9> offset_imm, Reg Rn);
+    bool STZG_2(Imm<9> offset_imm, Reg Rn);
+    bool STZG_3(Imm<9> offset_imm, Reg Rn);
+    bool ST2G_1(Imm<9> offset_imm, Reg Rn);
+    bool ST2G_2(Imm<9> offset_imm, Reg Rn);
+    bool ST2G_3(Imm<9> offset_imm, Reg Rn);
+    bool STGV(Reg Rn, Reg Rt);
+    bool STZ2G_1(Imm<9> offset_imm, Reg Rn);
+    bool STZ2G_2(Imm<9> offset_imm, Reg Rn);
+    bool STZ2G_3(Imm<9> offset_imm, Reg Rn);
+    bool LDGV(Reg Rn, Reg Rt);
+
     // Loads and stores - Load/Store register (pointer authentication)
     bool LDRA(bool M, bool S, Imm<9> imm9, bool W, Reg Rn, Reg Rt);
 
@@ -318,6 +360,10 @@ struct TranslatorVisitor final {
     bool CRC32(bool sf, Reg Rm, Imm<2> sz, Reg Rn, Reg Rd);
     bool CRC32C(bool sf, Reg Rm, Imm<2> sz, Reg Rn, Reg Rd);
     bool PACGA(Reg Rm, Reg Rn, Reg Rd);
+    bool SUBP(Reg Rm, Reg Rn, Reg Rd);
+    bool IRG(Reg Rm, Reg Rn, Reg Rd);
+    bool GMI(Reg Rm, Reg Rn, Reg Rd);
+    bool SUBPS(Reg Rm, Reg Rn, Reg Rd);
 
     // Data Processing - Register - 1 source
     bool RBIT_int(bool sf, Reg Rn, Reg Rd);
@@ -725,6 +771,10 @@ struct TranslatorVisitor final {
     bool FRINTI_2(bool Q, bool sz, Vec Vn, Vec Vd);
     bool FSQRT_1(bool Q, Vec Vn, Vec Vd);
     bool FSQRT_2(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FRINT32X_1(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FRINT64X_1(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FRINT32Z_1(bool Q, bool sz, Vec Vn, Vec Vd);
+    bool FRINT64Z_1(bool Q, bool sz, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - SIMD across lanes
     bool SADDLV(bool Q, Imm<2> size, Vec Vn, Vec Vd);
@@ -982,6 +1032,10 @@ struct TranslatorVisitor final {
     bool FRINTA_float(Imm<2> type, Vec Vn, Vec Vd);
     bool FRINTX_float(Imm<2> type, Vec Vn, Vec Vd);
     bool FRINTI_float(Imm<2> type, Vec Vn, Vec Vd);
+    bool FRINT32X_float(Imm<2> type, Vec Vn, Vec Vd);
+    bool FRINT64X_float(Imm<2> type, Vec Vn, Vec Vd);
+    bool FRINT32Z_float(Imm<2> type, Vec Vn, Vec Vd);
+    bool FRINT64Z_float(Imm<2> type, Vec Vn, Vec Vd);
 
     // Data Processing - FP and SIMD - Floating point compare
     bool FCMP_float(Imm<2> type, Vec Vm, Vec Vn, bool cmp_with_zero);
