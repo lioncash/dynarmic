@@ -113,6 +113,42 @@ void FoldOR(IR::Inst& inst, bool is_32_bit) {
         inst.ReplaceUsesWith(lhs);
     }
 }
+
+void FoldSignExtendXToWord(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const s64 value = inst.GetArg(0).GetImmediateAsS64();
+    inst.ReplaceUsesWith(IR::Value{static_cast<u32>(value)});
+}
+
+void FoldSignExtendXToLong(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const s64 value = inst.GetArg(0).GetImmediateAsS64();
+    inst.ReplaceUsesWith(IR::Value{static_cast<u64>(value)});
+}
+
+void FoldZeroExtendXToWord(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const u64 value = inst.GetArg(0).GetImmediateAsU64();
+    inst.ReplaceUsesWith(IR::Value{static_cast<u32>(value)});
+}
+
+void FoldZeroExtendXToLong(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const u64 value = inst.GetArg(0).GetImmediateAsU64();
+    inst.ReplaceUsesWith(IR::Value{value});
+}
 } // Anonymous namespace
 
 void ConstantPropagation(IR::Block& block) {
@@ -154,24 +190,24 @@ void ConstantPropagation(IR::Block& block) {
         case IR::Opcode::Not64:
             FoldNOT(inst, opcode == IR::Opcode::Not32);
             break;
-        case IR::Opcode::ZeroExtendByteToWord: {
-            if (!inst.AreAllArgsImmediates())
-                break;
-
-            u8 byte = inst.GetArg(0).GetU8();
-            u32 value = static_cast<u32>(byte);
-            inst.ReplaceUsesWith(IR::Value{value});
+        case IR::Opcode::SignExtendByteToWord:
+        case IR::Opcode::SignExtendHalfToWord:
+            FoldSignExtendXToWord(inst);
             break;
-        }
-        case IR::Opcode::ZeroExtendHalfToWord: {
-            if (!inst.AreAllArgsImmediates())
-                break;
-
-            u16 half = inst.GetArg(0).GetU16();
-            u32 value = static_cast<u32>(half);
-            inst.ReplaceUsesWith(IR::Value{value});
+        case IR::Opcode::SignExtendByteToLong:
+        case IR::Opcode::SignExtendHalfToLong:
+        case IR::Opcode::SignExtendWordToLong:
+            FoldSignExtendXToLong(inst);
             break;
-        }
+        case IR::Opcode::ZeroExtendByteToWord:
+        case IR::Opcode::ZeroExtendHalfToWord:
+            FoldZeroExtendXToWord(inst);
+            break;
+        case IR::Opcode::ZeroExtendByteToLong:
+        case IR::Opcode::ZeroExtendHalfToLong:
+        case IR::Opcode::ZeroExtendWordToLong:
+            FoldZeroExtendXToLong(inst);
+            break;
         default:
             break;
         }
