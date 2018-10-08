@@ -13,6 +13,16 @@
 namespace Dynarmic::Optimization {
 namespace {
 
+// Tiny helper to avoid the need to store based off the opcode
+// bit size all over the place within folding functions.
+void ReplaceUsesWith(IR::Inst& inst, bool is_32_bit, u64 value) {
+    if (is_32_bit) {
+        inst.ReplaceUsesWith(IR::Value{static_cast<u32>(value)});
+    } else {
+        inst.ReplaceUsesWith(IR::Value{value});
+    }
+}
+
 // Folds AND operations based on the following:
 //
 // 1. imm_x & imm_y -> result
@@ -30,18 +40,9 @@ void FoldAND(IR::Inst& inst, bool is_32_bit) {
 
     if (is_lhs_immediate && is_rhs_immediate) {
         const u64 result = lhs.GetImmediateAsU64() & rhs.GetImmediateAsU64();
-
-        if (is_32_bit) {
-            inst.ReplaceUsesWith(IR::Value{static_cast<u32>(result)});
-        } else {
-            inst.ReplaceUsesWith(IR::Value{result});
-        }
+        ReplaceUsesWith(inst, is_32_bit, result);
     } else if (lhs.IsZero() || rhs.IsZero()) {
-        if (is_32_bit) {
-            inst.ReplaceUsesWith(IR::Value{u32{0}});
-        } else {
-            inst.ReplaceUsesWith(IR::Value{u64{0}});
-        }
+        ReplaceUsesWith(inst, is_32_bit, 0);
     } else if (is_lhs_immediate && lhs.HasAllBitsSet()) {
         inst.ReplaceUsesWith(rhs);
     } else if (is_rhs_immediate && rhs.HasAllBitsSet()) {
@@ -61,12 +62,7 @@ void FoldEOR(IR::Inst& inst, bool is_32_bit) {
 
     if (lhs.IsImmediate() && rhs.IsImmediate()) {
         const u64 result = lhs.GetImmediateAsU64() ^ rhs.GetImmediateAsU64();
-
-        if (is_32_bit) {
-            inst.ReplaceUsesWith(IR::Value{static_cast<u32>(result)});
-        } else {
-            inst.ReplaceUsesWith(IR::Value{result});
-        }
+        ReplaceUsesWith(inst, is_32_bit, result);
     } else if (lhs.IsZero()) {
         inst.ReplaceUsesWith(rhs);
     } else if (rhs.IsZero()) {
@@ -88,18 +84,9 @@ void FoldMultiply(IR::Inst& inst, bool is_32_bit) {
 
     if (lhs.IsImmediate() && rhs.IsImmediate()) {
         const u64 result = lhs.GetImmediateAsU64() * rhs.GetImmediateAsU64();
-
-        if (is_32_bit) {
-            inst.ReplaceUsesWith(IR::Value{static_cast<u32>(result)});
-        } else {
-            inst.ReplaceUsesWith(IR::Value{result});
-        }
+        ReplaceUsesWith(inst, is_32_bit, result);
     } else if (lhs.IsZero() || rhs.IsZero()) {
-        if (is_32_bit) {
-            inst.ReplaceUsesWith(IR::Value{u32{0}});
-        } else {
-            inst.ReplaceUsesWith(IR::Value{u64{0}});
-        }
+        ReplaceUsesWith(inst, is_32_bit, 0);
     } else if (lhs.IsUnsignedImmediate(1)) {
         inst.ReplaceUsesWith(rhs);
     } else if (rhs.IsUnsignedImmediate(1)) {
@@ -111,15 +98,12 @@ void FoldMultiply(IR::Inst& inst, bool is_32_bit) {
 void FoldNOT(IR::Inst& inst, bool is_32_bit) {
     const auto operand = inst.GetArg(0);
 
-    if (operand.IsImmediate()) {
-        const u64 result = ~operand.GetImmediateAsU64();
-
-        if (is_32_bit) {
-            inst.ReplaceUsesWith(IR::Value{static_cast<u32>(result)});
-        } else {
-            inst.ReplaceUsesWith(IR::Value{result});
-        }
+    if (!operand.IsImmediate()) {
+        return;
     }
+
+    const u64 result = ~operand.GetImmediateAsU64();
+    ReplaceUsesWith(inst, is_32_bit, result);
 }
 
 // Folds OR operations based on the following:
@@ -134,12 +118,7 @@ void FoldOR(IR::Inst& inst, bool is_32_bit) {
 
     if (lhs.IsImmediate() && rhs.IsImmediate()) {
         const u64 result = lhs.GetImmediateAsU64() | rhs.GetImmediateAsU64();
-
-        if (is_32_bit) {
-            inst.ReplaceUsesWith(IR::Value{static_cast<u32>(result)});
-        } else {
-            inst.ReplaceUsesWith(IR::Value{result});
-        }
+        ReplaceUsesWith(inst, is_32_bit, result);
     } else if (lhs.IsZero()) {
         inst.ReplaceUsesWith(rhs);
     } else if (rhs.IsZero()) {
