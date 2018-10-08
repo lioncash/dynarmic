@@ -74,6 +74,39 @@ void FoldEOR(IR::Inst& inst, bool is_32_bit) {
     }
 }
 
+// Folds multiplication operations based on the following:
+//
+// 1. imm_x * imm_y -> result
+// 2. x * 0 -> 0
+// 3. 0 * y -> 0
+// 4. x * 1 -> x
+// 5. 1 * y -> y
+//
+void FoldMultiply(IR::Inst& inst, bool is_32_bit) {
+    const auto lhs = inst.GetArg(0);
+    const auto rhs = inst.GetArg(1);
+
+    if (lhs.IsImmediate() && rhs.IsImmediate()) {
+        const u64 result = lhs.GetImmediateAsU64() * rhs.GetImmediateAsU64();
+
+        if (is_32_bit) {
+            inst.ReplaceUsesWith(IR::Value{static_cast<u32>(result)});
+        } else {
+            inst.ReplaceUsesWith(IR::Value{result});
+        }
+    } else if (lhs.IsZero() || rhs.IsZero()) {
+        if (is_32_bit) {
+            inst.ReplaceUsesWith(IR::Value{u32{0}});
+        } else {
+            inst.ReplaceUsesWith(IR::Value{u64{0}});
+        }
+    } else if (lhs.IsUnsignedImmediate(1)) {
+        inst.ReplaceUsesWith(rhs);
+    } else if (rhs.IsUnsignedImmediate(1)) {
+        inst.ReplaceUsesWith(lhs);
+    }
+}
+
 // Folds NOT operations if the contained value is an immediate.
 void FoldNOT(IR::Inst& inst, bool is_32_bit) {
     const auto operand = inst.GetArg(0);
@@ -174,6 +207,10 @@ void ConstantPropagation(IR::Block& block) {
             }
             break;
         }
+        case IR::Opcode::Mul32:
+        case IR::Opcode::Mul64:
+            FoldMultiply(inst, opcode == IR::Opcode::Mul32);
+            break;
         case IR::Opcode::And32:
         case IR::Opcode::And64:
             FoldAND(inst, opcode == IR::Opcode::And32);
