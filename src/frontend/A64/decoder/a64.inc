@@ -2,6 +2,10 @@
 INST(ADR,                    "ADR",                                       "0ii10000iiiiiiiiiiiiiiiiiiiddddd")
 INST(ADRP,                   "ADRP",                                      "1ii10000iiiiiiiiiiiiiiiiiiiddddd")
 
+// Data processing - Immediate - Add/Sub (with tags)
+//INST(ADDG,                   "ADDG",                                      "1001000110iiiiii00IIIInnnnnddddd") // ARMv8.5
+//INST(SUBG,                   "SUBG",                                      "1101000110iiiiii00IIIInnnnnddddd") // ARMv8.5
+
 // Data processing - Immediate - Add/Sub
 INST(ADD_imm,                "ADD (immediate)",                           "z0010001ssiiiiiiiiiiiinnnnnddddd")
 INST(ADDS_imm,               "ADDS (immediate)",                          "z0110001ssiiiiiiiiiiiinnnnnddddd")
@@ -59,16 +63,27 @@ INST(SEVL,                   "SEVL",                                      "11010
 //INST(AUTIA_2,                "AUTIA, AUTIA1716, AUTIASP, AUTIAZ, AUTIZA", "1101010100000011001000-110-11111")
 //INST(AUTIB_1,                "AUTIB, AUTIB1716, AUTIBSP, AUTIBZ, AUTIZB", "110110101100000100Z101nnnnnddddd")
 //INST(AUTIB_2,                "AUTIB, AUTIB1716, AUTIBSP, AUTIBZ, AUTIZB", "1101010100000011001000-111-11111")
+//INST(BTI,                    "BTI",                                       "110101010000001100100100ii011111") // ARMv8.5
 //INST(ESB,                    "ESB",                                       "11010101000000110010001000011111")
 //INST(PSB,                    "PSB CSYNC",                                 "11010101000000110010001000111111")
+//INST(TSB,                    "TSB CSYNC",                                 "11010101000000110010001001011111") // ARMv8.5
+//INST(CSDB,                   "CSDB",                                      "11010101000000110010001010011111")
 INST(CLREX,                  "CLREX",                                     "11010101000000110011MMMM01011111")
 INST(DSB,                    "DSB",                                       "11010101000000110011MMMM10011111")
+//INST(SSBB,                   "SSBB",                                      "11010101000000110011000010011111")
+//INST(PSSBB,                  "PSSBB",                                     "11010101000000110011010010011111")
 INST(DMB,                    "DMB",                                       "11010101000000110011MMMM10111111")
 INST(ISB,                    "ISB",                                       "11010101000000110011MMMM11011111")
+//INST(SB,                     "SB",                                        "11010101000000110011000011111111")
 //INST(SYS,                    "SYS",                                       "1101010100001oooNNNNMMMMooottttt")
 INST(MSR_reg,                "MSR (register)",                            "110101010001poooNNNNMMMMooottttt")
 //INST(SYSL,                   "SYSL",                                      "1101010100101oooNNNNMMMMooottttt")
 INST(MRS,                    "MRS",                                       "110101010011poooNNNNMMMMooottttt")
+
+// System - PSTATE
+//INST(CFINV,                  "CFINV",                                     "11010101000000000100000000011111") // ARMv8.4
+//INST(XAFlag,                 "XAFlag",                                    "11010101000000000100000000111111") // ARMv8.5
+//INST(AXFlag,                 "AXFlag",                                    "11010101000000000100000001011111") // ARMv8.5
 
 // SYS: Data Cache
 INST(DC_IVAC,                "DC IVAC",                                   "110101010000100001110110001ttttt")
@@ -80,6 +95,13 @@ INST(DC_CVAC,                "DC CVAC",                                   "11010
 INST(DC_CVAU,                "DC CVAU",                                   "110101010000101101111011001ttttt")
 INST(DC_CVAP,                "DC CVAP",                                   "110101010000101101111100001ttttt")
 INST(DC_CIVAC,               "DC CIVAC",                                  "110101010000101101111110001ttttt")
+
+// Data processing - Rotate right into flags
+//INST(RMIF,                   "RMIF",                                      "10111010000iiiiii00001nnnnn0IIII") // ARMv8.4
+
+// Data processing - Evaluate into flags
+//INST(SETF8,                  "SETF8",                                     "0011101000000000000010nnnnn01101") // ARMv8.4
+//INST(SETF16,                 "SETF16",                                    "0011101000000000010010nnnnn01101") // ARMv8.4
 
 // Unconditonal branch (Register)
 INST(BLR,                    "BLR",                                       "1101011000111111000000nnnnn00000")
@@ -190,6 +212,9 @@ INST(STR_imm_fpsimd_1,       "STR (immediate, SIMD&FP)",                  "zz111
 INST(STR_imm_fpsimd_2,       "STR (immediate, SIMD&FP)",                  "zz111101o0iiiiiiiiiiiinnnnnttttt")
 INST(LDR_imm_fpsimd_1,       "LDR (immediate, SIMD&FP)",                  "zz111100o10iiiiiiiiip1nnnnnttttt")
 INST(LDR_imm_fpsimd_2,       "LDR (immediate, SIMD&FP)",                  "zz111101o1iiiiiiiiiiiinnnnnttttt")
+//INST(STGP_1,               "STGP (post-index)",                         "0110100010iiiiiiimmmmmnnnnnttttt") // ARMv8.5
+//INST(STGP_2,               "STGP (pre-index)",                          "0110100110iiiiiiimmmmmnnnnnttttt") // ARMv8.5
+//INST(STGP_3,               "STGP (signed-offset)",                      "0110100100iiiiiiimmmmmnnnnnttttt") // ARMv8.5
 
 // Loads and stores - Load/Store register (unprivileged)
 INST(STTRB,                  "STTRB",                                     "00111000000iiiiiiiii10nnnnnttttt")
@@ -240,6 +265,23 @@ INST(LDRx_reg,               "LDRx (register)",                           "zz111
 INST(STR_reg_fpsimd,         "STR (register, SIMD&FP)",                   "zz111100o01mmmmmxxxS10nnnnnttttt")
 INST(LDR_reg_fpsimd,         "LDR (register, SIMD&FP)",                   "zz111100o11mmmmmxxxS10nnnnnttttt")
 
+// Loads and stores - Load/Store memory tags
+//INST(STG_1,                  "STG (post-index)",                          "11011001001iiiiiiiii01nnnnn11111") // ARMv8.5
+//INST(STG_2,                  "STG (pre-index)",                           "11011001001iiiiiiiii11nnnnn11111") // ARMv8.5
+//INST(STG_3,                  "STG (signed-offset)",                       "11011001001iiiiiiiii10nnnnn11111") // ARMv8.5
+//INST(LDG,                    "LDG",                                       "11011001011iiiiiiiii00nnnnnttttt") // ARMv8.5
+//INST(STZG_1,                 "STZG (post-index)",                         "11011001011iiiiiiiii01nnnnn11111") // ARMv8.5
+//INST(STZG_2,                 "STZG (pre-index)",                          "11011001011iiiiiiiii11nnnnn11111") // ARMv8.5
+//INST(STZG_3,                 "STZG (signed-offset)",                      "11011001011iiiiiiiii10nnnnn11111") // ARMv8.5
+//INST(ST2G_1,                 "ST2G (post-index)",                         "11011001101iiiiiiiii01nnnnn11111") // ARMv8.5
+//INST(ST2G_2,                 "ST2G (pre-index)",                          "11011001101iiiiiiiii11nnnnn11111") // ARMv8.5
+//INST(ST2G_3,                 "ST2G (signed-offset)",                      "11011001101iiiiiiiii10nnnnn11111") // ARMv8.5
+//INST(STGV,                   "STGV",                                      "1101100110100000000000nnnnnttttt") // ARMv8.5
+//INST(STZ2G_1,                "STZ2G (post-index)",                        "11011001111iiiiiiiii01nnnnn11111") // ARMv8.5
+//INST(STZ2G_2,                "STZ2G (pre-index)",                         "11011001111iiiiiiiii11nnnnn11111") // ARMv8.5
+//INST(STZ2G_3,                "STZ2G (signed-offset)",                     "11011001111iiiiiiiii10nnnnn11111") // ARMv8.5
+//INST(LDGV,                   "LDGV",                                      "1101100111100000000000nnnnnttttt") // ARMv8.5
+
 // Loads and stores - Load/Store register (pointer authentication)
 //INST(LDRA,                   "LDRAA, LDRAB",                              "11111000MS1iiiiiiiiiW1nnnnnttttt")
 
@@ -253,6 +295,10 @@ INST(RORV,                   "RORV",                                      "z0011
 INST(CRC32,                  "CRC32B, CRC32H, CRC32W, CRC32X",            "z0011010110mmmmm0100zznnnnnddddd")
 INST(CRC32C,                 "CRC32CB, CRC32CH, CRC32CW, CRC32CX",        "z0011010110mmmmm0101zznnnnnddddd")
 //INST(PACGA,                  "PACGA",                                     "10011010110mmmmm001100nnnnnddddd")
+//INST(SUBP,                   "SUBP",                                      "10011010110mmmmm000000nnnnnddddd") // ARMv8.5
+//INST(IRG,                    "IRG",                                       "10011010110mmmmm000100nnnnnddddd") // ARMv8.5
+//INST(GMI,                    "GMI",                                       "10011010110mmmmm000101nnnnnddddd") // ARMv8.5
+//INST(SUBPS,                  "SUBPS",                                     "10111010110mmmmm000000nnnnnddddd") // ARMv8.5
 
 // Data Processing - Register - 1 source
 INST(RBIT_int,               "RBIT",                                      "z101101011000000000000nnnnnddddd")
@@ -654,6 +700,10 @@ INST(URSQRTE,                "URSQRTE",                                   "0Q101
 INST(FRSQRTE_4,              "FRSQRTE",                                   "0Q1011101z100001110110nnnnnddddd")
 //INST(FSQRT_1,                "FSQRT (vector)",                            "0Q10111011111001111110nnnnnddddd")
 //INST(FSQRT_2,                "FSQRT (vector)",                            "0Q1011101z100001111110nnnnnddddd")
+//INST(FRINT32X_1,             "FRINT32X (vector)",                         "0Q1011100z100001111110nnnnnddddd") // ARMv8.5
+//INST(FRINT64X_1,             "FRINT64X (vector)",                         "0Q1011100z100001111010nnnnnddddd") // ARMv8.5
+//INST(FRINT32Z_1,             "FRINT32Z (vector)",                         "0Q0011100z100001111010nnnnnddddd") // ARMv8.5
+//INST(FRINT64Z_1,             "FRINT64Z (vector)",                         "0Q0011100z100001111110nnnnnddddd") // ARMv8.5
 
 // Data Processing - FP and SIMD - SIMD across lanes
 INST(SADDLV,                 "SADDLV",                                    "0Q001110zz110000001110nnnnnddddd")
@@ -912,6 +962,10 @@ INST(FRINTZ_float,           "FRINTZ (scalar)",                           "00011
 INST(FRINTA_float,           "FRINTA (scalar)",                           "00011110yy100110010000nnnnnddddd")
 INST(FRINTX_float,           "FRINTX (scalar)",                           "00011110yy100111010000nnnnnddddd")
 INST(FRINTI_float,           "FRINTI (scalar)",                           "00011110yy100111110000nnnnnddddd")
+//INST(FRINT32X_float,         "FRINT32X (scalar)",                       "00011110yy101000110000nnnnnddddd") // ARMv8.5
+//INST(FRINT64X_float,         "FRINT64X (scalar)",                       "00011110yy101001110000nnnnnddddd") // ARMv8.5
+//INST(FRINT32Z_float,         "FRINT32Z (scalar)",                       "00011110yy101000010000nnnnnddddd") // ARMv8.5
+//INST(FRINT64Z_float,         "FRINT64Z (scalar)",                       "00011110yy101001010000nnnnnddddd") // ARMv8.5
 
 // Data Processing - FP and SIMD - Floating point compare
 INST(FCMP_float,             "FCMP",                                      "00011110yy1mmmmm001000nnnnn0o000")
