@@ -50,6 +50,34 @@ void FoldAND(IR::Inst& inst, bool is_32_bit) {
     }
 }
 
+// Folds division operations based on the following:
+//
+// 1. x / 0 -> 0 (NOTE: This is an ARM-specific behavior defined in the architecture reference manual)
+// 2. imm_x / imm_y -> result
+// 3. x / 1 -> x
+//
+void FoldDivide(IR::Inst& inst, bool is_32_bit, bool is_signed) {
+    const auto rhs = inst.GetArg(1);
+
+    if (rhs.IsZero()) {
+        ReplaceUsesWith(inst, is_32_bit, 0);
+        return;
+    }
+
+    const auto lhs = inst.GetArg(0);
+    if (lhs.IsImmediate() && rhs.IsImmediate()) {
+        if (is_signed) {
+            const s64 result = lhs.GetImmediateAsS64() / rhs.GetImmediateAsS64();
+            ReplaceUsesWith(inst, is_32_bit, static_cast<u64>(result));
+        } else {
+            const u64 result = lhs.GetImmediateAsU64() / rhs.GetImmediateAsU64();
+            ReplaceUsesWith(inst, is_32_bit, result);
+        }
+    } else if (rhs.IsUnsignedImmediate(1)) {
+        inst.ReplaceUsesWith(IR::Value{lhs});
+    }
+}
+
 // Folds EOR operations based on the following:
 //
 // 1. imm_x ^ imm_y -> result
@@ -189,6 +217,14 @@ void ConstantPropagation(IR::Block& block) {
         case IR::Opcode::Mul32:
         case IR::Opcode::Mul64:
             FoldMultiply(inst, opcode == IR::Opcode::Mul32);
+            break;
+        case IR::Opcode::SignedDiv32:
+        case IR::Opcode::SignedDiv64:
+            FoldDivide(inst, opcode == IR::Opcode::SignedDiv32, true);
+            break;
+        case IR::Opcode::UnsignedDiv32:
+        case IR::Opcode::UnsignedDiv64:
+            FoldDivide(inst, opcode == IR::Opcode::UnsignedDiv32, false);
             break;
         case IR::Opcode::And32:
         case IR::Opcode::And64:
