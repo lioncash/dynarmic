@@ -154,6 +154,26 @@ void FoldOR(IR::Inst& inst, bool is_32_bit) {
     }
 }
 
+void FoldShifts(IR::Inst& inst) {
+    IR::Inst* carry_inst = inst.GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
+
+    // The 32-bit variants can contain 3 arguments, while the
+    // 64-bit variants only contain 2.
+    if (inst.NumArgs() == 3 && !carry_inst) {
+        inst.SetArg(2, IR::Value(false));
+    }
+
+    const auto shift_amount = inst.GetArg(1);
+    if (!shift_amount.IsZero()) {
+        return;
+    }
+
+    if (carry_inst) {
+        carry_inst->ReplaceUsesWith(inst.GetArg(2));
+    }
+    inst.ReplaceUsesWith(inst.GetArg(0));
+}
+
 void FoldSignExtendXToWord(IR::Inst& inst) {
     if (!inst.AreAllArgsImmediates()) {
         return;
@@ -197,23 +217,15 @@ void ConstantPropagation(IR::Block& block) {
 
         switch (opcode) {
         case IR::Opcode::LogicalShiftLeft32:
+        case IR::Opcode::LogicalShiftLeft64:
         case IR::Opcode::LogicalShiftRight32:
+        case IR::Opcode::LogicalShiftRight64:
         case IR::Opcode::ArithmeticShiftRight32:
-        case IR::Opcode::RotateRight32: {
-            if (!inst.GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp)) {
-                inst.SetArg(2, IR::Value(false));
-            }
-
-            auto shift_amount = inst.GetArg(1);
-            if (shift_amount.IsImmediate() && shift_amount.GetU8() == 0) {
-                IR::Inst* carry_inst = inst.GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
-                if (carry_inst) {
-                    carry_inst->ReplaceUsesWith(inst.GetArg(2));
-                }
-                inst.ReplaceUsesWith(inst.GetArg(0));
-            }
+        case IR::Opcode::ArithmeticShiftRight64:
+        case IR::Opcode::RotateRight32:
+        case IR::Opcode::RotateRight64:
+            FoldShifts(inst);
             break;
-        }
         case IR::Opcode::Mul32:
         case IR::Opcode::Mul64:
             FoldMultiply(inst, opcode == IR::Opcode::Mul32);
