@@ -4,14 +4,14 @@
  * General Public License version 2 or any later version.
  */
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
 
 static bool SharedDecodeAndOperation(TranslatorVisitor& v, bool wback, MemOp memop,
-                                     bool Q, bool S, bool R, bool replicate, boost::optional<Reg> Rm,
+                                     bool Q, bool S, bool R, bool replicate, std::optional<Reg> Rm,
                                      Imm<3> opcode, Imm<2> size, Reg Rn, Vec Vt) {
     const size_t selem = (opcode.Bit<0>() << 1 | u32{R}) + 1;
     size_t scale = opcode.Bits<1, 2>();

@@ -38,9 +38,9 @@ IR::Block TranslateArm(LocationDescriptor descriptor, MemoryReadCodeFuncType mem
         const u32 arm_instruction = memory_read_code(arm_pc);
 
         if (const auto vfp_decoder = DecodeVFP2<ArmTranslatorVisitor>(arm_instruction)) {
-            should_continue = vfp_decoder->call(visitor, arm_instruction);
+            should_continue = vfp_decoder->get().call(visitor, arm_instruction);
         } else if (const auto decoder = DecodeArm<ArmTranslatorVisitor>(arm_instruction)) {
-            should_continue = decoder->call(visitor, arm_instruction);
+            should_continue = decoder->get().call(visitor, arm_instruction);
         } else {
             should_continue = visitor.arm_UDF();
         }
@@ -73,9 +73,9 @@ bool TranslateSingleArmInstruction(IR::Block& block, LocationDescriptor descript
 
     bool should_continue = true;
     if (const auto vfp_decoder = DecodeVFP2<ArmTranslatorVisitor>(arm_instruction)) {
-        should_continue = vfp_decoder->call(visitor, arm_instruction);
+        should_continue = vfp_decoder->get().call(visitor, arm_instruction);
     } else if (const auto decoder = DecodeArm<ArmTranslatorVisitor>(arm_instruction)) {
-        should_continue = decoder->call(visitor, arm_instruction);
+        should_continue = decoder->get().call(visitor, arm_instruction);
     } else {
         should_continue = visitor.arm_UDF();
     }

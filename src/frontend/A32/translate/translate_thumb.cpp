@@ -891,13 +891,13 @@ IR::Block TranslateThumb(LocationDescriptor descriptor, MemoryReadCodeFuncType m
 
         if (inst_size == ThumbInstSize::Thumb16) {
             if (const auto decoder = DecodeThumb16<ThumbTranslatorVisitor>(static_cast<u16>(thumb_instruction))) {
-                should_continue = decoder->call(visitor, static_cast<u16>(thumb_instruction));
+                should_continue = decoder->get().call(visitor, static_cast<u16>(thumb_instruction));
             } else {
                 should_continue = visitor.thumb16_UDF();
             }
         } else {
             if (const auto decoder = DecodeThumb32<ThumbTranslatorVisitor>(thumb_instruction)) {
-                should_continue = decoder->call(visitor, thumb_instruction);
+                should_continue = decoder->get().call(visitor, thumb_instruction);
             } else {
                 should_continue = visitor.thumb32_UDF();
             }
@@ -920,13 +920,13 @@ bool TranslateSingleThumbInstruction(IR::Block& block, LocationDescriptor descri
     bool should_continue = true;
     if (is_thumb_16) {
         if (const auto decoder = DecodeThumb16<ThumbTranslatorVisitor>(static_cast<u16>(thumb_instruction))) {
-            should_continue = decoder->call(visitor, static_cast<u16>(thumb_instruction));
+            should_continue = decoder->get().call(visitor, static_cast<u16>(thumb_instruction));
         } else {
             should_continue = visitor.thumb16_UDF();
         }
     } else {
         if (const auto decoder = DecodeThumb32<ThumbTranslatorVisitor>(thumb_instruction)) {
-            should_continue = decoder->call(visitor, thumb_instruction);
+            should_continue = decoder->get().call(visitor, thumb_instruction);
         } else {
             should_continue = visitor.thumb32_UDF();
         }

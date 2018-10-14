@@ -8,10 +8,9 @@
 
 #include <algorithm>
 #include <functional>
+#include <optional>
 #include <set>
 #include <vector>
-
-#include <boost/optional.hpp>
 
 #include "common/bit_util.h"
 #include "common/common_types.h"
@@ -51,13 +50,13 @@ std::vector<Matcher<Visitor>> GetDecodeTable() {
 }
 
 template<typename Visitor>
-boost::optional<const Matcher<Visitor>&> Decode(u32 instruction) {
+std::optional<std::reference_wrapper<const Matcher<Visitor>>> Decode(u32 instruction) {
     static const auto table = GetDecodeTable<Visitor>();
 
     const auto matches_instruction = [instruction](const auto& matcher) { return matcher.Matches(instruction); };
 
     auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
-    return iter != table.end() ? boost::optional<const Matcher<Visitor>&>(*iter) : boost::none;
+    return iter != table.end() ? std::optional<std::reference_wrapper<const Matcher<Visitor>>>(*iter) : std::nullopt;
 }
 
 } // namespace Dynarmic::A64

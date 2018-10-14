@@ -8,9 +8,8 @@
 
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <string>
-
-#include <boost/optional.hpp>
 
 #include "common/common_types.h"
 #include "common/intrusive_list.h"
@@ -139,7 +138,7 @@ private:
     /// Conditional to pass in order to execute this block
     Cond cond = Cond::AL;
     /// Block to execute next if `cond` did not pass.
-    boost::optional<LocationDescriptor> cond_failed = {};
+    std::optional<LocationDescriptor> cond_failed = {};
     /// Number of cycles this block takes to execute if the conditional fails.
     size_t cond_failed_cycle_count = 0;
 

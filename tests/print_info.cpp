@@ -21,7 +21,7 @@ using namespace Dynarmic;
 
 const char* GetNameOfInstruction(u32 instruction) {
     if (auto decoder = A64::Decode<A64::TranslatorVisitor>(instruction)) {
-        return decoder->GetName();
+        return decoder->get().GetName();
     }
     return "<null>";
 }

@@ -4,13 +4,13 @@
  * General Public License version 2 or any later version.
  */
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
 
-static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& v, bool pair, size_t size, bool L, bool o0, boost::optional<Reg> Rs, boost::optional<Reg> Rt2, Reg Rn, Reg Rt) {
+static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& v, bool pair, size_t size, bool L, bool o0, std::optional<Reg> Rs, std::optional<Reg> Rt2, Reg Rn, Reg Rt) {
     // Shared Decode
 
     const AccType acctype = o0 ? AccType::ORDERED : AccType::ATOMIC;

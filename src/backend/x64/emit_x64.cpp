@@ -39,10 +39,10 @@ EmitX64::EmitX64(BlockOfCode& code)
 
 EmitX64::~EmitX64() = default;
 
-boost::optional<typename EmitX64::BlockDescriptor> EmitX64::GetBasicBlock(IR::LocationDescriptor descriptor) const {
+std::optional<typename EmitX64::BlockDescriptor> EmitX64::GetBasicBlock(IR::LocationDescriptor descriptor) const {
     auto iter = block_descriptors.find(descriptor);
     if (iter == block_descriptors.end())
-        return boost::none;
+        return std::nullopt;
     return iter->second;
 }
 

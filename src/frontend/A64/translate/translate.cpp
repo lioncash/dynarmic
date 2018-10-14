@@ -22,7 +22,7 @@ IR::Block Translate(LocationDescriptor descriptor, MemoryReadCodeFuncType memory
         const u32 instruction = memory_read_code(pc);
 
         if (auto decoder = Decode<TranslatorVisitor>(instruction)) {
-            should_continue = decoder->call(visitor, instruction);
+            should_continue = decoder->get().call(visitor, instruction);
         } else {
             should_continue = visitor.InterpretThisInstruction();
         }
@@ -43,7 +43,7 @@ bool TranslateSingleInstruction(IR::Block& block, LocationDescriptor descriptor,
 
     bool should_continue = true;
     if (auto decoder = Decode<TranslatorVisitor>(instruction)) {
-        should_continue = decoder->call(visitor, instruction);
+        should_continue = decoder->get().call(visitor, instruction);
     } else {
         should_continue = visitor.InterpretThisInstruction();
     }

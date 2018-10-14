@@ -7,13 +7,12 @@
 #pragma once
 
 #include <array>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#include <boost/optional.hpp>
 
 #include <xbyak_util.h>
 
@@ -67,7 +66,7 @@ public:
     virtual ~EmitX64();
 
     /// Looks up an emitted host block in the cache.
-    boost::optional<BlockDescriptor> GetBasicBlock(IR::LocationDescriptor descriptor) const;
+    std::optional<BlockDescriptor> GetBasicBlock(IR::LocationDescriptor descriptor) const;
 
     /// Empties the entire cache.
     virtual void ClearCache();

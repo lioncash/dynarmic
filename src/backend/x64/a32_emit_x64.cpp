@@ -954,7 +954,10 @@ static void EmitCoprocessorException() {
     ASSERT_MSG(false, "Should raise coproc exception here");
 }
 
-static void CallCoprocCallback(BlockOfCode& code, RegAlloc& reg_alloc, A32::Jit* jit_interface, A32::Coprocessor::Callback callback, IR::Inst* inst = nullptr, boost::optional<Argument&> arg0 = {}, boost::optional<Argument&> arg1 = {}) {
+static void CallCoprocCallback(BlockOfCode& code, RegAlloc& reg_alloc, A32::Jit* jit_interface,
+                              A32::Coprocessor::Callback callback, IR::Inst* inst = nullptr,
+                              std::optional<Argument::copyable_reference> arg0 = {},
+                              std::optional<Argument::copyable_reference> arg1 = {}) {
     reg_alloc.HostCall(inst, {}, {}, arg0, arg1);
 
     code.mov(code.ABI_PARAM1, reinterpret_cast<u64>(jit_interface));
@@ -1170,7 +1173,10 @@ void A32EmitX64::EmitA32CoprocLoadWords(A32EmitContext& ctx, IR::Inst* inst) {
     bool long_transfer = coproc_info[2] != 0;
     A32::CoprocReg CRd = static_cast<A32::CoprocReg>(coproc_info[3]);
     bool has_option = coproc_info[4] != 0;
-    boost::optional<u8> option{has_option, coproc_info[5]};
+    std::optional<u8> option = std::nullopt;
+    if (has_option) {
+        option = coproc_info[5];
+    }
 
     std::shared_ptr<A32::Coprocessor> coproc = config.coprocessors[coproc_num];
     if (!coproc) {
@@ -1196,7 +1202,10 @@ void A32EmitX64::EmitA32CoprocStoreWords(A32EmitContext& ctx, IR::Inst* inst) {
     bool long_transfer = coproc_info[2] != 0;
     A32::CoprocReg CRd = static_cast<A32::CoprocReg>(coproc_info[3]);
     bool has_option = coproc_info[4] != 0;
-    boost::optional<u8> option{has_option, coproc_info[5]};
+    std::optional<u8> option = std::nullopt;
+    if (has_option) {
+        option = coproc_info[5];
+    }
 
     std::shared_ptr<A32::Coprocessor> coproc = config.coprocessors[coproc_num];
     if (!coproc) {

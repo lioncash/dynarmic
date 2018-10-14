@@ -1068,9 +1068,9 @@ public:
 std::string DisassembleArm(u32 instruction) {
     DisassemblerVisitor visitor;
     if (auto vfp_decoder = DecodeVFP2<DisassemblerVisitor>(instruction)) {
-        return vfp_decoder->call(visitor, instruction);
+        return vfp_decoder->get().call(visitor, instruction);
     } else if (auto decoder = DecodeArm<DisassemblerVisitor>(instruction)) {
-        return decoder->call(visitor, instruction);
+        return decoder->get().call(visitor, instruction);
     } else {
         return fmt::format("UNKNOWN: {:x}", instruction);
     }

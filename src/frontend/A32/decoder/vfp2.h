@@ -7,9 +7,10 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
+#include <optional>
 #include <vector>
 
-#include <boost/optional.hpp>
 
 #include "common/common_types.h"
 #include "frontend/decoder/decoder_detail.h"
@@ -21,7 +22,7 @@ template <typename Visitor>
 using VFP2Matcher = Decoder::Matcher<Visitor, u32>;
 
 template<typename V>
-boost::optional<const VFP2Matcher<V>&> DecodeVFP2(u32 instruction) {
+std::optional<std::reference_wrapper<const VFP2Matcher<V>>> DecodeVFP2(u32 instruction) {
     static const std::vector<VFP2Matcher<V>> table = {
 
 #define INST(fn, name, bitstring) Decoder::detail::detail<VFP2Matcher<V>>::GetMatcher(&V::fn, name, bitstring),
@@ -31,12 +32,12 @@ boost::optional<const VFP2Matcher<V>&> DecodeVFP2(u32 instruction) {
     };
 
     if ((instruction & 0xF0000000) == 0xF0000000)
-        return boost::none; // Don't try matching any unconditional instructions.
+        return std::nullopt; // Don't try matching any unconditional instructions.
 
     const auto matches_instruction = [instruction](const auto& matcher){ return matcher.Matches(instruction); };
 
     auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
-    return iter != table.end() ? boost::optional<const VFP2Matcher<V>&>(*iter) : boost::none;
+    return iter != table.end() ? std::optional<std::reference_wrapper<const VFP2Matcher<V>>>(*iter) : std::nullopt;
 }
 
 } // namespace Dynarmic::A32

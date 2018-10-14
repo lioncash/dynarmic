@@ -7,8 +7,8 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
-#include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
 #include <dynarmic/A32/coprocessor_util.h>
@@ -31,8 +31,8 @@ public:
          * @return Purpose of return value depends on type of callback.
          */
         std::uint64_t (*function)(Jit* jit, void* user_arg, std::uint32_t arg0, std::uint32_t arg1);
-        /// If boost::none, function will be called with a user_arg parameter containing garbage.
-        boost::optional<void*> user_arg;
+        /// If std::nullopt, function will be called with a user_arg parameter containing garbage.
+        std::optional<void*> user_arg;
     };
 
     /**
@@ -51,10 +51,10 @@ public:
 
     /**
      * Called when compiling CDP or CDP2 for this coprocessor.
-     * A return value of boost::none will cause a coprocessor exception to be compiled.
+     * A return value of std::nullopt will cause a coprocessor exception to be compiled.
      * arg0, arg1 and return value of callback are ignored.
      */
-    virtual boost::optional<Callback> CompileInternalOperation(bool two, unsigned opc1, CoprocReg CRd, CoprocReg CRn, CoprocReg CRm, unsigned opc2) = 0;
+    virtual std::optional<Callback> CompileInternalOperation(bool two, unsigned opc1, CoprocReg CRd, CoprocReg CRn, CoprocReg CRm, unsigned opc2) = 0;
 
     /**
      * Called when compiling MCR or MCR2 for this coprocessor.
@@ -93,19 +93,19 @@ public:
 
     /**
      * Called when compiling LDC or LDC2 for this coprocessor.
-     * A return value of boost::none will cause a coprocessor exception to be compiled.
+     * A return value of std::nullopt will cause a coprocessor exception to be compiled.
      * arg0 of the callback will contain the start address.
      * arg1 and return value of the callback are ignored.
      */
-    virtual boost::optional<Callback> CompileLoadWords(bool two, bool long_transfer, CoprocReg CRd, boost::optional<std::uint8_t> option) = 0;
+    virtual std::optional<Callback> CompileLoadWords(bool two, bool long_transfer, CoprocReg CRd, std::optional<std::uint8_t> option) = 0;
 
     /**
      * Called when compiling STC or STC2 for this coprocessor.
-     * A return value of boost::none will cause a coprocessor exception to be compiled.
+     * A return value of std::nullopt will cause a coprocessor exception to be compiled.
      * arg0 of the callback will contain the start address.
      * arg1 and return value of the callback are ignored.
      */
-    virtual boost::optional<Callback> CompileStoreWords(bool two, bool long_transfer, CoprocReg CRd, boost::optional<std::uint8_t> option) = 0;
+    virtual std::optional<Callback> CompileStoreWords(bool two, bool long_transfer, CoprocReg CRd, std::optional<std::uint8_t> option) = 0;
 };
 
 } // namespace A32

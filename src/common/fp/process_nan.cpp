@@ -4,7 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "common/assert.h"
 #include "common/bit_util.h"
@@ -41,7 +41,7 @@ template u32 FPProcessNaN<u32>(FPType type, u32 op, FPCR fpcr, FPSR& fpsr);
 template u64 FPProcessNaN<u64>(FPType type, u64 op, FPCR fpcr, FPSR& fpsr);
 
 template<typename FPT>
-boost::optional<FPT> FPProcessNaNs(FPType type1, FPType type2, FPT op1, FPT op2, FPCR fpcr, FPSR& fpsr) {
+std::optional<FPT> FPProcessNaNs(FPType type1, FPType type2, FPT op1, FPT op2, FPCR fpcr, FPSR& fpsr) {
     if (type1 == FPType::SNaN) {
         return FPProcessNaN<FPT>(type1, op1, fpcr, fpsr);
     }
@@ -54,14 +54,14 @@ boost::optional<FPT> FPProcessNaNs(FPType type1, FPType type2, FPT op1, FPT op2,
     if (type2 == FPType::QNaN) {
         return FPProcessNaN<FPT>(type2, op2, fpcr, fpsr);
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-template boost::optional<u32> FPProcessNaNs<u32>(FPType type1, FPType type2, u32 op1, u32 op2, FPCR fpcr, FPSR& fpsr);
-template boost::optional<u64> FPProcessNaNs<u64>(FPType type1, FPType type2, u64 op1, u64 op2, FPCR fpcr, FPSR& fpsr);
+template std::optional<u32> FPProcessNaNs<u32>(FPType type1, FPType type2, u32 op1, u32 op2, FPCR fpcr, FPSR& fpsr);
+template std::optional<u64> FPProcessNaNs<u64>(FPType type1, FPType type2, u64 op1, u64 op2, FPCR fpcr, FPSR& fpsr);
 
 template<typename FPT>
-boost::optional<FPT> FPProcessNaNs3(FPType type1, FPType type2, FPType type3, FPT op1, FPT op2, FPT op3, FPCR fpcr, FPSR& fpsr) {
+std::optional<FPT> FPProcessNaNs3(FPType type1, FPType type2, FPType type3, FPT op1, FPT op2, FPT op3, FPCR fpcr, FPSR& fpsr) {
     if (type1 == FPType::SNaN) {
         return FPProcessNaN<FPT>(type1, op1, fpcr, fpsr);
     }
@@ -80,10 +80,10 @@ boost::optional<FPT> FPProcessNaNs3(FPType type1, FPType type2, FPType type3, FP
     if (type3 == FPType::QNaN) {
         return FPProcessNaN<FPT>(type3, op3, fpcr, fpsr);
     }
-    return boost::none;
+    return std::nullopt;
 }
 
-template boost::optional<u32> FPProcessNaNs3<u32>(FPType type1, FPType type2, FPType type3, u32 op1, u32 op2, u32 op3, FPCR fpcr, FPSR& fpsr);
-template boost::optional<u64> FPProcessNaNs3<u64>(FPType type1, FPType type2, FPType type3, u64 op1, u64 op2, u64 op3, FPCR fpcr, FPSR& fpsr);
+template std::optional<u32> FPProcessNaNs3<u32>(FPType type1, FPType type2, FPType type3, u32 op1, u32 op2, u32 op3, FPCR fpcr, FPSR& fpsr);
+template std::optional<u64> FPProcessNaNs3<u64>(FPType type1, FPType type2, FPType type3, u64 op1, u64 op2, u64 op3, FPCR fpcr, FPSR& fpsr);
 
 } // namespace Dynarmic::FP 
