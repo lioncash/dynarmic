@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "common/bit_util.h"
 #include "common/common_types.h"
@@ -78,14 +78,14 @@ public:
     }
 
     /// Indicates the stride of a vector.
-    boost::optional<size_t> Stride() const {
+    std::optional<size_t> Stride() const {
         switch (Common::Bits<20, 21>(value)) {
         case 0b00:
             return 1;
         case 0b11:
             return 2;
         default:
-            return boost::none;
+            return std::nullopt;
         }
     }
 

@@ -5,14 +5,13 @@
  */
 
 #include <tuple>
-
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "frontend/A64/translate/impl/impl.h"
 
 namespace Dynarmic::A64 {
 
-static bool SharedDecodeAndOperation(TranslatorVisitor& v, bool wback, MemOp memop, bool Q, boost::optional<Reg> Rm, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt) {
+static bool SharedDecodeAndOperation(TranslatorVisitor& v, bool wback, MemOp memop, bool Q, std::optional<Reg> Rm, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt) {
     const size_t datasize = Q ? 128 : 64;
     const size_t esize = 8 << size.ZeroExtend<size_t>();
     const size_t elements = datasize / esize;

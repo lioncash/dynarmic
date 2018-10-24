@@ -4,7 +4,8 @@
  * General Public License version 2 or any later version.
  */
 
-#include <boost/optional.hpp>
+#include <optional>
+
 #include "common/bit_util.h"
 #include "frontend/A64/translate/impl/impl.h"
 
@@ -49,7 +50,7 @@ bool RoundingShiftLeft(TranslatorVisitor& v, Imm<2> size, Vec Vm, Vec Vn, Vec Vd
     return true;
 }
 
-bool ScalarCompare(TranslatorVisitor& v, Imm<2> size, boost::optional<Vec> Vm, Vec Vn, Vec Vd,
+bool ScalarCompare(TranslatorVisitor& v, Imm<2> size, std::optional<Vec> Vm, Vec Vn, Vec Vd,
                    ComparisonType type, ComparisonVariant variant) {
     if (size != 0b11) {
         return v.ReservedValue();
@@ -59,7 +60,7 @@ bool ScalarCompare(TranslatorVisitor& v, Imm<2> size, boost::optional<Vec> Vm, V
     const size_t datasize = 64;
 
     const IR::U128 operand1 = v.V(datasize, Vn);
-    const IR::U128 operand2 = variant == ComparisonVariant::Register ? v.V(datasize, Vm.get()) : v.ir.ZeroVector();
+    const IR::U128 operand2 = variant == ComparisonVariant::Register ? v.V(datasize, *Vm) : v.ir.ZeroVector();
 
     const IR::U128 result = [&] {
         switch (type) {

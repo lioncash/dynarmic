@@ -10,9 +10,8 @@
 
 #include <algorithm>
 #include <functional>
+#include <optional>
 #include <vector>
-
-#include <boost/optional.hpp>
 
 #include "common/bit_util.h"
 #include "common/common_types.h"
@@ -43,13 +42,13 @@ std::vector<ArmMatcher<V>> GetArmDecodeTable() {
 }
 
 template<typename V>
-boost::optional<const ArmMatcher<V>&> DecodeArm(u32 instruction) {
+std::optional<std::reference_wrapper<const ArmMatcher<V>>> DecodeArm(u32 instruction) {
     static const auto table = GetArmDecodeTable<V>();
 
     const auto matches_instruction = [instruction](const auto& matcher) { return matcher.Matches(instruction); };
 
     auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
-    return iter != table.end() ? boost::optional<const ArmMatcher<V>&>(*iter) : boost::none;
+    return iter != table.end() ? std::optional<std::reference_wrapper<const ArmMatcher<V>>>(*iter) : std::nullopt;
 }
 
 } // namespace Dynarmic::A32

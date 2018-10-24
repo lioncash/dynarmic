@@ -39,15 +39,15 @@ bool TranslatorVisitor::RaiseException(Exception exception) {
     return false;
 }
 
-boost::optional<TranslatorVisitor::BitMasks> TranslatorVisitor::DecodeBitMasks(bool immN, Imm<6> imms, Imm<6> immr, bool immediate) {
+std::optional<TranslatorVisitor::BitMasks> TranslatorVisitor::DecodeBitMasks(bool immN, Imm<6> imms, Imm<6> immr, bool immediate) {
     int len = Common::HighestSetBit((immN ? 1 << 6 : 0) | (imms.ZeroExtend() ^ 0b111111));
     if (len < 1)
-        return boost::none;
+        return std::nullopt;
 
     size_t levels = Common::Ones<size_t>(len);
 
     if (immediate && (imms.ZeroExtend() & levels) == levels)
-        return boost::none;
+        return std::nullopt;
 
     s32 S = s32(imms.ZeroExtend() & levels);
     s32 R = s32(immr.ZeroExtend() & levels);

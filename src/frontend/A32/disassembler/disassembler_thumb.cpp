@@ -328,7 +328,7 @@ public:
 std::string DisassembleThumb16(u16 instruction) {
     DisassemblerVisitor visitor;
     auto decoder = DecodeThumb16<DisassemblerVisitor>(instruction);
-    return !decoder ? fmt::format("UNKNOWN: {:x}", instruction) : decoder->call(visitor, instruction);
+    return !decoder ? fmt::format("UNKNOWN: {:x}", instruction) : decoder->get().call(visitor, instruction);
 }
 
 } // namespace Dynarmic::A32

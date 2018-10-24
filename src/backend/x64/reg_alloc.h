@@ -8,10 +8,10 @@
 
 #include <array>
 #include <functional>
+#include <optional>
 #include <utility>
 #include <vector>
 
-#include <boost/optional.hpp>
 #include <xbyak.h>
 
 #include "backend/x64/block_of_code.h"
@@ -60,6 +60,8 @@ private:
 
 struct Argument {
 public:
+    using copyable_reference = std::reference_wrapper<Argument>;
+
     IR::Type GetType() const;
     bool IsImmediate() const;
     bool IsVoid() const;
@@ -117,7 +119,11 @@ public:
     Xbyak::Reg64 ScratchGpr(HostLocList desired_locations = any_gpr);
     Xbyak::Xmm ScratchXmm(HostLocList desired_locations = any_xmm);
 
-    void HostCall(IR::Inst* result_def = nullptr, boost::optional<Argument&> arg0 = {}, boost::optional<Argument&> arg1 = {}, boost::optional<Argument&> arg2 = {}, boost::optional<Argument&> arg3 = {});
+    void HostCall(IR::Inst* result_def = nullptr,
+                  std::optional<Argument::copyable_reference> arg0 = {},
+                  std::optional<Argument::copyable_reference> arg1 = {},
+                  std::optional<Argument::copyable_reference> arg2 = {},
+                  std::optional<Argument::copyable_reference> arg3 = {});
 
     // TODO: Values in host flags
 
@@ -129,7 +135,7 @@ private:
     friend struct Argument;
 
     HostLoc SelectARegister(HostLocList desired_locations) const;
-    boost::optional<HostLoc> ValueLocation(const IR::Inst* value) const;
+    std::optional<HostLoc> ValueLocation(const IR::Inst* value) const;
 
     HostLoc UseImpl(IR::Value use_value, HostLocList desired_locations);
     HostLoc UseScratchImpl(IR::Value use_value, HostLocList desired_locations);

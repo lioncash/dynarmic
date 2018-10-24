@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "common/common_types.h"
 #include "common/fp/fpcr.h"
@@ -51,21 +51,21 @@ constexpr bool IsNaN(FPT value) {
 }
 
 /// Given a single argument, return the NaN value which would be returned by an ARM processor.
-/// If the argument isn't a NaN, returns boost::none.
+/// If the argument isn't a NaN, returns std::nullopt.
 template<typename FPT>
-inline boost::optional<FPT> ProcessNaNs(FPT a) {
+inline std::optional<FPT> ProcessNaNs(FPT a) {
     if (IsSNaN(a)) {
         return a | FPInfo<FPT>::mantissa_msb;
     } else if (IsQNaN(a)) {
         return a;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 /// Given a pair of arguments, return the NaN value which would be returned by an ARM processor.
-/// If neither argument is a NaN, returns boost::none.
+/// If neither argument is a NaN, returns std::nullopt.
 template<typename FPT>
-inline boost::optional<FPT> ProcessNaNs(FPT a, FPT b) {
+inline std::optional<FPT> ProcessNaNs(FPT a, FPT b) {
     if (IsSNaN(a)) {
         return a | FPInfo<FPT>::mantissa_msb;
     } else if (IsSNaN(b)) {
@@ -75,13 +75,13 @@ inline boost::optional<FPT> ProcessNaNs(FPT a, FPT b) {
     } else if (IsQNaN(b)) {
         return b;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 /// Given three arguments, return the NaN value which would be returned by an ARM processor.
-/// If none of the arguments is a NaN, returns boost::none.
+/// If none of the arguments is a NaN, returns std::nullopt.
 template<typename FPT>
-inline boost::optional<FPT> ProcessNaNs(FPT a, FPT b, FPT c) {
+inline std::optional<FPT> ProcessNaNs(FPT a, FPT b, FPT c) {
     if (IsSNaN(a)) {
         return a | FPInfo<FPT>::mantissa_msb;
     } else if (IsSNaN(b)) {
@@ -95,7 +95,7 @@ inline boost::optional<FPT> ProcessNaNs(FPT a, FPT b, FPT c) {
     } else if (IsQNaN(c)) {
         return c;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 } // namespace Dynarmic::FP

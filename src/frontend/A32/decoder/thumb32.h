@@ -7,9 +7,8 @@
 #pragma once
 
 #include <algorithm>
+#include <optional>
 #include <vector>
-
-#include <boost/optional.hpp>
 
 #include "common/common_types.h"
 #include "frontend/decoder/decoder_detail.h"
@@ -21,7 +20,7 @@ template <typename Visitor>
 using Thumb32Matcher = Decoder::Matcher<Visitor, u32>;
 
 template<typename V>
-boost::optional<const Thumb32Matcher<V>&> DecodeThumb32(u32 instruction) {
+std::optional<std::reference_wrapper<const Thumb32Matcher<V>>> DecodeThumb32(u32 instruction) {
     static const std::vector<Thumb32Matcher<V>> table = {
 
 #define INST(fn, name, bitstring) Decoder::detail::detail<Thumb32Matcher<V>>::GetMatcher(fn, name, bitstring)
@@ -349,7 +348,7 @@ boost::optional<const Thumb32Matcher<V>&> DecodeThumb32(u32 instruction) {
     const auto matches_instruction = [instruction](const auto& matcher){ return matcher.Matches(instruction); };
 
     auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
-    return iter != table.end() ? boost::optional<const Thumb32Matcher<V>&>(*iter) : boost::none;
+    return iter != table.end() ? std::optional<std::reference_wrapper<const Thumb32Matcher<V>>>(*iter) : std::nullopt;
 }
 
 } // namespace Dynarmic::A32

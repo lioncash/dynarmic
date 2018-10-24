@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "common/assert.h"
 #include "common/bit_util.h"
@@ -75,14 +75,14 @@ public:
 
     /// Get the stride of a vector when executing AArch32 VFP instructions.
     /// This field has no function in AArch64 state.
-    boost::optional<size_t> Stride() const {
+    std::optional<size_t> Stride() const {
         switch (Common::Bits<20, 21>(value)) {
         case 0b00:
             return 1;
         case 0b11:
             return 2;
         default:
-            return boost::none;
+            return std::nullopt;
         }
     }
 

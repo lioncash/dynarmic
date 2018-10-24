@@ -4,7 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "frontend/A64/translate/impl/impl.h"
 

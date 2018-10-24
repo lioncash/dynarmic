@@ -57,7 +57,7 @@ void Block::SetCondition(Cond condition) {
 }
 
 LocationDescriptor Block::ConditionFailedLocation() const {
-    return cond_failed.get();
+    return *cond_failed;
 }
 
 void Block::SetConditionFailedLocation(LocationDescriptor fail_location) {
@@ -73,7 +73,7 @@ const size_t& Block::ConditionFailedCycleCount() const {
 }
 
 bool Block::HasConditionFailedLocation() const {
-    return cond_failed.is_initialized();
+    return cond_failed.has_value();
 }
 
 Block::InstructionList& Block::Instructions() {

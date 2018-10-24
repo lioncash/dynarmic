@@ -7,8 +7,7 @@
 #pragma once
 
 #include <array>
-
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "backend/x64/a32_jitstate.h"
 #include "backend/x64/block_range_information.h"

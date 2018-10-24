@@ -706,13 +706,13 @@ void A64EmitX64::EmitA64SetExclusive(A64EmitContext& ctx, IR::Inst* inst) {
     code.mov(qword[r15 + offsetof(A64JitState, exclusive_address)], address);
 }
 
-static Xbyak::RegExp EmitVAddrLookup(BlockOfCode& code, A64EmitContext& ctx, Xbyak::Label& abort, Xbyak::Reg64 vaddr, boost::optional<Xbyak::Reg64> arg_scratch = {}) {
+static Xbyak::RegExp EmitVAddrLookup(BlockOfCode& code, A64EmitContext& ctx, Xbyak::Label& abort, Xbyak::Reg64 vaddr, std::optional<Xbyak::Reg64> arg_scratch = {}) {
     constexpr size_t page_bits = 12;
     constexpr size_t page_size = 1 << page_bits;
     const size_t valid_page_index_bits = ctx.conf.page_table_address_space_bits - page_bits;
     const size_t unused_top_bits = 64 - ctx.conf.page_table_address_space_bits;
 
-    Xbyak::Reg64 page_table = arg_scratch.value_or_eval([&]{ return ctx.reg_alloc.ScratchGpr(); });
+    Xbyak::Reg64 page_table = arg_scratch ? *arg_scratch : ctx.reg_alloc.ScratchGpr();
     Xbyak::Reg64 tmp = ctx.reg_alloc.ScratchGpr();
     code.mov(page_table, reinterpret_cast<u64>(ctx.conf.page_table));
     code.mov(tmp, vaddr);

@@ -7,8 +7,7 @@
 #pragma once
 
 #include <initializer_list>
-
-#include <boost/optional.hpp>
+#include <optional>
 
 #include <dynarmic/A64/config.h>
 
@@ -30,7 +29,7 @@ public:
     explicit IREmitter(IR::Block& block) : IR::IREmitter(block) {}
     explicit IREmitter(IR::Block& block, LocationDescriptor descriptor) : IR::IREmitter(block), current_location(descriptor) {}
 
-    boost::optional<LocationDescriptor> current_location;
+    std::optional<LocationDescriptor> current_location;
 
     u64 PC();
     u64 AlignPC(size_t alignment);
