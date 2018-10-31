@@ -4,6 +4,8 @@
  * General Public License version 2 or any later version.
  */
 
+#pragma once
+
 #include <type_traits>
 
 #include "common/bit_util.h"
