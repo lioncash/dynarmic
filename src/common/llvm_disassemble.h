@@ -4,6 +4,8 @@
  * General Public License version 2 or any later version.
  */
 
+#pragma once
+
 #include <string>
 
 #include "common/common_types.h"
