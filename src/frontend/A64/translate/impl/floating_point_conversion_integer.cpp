@@ -87,6 +87,7 @@ bool TranslatorVisitor::FMOV_float_gen(bool sf, Imm<2> type, Imm<1> rmode_0, Imm
     size_t part;
     switch (rmode_0.ZeroExtend()) {
     case 0b0:
+        // fltsize != 16 is always true for now (late 2018), until half-float support is implemented.
         if (fltsize != 16 && fltsize != intsize) {
             return UnallocatedEncoding();
         }
