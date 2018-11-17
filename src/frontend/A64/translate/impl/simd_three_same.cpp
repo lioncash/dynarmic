@@ -1106,6 +1106,20 @@ bool TranslatorVisitor::FMUL_vec_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FMULX_vec_4(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
+    if (sz && !Q) {
+        return ReservedValue();
+    }
+    const size_t esize = sz ? 64 : 32;
+    const size_t datasize = Q ? 128 : 64;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+    IR::U128 result = ir.FPVectorMulX(esize, operand1, operand2);
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FDIV_2(bool Q, bool sz, Vec Vm, Vec Vn, Vec Vd) {
     if (sz && !Q) {
         return ReservedValue();
