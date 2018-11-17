@@ -899,7 +899,7 @@ INST(UMULL_elt,              "UMULL, UMULL2 (by element)",                "0Q101
 INST(UDOT_elt,               "UDOT (by element)",                         "0Q101111zzLMmmmm1110H0nnnnnddddd")
 //INST(SQRDMLSH_elt_2,         "SQRDMLSH (by element)",                     "0Q101111zzLMmmmm1111H0nnnnnddddd")
 //INST(FMULX_elt_3,            "FMULX (by element)",                        "0Q10111100LMmmmm1001H0nnnnnddddd")
-//INST(FMULX_elt_4,            "FMULX (by element)",                        "0Q1011111zLMmmmm1001H0nnnnnddddd")
+INST(FMULX_elt_4,            "FMULX (by element)",                        "0Q1011111zLMmmmm1001H0nnnnnddddd")
 //INST(FCMLA_elt,              "FCMLA (by element)",                        "0Q101111zzLMmmmm0rr1H0nnnnnddddd")
 
 // Data Processing - FP and SIMD - Cryptographic three register

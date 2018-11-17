@@ -20,6 +20,7 @@ std::pair<size_t, Vec> Combine(Imm<2> size, Imm<1> H, Imm<1> L, Imm<1> M, Imm<4>
 
 enum class ExtraBehavior {
     None,
+    Extended,
     Accumulate,
     Subtract,
 };
@@ -34,11 +35,11 @@ bool MultiplyByElement(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<
     const size_t idxdsize = H == 1 ? 128 : 64;
     const size_t esize = 8 << size.ZeroExtend();
     const size_t datasize = Q ? 128 : 64;
-    
+
     const IR::U128 operand1 = v.V(datasize, Vn);
     const IR::U128 operand2 = v.ir.VectorBroadcast(esize, v.ir.VectorGetElement(esize, v.V(idxdsize, Vm), index));
     const IR::U128 operand3 = v.V(datasize, Vd);
-    
+
     IR::U128 result = v.ir.VectorMultiply(esize, operand1, operand2);
     if (extra_behavior == ExtraBehavior::Accumulate) {
         result = v.ir.VectorAdd(esize, operand3, result);
@@ -74,6 +75,8 @@ bool FPMultiplyByElement(TranslatorVisitor& v, bool Q, bool sz, Imm<1> L, Imm<1>
         switch (extra_behavior) {
         case ExtraBehavior::None:
             return v.ir.FPVectorMul(esize, operand1, operand2);
+        case ExtraBehavior::Extended:
+            return v.ir.FPVectorMulX(esize, operand1, operand2);
         case ExtraBehavior::Accumulate:
             return v.ir.FPVectorMulAdd(esize, operand3, operand1, operand2);
         case ExtraBehavior::Subtract:
@@ -200,6 +203,10 @@ bool TranslatorVisitor::FMLS_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> V
 
 bool TranslatorVisitor::FMUL_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     return FPMultiplyByElement(*this, Q, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None);
+}
+
+bool TranslatorVisitor::FMULX_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return FPMultiplyByElement(*this, Q, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Extended);
 }
 
 bool TranslatorVisitor::SMLAL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
