@@ -2135,6 +2135,17 @@ U128 IREmitter::FPVectorMulAdd(size_t esize, const U128& a, const U128& b, const
     return {};
 }
 
+U128 IREmitter::FPVectorMulX(size_t esize, const U128& a, const U128& b) {
+    switch (esize) {
+    case 32:
+        return Inst<U128>(Opcode::FPVectorMulX32, a, b);
+    case 64:
+        return Inst<U128>(Opcode::FPVectorMulX64, a, b);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::FPVectorNeg(size_t esize, const U128& a) {
     switch (esize) {
     case 16:

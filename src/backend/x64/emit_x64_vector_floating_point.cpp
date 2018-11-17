@@ -954,6 +954,50 @@ void EmitX64::EmitFPVectorMulAdd64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPVectorMulAdd<64>(code, ctx, inst);
 }
 
+template<size_t fsize>
+static void EmitFPVectorMulX(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    using FPT = mp::unsigned_integer_of_size<fsize>;
+
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+
+    const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+    const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseXmm(args[0]);
+    const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
+    const Xbyak::Xmm nan_mask = ctx.reg_alloc.ScratchXmm();
+
+    code.movaps(nan_mask, xmm_b);
+    code.movaps(result, xmm_a);
+    FCODE(cmpunordp)(nan_mask, xmm_a);
+    FCODE(mulp)(result, xmm_b);
+    FCODE(cmpunordp)(nan_mask, result);
+
+    const auto nan_handler = static_cast<void(*)(std::array<VectorArray<FPT>, 3>&, FP::FPCR)>(
+        [](std::array<VectorArray<FPT>, 3>& values, FP::FPCR fpcr) {
+            VectorArray<FPT>& result = values[0];
+            for (size_t elementi = 0; elementi < result.size(); ++elementi) {
+                if (auto r = FP::ProcessNaNs(values[1][elementi], values[2][elementi])) {
+                    result[elementi] = fpcr.DN() ? FP::FPInfo<FPT>::DefaultNaN() : *r;
+                } else if (FP::IsNaN(result[elementi])) {
+                    const FPT sign = (values[1][elementi] ^ values[2][elementi]) & FP::FPInfo<FPT>::sign_mask;
+                    result[elementi] = sign | FP::FPValue<FPT, false, 0, 2>();
+                }
+            }
+        }
+    );
+
+    HandleNaNs<fsize, 2>(code, ctx, {result, xmm_a, xmm_b}, nan_mask, nan_handler);
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
+void EmitX64::EmitFPVectorMulX32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorMulX<32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPVectorMulX64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorMulX<64>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPVectorNeg16(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 

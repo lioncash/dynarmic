@@ -543,6 +543,8 @@ OPCODE(FPVectorMul32,                                       U128,           U128
 OPCODE(FPVectorMul64,                                       U128,           U128,           U128                                            )
 OPCODE(FPVectorMulAdd32,                                    U128,           U128,           U128,           U128                            )
 OPCODE(FPVectorMulAdd64,                                    U128,           U128,           U128,           U128                            )
+OPCODE(FPVectorMulX32,                                      U128,           U128,           U128                                            )
+OPCODE(FPVectorMulX64,                                      U128,           U128,           U128                                            )
 OPCODE(FPVectorNeg16,                                       U128,           U128                                                            )
 OPCODE(FPVectorNeg32,                                       U128,           U128                                                            )
 OPCODE(FPVectorNeg64,                                       U128,           U128                                                            )
