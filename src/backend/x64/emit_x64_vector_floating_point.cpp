@@ -362,7 +362,7 @@ void EmitThreeOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
 template<typename Lambda>
 void EmitTwoOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lambda lambda) {
     const auto fn = static_cast<mp::equivalent_function_type_t<Lambda>*>(lambda);
-    
+
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const Xbyak::Xmm arg1 = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
@@ -960,6 +960,26 @@ static void EmitFPVectorMulX(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
+    if (ctx.FPSCR_DN() && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+        const Xbyak::Xmm operand = ctx.reg_alloc.UseXmm(args[1]);
+        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm twos = ctx.reg_alloc.ScratchXmm();
+
+        FCODE(vcmpunordp)(xmm0, result, operand);
+        FCODE(vxorp)(twos, result, operand);
+        FCODE(mulp)(result, operand);
+        FCODE(andp)(twos, GetNegativeZeroVector<fsize>(code));
+        FCODE(vcmpunordp)(tmp, result, result);
+        FCODE(blendvp)(result, GetNaNVector<fsize>(code));
+        FCODE(orp)(twos, GetVectorOf<fsize, false, 0, 2>(code));
+        FCODE(andnp)(xmm0, tmp);
+        FCODE(blendvp)(result, twos);
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
@@ -1052,7 +1072,7 @@ void EmitX64::EmitFPVectorPairedAddLower64(EmitContext& ctx, IR::Inst* inst) {
     EmitThreeOpVectorOperation<64, PairedLowerIndexer>(code, ctx, inst, [&](Xbyak::Xmm result, Xbyak::Xmm xmm_b) {
         const Xbyak::Xmm zero = ctx.reg_alloc.ScratchXmm();
         code.xorps(zero, zero);
-        code.punpcklqdq(result, xmm_b); 
+        code.punpcklqdq(result, xmm_b);
         code.haddpd(result, zero);
     });
 }
