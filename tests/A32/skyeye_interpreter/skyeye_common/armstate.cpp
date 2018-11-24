@@ -8,14 +8,9 @@
 
 #include <algorithm>
 #include "common/assert.h"
+#include "common/bit_util.h"
 #include "A32/skyeye_interpreter/skyeye_common/armstate.h"
 #include "A32/skyeye_interpreter/skyeye_common/vfp/vfp.h"
-
-namespace Common {
-inline u16 swap16(u16 data) {return (data >> 8) | (data << 8);}
-inline u32 swap32(u32 data) {return (swap16(data) << 16) | swap16(data >> 16);}
-inline u64 swap64(u64 data) {return ((u64)swap32((u32)data) << 32) | (u64)swap32(data >> 32);}
-}
 
 ARMul_State::ARMul_State(PrivilegeMode initial_mode)
 {
@@ -214,7 +209,7 @@ u16 ARMul_State::ReadMemory16(u32 address) const
     u16 data = user_callbacks->MemoryRead16(address);
 
     if (InBigEndianMode())
-        data = Common::swap16(data);
+        data = Dynarmic::Common::Swap16(data);
 
     return data;
 }
@@ -226,7 +221,7 @@ u32 ARMul_State::ReadMemory32(u32 address) const
     u32 data = user_callbacks->MemoryRead32(address);
 
     if (InBigEndianMode())
-        data = Common::swap32(data);
+        data = Dynarmic::Common::Swap32(data);
 
     return data;
 }
@@ -238,7 +233,7 @@ u64 ARMul_State::ReadMemory64(u32 address) const
     u64 data = user_callbacks->MemoryRead64(address);
 
     if (InBigEndianMode())
-        data = Common::swap64(data);
+        data = Dynarmic::Common::Swap64(data);
 
     return data;
 }
@@ -255,7 +250,7 @@ void ARMul_State::WriteMemory16(u32 address, u16 data)
 //    CheckMemoryBreakpoint(address, GDBStub::BreakpointType::Write);
 
     if (InBigEndianMode())
-        data = Common::swap16(data);
+        data = Dynarmic::Common::Swap16(data);
 
     user_callbacks->MemoryWrite16(address, data);
 }
@@ -265,7 +260,7 @@ void ARMul_State::WriteMemory32(u32 address, u32 data)
 //    CheckMemoryBreakpoint(address, GDBStub::BreakpointType::Write);
 
     if (InBigEndianMode())
-        data = Common::swap32(data);
+        data = Dynarmic::Common::Swap32(data);
 
     user_callbacks->MemoryWrite32(address, data);
 }
@@ -275,7 +270,7 @@ void ARMul_State::WriteMemory64(u32 address, u64 data)
 //    CheckMemoryBreakpoint(address, GDBStub::BreakpointType::Write);
 
     if (InBigEndianMode())
-        data = Common::swap64(data);
+        data = Dynarmic::Common::Swap64(data);
 
     user_callbacks->MemoryWrite64(address, data);
 }

@@ -12,6 +12,7 @@
 #include <type_traits>
 
 #include "common/assert.h"
+#include "common/common_types.h"
 
 namespace Dynarmic::Common {
 
@@ -197,6 +198,28 @@ inline T RotateRight(T value, size_t amount) {
 
     auto x = static_cast<std::make_unsigned_t<T>>(value);
     return static_cast<T>((x >> amount) | (x << (BitSize<T>() - amount)));
+}
+
+constexpr u16 Swap16(u16 value) {
+    return static_cast<u16>(u32{value} >> 8 | u32{value} << 8);
+}
+
+constexpr u32 Swap32(u32 value) {
+    return ((value & 0xFF000000U) >> 24) |
+           ((value & 0x00FF0000U) >>  8) |
+           ((value & 0x0000FF00U) <<  8) |
+           ((value & 0x000000FFU) << 24);
+}
+
+constexpr u64 Swap64(u64 value) {
+    return  ((value & 0xFF00000000000000ULL) >> 56) |
+            ((value & 0x00FF000000000000ULL) >> 40) |
+            ((value & 0x0000FF0000000000ULL) >> 24) |
+            ((value & 0x000000FF00000000ULL) >>  8) |
+            ((value & 0x00000000FF000000ULL) <<  8) |
+            ((value & 0x0000000000FF0000ULL) << 24) |
+            ((value & 0x000000000000FF00ULL) << 40) |
+            ((value & 0x00000000000000FFULL) << 56);
 }
 
 } // namespace Dynarmic::Common
