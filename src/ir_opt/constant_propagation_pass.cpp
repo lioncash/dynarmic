@@ -6,6 +6,7 @@
 
 #include <dynarmic/A32/config.h>
 
+#include "common/bit_util.h"
 #include "frontend/ir/basic_block.h"
 #include "frontend/ir/opcodes.h"
 #include "ir_opt/passes.h"
@@ -47,6 +48,29 @@ void FoldAND(IR::Inst& inst, bool is_32_bit) {
         inst.ReplaceUsesWith(rhs);
     } else if (is_rhs_immediate && rhs.HasAllBitsSet()) {
         inst.ReplaceUsesWith(lhs);
+    }
+}
+
+// Folds byte reversal opcodes based on the following:
+//
+// 1. imm -> swap(imm)
+//
+void FoldByteReverse(IR::Inst& inst, IR::Opcode op) {
+    const auto operand = inst.GetArg(0);
+
+    if (!operand.IsImmediate()) {
+        return;
+    }
+
+    if (op == IR::Opcode::ByteReverseWord) {
+        const u32 result = Common::Swap32(static_cast<u32>(operand.GetImmediateAsU64()));
+        inst.ReplaceUsesWith(IR::Value{result});
+    } else if (op == IR::Opcode::ByteReverseHalf) {
+        const u16 result = Common::Swap16(static_cast<u16>(operand.GetImmediateAsU64()));
+        inst.ReplaceUsesWith(IR::Value{result});
+    } else {
+        const u64 result = Common::Swap64(operand.GetImmediateAsU64());
+        inst.ReplaceUsesWith(IR::Value{result});
     }
 }
 
@@ -331,6 +355,11 @@ void ConstantPropagation(IR::Block& block) {
         case IR::Opcode::ZeroExtendHalfToLong:
         case IR::Opcode::ZeroExtendWordToLong:
             FoldZeroExtendXToLong(inst);
+            break;
+        case IR::Opcode::ByteReverseWord:
+        case IR::Opcode::ByteReverseHalf:
+        case IR::Opcode::ByteReverseDual:
+            FoldByteReverse(inst, opcode);
             break;
         default:
             break;
