@@ -255,7 +255,7 @@ void A64EmitX64::GenFastmemFallbacks() {
                 continue;
             }
 
-            for (auto& [bitsize, callback] : read_callbacks) {
+            for (const auto& [bitsize, callback] : read_callbacks) {
                 code.align();
                 read_fallbacks[std::make_tuple(bitsize, vaddr_idx, value_idx)] = code.getCurr<void(*)()>();
                 ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocRegIdx(value_idx));
@@ -271,7 +271,7 @@ void A64EmitX64::GenFastmemFallbacks() {
                 PerfMapRegister(read_fallbacks[std::make_tuple(bitsize, vaddr_idx, value_idx)], code.getCurr(), fmt::format("a64_read_fallback_{}", bitsize));
             }
 
-            for (auto& [bitsize, callback] : write_callbacks) {
+            for (const auto& [bitsize, callback] : write_callbacks) {
                 code.align();
                 write_fallbacks[std::make_tuple(bitsize, vaddr_idx, value_idx)] = code.getCurr<void(*)()>();
                 ABI_PushCallerSaveRegistersAndAdjustStack(code);
