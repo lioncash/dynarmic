@@ -204,18 +204,18 @@ void A64EmitX64::GenMemory128Accessors() {
 
 void A64EmitX64::GenFastmemFallbacks() {
     const std::initializer_list<int> idxes{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-    const std::vector<std::tuple<size_t, ArgCallback>> read_callbacks {
+    const std::array<std::pair<size_t, ArgCallback>, 4> read_callbacks{{
         {8, Devirtualize<&A64::UserCallbacks::MemoryRead8>(conf.callbacks)},
         {16, Devirtualize<&A64::UserCallbacks::MemoryRead16>(conf.callbacks)},
         {32, Devirtualize<&A64::UserCallbacks::MemoryRead32>(conf.callbacks)},
         {64, Devirtualize<&A64::UserCallbacks::MemoryRead64>(conf.callbacks)},
-    };
-    const std::vector<std::tuple<size_t, ArgCallback>> write_callbacks {
+    }};
+    const std::array<std::pair<size_t, ArgCallback>, 4> write_callbacks{{
         {8, Devirtualize<&A64::UserCallbacks::MemoryWrite8>(conf.callbacks)},
         {16, Devirtualize<&A64::UserCallbacks::MemoryWrite16>(conf.callbacks)},
         {32, Devirtualize<&A64::UserCallbacks::MemoryWrite32>(conf.callbacks)},
         {64, Devirtualize<&A64::UserCallbacks::MemoryWrite64>(conf.callbacks)},
-    };
+    }};
 
     for (int vaddr_idx : idxes) {
         if (vaddr_idx == 4 || vaddr_idx == 15) {
