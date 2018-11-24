@@ -56,8 +56,6 @@ InstructionGenerator::InstructionGenerator(const char* format){
 }
 
 u32 InstructionGenerator::Generate() const {
-    u32 inst;
-    u32 random = RandInt<u32>(0, 0xFFFFFFFF);
-    inst = bits | (random & ~mask);
-    return inst;
+    const u32 random = RandInt<u32>(0, 0xFFFFFFFF);
+    return bits | (random & ~mask);
 }
