@@ -98,6 +98,51 @@ void FoldEOR(IR::Inst& inst, bool is_32_bit) {
     }
 }
 
+void FoldLeastSignificantByte(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+    
+    const auto operand = inst.GetArg(0);
+    inst.ReplaceUsesWith(IR::Value{static_cast<u8>(operand.GetImmediateAsU64())});
+}
+
+void FoldLeastSignificantHalf(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const auto operand = inst.GetArg(0);
+    inst.ReplaceUsesWith(IR::Value{static_cast<u16>(operand.GetImmediateAsU64())});
+}
+
+void FoldLeastSignificantWord(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const auto operand = inst.GetArg(0);
+    inst.ReplaceUsesWith(IR::Value{static_cast<u32>(operand.GetImmediateAsU64())});
+}
+
+void FoldMostSignificantBit(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const auto operand = inst.GetArg(0);
+    inst.ReplaceUsesWith(IR::Value{(operand.GetImmediateAsU64() >> 31) != 0});
+}
+
+void FoldMostSignificantWord(IR::Inst& inst) {
+    if (!inst.AreAllArgsImmediates()) {
+        return;
+    }
+
+    const auto operand = inst.GetArg(0);
+    inst.ReplaceUsesWith(IR::Value{static_cast<u32>(operand.GetImmediateAsU64() >> 32)});
+}
+
 // Folds multiplication operations based on the following:
 //
 // 1. imm_x * imm_y -> result
@@ -216,6 +261,21 @@ void ConstantPropagation(IR::Block& block) {
         const auto opcode = inst.GetOpcode();
 
         switch (opcode) {
+        case IR::Opcode::LeastSignificantWord:
+            FoldLeastSignificantWord(inst);
+            break;
+        case IR::Opcode::MostSignificantWord:
+            FoldMostSignificantWord(inst);
+            break;
+        case IR::Opcode::LeastSignificantHalf:
+            FoldLeastSignificantHalf(inst);
+            break;
+        case IR::Opcode::LeastSignificantByte:
+            FoldLeastSignificantByte(inst);
+            break;
+        case IR::Opcode::MostSignificantBit:
+            FoldMostSignificantBit(inst);
+            break;
         case IR::Opcode::LogicalShiftLeft32:
         case IR::Opcode::LogicalShiftLeft64:
         case IR::Opcode::LogicalShiftRight32:
