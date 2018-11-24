@@ -272,23 +272,23 @@ TEST_CASE( "arm: Optimization Failure (Randomized test case)", "[arm][A32]" ) {
     test_env.ticks_left = 6;
     jit.Run();
 
-    REQUIRE( jit.Regs()[0] == 0x00000af1 );
-    REQUIRE( jit.Regs()[1] == 0x267ea626 );
-    REQUIRE( jit.Regs()[2] == 0x69debf49 );
-    REQUIRE( jit.Regs()[3] == 0x8f976895 );
-    REQUIRE( jit.Regs()[4] == 0xcf8a42c8 );
-    REQUIRE( jit.Regs()[5] == 0xcf89b8c7 );
-    REQUIRE( jit.Regs()[6] == 0xb6713f85 );
-    REQUIRE( jit.Regs()[7] == 0x015e2aa5 );
-    REQUIRE( jit.Regs()[8] == 0xcd14336a );
-    REQUIRE( jit.Regs()[9] == 0xafca0f3e );
-    REQUIRE( jit.Regs()[10] == 0xace2efd9 );
-    REQUIRE( jit.Regs()[11] == 0x68fb82cd );
-    REQUIRE( jit.Regs()[12] == 0x775447c0 );
-    REQUIRE( jit.Regs()[13] == 0xc9e1f8cd );
-    REQUIRE( jit.Regs()[14] == 0xebe0e626 );
-    REQUIRE( jit.Regs()[15] == 0x00000014 );
-    REQUIRE( jit.Cpsr() == 0x200001d0 );
+    REQUIRE(jit.Regs()[0] == 0x00000af1);
+    REQUIRE(jit.Regs()[1] == 0x267ea626);
+    REQUIRE(jit.Regs()[2] == 0x69debf49);
+    REQUIRE(jit.Regs()[3] == 0x8f976895);
+    REQUIRE(jit.Regs()[4] == 0xcf8a42c8);
+    REQUIRE(jit.Regs()[5] == 0xcf89b8c7);
+    REQUIRE(jit.Regs()[6] == 0xb6713f85);
+    REQUIRE(jit.Regs()[7] == 0x015e2aa5);
+    REQUIRE(jit.Regs()[8] == 0xcd14336a);
+    REQUIRE(jit.Regs()[9] == 0xafca0f3e);
+    REQUIRE(jit.Regs()[10] == 0xace2efd9);
+    REQUIRE(jit.Regs()[11] == 0x68fb82cd);
+    REQUIRE(jit.Regs()[12] == 0x775447c0);
+    REQUIRE(jit.Regs()[13] == 0xc9e1f8cd);
+    REQUIRE(jit.Regs()[14] == 0xebe0e626);
+    REQUIRE(jit.Regs()[15] == 0x00000014);
+    REQUIRE(jit.Cpsr() == 0x200001d0);
 }
 
 TEST_CASE( "arm: shsax r11, sp, r9 (Edge-case)", "[arm][A32]" ) {
@@ -312,23 +312,23 @@ TEST_CASE( "arm: shsax r11, sp, r9 (Edge-case)", "[arm][A32]" ) {
     test_env.ticks_left = 2;
     jit.Run();
 
-    REQUIRE( jit.Regs()[0] == 0x3a3b8b18 );
-    REQUIRE( jit.Regs()[1] == 0x96156555 );
-    REQUIRE( jit.Regs()[2] == 0xffef039f );
-    REQUIRE( jit.Regs()[3] == 0xafb946f2 );
-    REQUIRE( jit.Regs()[4] == 0x2030a69a );
-    REQUIRE( jit.Regs()[5] == 0xafe09b2a );
-    REQUIRE( jit.Regs()[6] == 0x896823c8 );
-    REQUIRE( jit.Regs()[7] == 0xabde0ded );
-    REQUIRE( jit.Regs()[8] == 0x9825d6a6 );
-    REQUIRE( jit.Regs()[9] == 0x17498000 );
-    REQUIRE( jit.Regs()[10] == 0x999d2c95 );
-    REQUIRE( jit.Regs()[11] == 0x57bfe48e );
-    REQUIRE( jit.Regs()[12] == 0x209bdb58 );
-    REQUIRE( jit.Regs()[13] == 0x2f7fb1d4 );
-    REQUIRE( jit.Regs()[14] == 0x0f378107 );
-    REQUIRE( jit.Regs()[15] == 0x00000004 );
-    REQUIRE( jit.Cpsr() == 0x000001d0 );
+    REQUIRE(jit.Regs()[0] == 0x3a3b8b18);
+    REQUIRE(jit.Regs()[1] == 0x96156555);
+    REQUIRE(jit.Regs()[2] == 0xffef039f);
+    REQUIRE(jit.Regs()[3] == 0xafb946f2);
+    REQUIRE(jit.Regs()[4] == 0x2030a69a);
+    REQUIRE(jit.Regs()[5] == 0xafe09b2a);
+    REQUIRE(jit.Regs()[6] == 0x896823c8);
+    REQUIRE(jit.Regs()[7] == 0xabde0ded);
+    REQUIRE(jit.Regs()[8] == 0x9825d6a6);
+    REQUIRE(jit.Regs()[9] == 0x17498000);
+    REQUIRE(jit.Regs()[10] == 0x999d2c95);
+    REQUIRE(jit.Regs()[11] == 0x57bfe48e);
+    REQUIRE(jit.Regs()[12] == 0x209bdb58);
+    REQUIRE(jit.Regs()[13] == 0x2f7fb1d4);
+    REQUIRE(jit.Regs()[14] == 0x0f378107);
+    REQUIRE(jit.Regs()[15] == 0x00000004);
+    REQUIRE(jit.Cpsr() == 0x000001d0);
 }
 
 TEST_CASE( "arm: uasx (Edge-case)", "[arm][A32]" ) {
@@ -350,11 +350,11 @@ TEST_CASE( "arm: uasx (Edge-case)", "[arm][A32]" ) {
     test_env.ticks_left = 2;
     jit.Run();
 
-    REQUIRE( jit.Regs()[4] == 0x8ed38f4c );
-    REQUIRE( jit.Regs()[5] == 0x0000261d );
-    REQUIRE( jit.Regs()[9] == 0xb4f08f4c );
-    REQUIRE( jit.Regs()[15] == 0x00000004 );
-    REQUIRE( jit.Cpsr() == 0x000301d0 );
+    REQUIRE(jit.Regs()[4] == 0x8ed38f4c);
+    REQUIRE(jit.Regs()[5] == 0x0000261d);
+    REQUIRE(jit.Regs()[9] == 0xb4f08f4c);
+    REQUIRE(jit.Regs()[15] == 0x00000004);
+    REQUIRE(jit.Cpsr() == 0x000301d0);
 }
 
 struct VfpTest {
@@ -396,12 +396,12 @@ static void RunVfpTests(u32 instr, std::vector<VfpTest> tests) {
             }
         };
 
-        REQUIRE( jit.Regs()[15] == 4 );
-        REQUIRE( jit.Cpsr() == 0x000001d0 );
-        check( jit.ExtRegs()[2] == test.result );
-        check( jit.ExtRegs()[4] == test.a );
-        check( jit.ExtRegs()[6] == test.b );
-        //check( jit.Fpscr() == test.final_fpscr );
+        REQUIRE(jit.Regs()[15] == 4);
+        REQUIRE(jit.Cpsr() == 0x000001d0);
+        check(jit.ExtRegs()[2] == test.result);
+        check(jit.ExtRegs()[4] == test.a);
+        check(jit.ExtRegs()[6] == test.b);
+        //check(jit.Fpscr() == test.final_fpscr);
     }
 }
 

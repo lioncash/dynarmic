@@ -34,10 +34,10 @@ TEST_CASE( "thumb: lsls r0, r1, #2", "[thumb]" ) {
     test_env.ticks_left = 1;
     jit.Run();
 
-    REQUIRE( jit.Regs()[0] == 8 );
-    REQUIRE( jit.Regs()[1] == 2 );
-    REQUIRE( jit.Regs()[15] == 2 );
-    REQUIRE( jit.Cpsr() == 0x00000030 );
+    REQUIRE(jit.Regs()[0] == 8);
+    REQUIRE(jit.Regs()[1] == 2);
+    REQUIRE(jit.Regs()[15] == 2);
+    REQUIRE(jit.Cpsr() == 0x00000030);
 }
 
 TEST_CASE( "thumb: lsls r0, r1, #31", "[thumb]" ) {
@@ -55,10 +55,10 @@ TEST_CASE( "thumb: lsls r0, r1, #31", "[thumb]" ) {
     test_env.ticks_left = 1;
     jit.Run();
 
-    REQUIRE( jit.Regs()[0] == 0x80000000 );
-    REQUIRE( jit.Regs()[1] == 0xffffffff );
-    REQUIRE( jit.Regs()[15] == 2 );
-    REQUIRE( jit.Cpsr() == 0xA0000030 ); // N, C flags, Thumb, User-mode
+    REQUIRE(jit.Regs()[0] == 0x80000000);
+    REQUIRE(jit.Regs()[1] == 0xffffffff);
+    REQUIRE(jit.Regs()[15] == 2);
+    REQUIRE(jit.Cpsr() == 0xA0000030); // N, C flags, Thumb, User-mode
 }
 
 TEST_CASE( "thumb: revsh r4, r3", "[thumb]" ) {
@@ -75,10 +75,10 @@ TEST_CASE( "thumb: revsh r4, r3", "[thumb]" ) {
     test_env.ticks_left = 1;
     jit.Run();
 
-    REQUIRE( jit.Regs()[3] == 0x12345678 );
-    REQUIRE( jit.Regs()[4] == 0x00007856 );
-    REQUIRE( jit.Regs()[15] == 2 );
-    REQUIRE( jit.Cpsr() == 0x00000030 ); // Thumb, User-mode
+    REQUIRE(jit.Regs()[3] == 0x12345678);
+    REQUIRE(jit.Regs()[4] == 0x00007856);
+    REQUIRE(jit.Regs()[15] == 2);
+    REQUIRE(jit.Cpsr() == 0x00000030); // Thumb, User-mode
 }
 
 TEST_CASE( "thumb: ldr r3, [r3, #28]", "[thumb]" ) {
@@ -95,9 +95,9 @@ TEST_CASE( "thumb: ldr r3, [r3, #28]", "[thumb]" ) {
     test_env.ticks_left = 1;
     jit.Run();
 
-    REQUIRE( jit.Regs()[3] == 0x97969594 ); // Memory location 0x12345694
-    REQUIRE( jit.Regs()[15] == 2 );
-    REQUIRE( jit.Cpsr() == 0x00000030 ); // Thumb, User-mode
+    REQUIRE(jit.Regs()[3] == 0x97969594); // Memory location 0x12345694
+    REQUIRE(jit.Regs()[15] == 2);
+    REQUIRE(jit.Cpsr() == 0x00000030); // Thumb, User-mode
 }
 
 TEST_CASE( "thumb: blx +#67712", "[thumb]" ) {
@@ -113,9 +113,9 @@ TEST_CASE( "thumb: blx +#67712", "[thumb]" ) {
     test_env.ticks_left = 1;
     jit.Run();
 
-    REQUIRE( jit.Regs()[14] == (0x4 | 1) );
-    REQUIRE( jit.Regs()[15] == 0x10880 );
-    REQUIRE( jit.Cpsr() == 0x00000010 ); // User-mode
+    REQUIRE(jit.Regs()[14] == (0x4 | 1));
+    REQUIRE(jit.Regs()[15] == 0x10880);
+    REQUIRE(jit.Cpsr() == 0x00000010); // User-mode
 }
 
 TEST_CASE( "thumb: bl +#234584", "[thumb]" ) {
@@ -131,9 +131,9 @@ TEST_CASE( "thumb: bl +#234584", "[thumb]" ) {
     test_env.ticks_left = 1;
     jit.Run();
 
-    REQUIRE( jit.Regs()[14] == (0x4 | 1) );
-    REQUIRE( jit.Regs()[15] == 0x39458 );
-    REQUIRE( jit.Cpsr() == 0x00000030 ); // Thumb, User-mode
+    REQUIRE(jit.Regs()[14] == (0x4 | 1));
+    REQUIRE(jit.Regs()[15] == 0x39458);
+    REQUIRE(jit.Cpsr() == 0x00000030); // Thumb, User-mode
 }
 
 TEST_CASE( "thumb: bl -#42", "[thumb]" ) {
@@ -149,7 +149,7 @@ TEST_CASE( "thumb: bl -#42", "[thumb]" ) {
     test_env.ticks_left = 1;
     jit.Run();
 
-    REQUIRE( jit.Regs()[14] == (0x4 | 1) );
-    REQUIRE( jit.Regs()[15] == 0xFFFFFFD6 );
-    REQUIRE( jit.Cpsr() == 0x00000030 ); // Thumb, User-mode
+    REQUIRE(jit.Regs()[14] == (0x4 | 1));
+    REQUIRE(jit.Regs()[15] == 0xFFFFFFD6);
+    REQUIRE(jit.Cpsr() == 0x00000030); // Thumb, User-mode
 }
