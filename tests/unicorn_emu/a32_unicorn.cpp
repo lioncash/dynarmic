@@ -178,7 +178,7 @@ bool A32Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u32 sta
         auto page = std::make_unique<Page>();
         page->address = base_address;
         for (size_t i = 0; i < page->data.size(); ++i)
-            page->data[i] = this_->testenv.MemoryRead8(base_address + i);
+            page->data[i] = this_->testenv.MemoryRead8(static_cast<u32>(base_address + i));
 
         uc_err err = uc_mem_map_ptr(uc, base_address, page->data.size(), permissions, page->data.data());
         if (err == UC_ERR_MAP)
