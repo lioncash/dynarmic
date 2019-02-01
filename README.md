@@ -152,8 +152,8 @@ int main(int argc, char** argv) {
     // Execute!
     cpu.Run();
 
-    // Here we would expect jit.Regs()[0] == 8
-    printf("R0: %u\n", jit.Regs()[0]);
+    // Here we would expect cpu.Regs()[0] == 8
+    printf("R0: %u\n", cpu.Regs()[0]);
 
     return 0;
 }
