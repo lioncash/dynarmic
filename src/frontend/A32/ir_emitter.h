@@ -31,8 +31,8 @@ public:
 
     LocationDescriptor current_location;
 
-    u32 PC();
-    u32 AlignPC(size_t alignment);
+    u32 PC() const;
+    u32 AlignPC(size_t alignment) const;
 
     IR::U32 GetRegister(Reg source_reg);
     IR::U32U64 GetExtendedRegister(ExtReg source_reg);
