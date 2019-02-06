@@ -34,10 +34,6 @@
 #include "A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
 #include "A32/skyeye_interpreter/skyeye_common/armstate.h"
 
-#ifdef __unix__
-#include <signal.h>
-#endif
-
 using Dynarmic::Common::Bits;
 
 static Dynarmic::A32::UserConfig GetUserConfig(ArmTestEnv* testenv) {
