@@ -12,12 +12,12 @@ namespace Dynarmic::A64 {
 
 using Opcode = IR::Opcode;
 
-u64 IREmitter::PC() {
+u64 IREmitter::PC() const {
     return current_location->PC();
 }
 
-u64 IREmitter::AlignPC(size_t alignment) {
-    u64 pc = PC();
+u64 IREmitter::AlignPC(size_t alignment) const {
+    const u64 pc = PC();
     return static_cast<u64>(pc - pc % alignment);
 }
 

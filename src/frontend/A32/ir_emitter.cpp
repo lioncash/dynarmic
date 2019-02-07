@@ -12,13 +12,13 @@ namespace Dynarmic::A32 {
 
 using Opcode = IR::Opcode;
 
-u32 IREmitter::PC() {
-    u32 offset = current_location.TFlag() ? 4 : 8;
+u32 IREmitter::PC() const {
+    const u32 offset = current_location.TFlag() ? 4 : 8;
     return current_location.PC() + offset;
 }
 
-u32 IREmitter::AlignPC(size_t alignment) {
-    u32 pc = PC();
+u32 IREmitter::AlignPC(size_t alignment) const {
+    const u32 pc = PC();
     return static_cast<u32>(pc - pc % alignment);
 }
 

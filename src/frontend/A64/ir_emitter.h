@@ -31,8 +31,8 @@ public:
 
     std::optional<LocationDescriptor> current_location;
 
-    u64 PC();
-    u64 AlignPC(size_t alignment);
+    u64 PC() const;
+    u64 AlignPC(size_t alignment) const;
 
     void SetCheckBit(const IR::U1& value);
     IR::U1 GetCFlag();
