@@ -50,11 +50,21 @@
 
 namespace Xbyak { namespace util {
 
+typedef enum {
+   SmtLevel = 1,
+   CoreLevel = 2
+} IntelCpuTopologyLevel;
+
 /**
 	CPU detection class
 */
 class Cpu {
 	uint64 type_;
+	//system topology
+	bool x2APIC_supported_;
+	static const size_t maxTopologyLevels = 2;
+	unsigned int numCores_[maxTopologyLevels];
+
 	unsigned int get32bitAsBE(const char *x) const
 	{
 		return x[0] | (x[1] << 8) | (x[2] << 16) | (x[3] << 24);
@@ -88,6 +98,42 @@ class Cpu {
 	{
 		return (val >> base) & ((1u << (end - base)) - 1);
 	}
+	void setNumCores()
+	{
+		if ((type_ & tINTEL) == 0) return;
+
+		unsigned int data[4];
+
+		 /* CAUTION: These numbers are configuration as shipped by Intel. */
+		getCpuidEx(0x0, 0, data);
+		if (data[0] >= 0xB) {
+			 /*
+				if leaf 11 exists(x2APIC is supported),
+				we use it to get the number of smt cores and cores on socket
+
+				leaf 0xB can be zeroed-out by a hypervisor
+			*/
+			x2APIC_supported_ = true;
+			for (unsigned int i = 0; i < maxTopologyLevels; i++) {
+				getCpuidEx(0xB, i, data);
+				IntelCpuTopologyLevel level = (IntelCpuTopologyLevel)extractBit(data[2], 8, 15);
+				if (level == SmtLevel || level == CoreLevel) {
+					numCores_[level - 1] = extractBit(data[1], 0, 15);
+				}
+			}
+			if (numCores_[SmtLevel - 1] != 0) {
+				numCores_[CoreLevel - 1] /= numCores_[SmtLevel - 1];
+			}
+		} else {
+			/*
+				Failed to deremine num of cores without x2APIC support.
+				TODO: USE initial APIC ID to determine ncores.
+			*/
+			numCores_[SmtLevel - 1] = 0;
+			numCores_[CoreLevel - 1] = 0;
+		}
+
+	}
 	void setCacheHierarchy()
 	{
 		if ((type_ & tINTEL) == 0) return;
@@ -96,21 +142,12 @@ class Cpu {
 //		const unsigned int INSTRUCTION_CACHE = 2;
 		const unsigned int UNIFIED_CACHE = 3;
 		unsigned int smt_width = 0;
-		unsigned int n_cores = 0;
+		unsigned int logical_cores = 0;
 		unsigned int data[4];
 
-		/*
-			if leaf 11 exists, we use it to get the number of smt cores and cores on socket
-			If x2APIC is supported, these are the only correct numbers.
-
-			leaf 0xB can be zeroed-out by a hypervisor
-		*/
-		getCpuidEx(0x0, 0, data);
-		if (data[0] >= 0xB) {
-			getCpuidEx(0xB, 0, data); // CPUID for SMT Level
-			smt_width = data[1] & 0x7FFF;
-			getCpuidEx(0xB, 1, data); // CPUID for CORE Level
-			n_cores = data[1] & 0x7FFF;
+		if (x2APIC_supported_) {
+			smt_width = numCores_[0];
+			logical_cores = numCores_[1];
 		}
 
 		/*
@@ -118,7 +155,7 @@ class Cpu {
 			the first level of data cache is not shared (which is the
 			case for every existing architecture) and use this to
 			determine the SMT width for arch not supporting leaf 11.
-			when leaf 4 reports a number of core less than n_cores
+			when leaf 4 reports a number of core less than numCores_
 			on socket reported by leaf 11, then it is a correct number
 			of cores not an upperbound.
 		*/
@@ -127,19 +164,19 @@ class Cpu {
 			unsigned int cacheType = extractBit(data[0], 0, 4);
 			if (cacheType == NO_CACHE) break;
 			if (cacheType == DATA_CACHE || cacheType == UNIFIED_CACHE) {
-				unsigned int nb_logical_cores = extractBit(data[0], 14, 25) + 1;
-				if (n_cores != 0) { // true only if leaf 0xB is supported and valid
-					nb_logical_cores = (std::min)(nb_logical_cores, n_cores);
+				unsigned int actual_logical_cores = extractBit(data[0], 14, 25) + 1;
+				if (logical_cores != 0) { // true only if leaf 0xB is supported and valid
+					actual_logical_cores = (std::min)(actual_logical_cores, logical_cores);
 				}
-				assert(nb_logical_cores != 0);
+				assert(actual_logical_cores != 0);
 				data_cache_size[data_cache_levels] =
 					(extractBit(data[1], 22, 31) + 1)
 					* (extractBit(data[1], 12, 21) + 1)
 					* (extractBit(data[1], 0, 11) + 1)
 					* (data[2] + 1);
-				if (cacheType == DATA_CACHE && smt_width == 0) smt_width = nb_logical_cores;
+				if (cacheType == DATA_CACHE && smt_width == 0) smt_width = actual_logical_cores;
 				assert(smt_width != 0);
-				cores_sharing_data_cache[data_cache_levels] = (std::max)(nb_logical_cores / smt_width, 1u);
+				cores_sharing_data_cache[data_cache_levels] = (std::max)(actual_logical_cores / smt_width, 1u);
 				data_cache_levels++;
 			}
 		}
@@ -159,6 +196,12 @@ public:
 	unsigned int data_cache_size[maxNumberCacheLevels];
 	unsigned int cores_sharing_data_cache[maxNumberCacheLevels];
 	unsigned int data_cache_levels;
+
+	unsigned int getNumCores(IntelCpuTopologyLevel level) {
+		if (level != SmtLevel && level != CoreLevel) throw Error(ERR_BAD_PARAMETER);
+		if (!x2APIC_supported_) throw Error(ERR_X2APIC_IS_NOT_SUPPORTED);
+		return numCores_[level - 1];
+	}
 
 	unsigned int getDataCacheLevels() const { return data_cache_levels; }
 	unsigned int getCoresSharingDataCache(unsigned int i) const
@@ -271,6 +314,8 @@ public:
 
 	Cpu()
 		: type_(NONE)
+		, x2APIC_supported_(false)
+		, numCores_()
 		, data_cache_levels(0)
 	{
 		unsigned int data[4];
@@ -363,6 +408,7 @@ public:
 			if (ECX & (1U << 0)) type_ |= tPREFETCHWT1;
 		}
 		setFamily();
+		setNumCores();
 		setCacheHierarchy();
 	}
 	void putFamily() const
@@ -416,7 +462,7 @@ const int UseRCX = 1 << 6;
 const int UseRDX = 1 << 7;
 
 class Pack {
-	static const size_t maxTblNum = 10;
+	static const size_t maxTblNum = 15;
 	const Xbyak::Reg64 *tbl_[maxTblNum];
 	size_t n_;
 public:
@@ -476,7 +522,7 @@ public:
 	const Xbyak::Reg64& operator[](size_t n) const
 	{
 		if (n >= n_) {
-			fprintf(stderr, "ERR Pack bad n=%d\n", (int)n);
+			fprintf(stderr, "ERR Pack bad n=%d(%d)\n", (int)n, (int)n_);
 			throw Error(ERR_BAD_PARAMETER);
 		}
 		return *tbl_[n];
@@ -518,6 +564,7 @@ class StackFrame {
 	static const int rcxPos = 3;
 	static const int rdxPos = 2;
 #endif
+	static const int maxRegNum = 14; // maxRegNum = 16 - rsp - rax
 	Xbyak::CodeGenerator *code_;
 	int pNum_;
 	int tNum_;
@@ -527,7 +574,7 @@ class StackFrame {
 	int P_;
 	bool makeEpilog_;
 	Xbyak::Reg64 pTbl_[4];
-	Xbyak::Reg64 tTbl_[10];
+	Xbyak::Reg64 tTbl_[maxRegNum];
 	Pack p_;
 	Pack t_;
 	StackFrame(const StackFrame&);
@@ -539,7 +586,7 @@ public:
 		make stack frame
 		@param sf [in] this
 		@param pNum [in] num of function parameter(0 <= pNum <= 4)
-		@param tNum [in] num of temporary register(0 <= tNum <= 10, with UseRCX, UseRDX)
+		@param tNum [in] num of temporary register(0 <= tNum, with UseRCX, UseRDX) #{pNum + tNum [+rcx] + [rdx]} <= 14
 		@param stackSizeByte [in] local stack size
 		@param makeEpilog [in] automatically call close() if true
 
@@ -566,27 +613,17 @@ public:
 		using namespace Xbyak;
 		if (pNum < 0 || pNum > 4) throw Error(ERR_BAD_PNUM);
 		const int allRegNum = pNum + tNum_ + (useRcx_ ? 1 : 0) + (useRdx_ ? 1 : 0);
-		if (allRegNum < pNum || allRegNum > 14) throw Error(ERR_BAD_TNUM);
+		if (tNum_ < 0 || allRegNum > maxRegNum) throw Error(ERR_BAD_TNUM);
 		const Reg64& _rsp = code->rsp;
-		const AddressFrame& _ptr = code->ptr;
 		saveNum_ = (std::max)(0, allRegNum - noSaveNum);
 		const int *tbl = getOrderTbl() + noSaveNum;
-		P_ = saveNum_ + (stackSizeByte + 7) / 8;
-		if (P_ > 0 && (P_ & 1) == 0) P_++; // here (rsp % 16) == 8, then increment P_ for 16 byte alignment
+		for (int i = 0; i < saveNum_; i++) {
+			code->push(Reg64(tbl[i]));
+		}
+		P_ = (stackSizeByte + 7) / 8;
+		if (P_ > 0 && (P_ & 1) == (saveNum_ & 1)) P_++; // (rsp % 16) == 8, then increment P_ for 16 byte alignment
 		P_ *= 8;
 		if (P_ > 0) code->sub(_rsp, P_);
-#ifdef XBYAK64_WIN
-		for (int i = 0; i < (std::min)(saveNum_, 4); i++) {
-			code->mov(_ptr [_rsp + P_ + (i + 1) * 8], Reg64(tbl[i]));
-		}
-		for (int i = 4; i < saveNum_; i++) {
-			code->mov(_ptr [_rsp + P_ - 8 * (saveNum_ - i)], Reg64(tbl[i]));
-		}
-#else
-		for (int i = 0; i < saveNum_; i++) {
-			code->mov(_ptr [_rsp + P_ - 8 * (saveNum_ - i)], Reg64(tbl[i]));
-		}
-#endif
 		int pos = 0;
 		for (int i = 0; i < pNum; i++) {
 			pTbl_[i] = Xbyak::Reg64(getRegIdx(pos));
@@ -607,21 +644,11 @@ public:
 	{
 		using namespace Xbyak;
 		const Reg64& _rsp = code_->rsp;
-		const AddressFrame& _ptr = code_->ptr;
 		const int *tbl = getOrderTbl() + noSaveNum;
-#ifdef XBYAK64_WIN
-		for (int i = 0; i < (std::min)(saveNum_, 4); i++) {
-			code_->mov(Reg64(tbl[i]), _ptr [_rsp + P_ + (i + 1) * 8]);
-		}
-		for (int i = 4; i < saveNum_; i++) {
-			code_->mov(Reg64(tbl[i]), _ptr [_rsp + P_ - 8 * (saveNum_ - i)]);
-		}
-#else
-		for (int i = 0; i < saveNum_; i++) {
-			code_->mov(Reg64(tbl[i]), _ptr [_rsp + P_ - 8 * (saveNum_ - i)]);
-		}
-#endif
 		if (P_ > 0) code_->add(_rsp, P_);
+		for (int i = 0; i < saveNum_; i++) {
+			code_->pop(Reg64(tbl[saveNum_ - 1 - i]));
+		}
 
 		if (callRet) code_->ret();
 	}
@@ -632,9 +659,6 @@ public:
 			close();
 		} catch (std::exception& e) {
 			printf("ERR:StackFrame %s\n", e.what());
-			exit(1);
-		} catch (...) {
-			printf("ERR:StackFrame otherwise\n");
 			exit(1);
 		}
 	}
@@ -654,7 +678,7 @@ private:
 	}
 	int getRegIdx(int& pos) const
 	{
-		assert(pos < 14);
+		assert(pos < maxRegNum);
 		using namespace Xbyak;
 		const int *tbl = getOrderTbl();
 		int r = tbl[pos++];

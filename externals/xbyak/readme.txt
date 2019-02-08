@@ -1,5 +1,5 @@
 
-    C++用x86(IA-32), x64(AMD64, x86-64) JITアセンブラ Xbyak 5.73
+    C++用x86(IA-32), x64(AMD64, x86-64) JITアセンブラ Xbyak 5.76
 
 -----------------------------------------------------------------------------
 ◎概要
@@ -373,6 +373,11 @@ sample/{echo,hello}.bfは http://www.kmonos.net/alang/etc/brainfuck.php から
 -----------------------------------------------------------------------------
 ◎履歴
 
+2019/01/17 ver 5.76 Cpu::getNumCores()追加(by shelleygoel)
+2018/10/31 ver 5.751 互換性のためにXbyak::CastToの復元
+2018/10/29 ver 5.75 LabelManagerのデストラクタでLabelから参照を切り離す
+2018/10/21 ver 5.74 RegRip +/intの形をサポート Xbyak::CastToを削除
+2018/10/15 util::StackFrameでmovの代わりにpush/popを使う
 2018/09/19 ver 5.73 vpslld, vpslldq, vpsllwなどの(reg, mem, imm8)に対するevexエンコーディング修整
 2018/09/19 ver 5.72 fix the encoding of vinsertps for disp8N(Thanks to petercaday)
 2018/08/27 ver 5.71 新しいlabelインスタンスを返すL()を追加
