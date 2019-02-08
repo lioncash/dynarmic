@@ -17,7 +17,6 @@
 #include "backend/x64/devirtualize.h"
 #include "backend/x64/emit_x64.h"
 #include "backend/x64/perf_map.h"
-#include "common/address_range.h"
 #include "common/assert.h"
 #include "common/bit_util.h"
 #include "common/common_types.h"
