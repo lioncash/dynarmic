@@ -17,7 +17,6 @@
 #include <xbyak_util.h>
 
 #include "backend/x64/reg_alloc.h"
-#include "common/address_range.h"
 #include "common/bit_util.h"
 #include "common/fp/rounding_mode.h"
 #include "frontend/ir/location_descriptor.h"
