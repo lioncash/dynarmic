@@ -310,11 +310,10 @@ void BlockOfCode::EnsurePatchLocationSize(CodePtr begin, size_t size) {
     nop(size - current_size);
 }
 
-bool BlockOfCode::DoesCpuSupport(Xbyak::util::Cpu::Type type) const {
+bool BlockOfCode::DoesCpuSupport([[maybe_unused]] Xbyak::util::Cpu::Type type) const {
 #ifdef DYNARMIC_ENABLE_CPU_FEATURE_DETECTION
     return cpu_info.has(type);
 #else
-    (void)type;
     return false;
 #endif
 }
