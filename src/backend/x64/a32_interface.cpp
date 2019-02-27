@@ -222,12 +222,12 @@ struct Context::Impl {
 Context::Context() : impl(std::make_unique<Context::Impl>()) { impl->jit_state.ResetRSB(); }
 Context::~Context() = default;
 Context::Context(const Context& ctx) : impl(std::make_unique<Context::Impl>(*ctx.impl)) {}
-Context::Context(Context&& ctx) : impl(std::move(ctx.impl)) {}
+Context::Context(Context&& ctx) noexcept : impl(std::move(ctx.impl)) {}
 Context& Context::operator=(const Context& ctx) {
     *impl = *ctx.impl;
     return *this;
 }
-Context& Context::operator=(Context&& ctx) {
+Context& Context::operator=(Context&& ctx) noexcept {
     impl = std::move(ctx.impl);
     return *this;
 }
