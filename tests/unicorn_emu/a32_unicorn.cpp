@@ -43,6 +43,26 @@ void A32Unicorn::Run() {
     }
 }
 
+u32 A32Unicorn::GetPC() const {
+    u32 pc;
+    CHECKED(uc_reg_read(uc, UC_ARM_REG_PC, &pc));
+    return pc;
+}
+
+void A32Unicorn::SetPC(u32 value) {
+    CHECKED(uc_reg_write(uc, UC_ARM_REG_PC, &value));
+}
+
+u32 A32Unicorn::GetSP() const {
+    u32 sp;
+    CHECKED(uc_reg_read(uc, UC_ARM_REG_SP, &sp));
+    return sp;
+}
+
+void A32Unicorn::SetSP(u32 value) {
+    CHECKED(uc_reg_write(uc, UC_ARM_REG_SP, &value));
+}
+
 constexpr std::array<int, A32Unicorn::num_gprs> gpr_ids{
     UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_R3, UC_ARM_REG_R4, UC_ARM_REG_R5, UC_ARM_REG_R6, UC_ARM_REG_R7,
     UC_ARM_REG_R8, UC_ARM_REG_R9, UC_ARM_REG_R10, UC_ARM_REG_R11, UC_ARM_REG_R12, UC_ARM_REG_R13, UC_ARM_REG_R14, UC_ARM_REG_R15,
@@ -97,12 +117,6 @@ void A32Unicorn::SetExtRegs(const ExtRegArray& value) {
 
     CHECKED(uc_reg_write_batch(uc, const_cast<int*>(double_ext_reg_ids.data()),
                                reinterpret_cast<void* const *>(const_cast<u32**>(ptrs.data())), ptrs.size()));
-}
-
-u32 A32Unicorn::GetPC() const {
-    u32 pc;
-    CHECKED(uc_reg_read(uc, UC_ARM_REG_R15, &pc));
-    return pc;
 }
 
 u32 A32Unicorn::GetFpscr() const {
