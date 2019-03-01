@@ -30,13 +30,17 @@ public:
 
     void Run();
 
+    u32 GetSP() const;
+    void SetSP(u32 value);
+
+    u32 GetPC() const;
+    void SetPC(u32 value);
+
     RegisterArray GetRegisters() const;
     void SetRegisters(const RegisterArray& value);
 
     ExtRegArray GetExtRegs() const;
     void SetExtRegs(const ExtRegArray& value);
-
-    u32 GetPC() const;
 
     u32 GetFpscr() const;
     void SetFpscr(u32 value);
