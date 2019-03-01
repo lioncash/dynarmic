@@ -18,9 +18,9 @@ public:
     Context();
     ~Context();
     Context(const Context&);
-    Context(Context&&);
+    Context(Context&&) noexcept;
     Context& operator=(const Context&);
-    Context& operator=(Context&&);
+    Context& operator=(Context&&) noexcept;
 
     /// View and modify registers.
     std::array<std::uint32_t, 16>& Regs();
