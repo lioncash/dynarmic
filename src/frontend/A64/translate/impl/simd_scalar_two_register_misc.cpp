@@ -170,6 +170,16 @@ bool TranslatorVisitor::FRECPE_2(bool sz, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::FRECPX_2(bool sz, Vec Vn, Vec Vd) {
+    const size_t esize = sz ? 64 : 32;
+
+    const IR::U32U64 operand = V_scalar(esize, Vn);
+    const IR::U32U64 result = ir.FPRecipExponent(operand);
+
+    V_scalar(esize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FRSQRTE_2(bool sz, Vec Vn, Vec Vd) {
     const size_t esize = sz ? 64 : 32;
 
