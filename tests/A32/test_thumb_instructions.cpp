@@ -19,12 +19,13 @@ static Dynarmic::A32::UserConfig GetUserConfig(ThumbTestEnv* testenv) {
     return user_config;
 }
 
-TEST_CASE( "thumb: lsls r0, r1, #2", "[thumb]" ) {
+TEST_CASE("thumb: lsls r0, r1, #2", "[thumb]") {
     ThumbTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0x0088; // lsls r0, r1, #2
-    test_env.code_mem[1] = 0xE7FE; // b +#0
+    test_env.code_mem = {
+        0x0088, // lsls r0, r1, #2
+        0xE7FE, // b +#0
+    };
 
     jit.Regs()[0] = 1;
     jit.Regs()[1] = 2;
@@ -40,12 +41,13 @@ TEST_CASE( "thumb: lsls r0, r1, #2", "[thumb]" ) {
     REQUIRE(jit.Cpsr() == 0x00000030);
 }
 
-TEST_CASE( "thumb: lsls r0, r1, #31", "[thumb]" ) {
+TEST_CASE("thumb: lsls r0, r1, #31", "[thumb]") {
     ThumbTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0x07C8; // lsls r0, r1, #31
-    test_env.code_mem[1] = 0xE7FE; // b +#0
+    test_env.code_mem = {
+        0x07C8, // lsls r0, r1, #31
+        0xE7FE, // b +#0
+    };
 
     jit.Regs()[0] = 1;
     jit.Regs()[1] = 0xFFFFFFFF;
@@ -61,12 +63,13 @@ TEST_CASE( "thumb: lsls r0, r1, #31", "[thumb]" ) {
     REQUIRE(jit.Cpsr() == 0xA0000030); // N, C flags, Thumb, User-mode
 }
 
-TEST_CASE( "thumb: revsh r4, r3", "[thumb]" ) {
+TEST_CASE("thumb: revsh r4, r3", "[thumb]") {
     ThumbTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0xBADC; // revsh r4, r3
-    test_env.code_mem[1] = 0xE7FE; // b +#0
+    test_env.code_mem = {
+        0xBADC, // revsh r4, r3
+        0xE7FE, // b +#0
+    };
 
     jit.Regs()[3] = 0x12345678;
     jit.Regs()[15] = 0; // PC = 0
@@ -81,12 +84,13 @@ TEST_CASE( "thumb: revsh r4, r3", "[thumb]" ) {
     REQUIRE(jit.Cpsr() == 0x00000030); // Thumb, User-mode
 }
 
-TEST_CASE( "thumb: ldr r3, [r3, #28]", "[thumb]" ) {
+TEST_CASE("thumb: ldr r3, [r3, #28]", "[thumb]") {
     ThumbTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0x69DB; // ldr r3, [r3, #28]
-    test_env.code_mem[1] = 0xE7FE; // b +#0
+    test_env.code_mem = {
+        0x69DB, // ldr r3, [r3, #28]
+        0xE7FE, // b +#0
+    };
 
     jit.Regs()[3] = 0x12345678;
     jit.Regs()[15] = 0; // PC = 0
@@ -100,12 +104,13 @@ TEST_CASE( "thumb: ldr r3, [r3, #28]", "[thumb]" ) {
     REQUIRE(jit.Cpsr() == 0x00000030); // Thumb, User-mode
 }
 
-TEST_CASE( "thumb: blx +#67712", "[thumb]" ) {
+TEST_CASE("thumb: blx +#67712", "[thumb]") {
     ThumbTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0xF010; test_env.code_mem[1] = 0xEC3E; // blx +#67712
-    test_env.code_mem[2] = 0xE7FE; // b +#0
+    test_env.code_mem = {
+        0xF010, 0xEC3E, // blx +#67712
+        0xE7FE          // b +#0
+    };
 
     jit.Regs()[15] = 0; // PC = 0
     jit.SetCpsr(0x00000030); // Thumb, User-mode
@@ -118,12 +123,13 @@ TEST_CASE( "thumb: blx +#67712", "[thumb]" ) {
     REQUIRE(jit.Cpsr() == 0x00000010); // User-mode
 }
 
-TEST_CASE( "thumb: bl +#234584", "[thumb]" ) {
+TEST_CASE("thumb: bl +#234584", "[thumb]") {
     ThumbTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0xF039; test_env.code_mem[1] = 0xFA2A; // bl +#234584
-    test_env.code_mem[2] = 0xE7FE; // b +#0
+    test_env.code_mem = {
+        0xF039, 0xFA2A, // bl +#234584
+        0xE7FE          // b +#0
+    };
 
     jit.Regs()[15] = 0; // PC = 0
     jit.SetCpsr(0x00000030); // Thumb, User-mode
@@ -136,12 +142,13 @@ TEST_CASE( "thumb: bl +#234584", "[thumb]" ) {
     REQUIRE(jit.Cpsr() == 0x00000030); // Thumb, User-mode
 }
 
-TEST_CASE( "thumb: bl -#42", "[thumb]" ) {
+TEST_CASE("thumb: bl -#42", "[thumb]") {
     ThumbTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0xF7FF; test_env.code_mem[1] = 0xFFE9; // bl -#42
-    test_env.code_mem[2] = 0xE7FE; // b +#0
+    test_env.code_mem = {
+        0xF7FF, 0xFFE9, // bl -#42
+        0xE7FE          // b +#0
+    };
 
     jit.Regs()[15] = 0; // PC = 0
     jit.SetCpsr(0x00000030); // Thumb, User-mode
