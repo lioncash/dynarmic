@@ -142,6 +142,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/load_store_exclusive.cpp
     frontend/A64/translate/impl/load_store_load_literal.cpp
     frontend/A64/translate/impl/load_store_multiple_structures.cpp
+    frontend/A64/translate/impl/load_store_no_allocate_pair.cpp
     frontend/A64/translate/impl/load_store_register_immediate.cpp
     frontend/A64/translate/impl/load_store_register_pair.cpp
     frontend/A64/translate/impl/load_store_register_register_offset.cpp

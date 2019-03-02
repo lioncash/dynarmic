@@ -256,10 +256,8 @@ struct TranslatorVisitor final {
     bool PRFM_lit(Imm<19> imm19, Imm<5> prfop);
 
     // Loads and stores - Load/Store no-allocate pair
-    bool STNP_gen(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
-    bool LDNP_gen(Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
-    bool STNP_fpsimd(Imm<2> opc, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
-    bool LDNP_fpsimd(Imm<2> opc, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
+    bool STNP_LDNP_gen(Imm<1> upper_opc, Imm<1> L, Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
+    bool STNP_LDNP_fpsimd(Imm<2> opc, Imm<1> L, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt);
 
     // Loads and stores - Load/Store register pair
     bool STP_LDP_gen(Imm<2> opc, bool not_postindex, bool wback, Imm<1> L, Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt);
