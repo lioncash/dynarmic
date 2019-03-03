@@ -719,6 +719,23 @@ void EmitX64::EmitFPRecipEstimate64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPRecipEstimate<u64>(code, ctx, inst);
 }
 
+template <typename FPT>
+static void EmitFPRecipExponent(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.HostCall(inst, args[0]);
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.lea(code.ABI_PARAM3, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.CallFunction(&FP::FPRecipExponent<FPT>);
+}
+
+void EmitX64::EmitFPRecipExponent32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRecipExponent<u32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPRecipExponent64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRecipExponent<u64>(code, ctx, inst);
+}
+
 template<size_t fsize>
 static void EmitFPRecipStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     using FPT = mp::unsigned_integer_of_size<fsize>;

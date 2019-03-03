@@ -423,7 +423,7 @@ INST(FCVTZS_int_2,           "FCVTZS (vector, integer)",                  "01011
 //INST(FRECPE_1,               "FRECPE",                                    "0101111011111001110110nnnnnddddd")
 INST(FRECPE_2,               "FRECPE",                                    "010111101z100001110110nnnnnddddd")
 //INST(FRECPX_1,               "FRECPX",                                    "0101111011111001111110nnnnnddddd")
-//INST(FRECPX_2,               "FRECPX",                                    "010111101z100001111110nnnnnddddd")
+INST(FRECPX_2,               "FRECPX",                                    "010111101z100001111110nnnnnddddd")
 //INST(FCVTNU_1,               "FCVTNU (vector)",                           "0111111001111001101010nnnnnddddd")
 INST(FCVTNU_2,               "FCVTNU (vector)",                           "011111100z100001101010nnnnnddddd")
 //INST(FCVTMU_1,               "FCVTMU (vector)",                           "0111111001111001101110nnnnnddddd")
