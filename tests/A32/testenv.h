@@ -25,7 +25,7 @@ public:
 
     u64 ticks_left = 0;
     bool code_mem_modified_by_guest = false;
-    std::array<InstructionType, 2048> code_mem{};
+    std::vector<InstructionType> code_mem;
     std::map<u32, u8> modified_memory;
     std::vector<std::string> interrupts;
 

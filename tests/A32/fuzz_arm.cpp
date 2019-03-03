@@ -108,7 +108,8 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
     ArmTestEnv test_env;
 
     // Prepare memory
-    test_env.code_mem.fill(0xEAFFFFFE); // b +#0
+    test_env.code_mem.resize(instruction_count + 1);
+    test_env.code_mem.back() = 0xEAFFFFFE; // b +#0
 
     // Prepare test subjects
     ARMul_State interp{USER32MODE};
@@ -251,13 +252,14 @@ TEST_CASE( "arm: Optimization Failure (Randomized test case)", "[arm][A32]" ) {
 
     ArmTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0xe35f0cd9; // cmp pc, #55552
-    test_env.code_mem[1] = 0xe11c0474; // tst r12, r4, ror r4
-    test_env.code_mem[2] = 0xe1a006a7; // mov r0, r7, lsr #13
-    test_env.code_mem[3] = 0xe35107fa; // cmp r1, #0x3E80000
-    test_env.code_mem[4] = 0xe2a54c8a; // adc r4, r5, #35328
-    test_env.code_mem[5] = 0xeafffffe; // b +#0
+    test_env.code_mem = {
+        0xe35f0cd9, // cmp pc, #55552
+        0xe11c0474, // tst r12, r4, ror r4
+        0xe1a006a7, // mov r0, r7, lsr #13
+        0xe35107fa, // cmp r1, #0x3E80000
+        0xe2a54c8a, // adc r4, r5, #35328
+        0xeafffffe, // b +#0
+    };
 
     jit.Regs() = {
             0x6973b6bb, 0x267ea626, 0x69debf49, 0x8f976895, 0x4ecd2d0d, 0xcf89b8c7, 0xb6713f85, 0x15e2aa5,
@@ -295,9 +297,10 @@ TEST_CASE( "arm: shsax r11, sp, r9 (Edge-case)", "[arm][A32]" ) {
 
     ArmTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0xe63dbf59; // shsax r11, sp, r9
-    test_env.code_mem[1] = 0xeafffffe; // b +#0
+    test_env.code_mem = {
+        0xe63dbf59, // shsax r11, sp, r9
+        0xeafffffe, // b +#0
+    };
 
     jit.Regs() = {
             0x3a3b8b18, 0x96156555, 0xffef039f, 0xafb946f2, 0x2030a69a, 0xafe09b2a, 0x896823c8, 0xabde0ded,
@@ -334,9 +337,10 @@ TEST_CASE( "arm: uasx (Edge-case)", "[arm][A32]" ) {
 
     ArmTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0xe6549f35; // uasx r9, r4, r5
-    test_env.code_mem[1] = 0xeafffffe; // b +#0
+    test_env.code_mem = {
+        0xe6549f35, // uasx r9, r4, r5
+        0xeafffffe, // b +#0
+    };
 
     jit.Regs()[4] = 0x8ed38f4c;
     jit.Regs()[5] = 0x0000261d;
@@ -364,9 +368,10 @@ struct VfpTest {
 static void RunVfpTests(u32 instr, std::vector<VfpTest> tests) {
     ArmTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = instr;
-    test_env.code_mem[1] = 0xeafffffe; // b +#0
+    test_env.code_mem = {
+        instr,
+        0xeafffffe, // b +#0
+    };
 
     printf("vfp test 0x%08x\r", instr);
 
@@ -993,11 +998,12 @@ TEST_CASE("Fuzz ARM sum of absolute differences", "[JitX64][A32]") {
     }
 }
 
-TEST_CASE( "SMUAD", "[JitX64][A32]" ) {
+TEST_CASE("SMUAD", "[JitX64][A32]") {
     ArmTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0xE700F211; // smuad r0, r1, r2
+    test_env.code_mem = {
+        0xE700F211 // smuad r0, r1, r2
+    };
 
     jit.Regs() = {
             0, // Rd
@@ -1154,11 +1160,12 @@ TEST_CASE("Fuzz ARM packing instructions", "[JitX64][A32]") {
 TEST_CASE("arm: Test InvalidateCacheRange", "[arm][A32]") {
     ArmTestEnv test_env;
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
-    test_env.code_mem.fill({});
-    test_env.code_mem[0] = 0xe3a00005; // mov r0, #5
-    test_env.code_mem[1] = 0xe3a0100D; // mov r1, #13
-    test_env.code_mem[2] = 0xe0812000; // add r2, r1, r0
-    test_env.code_mem[3] = 0xeafffffe; // b +#0 (infinite loop)
+    test_env.code_mem = {
+        0xe3a00005, // mov r0, #5
+        0xe3a0100D, // mov r1, #13
+        0xe0812000, // add r2, r1, r0
+        0xeafffffe, // b +#0 (infinite loop)
+    };
 
     jit.Regs() = {};
     jit.SetCpsr(0x000001d0); // User-mode

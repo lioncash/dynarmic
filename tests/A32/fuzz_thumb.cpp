@@ -176,7 +176,8 @@ void FuzzJitThumb(const size_t instruction_count, const size_t instructions_to_e
     ThumbTestEnv test_env;
 
     // Prepare memory
-    test_env.code_mem.fill(0xE7FE); // b +#0
+    test_env.code_mem.resize(instruction_count + 1);
+    test_env.code_mem.back() = 0xE7FE; // b +#0
 
     // Prepare test subjects
     ARMul_State interp{USER32MODE};
@@ -278,9 +279,6 @@ TEST_CASE("Fuzz Thumb instructions set 2 (affects PC)", "[JitX64][Thumb]") {
 TEST_CASE("Verify fix for off by one error in MemoryRead32 worked", "[Thumb]") {
     ThumbTestEnv test_env;
 
-    // Prepare memory
-    test_env.code_mem.fill(0xE7FE); // b +#0
-
     // Prepare test subjects
     ARMul_State interp{USER32MODE};
     interp.user_callbacks = &test_env;
@@ -305,11 +303,14 @@ TEST_CASE("Verify fix for off by one error in MemoryRead32 worked", "[Thumb]") {
         0x00000000,
     };
 
-    test_env.code_mem[0] = 0x40B8; // lsls r0, r7, #0
-    test_env.code_mem[1] = 0x01CA; // lsls r2, r1, #7
-    test_env.code_mem[2] = 0x83A1; // strh r1, [r4, #28]
-    test_env.code_mem[3] = 0x708A; // strb r2, [r1, #2]
-    test_env.code_mem[4] = 0xBCC4; // pop {r2, r6, r7}
+    test_env.code_mem = {
+        0x40B8, // lsls r0, r7, #0
+        0x01CA, // lsls r2, r1, #7
+        0x83A1, // strh r1, [r4, #28]
+        0x708A, // strb r2, [r1, #2]
+        0xBCC4, // pop {r2, r6, r7}
+        0xE7FE, // b +#0
+    };
 
     RunInstance(1, test_env, interp, jit, initial_regs, 5, 5);
 }
