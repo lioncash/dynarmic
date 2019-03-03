@@ -53,4 +53,55 @@ bool TranslatorVisitor::UDOT_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return DotProduct(*this, Q, size, Vm, Vn, Vd, &IREmitter::ZeroExtendToWord);
 }
 
+bool TranslatorVisitor::FCADD_vec(bool Q, Imm<2> size, Vec Vm, Imm<1> rot, Vec Vn, Vec Vd) {
+    if (size == 0) {
+        return UnallocatedEncoding();
+    }
+
+    if (!Q && size == 0b11) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t esize = 8U << size.ZeroExtend();
+
+    // TODO: Currently we don't support half-precision floating point
+    if (esize == 16) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t num_elements = datasize / esize;
+    const size_t num_iterations = num_elements / 2;
+
+    const IR::U128 operand1 = V(datasize, Vn);
+    const IR::U128 operand2 = V(datasize, Vm);
+    IR::U128 result = ir.ZeroVector();
+
+    IR::U32U64 element1;
+    IR::U32U64 element3;
+    for (size_t e = 0; e < num_iterations; ++e) {
+        const size_t first = e * 2;
+        const size_t second = first + 1;
+
+        if (rot == 0) {
+            element1 = ir.FPNeg(ir.VectorGetElement(esize, operand2, second));
+            element3 = ir.VectorGetElement(esize, operand2, first);
+        } else if (rot == 1) {
+            element1 = ir.VectorGetElement(esize, operand2, second);
+            element3 = ir.FPNeg(ir.VectorGetElement(esize, operand2, first));
+        }
+
+        const IR::U32U64 operand1_elem1 = ir.VectorGetElement(esize, operand1, first);
+        const IR::U32U64 operand1_elem3 = ir.VectorGetElement(esize, operand1, second);
+
+        result = ir.VectorSetElement(esize, result, first,
+                                     ir.FPAdd(operand1_elem1, element1, true));
+        result = ir.VectorSetElement(esize, result, second,
+                                     ir.FPAdd(operand1_elem3, element3, true));
+    }
+
+    ir.SetQ(Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64
