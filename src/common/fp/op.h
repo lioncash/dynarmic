@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common/fp/op/FPConvert.h"
 #include "common/fp/op/FPMulAdd.h"
 #include "common/fp/op/FPRecipEstimate.h"
 #include "common/fp/op/FPRecipExponent.h"
