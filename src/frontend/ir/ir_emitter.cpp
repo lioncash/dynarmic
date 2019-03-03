@@ -1895,6 +1895,13 @@ U32U64 IREmitter::FPRecipEstimate(const U32U64& a) {
     return Inst<U64>(Opcode::FPRecipEstimate64, a);
 }
 
+U32U64 IREmitter::FPRecipExponent(const U32U64& a) {
+    if (a.GetType() == Type::U32) {
+        return Inst<U32>(Opcode::FPRecipExponent32, a);
+    }
+    return Inst<U64>(Opcode::FPRecipExponent64, a);
+}
+
 U32U64 IREmitter::FPRecipStepFused(const U32U64& a, const U32U64& b) {
     if (a.GetType() == Type::U32) {
         return Inst<U32>(Opcode::FPRecipStepFused32, a, b);
