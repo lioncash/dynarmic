@@ -181,10 +181,8 @@ INST(PRFM_lit,               "PRFM (literal)",                            "11011
 INST(LDR_lit_fpsimd,         "LDR (literal, SIMD&FP)",                    "oo011100iiiiiiiiiiiiiiiiiiittttt")
 
 // Loads and stores - Load/Store no-allocate pair
-//INST(STNP_gen,               "STNP",                                      "-010100000iiiiiiiuuuuunnnnnttttt")
-//INST(LDNP_gen,               "LDNP",                                      "-010100001iiiiiiiuuuuunnnnnttttt")
-//INST(STNP_fpsimd,            "STNP (SIMD&FP)",                            "oo10110000iiiiiiiuuuuunnnnnttttt")
-//INST(LDNP_fpsimd,            "LDNP (SIMD&FP)",                            "oo10110001iiiiiiiuuuuunnnnnttttt")
+INST(STNP_LDNP_gen,          "STNP/LDNP",                                 "o01010000Liiiiiiiuuuuunnnnnttttt")
+INST(STNP_LDNP_fpsimd,       "STNP/LDNP (SIMD&FP)",                       "oo1011000Liiiiiiiuuuuunnnnnttttt")
 
 // Loads and stores - Load/Store register pair
 INST(STP_LDP_gen,            "STP/LDP",                                   "oo10100pwLiiiiiiiuuuuunnnnnttttt")
