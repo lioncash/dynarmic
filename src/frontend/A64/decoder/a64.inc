@@ -549,7 +549,7 @@ INST(FMUL_elt_2,             "FMUL (by element)",                         "01011
 //INST(SQRDMLAH_elt_1,         "SQRDMLAH (by element)",                     "01111111zzLMmmmm1101H0nnnnnddddd")
 //INST(SQRDMLSH_elt_1,         "SQRDMLSH (by element)",                     "01111111zzLMmmmm1111H0nnnnnddddd")
 //INST(FMULX_elt_1,            "FMULX (by element)",                        "0111111100LMmmmm1001H0nnnnnddddd")
-//INST(FMULX_elt_2,            "FMULX (by element)",                        "011111111zLMmmmm1001H0nnnnnddddd")
+INST(FMULX_elt_2,            "FMULX (by element)",                        "011111111zLMmmmm1001H0nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Table Lookup
 INST(TBL,                    "TBL",                                       "0Q001110000mmmmm0LL000nnnnnddddd")
