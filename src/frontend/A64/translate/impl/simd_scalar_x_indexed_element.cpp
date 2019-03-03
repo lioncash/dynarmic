@@ -12,7 +12,8 @@ namespace {
 enum class ExtraBehavior {
     None,
     Accumulate,
-    Subtract
+    Subtract,
+    MultiplyExtended,
 };
 
 bool MultiplyByElement(TranslatorVisitor& v, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H,
@@ -32,6 +33,10 @@ bool MultiplyByElement(TranslatorVisitor& v, bool sz, Imm<1> L, Imm<1> M, Imm<4>
 
         if (extra_behavior == ExtraBehavior::None) {
             return v.ir.FPMul(operand1, element, true);
+        }
+
+        if (extra_behavior == ExtraBehavior::MultiplyExtended) {
+            return v.ir.FPMulX(operand1, element);
         }
 
         if (extra_behavior == ExtraBehavior::Subtract) {
@@ -57,6 +62,10 @@ bool TranslatorVisitor::FMLS_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm
 
 bool TranslatorVisitor::FMUL_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     return MultiplyByElement(*this, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None);
+}
+
+bool TranslatorVisitor::FMULX_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return MultiplyByElement(*this, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::MultiplyExtended);
 }
 
 bool TranslatorVisitor::SQDMULH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
