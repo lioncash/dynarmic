@@ -121,7 +121,7 @@ constexpr T ModifyBit(const T value, bool new_bit) {
 
 /// Sign-extends a value that has bit_count bits to the full bitwidth of type T.
 template<size_t bit_count, typename T>
-inline T SignExtend(const T value) {
+constexpr T SignExtend(const T value) {
     static_assert(bit_count <= BitSize<T>(), "bit_count larger than bitsize of T");
 
     constexpr T mask = static_cast<T>(1ULL << bit_count) - 1;
@@ -162,7 +162,7 @@ constexpr int HighestSetBit(T value) {
 }
 
 template <typename T>
-inline size_t LowestSetBit(T value) {
+constexpr size_t LowestSetBit(T value) {
     auto x = static_cast<std::make_unsigned_t<T>>(value);
     if (x == 0)
         return BitSize<T>();
@@ -176,7 +176,7 @@ inline size_t LowestSetBit(T value) {
 }
 
 template <typename T>
-inline bool MostSignificantBit(T value) {
+constexpr bool MostSignificantBit(T value) {
     return Bit<BitSize<T>() - 1, T>(value);
 }
 
@@ -189,7 +189,7 @@ inline T Replicate(T value, size_t element_size) {
 }
 
 template <typename T>
-inline T RotateRight(T value, size_t amount) {
+constexpr T RotateRight(T value, size_t amount) {
     amount %= BitSize<T>();
 
     if (amount == 0) {
