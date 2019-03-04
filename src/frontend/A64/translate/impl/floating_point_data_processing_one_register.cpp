@@ -104,7 +104,9 @@ bool TranslatorVisitor::FCVT_float(Imm<2> type, Imm<2> opc, Vec Vn, Vec Vd) {
         return UnallocatedEncoding();
     }
 
-    IR::UAny operand = V_scalar(*srcsize, Vn);
+    const IR::UAny operand = V_scalar(*srcsize, Vn);
+    const auto rounding_mode = ir.current_location->FPCR().RMode();
+
     IR::UAny result;
     switch (*srcsize) {
     case 16:
@@ -120,7 +122,7 @@ bool TranslatorVisitor::FCVT_float(Imm<2> type, Imm<2> opc, Vec Vn, Vec Vd) {
         case 16:
             return InterpretThisInstruction();
         case 64:
-            result = ir.FPSingleToDouble(operand, true);
+            result = ir.FPSingleToDouble(operand, rounding_mode);
             break;
         }
         break;
@@ -129,7 +131,7 @@ bool TranslatorVisitor::FCVT_float(Imm<2> type, Imm<2> opc, Vec Vn, Vec Vd) {
         case 16:
             return InterpretThisInstruction();
         case 32:
-            result = ir.FPDoubleToSingle(operand, true);
+            result = ir.FPDoubleToSingle(operand, rounding_mode);
             break;
         }
         break;

@@ -348,10 +348,11 @@ bool TranslatorVisitor::FCVTL(bool Q, bool sz, Vec Vn, Vec Vd) {
     }
 
     const IR::U128 part = Vpart(64, Vn, Q);
+    const auto rounding_mode = ir.current_location->FPCR().RMode();
     IR::U128 result = ir.ZeroVector();
 
     for (size_t i = 0; i < 2; i++) {
-        const IR::U64 element = ir.FPSingleToDouble(ir.VectorGetElement(32, part, i), true);
+        const IR::U64 element = ir.FPSingleToDouble(ir.VectorGetElement(32, part, i), rounding_mode);
 
         result = ir.VectorSetElement(64, result, i, element);
     }
@@ -367,10 +368,11 @@ bool TranslatorVisitor::FCVTN(bool Q, bool sz, Vec Vn, Vec Vd) {
     }
 
     const IR::U128 operand = V(128, Vn);
+    const auto rounding_mode = ir.current_location->FPCR().RMode();
     IR::U128 result = ir.ZeroVector();
 
     for (size_t i = 0; i < 2; i++) {
-        const IR::U32 element = ir.FPDoubleToSingle(ir.VectorGetElement(64, operand, i), true);
+        const IR::U32 element = ir.FPDoubleToSingle(ir.VectorGetElement(64, operand, i), rounding_mode);
 
         result = ir.VectorSetElement(32, result, i, element);
     }

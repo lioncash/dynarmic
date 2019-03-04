@@ -1948,14 +1948,12 @@ U32U64 IREmitter::FPSub(const U32U64& a, const U32U64& b, bool fpcr_controlled) 
     }
 }
 
-U32 IREmitter::FPDoubleToSingle(const U64& a, bool fpcr_controlled) {
-    ASSERT(fpcr_controlled);
-    return Inst<U32>(Opcode::FPDoubleToSingle, a);
+U32 IREmitter::FPDoubleToSingle(const U64& a, FP::RoundingMode rounding) {
+    return Inst<U32>(Opcode::FPDoubleToSingle, a, Imm8(static_cast<u8>(rounding)));
 }
 
-U64 IREmitter::FPSingleToDouble(const U32& a, bool fpcr_controlled) {
-    ASSERT(fpcr_controlled);
-    return Inst<U64>(Opcode::FPSingleToDouble, a);
+U64 IREmitter::FPSingleToDouble(const U32& a, FP::RoundingMode rounding) {
+    return Inst<U64>(Opcode::FPSingleToDouble, a, Imm8(static_cast<u8>(rounding)));
 }
 
 U32 IREmitter::FPToFixedS32(const U32U64& a, size_t fbits, FP::RoundingMode rounding) {
