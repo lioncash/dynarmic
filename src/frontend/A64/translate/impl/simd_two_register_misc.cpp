@@ -397,6 +397,26 @@ bool TranslatorVisitor::FCVTPS_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Signed, FP::RoundingMode::TowardsPlusInfinity);
 }
 
+bool TranslatorVisitor::FCVTXN_2(bool Q, bool sz, Vec Vn, Vec Vd) {
+    if (!sz) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t part = Q ? 1 : 0;
+    const auto operand = ir.GetQ(Vn);
+    auto result = ir.ZeroVector();
+
+    for (size_t e = 0; e < 2; ++e) {
+        const IR::U64 element = ir.VectorGetElement(64, operand, e);
+        const IR::U32 converted = ir.FPDoubleToSingle(element, FP::RoundingMode::ToOdd);
+
+        result = ir.VectorSetElement(32, result, e, converted);
+    }
+
+    Vpart(64, Vd, part, result);
+    return true;
+}
+
 bool TranslatorVisitor::FCVTZS_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Signed, FP::RoundingMode::TowardsZero);
 }

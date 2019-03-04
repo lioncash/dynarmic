@@ -666,7 +666,7 @@ INST(NEG_2,                  "NEG (vector)",                              "0Q101
 INST(SQXTUN_2,               "SQXTUN, SQXTUN2",                           "0Q101110zz100001001010nnnnnddddd")
 INST(SHLL,                   "SHLL, SHLL2",                               "0Q101110zz100001001110nnnnnddddd")
 INST(UQXTN_2,                "UQXTN, UQXTN2",                             "0Q101110zz100001010010nnnnnddddd")
-//INST(FCVTXN_2,               "FCVTXN, FCVTXN2",                           "0Q1011100z100001011010nnnnnddddd")
+INST(FCVTXN_2,               "FCVTXN, FCVTXN2",                           "0Q1011100z100001011010nnnnnddddd")
 //INST(FRINTA_1,               "FRINTA (vector)",                           "0Q10111001111001100010nnnnnddddd")
 INST(FRINTA_2,               "FRINTA (vector)",                           "0Q1011100z100001100010nnnnnddddd")
 //INST(FRINTX_1,               "FRINTX (vector)",                           "0Q10111001111001100110nnnnnddddd")
