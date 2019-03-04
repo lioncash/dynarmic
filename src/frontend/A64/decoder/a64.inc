@@ -501,7 +501,7 @@ INST(UQSUB_1,                "UQSUB",                                     "01111
 INST(CMHI_1,                 "CMHI (register)",                           "01111110zz1mmmmm001101nnnnnddddd")
 INST(CMHS_1,                 "CMHS (register)",                           "01111110zz1mmmmm001111nnnnnddddd")
 INST(USHL_1,                 "USHL",                                      "01111110zz1mmmmm010001nnnnnddddd")
-//INST(UQSHL_reg_1,            "UQSHL (register)",                          "01111110zz1mmmmm010011nnnnnddddd")
+INST(UQSHL_reg_1,            "UQSHL (register)",                          "01111110zz1mmmmm010011nnnnnddddd")
 INST(URSHL_1,                "URSHL",                                     "01111110zz1mmmmm010101nnnnnddddd")
 //INST(UQRSHL_1,               "UQRSHL",                                    "01111110zz1mmmmm010111nnnnnddddd")
 INST(SUB_1,                  "SUB (vector)",                              "01111110zz1mmmmm100001nnnnnddddd")

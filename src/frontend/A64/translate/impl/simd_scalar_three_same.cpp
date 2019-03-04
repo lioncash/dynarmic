@@ -362,6 +362,17 @@ bool TranslatorVisitor::SUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::UQSHL_reg_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    const size_t esize = 8U << size.ZeroExtend();
+
+    const IR::U128 operand1 = ir.ZeroExtendToQuad(ir.VectorGetElement(esize, V(128, Vn), 0));
+    const IR::U128 operand2 = ir.ZeroExtendToQuad(ir.VectorGetElement(esize, V(128, Vm), 0));
+    const IR::U128 result = ir.VectorUnsignedSaturatedShiftLeft(esize, operand1, operand2);
+
+    ir.SetQ(Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::URSHL_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return RoundingShiftLeft(*this, size, Vm, Vn, Vd, Signedness::Unsigned);
 }
