@@ -564,6 +564,8 @@ OPCODE(FPVectorRSqrtEstimate32,                             U128,           U128
 OPCODE(FPVectorRSqrtEstimate64,                             U128,           U128                                                            )
 OPCODE(FPVectorRSqrtStepFused32,                            U128,           U128,           U128                                            )
 OPCODE(FPVectorRSqrtStepFused64,                            U128,           U128,           U128                                            )
+OPCODE(FPVectorSqrt32,                                      U128,           U128                                                            )
+OPCODE(FPVectorSqrt64,                                      U128,           U128                                                            )
 OPCODE(FPVectorSub32,                                       U128,           U128,           U128                                            )
 OPCODE(FPVectorSub64,                                       U128,           U128,           U128                                            )
 OPCODE(FPVectorToSignedFixed32,                             U128,           U128,           U8,             U8                              )

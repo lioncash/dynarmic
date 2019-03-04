@@ -2243,6 +2243,17 @@ U128 IREmitter::FPVectorRSqrtStepFused(size_t esize, const U128& a, const U128& 
     return {};
 }
 
+U128 IREmitter::FPVectorSqrt(size_t esize, const U128& a) {
+    switch (esize) {
+    case 32:
+        return Inst<U128>(Opcode::FPVectorSqrt32, a);
+    case 64:
+        return Inst<U128>(Opcode::FPVectorSqrt64, a);
+    }
+    UNREACHABLE();
+    return {};
+}
+
 U128 IREmitter::FPVectorSub(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
     case 32:
