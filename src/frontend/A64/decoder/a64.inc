@@ -490,7 +490,7 @@ INST(SQSUB_1,                "SQSUB",                                     "01011
 INST(CMGT_reg_1,             "CMGT (register)",                           "01011110zz1mmmmm001101nnnnnddddd")
 INST(CMGE_reg_1,             "CMGE (register)",                           "01011110zz1mmmmm001111nnnnnddddd")
 INST(SSHL_1,                 "SSHL",                                      "01011110zz1mmmmm010001nnnnnddddd")
-//INST(SQSHL_reg_1,            "SQSHL (register)",                          "01011110zz1mmmmm010011nnnnnddddd")
+INST(SQSHL_reg_1,            "SQSHL (register)",                          "01011110zz1mmmmm010011nnnnnddddd")
 INST(SRSHL_1,                "SRSHL",                                     "01011110zz1mmmmm010101nnnnnddddd")
 //INST(SQRSHL_1,               "SQRSHL",                                    "01011110zz1mmmmm010111nnnnnddddd")
 INST(ADD_1,                  "ADD (vector)",                              "01011110zz1mmmmm100001nnnnnddddd")
