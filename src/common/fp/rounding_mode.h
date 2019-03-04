@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "common/common_types.h"
-
 namespace Dynarmic::FP {
 
 /// Ordering of first four values is important as they correspond to bits in FPCR.

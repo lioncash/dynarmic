@@ -4,7 +4,6 @@
  * General Public License version 2 or any later version.
  */
 
-#include "common/assert.h"
 #include "common/fp/mantissa_util.h"
 #include "common/fp/unpacked.h"
 #include "common/u128.h"
