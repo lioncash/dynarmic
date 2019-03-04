@@ -464,7 +464,7 @@ INST(CMLE_1,                 "CMLE (zero)",                               "01111
 INST(NEG_1,                  "NEG (vector)",                              "01111110zz100000101110nnnnnddddd")
 INST(SQXTUN_1,               "SQXTUN, SQXTUN2",                           "01111110zz100001001010nnnnnddddd")
 INST(UQXTN_1,                "UQXTN, UQXTN2",                             "01111110zz100001010010nnnnnddddd")
-//INST(FCVTXN_1,               "FCVTXN, FCVTXN2",                           "011111100z100001011010nnnnnddddd")
+INST(FCVTXN_1,               "FCVTXN, FCVTXN2",                           "011111100z100001011010nnnnnddddd")
 
 // Data Processing - FP and SIMD - SIMD Scalar pairwise
 INST(ADDP_pair,              "ADDP (scalar)",                             "01011110zz110001101110nnnnnddddd")
