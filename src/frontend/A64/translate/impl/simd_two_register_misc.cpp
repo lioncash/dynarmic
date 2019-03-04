@@ -447,7 +447,6 @@ bool TranslatorVisitor::FRINTI_2(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatRoundToIntegral(*this, Q, sz, Vn, Vd,ir.current_location->FPCR().RMode(), false);
 }
 
-
 bool TranslatorVisitor::FRECPE_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     if (sz && !Q) {
         return ReservedValue();
@@ -458,6 +457,21 @@ bool TranslatorVisitor::FRECPE_4(bool Q, bool sz, Vec Vn, Vec Vd) {
 
     const IR::U128 operand = V(datasize, Vn);
     const IR::U128 result = ir.FPVectorRecipEstimate(esize, operand);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
+bool TranslatorVisitor::FSQRT_2(bool Q, bool sz, Vec Vn, Vec Vd) {
+    if (sz && !Q) {
+        return ReservedValue();
+    }
+
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = sz ? 64 : 32;
+
+    const IR::U128 operand = V(datasize, Vn);
+    const IR::U128 result = ir.FPVectorSqrt(esize, operand);
 
     V(datasize, Vd, result);
     return true;

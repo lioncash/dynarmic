@@ -697,7 +697,7 @@ INST(URSQRTE,                "URSQRTE",                                   "0Q101
 //INST(FRSQRTE_3,              "FRSQRTE",                                   "0Q10111011111001110110nnnnnddddd")
 INST(FRSQRTE_4,              "FRSQRTE",                                   "0Q1011101z100001110110nnnnnddddd")
 //INST(FSQRT_1,                "FSQRT (vector)",                            "0Q10111011111001111110nnnnnddddd")
-//INST(FSQRT_2,                "FSQRT (vector)",                            "0Q1011101z100001111110nnnnnddddd")
+INST(FSQRT_2,                "FSQRT (vector)",                            "0Q1011101z100001111110nnnnnddddd")
 //INST(FRINT32X_1,             "FRINT32X (vector)",                         "0Q1011100z100001111110nnnnnddddd") // ARMv8.5
 //INST(FRINT64X_1,             "FRINT64X (vector)",                         "0Q1011100z100001111010nnnnnddddd") // ARMv8.5
 //INST(FRINT32Z_1,             "FRINT32Z (vector)",                         "0Q0011100z100001111010nnnnnddddd") // ARMv8.5
