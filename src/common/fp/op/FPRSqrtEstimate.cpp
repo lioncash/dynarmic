@@ -4,10 +4,6 @@
  * General Public License version 2 or any later version.
  */
 
-#include <array>
-
-#include "common/assert.h"
-#include "common/bit_util.h"
 #include "common/common_types.h"
 #include "common/fp/fpcr.h"
 #include "common/fp/fpsr.h"

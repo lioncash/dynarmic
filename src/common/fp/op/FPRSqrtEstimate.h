@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "common/common_types.h"
-
 namespace Dynarmic::FP {
 
 class FPCR;
