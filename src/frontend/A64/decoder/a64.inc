@@ -80,8 +80,13 @@ INST(MSR_reg,                "MSR (register)",                            "11010
 //INST(SYSL,                   "SYSL",                                      "1101010100101oooNNNNMMMMooottttt")
 INST(MRS,                    "MRS",                                       "110101010011poooNNNNMMMMooottttt")
 
-// System - PSTATE
+// System - Flag manipulation instructions
 //INST(CFINV,                  "CFINV",                                     "11010101000000000100000000011111") // ARMv8.4
+//INST(RMIF,                   "RMIF",                                      "10111010000iiiiii00001nnnnn0IIII") // ARMv8.4
+//INST(SETF8,                  "SETF8",                                     "0011101000000000000010nnnnn01101") // ARMv8.4
+//INST(SETF16,                 "SETF16",                                    "0011101000000000010010nnnnn01101") // ARMv8.4
+
+// System - Flag format instructions
 //INST(XAFlag,                 "XAFlag",                                    "11010101000000000100000000111111") // ARMv8.5
 //INST(AXFlag,                 "AXFlag",                                    "11010101000000000100000001011111") // ARMv8.5
 
@@ -95,13 +100,6 @@ INST(DC_CVAC,                "DC CVAC",                                   "11010
 INST(DC_CVAU,                "DC CVAU",                                   "110101010000101101111011001ttttt")
 INST(DC_CVAP,                "DC CVAP",                                   "110101010000101101111100001ttttt")
 INST(DC_CIVAC,               "DC CIVAC",                                  "110101010000101101111110001ttttt")
-
-// Data processing - Rotate right into flags
-//INST(RMIF,                   "RMIF",                                      "10111010000iiiiii00001nnnnn0IIII") // ARMv8.4
-
-// Data processing - Evaluate into flags
-//INST(SETF8,                  "SETF8",                                     "0011101000000000000010nnnnn01101") // ARMv8.4
-//INST(SETF16,                 "SETF16",                                    "0011101000000000010010nnnnn01101") // ARMv8.4
 
 // Unconditonal branch (Register)
 INST(BLR,                    "BLR",                                       "1101011000111111000000nnnnn00000")

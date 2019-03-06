@@ -155,8 +155,13 @@ struct TranslatorVisitor final {
     bool SYSL(Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt);
     bool MRS(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3> op2, Reg Rt);
 
-    // System - PSTATE
+    // System - Flag manipulation instructions
     bool CFINV();
+    bool RMIF(Imm<6> lsb, Reg Rn, Imm<4> mask);
+    bool SETF8(Reg Rn);
+    bool SETF16(Reg Rn);
+
+    // System - Flag format instructions
     bool XAFlag();
     bool AXFlag();
 
@@ -170,13 +175,6 @@ struct TranslatorVisitor final {
     bool DC_CVAU(Reg Rt);
     bool DC_CVAP(Reg Rt);
     bool DC_CIVAC(Reg Rt);
-
-    // Data processing - Register - Rotate right into flags
-    bool RMIF(Imm<6> lsb, Reg Rn, Imm<4> mask);
-    
-    // Data processing - Register - Evaluate into flags
-    bool SETF8(Reg Rn);
-    bool SETF16(Reg Rn);
 
     // Unconditonal branch (Register)
     bool BR(Reg Rn);
