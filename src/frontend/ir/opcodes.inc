@@ -38,6 +38,8 @@ A32OPC(SetFpscrNZCV,                                        Void,           NZCV
 // A64 Context getters/setters
 A64OPC(SetCheckBit,                                         Void,           U1                                                              )
 A64OPC(GetCFlag,                                            U1,                                                                             )
+A64OPC(GetNZCVRaw,                                          U32,                                                                            )
+A64OPC(SetNZCVRaw,                                          Void,           U32                                                             )
 A64OPC(SetNZCV,                                             Void,           NZCV                                                            )
 A64OPC(GetW,                                                U32,            A64Reg                                                          )
 A64OPC(GetX,                                                U64,            A64Reg                                                          )

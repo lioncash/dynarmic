@@ -36,6 +36,8 @@ public:
 
     void SetCheckBit(const IR::U1& value);
     IR::U1 GetCFlag();
+    IR::U32 GetNZCVRaw();
+    void SetNZCVRaw(IR::U32 value);
     void SetNZCV(const IR::NZCV& nzcv);
     void OrQC(const IR::U1& value);
 

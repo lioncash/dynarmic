@@ -29,6 +29,14 @@ IR::U1 IREmitter::GetCFlag() {
     return Inst<IR::U1>(Opcode::A64GetCFlag);
 }
 
+IR::U32 IREmitter::GetNZCVRaw() {
+    return Inst<IR::U32>(Opcode::A64GetNZCVRaw);
+}
+
+void IREmitter::SetNZCVRaw(IR::U32 value) {
+    Inst(Opcode::A64SetNZCVRaw, value);
+}
+
 void IREmitter::SetNZCV(const IR::NZCV& nzcv) {
     Inst(Opcode::A64SetNZCV, nzcv);
 }
