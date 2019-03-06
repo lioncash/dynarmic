@@ -23,7 +23,7 @@ void A64GetSetElimination(IR::Block& block) {
     enum class TrackingType {
         W, X,
         S, D, Q,
-        SP, NZCV,
+        SP, NZCV, NZCVRaw,
     };
     struct RegisterInfo {
         IR::Value register_value;
@@ -100,6 +100,10 @@ void A64GetSetElimination(IR::Block& block) {
             do_get(sp_info, inst, TrackingType::SP);
             break;
         }
+        case IR::Opcode::A64GetNZCVRaw: {
+            do_get(nzcv_info, inst, TrackingType::NZCVRaw);
+            break;
+        }
         case IR::Opcode::A64SetW: {
             const size_t index = A64::RegNumber(inst->GetArg(0).GetA64RegRef());
             do_set(reg_info.at(index), inst->GetArg(1), inst, TrackingType::W);
@@ -131,6 +135,10 @@ void A64GetSetElimination(IR::Block& block) {
         }
         case IR::Opcode::A64SetNZCV: {
             do_set(nzcv_info, inst->GetArg(0), inst, TrackingType::NZCV);
+            break;
+        }
+        case IR::Opcode::A64SetNZCVRaw: {
+            do_set(nzcv_info, inst->GetArg(0), inst, TrackingType::NZCVRaw);
             break;
         }
         default: {
