@@ -152,6 +152,18 @@ bool TranslatorVisitor::FCVTPU_2(bool sz, Vec Vn, Vec Vd) {
     return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::TowardsPlusInfinity, Signedness::Unsigned);
 }
 
+bool TranslatorVisitor::FCVTXN_1(bool sz, Vec Vn, Vec Vd) {
+    if (!sz) {
+        return UnallocatedEncoding();
+    }
+
+    const IR::U64 element = V_scalar(64, Vn);
+    const IR::U32 result = ir.FPDoubleToSingle(element, FP::RoundingMode::ToOdd);
+
+    V_scalar(32, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FCVTZS_int_2(bool sz, Vec Vn, Vec Vd) {
     return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::TowardsZero, Signedness::Signed);
 }

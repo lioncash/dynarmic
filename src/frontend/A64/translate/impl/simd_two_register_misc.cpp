@@ -348,10 +348,11 @@ bool TranslatorVisitor::FCVTL(bool Q, bool sz, Vec Vn, Vec Vd) {
     }
 
     const IR::U128 part = Vpart(64, Vn, Q);
+    const auto rounding_mode = ir.current_location->FPCR().RMode();
     IR::U128 result = ir.ZeroVector();
 
     for (size_t i = 0; i < 2; i++) {
-        const IR::U64 element = ir.FPSingleToDouble(ir.VectorGetElement(32, part, i), true);
+        const IR::U64 element = ir.FPSingleToDouble(ir.VectorGetElement(32, part, i), rounding_mode);
 
         result = ir.VectorSetElement(64, result, i, element);
     }
@@ -367,10 +368,11 @@ bool TranslatorVisitor::FCVTN(bool Q, bool sz, Vec Vn, Vec Vd) {
     }
 
     const IR::U128 operand = V(128, Vn);
+    const auto rounding_mode = ir.current_location->FPCR().RMode();
     IR::U128 result = ir.ZeroVector();
 
     for (size_t i = 0; i < 2; i++) {
-        const IR::U32 element = ir.FPDoubleToSingle(ir.VectorGetElement(64, operand, i), true);
+        const IR::U32 element = ir.FPDoubleToSingle(ir.VectorGetElement(64, operand, i), rounding_mode);
 
         result = ir.VectorSetElement(32, result, i, element);
     }
@@ -393,6 +395,26 @@ bool TranslatorVisitor::FCVTAS_4(bool Q, bool sz, Vec Vn, Vec Vd) {
 
 bool TranslatorVisitor::FCVTPS_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Signed, FP::RoundingMode::TowardsPlusInfinity);
+}
+
+bool TranslatorVisitor::FCVTXN_2(bool Q, bool sz, Vec Vn, Vec Vd) {
+    if (!sz) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t part = Q ? 1 : 0;
+    const auto operand = ir.GetQ(Vn);
+    auto result = ir.ZeroVector();
+
+    for (size_t e = 0; e < 2; ++e) {
+        const IR::U64 element = ir.VectorGetElement(64, operand, e);
+        const IR::U32 converted = ir.FPDoubleToSingle(element, FP::RoundingMode::ToOdd);
+
+        result = ir.VectorSetElement(32, result, e, converted);
+    }
+
+    Vpart(64, Vd, part, result);
+    return true;
 }
 
 bool TranslatorVisitor::FCVTZS_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {

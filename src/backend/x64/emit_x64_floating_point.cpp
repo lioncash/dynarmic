@@ -1034,26 +1034,46 @@ void EmitX64::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
 
-    code.cvtss2sd(result, result);
-    if (ctx.FPSCR_DN()) {
-        ForceToDefaultNaN<64>(code, result);
+    // We special-case the non-IEEE-defined ToOdd rounding mode.
+    if (rounding_mode == ctx.FPSCR_RMode() && rounding_mode != FP::RoundingMode::ToOdd) {
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+        code.cvtss2sd(result, result);
+        if (ctx.FPSCR_DN()) {
+            ForceToDefaultNaN<64>(code, result);
+        }
+        ctx.reg_alloc.DefineValue(inst, result);
+    } else {
+        ctx.reg_alloc.HostCall(inst, args[0]);
+        code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+        code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
+        code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+        code.CallFunction(&FP::FPConvert<u64, u32>);
     }
-
-    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
 
-    code.cvtsd2ss(result, result);
-    if (ctx.FPSCR_DN()) {
-        ForceToDefaultNaN<32>(code, result);
+    // We special-case the non-IEEE-defined ToOdd rounding mode.
+    if (rounding_mode == ctx.FPSCR_RMode() && rounding_mode != FP::RoundingMode::ToOdd) {
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+        code.cvtsd2ss(result, result);
+        if (ctx.FPSCR_DN()) {
+            ForceToDefaultNaN<32>(code, result);
+        }
+        ctx.reg_alloc.DefineValue(inst, result);
+    } else {
+        ctx.reg_alloc.HostCall(inst, args[0]);
+        code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+        code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
+        code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+        code.CallFunction(&FP::FPConvert<u32, u64>);
     }
-
-    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template<size_t fsize, bool unsigned_, size_t isize>

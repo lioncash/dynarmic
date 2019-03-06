@@ -312,8 +312,8 @@ public:
     U32U64 FPRSqrtStepFused(const U32U64& a, const U32U64& b);
     U32U64 FPSqrt(const U32U64& a);
     U32U64 FPSub(const U32U64& a, const U32U64& b, bool fpcr_controlled);
-    U32 FPDoubleToSingle(const U64& a, bool fpcr_controlled);
-    U64 FPSingleToDouble(const U32& a, bool fpcr_controlled);
+    U32 FPDoubleToSingle(const U64& a, FP::RoundingMode rounding);
+    U64 FPSingleToDouble(const U32& a, FP::RoundingMode rounding);
     U32 FPToFixedS32(const U32U64& a, size_t fbits, FP::RoundingMode rounding);
     U64 FPToFixedS64(const U32U64& a, size_t fbits, FP::RoundingMode rounding);
     U32 FPToFixedU32(const U32U64& a, size_t fbits, FP::RoundingMode rounding);

@@ -24,6 +24,8 @@ add_library(dynarmic
     common/fp/info.h
     common/fp/mantissa_util.h
     common/fp/op.h
+    common/fp/op/FPConvert.cpp
+    common/fp/op/FPConvert.h
     common/fp/op/FPMulAdd.cpp
     common/fp/op/FPMulAdd.h
     common/fp/op/FPRecipEstimate.cpp
