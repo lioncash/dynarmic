@@ -175,6 +175,7 @@ add_library(dynarmic
     frontend/A64/translate/impl/simd_vector_x_indexed_element.cpp
     frontend/A64/translate/impl/sys_dc.cpp
     frontend/A64/translate/impl/system.cpp
+    frontend/A64/translate/impl/system_flag_format.cpp
     frontend/A64/translate/impl/system_flag_manipulation.cpp
     frontend/A64/translate/translate.cpp
     frontend/A64/translate/translate.h
