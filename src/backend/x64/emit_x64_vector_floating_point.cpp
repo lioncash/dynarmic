@@ -1300,6 +1300,18 @@ void EmitX64::EmitFPVectorRSqrtStepFused64(EmitContext& ctx, IR::Inst* inst) {
     EmitRSqrtStepFused<64>(code, ctx, inst);
 }
 
+void EmitX64::EmitFPVectorSqrt32(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoOpVectorOperation<32, DefaultIndexer>(code, ctx, inst, [this](const Xbyak::Xmm& result, const Xbyak::Xmm& operand) {
+        code.sqrtps(result, operand);
+    });
+}
+
+void EmitX64::EmitFPVectorSqrt64(EmitContext& ctx, IR::Inst* inst) {
+    EmitTwoOpVectorOperation<64, DefaultIndexer>(code, ctx, inst, [this](const Xbyak::Xmm& result, const Xbyak::Xmm& operand) {
+        code.sqrtpd(result, operand);
+    });
+}
+
 void EmitX64::EmitFPVectorSub32(EmitContext& ctx, IR::Inst* inst) {
     EmitThreeOpVectorOperation<32, DefaultIndexer>(code, ctx, inst, &Xbyak::CodeGenerator::subps);
 }
