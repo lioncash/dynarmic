@@ -81,7 +81,7 @@ INST(MSR_reg,                "MSR (register)",                            "11010
 INST(MRS,                    "MRS",                                       "110101010011poooNNNNMMMMooottttt")
 
 // System - Flag manipulation instructions
-//INST(CFINV,                  "CFINV",                                     "11010101000000000100000000011111") // ARMv8.4
+INST(CFINV,                  "CFINV",                                     "11010101000000000100000000011111") // ARMv8.4
 //INST(RMIF,                   "RMIF",                                      "10111010000iiiiii00001nnnnn0IIII") // ARMv8.4
 //INST(SETF8,                  "SETF8",                                     "0011101000000000000010nnnnn01101") // ARMv8.4
 //INST(SETF16,                 "SETF16",                                    "0011101000000000010010nnnnn01101") // ARMv8.4
