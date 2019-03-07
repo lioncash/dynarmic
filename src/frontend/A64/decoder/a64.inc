@@ -81,14 +81,14 @@ INST(MSR_reg,                "MSR (register)",                            "11010
 INST(MRS,                    "MRS",                                       "110101010011poooNNNNMMMMooottttt")
 
 // System - Flag manipulation instructions
-//INST(CFINV,                  "CFINV",                                     "11010101000000000100000000011111") // ARMv8.4
-//INST(RMIF,                   "RMIF",                                      "10111010000iiiiii00001nnnnn0IIII") // ARMv8.4
+INST(CFINV,                  "CFINV",                                     "11010101000000000100000000011111") // ARMv8.4
+INST(RMIF,                   "RMIF",                                      "10111010000iiiiii00001nnnnn0IIII") // ARMv8.4
 //INST(SETF8,                  "SETF8",                                     "0011101000000000000010nnnnn01101") // ARMv8.4
 //INST(SETF16,                 "SETF16",                                    "0011101000000000010010nnnnn01101") // ARMv8.4
 
 // System - Flag format instructions
-//INST(XAFlag,                 "XAFlag",                                    "11010101000000000100000000111111") // ARMv8.5
-//INST(AXFlag,                 "AXFlag",                                    "11010101000000000100000001011111") // ARMv8.5
+INST(XAFlag,                 "XAFlag",                                    "11010101000000000100000000111111") // ARMv8.5
+INST(AXFlag,                 "AXFlag",                                    "11010101000000000100000001011111") // ARMv8.5
 
 // SYS: Data Cache
 INST(DC_IVAC,                "DC IVAC",                                   "110101010000100001110110001ttttt")
