@@ -622,8 +622,8 @@ struct TranslatorVisitor final {
     bool SRSRA_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SHL_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SQSHL_imm_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool SQRSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
+    bool SQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SQRSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SCVTF_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool FCVTZS_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool USHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
@@ -634,10 +634,10 @@ struct TranslatorVisitor final {
     bool SLI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool SQSHLU_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool UQSHL_imm_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
-    bool SQSHRUN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool SQRSHRUN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool UQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
-    bool UQRSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Reg Rd);
+    bool SQSHRUN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool SQRSHRUN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool UQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
+    bool UQRSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool UCVTF_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
     bool FCVTZU_fix_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd);
 
