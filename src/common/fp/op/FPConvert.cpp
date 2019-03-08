@@ -59,7 +59,7 @@ FPT_TO FPConvertNaN(FPT_FROM op) {
 
 template <typename FPT_TO, typename FPT_FROM>
 FPT_TO FPConvert(FPT_FROM op, FPCR fpcr, RoundingMode rounding_mode, FPSR& fpsr) {
-    const auto [type, sign, value] = FPUnpack<FPT_FROM>(op, fpcr, fpsr);
+    const auto [type, sign, value] = FPUnpackCV<FPT_FROM>(op, fpcr, fpsr);
     const bool is_althp = Common::BitSize<FPT_TO>() == 16 && fpcr.AHP();
 
     if (type == FPType::SNaN || type == FPType::QNaN) {
@@ -93,7 +93,7 @@ FPT_TO FPConvert(FPT_FROM op, FPCR fpcr, RoundingMode rounding_mode, FPSR& fpsr)
         return FPInfo<FPT_TO>::Zero(sign);
     }
 
-    return FPRoundBase<FPT_TO>(value, fpcr, rounding_mode, fpsr);
+    return FPRoundCV<FPT_TO>(value, fpcr, rounding_mode, fpsr);
 }
 
 template u64 FPConvert<u64, u32>(u32 op, FPCR fpcr, RoundingMode rounding_mode, FPSR& fpsr);
