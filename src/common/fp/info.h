@@ -15,6 +15,29 @@ template<typename FPT>
 struct FPInfo {};
 
 template<>
+struct FPInfo<u16> {
+    static constexpr size_t total_width = 16;
+    static constexpr size_t exponent_width = 5;
+    static constexpr size_t explicit_mantissa_width = 10;
+    static constexpr size_t mantissa_width = explicit_mantissa_width + 1;
+    
+    static constexpr u32 implicit_leading_bit = u32(1) << explicit_mantissa_width;
+    static constexpr u32 sign_mask = 0x8000;
+    static constexpr u32 exponent_mask = 0x7C00;
+    static constexpr u32 mantissa_mask = 0x3FF;
+    static constexpr u32 mantissa_msb = 0x200;
+    
+    static constexpr int exponent_min = -14;
+    static constexpr int exponent_max = 15;
+    static constexpr int exponent_bias = 15;
+    
+    static constexpr u32 Zero(bool sign) { return sign ? sign_mask : 0; }
+    static constexpr u32 Infinity(bool sign) { return exponent_mask | Zero(sign); }
+    static constexpr u32 MaxNormal(bool sign) { return (exponent_mask - 1) | Zero(sign); }
+    static constexpr u32 DefaultNaN() { return exponent_mask | (u32(1) << (explicit_mantissa_width - 1)); }
+};
+
+template<>
 struct FPInfo<u32> {
     static constexpr size_t total_width = 32;
     static constexpr size_t exponent_width = 8;
