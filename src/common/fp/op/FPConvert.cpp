@@ -93,7 +93,7 @@ FPT_TO FPConvert(FPT_FROM op, FPCR fpcr, RoundingMode rounding_mode, FPSR& fpsr)
         return FPInfo<FPT_TO>::Zero(sign);
     }
 
-    return FPRoundBase<FPT_TO>(value, fpcr, rounding_mode, fpsr);
+    return FPRoundCV<FPT_TO>(value, fpcr, rounding_mode, fpsr);
 }
 
 template u64 FPConvert<u64, u32>(u32 op, FPCR fpcr, RoundingMode rounding_mode, FPSR& fpsr);

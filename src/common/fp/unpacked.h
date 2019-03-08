@@ -70,6 +70,12 @@ FPT FPRound(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
 }
 
 template<typename FPT>
+FPT FPRoundCV(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
+    fpcr.FZ16(false);
+    return FPRoundBase<FPT>(op, fpcr, rounding, fpsr);
+}
+
+template<typename FPT>
 FPT FPRound(FPUnpacked op, FPCR fpcr, FPSR& fpsr) {
     return FPRound<FPT>(op, fpcr, fpcr.RMode(), fpsr);
 }
