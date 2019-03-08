@@ -9,6 +9,12 @@
 
 namespace Dynarmic::A64 {
 namespace {
+enum class Narrowing {
+    Truncation,
+    SaturateToUnsigned,
+    SaturateToSigned,
+};
+
 enum class ShiftExtraBehavior {
     None,
     Accumulate,
@@ -127,6 +133,51 @@ bool ShiftAndInsert(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec 
     return true;
 }
 
+bool ShiftRightNarrowing(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
+                         Narrowing narrowing, Signedness signedness) {
+    if (immh == 0b0000) {
+        return v.UnallocatedEncoding();
+    }
+
+    if (immh.Bit<3>()) {
+        return v.UnallocatedEncoding();
+    }
+
+    const size_t esize = 8 << Common::HighestSetBit(immh.ZeroExtend());
+    const size_t source_esize = 2 * esize;
+    const u8 shift_amount = static_cast<u8>(source_esize - concatenate(immh, immb).ZeroExtend());
+
+    const IR::U128 operand = v.ir.ZeroExtendToQuad(v.ir.VectorGetElement(source_esize, v.V(128, Vn), 0));
+
+    IR::U128 wide_result = [&] {
+        if (signedness == Signedness::Signed) {
+            return v.ir.VectorArithmeticShiftRight(source_esize, operand, shift_amount);
+        }
+        return v.ir.VectorLogicalShiftRight(source_esize, operand, shift_amount);
+    }();
+
+    const IR::U128 result = [&] {
+        switch (narrowing) {
+        case Narrowing::Truncation:
+            return v.ir.VectorNarrow(source_esize, wide_result);
+        case Narrowing::SaturateToUnsigned:
+            if (signedness == Signedness::Signed) {
+                return v.ir.VectorSignedSaturatedNarrowToUnsigned(source_esize, wide_result);
+            }
+            return v.ir.VectorUnsignedSaturatedNarrow(source_esize, wide_result);
+        case Narrowing::SaturateToSigned:
+            ASSERT(signedness == Signedness::Signed);
+            return v.ir.VectorSignedSaturatedNarrowToSigned(source_esize, wide_result);
+        }
+        UNREACHABLE();
+        return IR::U128{};
+    }();
+
+    const IR::UAny segment = v.ir.VectorGetElement(esize, result, 0);
+    v.V_scalar(esize, Vd, segment);
+    return true;
+}
+
 bool ScalarFPConvertWithRound(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd, Signedness sign, FloatConversionDirection direction, FP::RoundingMode rounding_mode) {
     const u32 immh_value = immh.ZeroExtend();
 
@@ -202,6 +253,14 @@ bool TranslatorVisitor::SRI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return ShiftAndInsert(*this, immh, immb, Vn, Vd, ShiftDirection::Right);
 }
 
+bool TranslatorVisitor::SQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ShiftRightNarrowing(*this, immh, immb, Vn, Vd, Narrowing::SaturateToSigned, Signedness::Signed);
+}
+
+bool TranslatorVisitor::SQSHRUN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ShiftRightNarrowing(*this, immh, immb, Vn, Vd, Narrowing::SaturateToUnsigned, Signedness::Signed);
+}
+
 bool TranslatorVisitor::SRSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return RoundingShiftRight(*this, immh, immb, Vn, Vd, ShiftExtraBehavior::None, Signedness::Signed);
 }
@@ -231,6 +290,10 @@ bool TranslatorVisitor::SHL_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
 
     V_scalar(esize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::UQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return ShiftRightNarrowing(*this, immh, immb, Vn, Vd, Narrowing::SaturateToUnsigned, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::URSHR_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
