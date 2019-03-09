@@ -15,7 +15,7 @@
 namespace Dynarmic::FP {
 
 template<typename FPT>
-std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
+std::tuple<FPType, bool, FPUnpacked> FPUnpackBase(FPT op, FPCR fpcr, FPSR& fpsr) {
     constexpr size_t sign_bit = FPInfo<FPT>::exponent_width + FPInfo<FPT>::explicit_mantissa_width;
     constexpr size_t exponent_high_bit = FPInfo<FPT>::exponent_width + FPInfo<FPT>::explicit_mantissa_width - 1;
     constexpr size_t exponent_low_bit = FPInfo<FPT>::explicit_mantissa_width;
@@ -52,8 +52,8 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
     return {FPType::Nonzero, sign, {sign, exp, frac}};
 }
 
-template std::tuple<FPType, bool, FPUnpacked> FPUnpack<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
-template std::tuple<FPType, bool, FPUnpacked> FPUnpack<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
+template std::tuple<FPType, bool, FPUnpacked> FPUnpackBase<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
+template std::tuple<FPType, bool, FPUnpacked> FPUnpackBase<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
 
 template<size_t F>
 std::tuple<bool, int, u64, ResidualError> Normalize(FPUnpacked op, int extra_right_shift = 0) {
