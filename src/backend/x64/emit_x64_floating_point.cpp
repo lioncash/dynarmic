@@ -728,6 +728,10 @@ static void EmitFPRecipExponent(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
     code.CallFunction(&FP::FPRecipExponent<FPT>);
 }
 
+void EmitX64::EmitFPRecipExponent16(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRecipExponent<u16>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPRecipExponent32(EmitContext& ctx, IR::Inst* inst) {
     EmitFPRecipExponent<u32>(code, ctx, inst);
 }
