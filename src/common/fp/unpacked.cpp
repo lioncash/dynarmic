@@ -88,7 +88,7 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
 
     if (((!isFP16 && fpcr.FZ()) || (isFP16 && fpcr.FZ16())) && exponent < minimum_exp) {
         fpsr.UFC(true);
-        return FPInfo<FPT>::Zero(sign);
+        return FPT(FPInfo<FPT>::Zero(sign));
     }
 
     int biased_exp = std::max<int>(exponent - minimum_exp + 1, 0);
@@ -151,13 +151,13 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
 #endif
         constexpr int max_biased_exp = (1 << E) - 1;
         if (biased_exp >= max_biased_exp) {
-            result = overflow_to_inf ? FPInfo<FPT>::Infinity(sign) : FPInfo<FPT>::MaxNormal(sign);
+            result = overflow_to_inf ? FPT(FPInfo<FPT>::Infinity(sign)) : FPT(FPInfo<FPT>::MaxNormal(sign));
             FPProcessException(FPExc::Overflow, fpcr, fpsr);
             FPProcessException(FPExc::Inexact, fpcr, fpsr);
         } else {
             result = sign ? 1 : 0;
             result <<= E;
-            result += biased_exp;
+            result += FPT(biased_exp);
             result <<= F;
             result |= static_cast<FPT>(mantissa) & FPInfo<FPT>::mantissa_mask;
             if (error != ResidualError::Zero) {
@@ -172,7 +172,7 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
         } else {
             result = sign ? 1 : 0;
             result <<= E;
-            result += biased_exp;
+            result += FPT(biased_exp);
             result <<= F;
             result |= static_cast<FPT>(mantissa) & FPInfo<FPT>::mantissa_mask;
             if (error != ResidualError::Zero) {
@@ -183,6 +183,7 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
     return result;
 }
 
+template u16 FPRoundBase<u16>(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
 template u32 FPRoundBase<u32>(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
 template u64 FPRoundBase<u64>(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
 
