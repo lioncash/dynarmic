@@ -52,7 +52,13 @@ constexpr FPUnpacked ToNormalized(bool sign, int exponent, u64 value) {
 }
 
 template<typename FPT>
-std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr);
+std::tuple<FPType, bool, FPUnpacked> FPUnpackBase(FPT op, FPCR fpcr, FPSR& fpsr);
+
+template<typename FPT>
+std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
+    fpcr.AHP(false);
+    return FPUnpackBase(op, fpcr, fpsr);
+}
 
 template<typename FPT>
 std::tuple<FPType, bool, FPUnpacked> FPUnpackCV(FPT op, FPCR fpcr, FPSR& fpsr) {

@@ -15,7 +15,7 @@
 namespace Dynarmic::FP {
 
 template<typename FPT>
-std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
+std::tuple<FPType, bool, FPUnpacked> FPUnpackBase(FPT op, FPCR fpcr, FPSR& fpsr) {
     constexpr size_t sign_bit = FPInfo<FPT>::exponent_width + FPInfo<FPT>::explicit_mantissa_width;
     constexpr size_t exponent_high_bit = FPInfo<FPT>::exponent_width + FPInfo<FPT>::explicit_mantissa_width - 1;
     constexpr size_t exponent_low_bit = FPInfo<FPT>::explicit_mantissa_width;
@@ -23,11 +23,17 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
     constexpr size_t mantissa_low_bit = 0;
     constexpr int denormal_exponent = FPInfo<FPT>::exponent_min - int(FPInfo<FPT>::explicit_mantissa_width);
 
+    constexpr bool is_half_precision = std::is_same_v<FPT, u16>;
     const bool sign = Common::Bit<sign_bit>(op);
     const FPT exp_raw = Common::Bits<exponent_low_bit, exponent_high_bit>(op);
     const FPT frac_raw = Common::Bits<mantissa_low_bit, mantissa_high_bit>(op);
 
     if (exp_raw == 0) {
+        if constexpr (is_half_precision) {
+            if (frac_raw == 0 || fpcr.FZ16()) {
+                return {FPType::Zero, sign, {sign, 0, 0}};
+            }
+        }
         if (frac_raw == 0 || fpcr.FZ()) {
             if (frac_raw != 0) {
                 FPProcessException(FPExc::InputDenorm, fpcr, fpsr);
@@ -38,7 +44,9 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
         return {FPType::Nonzero, sign, ToNormalized(sign, denormal_exponent, frac_raw)};
     }
 
-    if (exp_raw == Common::Ones<FPT>(FPInfo<FPT>::exponent_width)) {
+    const bool exp_all_ones = exp_raw == Common::Ones<FPT>(FPInfo<FPT>::exponent_width);
+    const bool ahp_disabled = is_half_precision && !fpcr.AHP();
+    if (exp_all_ones || ahp_disabled) {
         if (frac_raw == 0) {
             return {FPType::Infinity, sign, ToNormalized(sign, 1000000, 1)};
         }
@@ -52,8 +60,9 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
     return {FPType::Nonzero, sign, {sign, exp, frac}};
 }
 
-template std::tuple<FPType, bool, FPUnpacked> FPUnpack<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
-template std::tuple<FPType, bool, FPUnpacked> FPUnpack<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
+template std::tuple<FPType, bool, FPUnpacked> FPUnpackBase<u16>(u16 op, FPCR fpcr, FPSR& fpsr);
+template std::tuple<FPType, bool, FPUnpacked> FPUnpackBase<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
+template std::tuple<FPType, bool, FPUnpacked> FPUnpackBase<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
 
 template<size_t F>
 std::tuple<bool, int, u64, ResidualError> Normalize(FPUnpacked op, int extra_right_shift = 0) {
@@ -79,7 +88,7 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
 
     if (((!isFP16 && fpcr.FZ()) || (isFP16 && fpcr.FZ16())) && exponent < minimum_exp) {
         fpsr.UFC(true);
-        return FPInfo<FPT>::Zero(sign);
+        return FPT(FPInfo<FPT>::Zero(sign));
     }
 
     int biased_exp = std::max<int>(exponent - minimum_exp + 1, 0);
@@ -142,13 +151,13 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
 #endif
         constexpr int max_biased_exp = (1 << E) - 1;
         if (biased_exp >= max_biased_exp) {
-            result = overflow_to_inf ? FPInfo<FPT>::Infinity(sign) : FPInfo<FPT>::MaxNormal(sign);
+            result = overflow_to_inf ? FPT(FPInfo<FPT>::Infinity(sign)) : FPT(FPInfo<FPT>::MaxNormal(sign));
             FPProcessException(FPExc::Overflow, fpcr, fpsr);
             FPProcessException(FPExc::Inexact, fpcr, fpsr);
         } else {
             result = sign ? 1 : 0;
             result <<= E;
-            result += biased_exp;
+            result += FPT(biased_exp);
             result <<= F;
             result |= static_cast<FPT>(mantissa) & FPInfo<FPT>::mantissa_mask;
             if (error != ResidualError::Zero) {
@@ -163,7 +172,7 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
         } else {
             result = sign ? 1 : 0;
             result <<= E;
-            result += biased_exp;
+            result += FPT(biased_exp);
             result <<= F;
             result |= static_cast<FPT>(mantissa) & FPInfo<FPT>::mantissa_mask;
             if (error != ResidualError::Zero) {
@@ -174,6 +183,7 @@ FPT FPRoundBase(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
     return result;
 }
 
+template u16 FPRoundBase<u16>(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
 template u32 FPRoundBase<u32>(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
 template u64 FPRoundBase<u64>(FPUnpacked op, FPCR fpcr, RoundingMode rounding, FPSR& fpsr);
 
