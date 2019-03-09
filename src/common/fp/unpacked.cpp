@@ -23,11 +23,17 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpackBase(FPT op, FPCR fpcr, FPSR& fpsr)
     constexpr size_t mantissa_low_bit = 0;
     constexpr int denormal_exponent = FPInfo<FPT>::exponent_min - int(FPInfo<FPT>::explicit_mantissa_width);
 
+    constexpr bool is_half_precision = std::is_same_v<FPT, u16>;
     const bool sign = Common::Bit<sign_bit>(op);
     const FPT exp_raw = Common::Bits<exponent_low_bit, exponent_high_bit>(op);
     const FPT frac_raw = Common::Bits<mantissa_low_bit, mantissa_high_bit>(op);
 
     if (exp_raw == 0) {
+        if constexpr (is_half_precision) {
+            if (frac_raw == 0 || fpcr.FZ16()) {
+                return {FPType::Zero, sign, {sign, 0, 0}};
+            }
+        }
         if (frac_raw == 0 || fpcr.FZ()) {
             if (frac_raw != 0) {
                 FPProcessException(FPExc::InputDenorm, fpcr, fpsr);
@@ -38,7 +44,9 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpackBase(FPT op, FPCR fpcr, FPSR& fpsr)
         return {FPType::Nonzero, sign, ToNormalized(sign, denormal_exponent, frac_raw)};
     }
 
-    if (exp_raw == Common::Ones<FPT>(FPInfo<FPT>::exponent_width)) {
+    const bool exp_all_ones = exp_raw == Common::Ones<FPT>(FPInfo<FPT>::exponent_width);
+    const bool ahp_disabled = is_half_precision && !fpcr.AHP();
+    if (exp_all_ones || ahp_disabled) {
         if (frac_raw == 0) {
             return {FPType::Infinity, sign, ToNormalized(sign, 1000000, 1)};
         }
@@ -52,6 +60,7 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpackBase(FPT op, FPCR fpcr, FPSR& fpsr)
     return {FPType::Nonzero, sign, {sign, exp, frac}};
 }
 
+template std::tuple<FPType, bool, FPUnpacked> FPUnpackBase<u16>(u16 op, FPCR fpcr, FPSR& fpsr);
 template std::tuple<FPType, bool, FPUnpacked> FPUnpackBase<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
 template std::tuple<FPType, bool, FPUnpacked> FPUnpackBase<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
 
