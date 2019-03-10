@@ -17,28 +17,16 @@
 
 namespace Dynarmic::FP {
 namespace {
-// We don't care about unreachable code warnings here
-// TODO: Remove this warning disabling of warnings when
-// half-float support is added.
-#ifdef _MSC_VER
-#pragma warning(disable:4702)
-#endif
 template <typename FPT>
 FPT DetermineExponentValue(size_t value) {
     if constexpr (sizeof(FPT) == sizeof(u32)) {
         return static_cast<FPT>(Common::Bits<23, 30>(value));
-    }
-
-    if constexpr (sizeof(FPT) == sizeof(u64)) {
+    } else if constexpr (sizeof(FPT) == sizeof(u64)) {
         return static_cast<FPT>(Common::Bits<52, 62>(value));
+    } else {
+        return static_cast<FPT>(Common::Bits<10, 14>(value));
     }
-
-    // Half-float
-    return static_cast<FPT>(Common::Bits<10, 14>(value));
 }
-#ifdef _MSC_VER
-#pragma warning(default:4702)
-#endif
 } // Anonymous namespace
 
 template <typename FPT>
@@ -50,7 +38,7 @@ FPT FPRecipExponent(FPT op, FPCR fpcr, FPSR& fpsr) {
         return FPProcessNaN(type, op, fpcr, fpsr);
     }
 
-    const FPT sign_bits = FPInfo<FPT>::Zero(sign);
+    const FPT sign_bits = FPT(FPInfo<FPT>::Zero(sign));
     const FPT exponent = DetermineExponentValue<FPT>(op);
 
     // Zero and denormals
@@ -64,6 +52,7 @@ FPT FPRecipExponent(FPT op, FPCR fpcr, FPSR& fpsr) {
     return FPT(sign_bits | negated_exponent);
 }
 
+template u16 FPRecipExponent<u16>(u16 op, FPCR fpcr, FPSR& fpsr);
 template u32 FPRecipExponent<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
 template u64 FPRecipExponent<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
 

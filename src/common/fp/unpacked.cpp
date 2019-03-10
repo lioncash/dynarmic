@@ -33,7 +33,9 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpackBase(FPT op, FPCR fpcr, FPSR& fpsr)
             if (frac_raw == 0 || fpcr.FZ16()) {
                 return {FPType::Zero, sign, {sign, 0, 0}};
             }
+            return {FPType::Nonzero, sign, ToNormalized(sign, denormal_exponent, frac_raw)};
         }
+
         if (frac_raw == 0 || fpcr.FZ()) {
             if (frac_raw != 0) {
                 FPProcessException(FPExc::InputDenorm, fpcr, fpsr);
@@ -46,7 +48,7 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpackBase(FPT op, FPCR fpcr, FPSR& fpsr)
 
     const bool exp_all_ones = exp_raw == Common::Ones<FPT>(FPInfo<FPT>::exponent_width);
     const bool ahp_disabled = is_half_precision && !fpcr.AHP();
-    if (exp_all_ones || ahp_disabled) {
+    if ((exp_all_ones && !is_half_precision) || (exp_all_ones && ahp_disabled)) {
         if (frac_raw == 0) {
             return {FPType::Infinity, sign, ToNormalized(sign, 1000000, 1)};
         }
