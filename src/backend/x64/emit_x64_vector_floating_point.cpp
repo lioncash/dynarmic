@@ -39,12 +39,16 @@ namespace {
 
 template<size_t fsize, typename T>
 T ChooseOnFsize([[maybe_unused]] T f32, [[maybe_unused]] T f64) {
-    static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
+    static_assert(fsize == 16 || fsize == 32 || fsize == 64,
+                  "fsize must be either 16, 32, or 64");
 
     if constexpr (fsize == 32) {
         return f32;
-    } else {
+    } else if constexpr (fsize == 64) {
         return f64;
+    } else {
+        // x64 has no half-precision instructions yet.
+        UNREACHABLE();
     }
 }
 
