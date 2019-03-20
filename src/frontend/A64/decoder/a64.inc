@@ -874,7 +874,7 @@ INST(MUL_elt,                "MUL (by element)",                          "0Q001
 INST(SMULL_elt,              "SMULL, SMULL2 (by element)",                "0Q001111zzLMmmmm1010H0nnnnnddddd")
 //INST(SQDMULL_elt_2,          "SQDMULL, SQDMULL2 (by element)",            "0Q001111zzLMmmmm1011H0nnnnnddddd")
 INST(SQDMULH_elt_2,          "SQDMULH (by element)",                      "0Q001111zzLMmmmm1100H0nnnnnddddd")
-//INST(SQRDMULH_elt_2,         "SQRDMULH (by element)",                     "0Q001111zzLMmmmm1101H0nnnnnddddd")
+INST(SQRDMULH_elt_2,         "SQRDMULH (by element)",                     "0Q001111zzLMmmmm1101H0nnnnnddddd")
 INST(SDOT_elt,               "SDOT (by element)",                         "0Q001111zzLMmmmm1110H0nnnnnddddd")
 //INST(FMLA_elt_3,             "FMLA (by element)",                         "0Q00111100LMmmmm0001H0nnnnnddddd")
 INST(FMLA_elt_4,             "FMLA (by element)",                         "0Q0011111zLMmmmm0001H0nnnnnddddd")
