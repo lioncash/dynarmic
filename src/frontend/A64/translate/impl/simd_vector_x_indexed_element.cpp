@@ -221,6 +221,32 @@ bool TranslatorVisitor::SMULL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4
     return MultiplyLong(*this, Q, size, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::None, Signedness::Signed);
 }
 
+bool TranslatorVisitor::SQDMULL_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    if (size == 0b00 || size == 0b11) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t part = Q ? 1 : 0;
+    const size_t idxsize = H == 1 ? 128 : 64;
+    const size_t esize = 8 << size.ZeroExtend();
+    const size_t datasize = 64;
+    const auto [index, Vmhi] = [=] {
+        if (size == 0b01) {
+            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
+        }
+
+        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
+    }();
+
+    const IR::U128 operand1 = Vpart(datasize, Vn, part);
+    const IR::U128 operand2 = V(idxsize, concatenate(Vmhi, Vmlo).ZeroExtend<Vec>());
+    const IR::U128 index_vector = ir.VectorBroadcast(esize, ir.VectorGetElement(esize, operand2, index));
+    const IR::U128 result = ir.VectorSignedSaturatedDoublingMultiplyLong(esize, operand1, index_vector);
+
+    V(128, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SQDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     if (size == 0b00 || size == 0b11) {
         return UnallocatedEncoding();
