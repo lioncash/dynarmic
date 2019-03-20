@@ -139,13 +139,7 @@ bool MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M,
     const size_t idxsize = H == 1 ? 128 : 64;
     const size_t esize = 8 << size.ZeroExtend();
     const size_t datasize = 64;
-    const auto [index, Vmhi] = [=] {
-        if (size == 0b01) {
-            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
-        }
-
-        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
-    }();
+    const auto [index, Vm] = Combine(size, H, L, M, Vmlo);
 
     const auto extend_operands = [&](const IR::U128& lhs, const IR::U128& rhs) {
         if (sign == Signedness::Signed) {
@@ -158,7 +152,7 @@ bool MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M,
     };
 
     const IR::U128 operand1 = v.Vpart(datasize, Vn, Q);
-    const IR::U128 operand2 = v.V(idxsize, concatenate(Vmhi, Vmlo).ZeroExtend<Vec>());
+    const IR::U128 operand2 = v.V(idxsize, Vm);
     const IR::U128 index_vector = v.ir.VectorBroadcast(esize, v.ir.VectorGetElement(esize, operand2, index));
 
     const IR::U128 result = [&] {
@@ -230,16 +224,10 @@ bool TranslatorVisitor::SQDMULL_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, I
     const size_t idxsize = H == 1 ? 128 : 64;
     const size_t esize = 8 << size.ZeroExtend();
     const size_t datasize = 64;
-    const auto [index, Vmhi] = [=] {
-        if (size == 0b01) {
-            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
-        }
-
-        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
-    }();
+    const auto [index, Vm] = Combine(size, H, L, M, Vmlo);
 
     const IR::U128 operand1 = Vpart(datasize, Vn, part);
-    const IR::U128 operand2 = V(idxsize, concatenate(Vmhi, Vmlo).ZeroExtend<Vec>());
+    const IR::U128 operand2 = V(idxsize, Vm);
     const IR::U128 index_vector = ir.VectorBroadcast(esize, ir.VectorGetElement(esize, operand2, index));
     const IR::U128 result = ir.VectorSignedSaturatedDoublingMultiplyLong(esize, operand1, index_vector);
 
@@ -255,16 +243,10 @@ bool TranslatorVisitor::SQDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, I
     const size_t idxsize = H == 1 ? 128 : 64;
     const size_t esize = 8 << size.ZeroExtend();
     const size_t datasize = Q ? 128 : 64;
-    const auto [index, Vmhi] = [=] {
-        if (size == 0b01) {
-            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
-        }
-
-        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
-    }();
+    const auto [index, Vm] = Combine(size, H, L, M, Vmlo);
 
     const IR::U128 operand1 = V(datasize, Vn);
-    const IR::U128 operand2 = V(idxsize, concatenate(Vmhi, Vmlo).ZeroExtend<Vec>());
+    const IR::U128 operand2 = V(idxsize, Vm);
     const IR::U128 index_vector = ir.VectorBroadcast(esize, ir.VectorGetElement(esize, operand2, index));
     const IR::U128 result = ir.VectorSignedSaturatedDoublingMultiply(esize, operand1, index_vector).upper;
 
@@ -280,16 +262,10 @@ bool TranslatorVisitor::SQRDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, 
     const size_t idxsize = H == 1 ? 128 : 64;
     const size_t esize = 8 << size.ZeroExtend();
     const size_t datasize = Q ? 128 : 64;
-    const auto [index, Vmhi] = [=] {
-        if (size == 0b01) {
-            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
-        }
-
-        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
-    }();
+    const auto [index, Vm] = Combine(size, H, L, M, Vmlo);
 
     const IR::U128 operand1 = V(datasize, Vn);
-    const IR::U128 operand2 = V(idxsize, concatenate(Vmhi, Vmlo).ZeroExtend<Vec>());
+    const IR::U128 operand2 = V(idxsize, Vm);
     const IR::U128 index_vector = ir.VectorBroadcast(esize, ir.VectorGetElement(esize, operand2, index));
     const IR::UpperAndLower multiply = ir.VectorSignedSaturatedDoublingMultiply(esize, operand1, index_vector);
     const IR::U128 result = ir.VectorAdd(esize, multiply.upper, ir.VectorLogicalShiftRight(esize, multiply.lower, static_cast<u8>(esize - 1)));
