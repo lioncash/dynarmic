@@ -9,6 +9,14 @@
 
 namespace Dynarmic::A64 {
 namespace {
+std::pair<size_t, Vec> Combine(Imm<2> size, Imm<1> H, Imm<1> L, Imm<1> M, Imm<4> Vmlo) {
+    if (size == 0b01) {
+        return {concatenate(H, L, M).ZeroExtend(), Vmlo.ZeroExtend<Vec>()};
+    }
+
+    return {concatenate(H, L).ZeroExtend(), concatenate(M, Vmlo).ZeroExtend<Vec>()};
+}
+
 enum class ExtraBehavior {
     None,
     Accumulate,
@@ -74,14 +82,7 @@ bool TranslatorVisitor::SQDMULH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vm
     }
 
     const size_t esize = 8 << size.ZeroExtend();
-    const auto [index, Vmhi] = [=] {
-        if (size == 0b01) {
-            return std::make_pair(concatenate(H, L, M).ZeroExtend(), Imm<1>{0});
-        }
-
-        return std::make_pair(concatenate(H, L).ZeroExtend(), M);
-    }();
-    const Vec Vm = concatenate(Vmhi, Vmlo).ZeroExtend<Vec>();
+    const auto [index, Vm] = Combine(size, H, L, M, Vmlo);
 
     const IR::UAny operand1 = V_scalar(esize, Vn);
     const IR::UAny operand2 = ir.VectorGetElement(esize, V(128, Vm), index);
