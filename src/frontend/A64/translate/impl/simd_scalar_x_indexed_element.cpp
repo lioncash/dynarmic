@@ -94,4 +94,21 @@ bool TranslatorVisitor::SQDMULH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vm
     return true;
 }
 
+bool TranslatorVisitor::SQDMULL_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    if (size == 0b00 || size == 0b11) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+    const auto [index, Vm] = Combine(size, H, L, M, Vmlo);
+
+    const IR::U128 operand1 = ir.ZeroExtendToQuad(ir.VectorGetElement(esize, V(128, Vn), 0));
+    const IR::UAny operand2 = ir.VectorGetElement(esize, V(128, Vm), index);
+    const IR::U128 broadcast = ir.VectorBroadcast(esize, operand2);
+    const IR::U128 result = ir.VectorSignedSaturatedDoublingMultiplyLong(esize, operand1, broadcast);
+
+    V_scalar(esize * 2, Vd, result);
+    return true;
+}
+
 } // namespace Dynarmic::A64
