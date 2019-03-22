@@ -62,32 +62,31 @@ bool TranslatorVisitor::FMOV_float_gen(bool sf, Imm<2> type, Imm<1> rmode_0, Imm
     // opcode<2:1> == 0b11
     // rmode<1> == 0b0
 
-    const size_t intsize = sf ? 64 : 32;
-    size_t fltsize;
-    switch (type.ZeroExtend()) {
-    case 0b00:
-        fltsize = 32;
-        break;
-    case 0b01:
-        fltsize = 64;
-        break;
-    case 0b10:
-        if (rmode_0 != 1) {
-            return UnallocatedEncoding();
-        }
-        fltsize = 128;
-        break;
-    default:
-    case 0b11:
-        fltsize = 16;
+    if (type == 0b10 && rmode_0 != 1) {
         return UnallocatedEncoding();
     }
+
+    const size_t intsize = sf ? 64 : 32;
+    size_t fltsize = [type] {
+        switch (type.ZeroExtend()) {
+        case 0b00:
+            return 32;
+        case 0b01:
+            return 64;
+        case 0b10:
+            return 128;
+        case 0b11:
+            return 16;
+        default:
+            UNREACHABLE();
+            return 0;
+        }
+    }();
 
     bool integer_to_float;
     size_t part;
     switch (rmode_0.ZeroExtend()) {
     case 0b0:
-        // fltsize != 16 is always true for now (late 2018), until half-float support is implemented.
         if (fltsize != 16 && fltsize != intsize) {
             return UnallocatedEncoding();
         }
@@ -106,11 +105,11 @@ bool TranslatorVisitor::FMOV_float_gen(bool sf, Imm<2> type, Imm<1> rmode_0, Imm
     }
 
     if (integer_to_float) {
-        IR::U32U64 intval = X(intsize, static_cast<Reg>(n));
+        const IR::U16U32U64 intval = X(fltsize, static_cast<Reg>(n));
         Vpart_scalar(fltsize, static_cast<Vec>(d), part, intval);
     } else {
-        IR::UAny fltval = Vpart_scalar(fltsize, static_cast<Vec>(n), part);
-        IR::U32U64 intval = ZeroExtend(fltval, intsize);
+        const IR::UAny fltval = Vpart_scalar(fltsize, static_cast<Vec>(n), part);
+        const IR::U32U64 intval = ZeroExtend(fltval, intsize);
         X(intsize, static_cast<Reg>(d), intval);
     }
 
