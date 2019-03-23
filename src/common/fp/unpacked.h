@@ -63,7 +63,7 @@ std::tuple<FPType, bool, FPUnpacked> FPUnpack(FPT op, FPCR fpcr, FPSR& fpsr) {
 template<typename FPT>
 std::tuple<FPType, bool, FPUnpacked> FPUnpackCV(FPT op, FPCR fpcr, FPSR& fpsr) {
     fpcr.FZ16(false);
-    return FPUnpack(op, fpcr, fpsr);
+    return FPUnpackBase(op, fpcr, fpsr);
 }
 
 template<typename FPT>

@@ -342,19 +342,24 @@ bool TranslatorVisitor::FCMLT_4(bool Q, bool sz, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::FCVTL(bool Q, bool sz, Vec Vn, Vec Vd) {
-    // Half-precision not handled directly.
-    if (!sz) {
-        return InterpretThisInstruction();
-    }
+    const size_t esize = sz ? 32 : 16;
+    const size_t datasize = 64;
+    const size_t num_elements = datasize / esize;
 
     const IR::U128 part = Vpart(64, Vn, Q);
     const auto rounding_mode = ir.current_location->FPCR().RMode();
     IR::U128 result = ir.ZeroVector();
 
-    for (size_t i = 0; i < 2; i++) {
-        const IR::U64 element = ir.FPSingleToDouble(ir.VectorGetElement(32, part, i), rounding_mode);
+    for (size_t i = 0; i < num_elements; i++) {
+        IR::U16U32U64 element = ir.VectorGetElement(esize, part, i);
 
-        result = ir.VectorSetElement(64, result, i, element);
+        if (esize == 16) {
+            element = ir.FPHalfToSingle(element, rounding_mode);
+        } else if (esize == 32) {
+            element = ir.FPSingleToDouble(element, rounding_mode);
+        }
+
+        result = ir.VectorSetElement(2 * esize, result, i, element);
     }
 
     V(128, Vd, result);
@@ -362,22 +367,27 @@ bool TranslatorVisitor::FCVTL(bool Q, bool sz, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::FCVTN(bool Q, bool sz, Vec Vn, Vec Vd) {
-    // Half-precision not handled directly.
-    if (!sz) {
-        return InterpretThisInstruction();
-    }
+    const size_t datasize = 64;
+    const size_t esize = sz ? 32 : 16;
+    const size_t num_elements = datasize / esize;
 
     const IR::U128 operand = V(128, Vn);
     const auto rounding_mode = ir.current_location->FPCR().RMode();
     IR::U128 result = ir.ZeroVector();
 
-    for (size_t i = 0; i < 2; i++) {
-        const IR::U32 element = ir.FPDoubleToSingle(ir.VectorGetElement(64, operand, i), rounding_mode);
+    for (size_t i = 0; i < num_elements; i++) {
+        IR::U16U32U64 element = ir.VectorGetElement(2 * esize, operand, i);
 
-        result = ir.VectorSetElement(32, result, i, element);
+        if (esize == 16) {
+            element = ir.FPSingleToHalf(element, rounding_mode);
+        } else if (esize == 32) {
+            element = ir.FPDoubleToSingle(element, rounding_mode);
+        }
+
+        result = ir.VectorSetElement(esize, result, i, element);
     }
 
-    Vpart(64, Vd, Q, result);
+    Vpart(datasize, Vd, Q, result);
     return true;
 }
 

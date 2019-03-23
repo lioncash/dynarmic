@@ -288,7 +288,11 @@ bool Inst::ReadsFromAndWritesToFPSRCumulativeExceptionBits() const {
     case Opcode::FPSqrt64:
     case Opcode::FPSub32:
     case Opcode::FPSub64:
+    case Opcode::FPHalfToDouble:
+    case Opcode::FPHalfToSingle:
     case Opcode::FPSingleToDouble:
+    case Opcode::FPSingleToHalf:
+    case Opcode::FPDoubleToHalf:
     case Opcode::FPDoubleToSingle:
     case Opcode::FPDoubleToFixedS32:
     case Opcode::FPDoubleToFixedS64:
