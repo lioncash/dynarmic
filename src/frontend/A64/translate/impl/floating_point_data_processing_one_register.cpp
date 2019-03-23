@@ -24,12 +24,12 @@ bool TranslatorVisitor::FMOV_float(Imm<2> type, Vec Vn, Vec Vd) {
 
 bool TranslatorVisitor::FABS_float(Imm<2> type, Vec Vn, Vec Vd) {
     const auto datasize = FPGetDataSize(type);
-    if (!datasize || *datasize == 16) {
+    if (!datasize) {
         return UnallocatedEncoding();
     }
 
-    const IR::U32U64 operand = V_scalar(*datasize, Vn);
-    const IR::U32U64 result = ir.FPAbs(operand);
+    const IR::U16U32U64 operand = V_scalar(*datasize, Vn);
+    const IR::U16U32U64 result = ir.FPAbs(operand);
     V_scalar(*datasize, Vd, result);
     return true;
 }
