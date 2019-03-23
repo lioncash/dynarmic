@@ -12,13 +12,13 @@ namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::FMOV_float(Imm<2> type, Vec Vn, Vec Vd) {
     const auto datasize = FPGetDataSize(type);
-    if (!datasize || *datasize == 16) {
+    if (!datasize) {
         return UnallocatedEncoding();
     }
 
-    const IR::U128 operand = V(*datasize, Vn);
+    const IR::U16U32U64 operand = V_scalar(*datasize, Vn);
 
-    V(*datasize, Vd, operand);
+    V_scalar(*datasize, Vd, operand);
     return true;
 }
 
