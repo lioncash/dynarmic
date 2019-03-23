@@ -39,6 +39,7 @@ namespace {
 const Xbyak::Reg64 INVALID_REG = Xbyak::Reg64(-1);
 
 constexpr u64 f16_negative_zero = 0x8000;
+constexpr u64 f16_non_sign_mask = 0x7fff;
 
 constexpr u64 f32_negative_zero = 0x80000000u;
 constexpr u64 f32_nan = 0x7fc00000u;
@@ -325,9 +326,18 @@ void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn)
 
 } // anonymous namespace
 
+void EmitX64::EmitFPAbs16(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+    code.pand(result, code.MConst(xword, f16_non_sign_mask));
+
+    ctx.reg_alloc.DefineValue(inst, result);
+}
+
 void EmitX64::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
     code.pand(result, code.MConst(xword, f32_non_sign_mask));
 
@@ -336,7 +346,7 @@ void EmitX64::EmitFPAbs32(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPAbs64(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+    const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
     code.pand(result, code.MConst(xword, f64_non_sign_mask));
 

@@ -460,6 +460,7 @@ OPCODE(VectorZeroUpper,                                     U128,           U128
 OPCODE(ZeroVector,                                          U128,                                                                           )
 
 // Floating-point operations
+OPCODE(FPAbs16,                                             U16,            U16                                                             )
 OPCODE(FPAbs32,                                             U32,            U32                                                             )
 OPCODE(FPAbs64,                                             U64,            U64                                                             )
 OPCODE(FPAdd32,                                             U32,            U32,            U32                                             )

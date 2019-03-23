@@ -1773,11 +1773,17 @@ U128 IREmitter::ZeroVector() {
     return Inst<U128>(Opcode::ZeroVector);
 }
 
-U32U64 IREmitter::FPAbs(const U32U64& a) {
-    if (a.GetType() == Type::U32) {
+U16U32U64 IREmitter::FPAbs(const U16U32U64& a) {
+    switch (a.GetType()) {
+    case Type::U16:
+        return Inst<U16>(Opcode::FPAbs16, a);
+    case Type::U32:
         return Inst<U32>(Opcode::FPAbs32, a);
-    } else {
+    case Type::U64:
         return Inst<U64>(Opcode::FPAbs64, a);
+    default:
+        UNREACHABLE();
+        return U16U32U64{};
     }
 }
 

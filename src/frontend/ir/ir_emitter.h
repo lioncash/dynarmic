@@ -292,7 +292,7 @@ public:
     U128 VectorZeroUpper(const U128& a);
     U128 ZeroVector();
 
-    U32U64 FPAbs(const U32U64& a);
+    U16U32U64 FPAbs(const U16U32U64& a);
     U32U64 FPAdd(const U32U64& a, const U32U64& b, bool fpcr_controlled);
     NZCV FPCompare(const U32U64& a, const U32U64& b, bool exc_on_qnan, bool fpcr_controlled);
     U32U64 FPDiv(const U32U64& a, const U32U64& b, bool fpcr_controlled);
