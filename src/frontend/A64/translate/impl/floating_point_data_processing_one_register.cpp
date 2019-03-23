@@ -112,15 +112,18 @@ bool TranslatorVisitor::FCVT_float(Imm<2> type, Imm<2> opc, Vec Vn, Vec Vd) {
     case 16:
         switch (*dstsize) {
         case 32:
-            return InterpretThisInstruction();
+            result = ir.FPHalfToSingle(operand, rounding_mode);
+            break;
         case 64:
-            return InterpretThisInstruction();
+            result = ir.FPHalfToDouble(operand, rounding_mode);
+            break;
         }
         break;
     case 32:
         switch (*dstsize) {
         case 16:
-            return InterpretThisInstruction();
+            result = ir.FPSingleToHalf(operand, rounding_mode);
+            break;
         case 64:
             result = ir.FPSingleToDouble(operand, rounding_mode);
             break;
@@ -129,7 +132,8 @@ bool TranslatorVisitor::FCVT_float(Imm<2> type, Imm<2> opc, Vec Vn, Vec Vd) {
     case 64:
     switch (*dstsize) {
         case 16:
-            return InterpretThisInstruction();
+            result = ir.FPDoubleToHalf(operand, rounding_mode);
+            break;
         case 32:
             result = ir.FPDoubleToSingle(operand, rounding_mode);
             break;
