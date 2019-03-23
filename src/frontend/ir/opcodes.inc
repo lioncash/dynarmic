@@ -482,6 +482,7 @@ OPCODE(FPMulAdd32,                                          U32,            U32,
 OPCODE(FPMulAdd64,                                          U64,            U64,            U64,            U64                             )
 OPCODE(FPMulX32,                                            U32,            U32,            U32                                             )
 OPCODE(FPMulX64,                                            U64,            U64,            U64                                             )
+OPCODE(FPNeg16,                                             U16,            U16                                                             )
 OPCODE(FPNeg32,                                             U32,            U32                                                             )
 OPCODE(FPNeg64,                                             U64,            U64                                                             )
 OPCODE(FPRecipEstimate32,                                   U32,            U32                                                             )
