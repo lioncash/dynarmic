@@ -35,7 +35,7 @@ FPT_TO FPConvertNaN(FPT_FROM op) {
     const u64 exponent = Common::Ones<u64>(dest_bit_size - FPInfo<FPT_TO>::explicit_mantissa_width);
 
     if constexpr (sizeof(FPT_TO) == sizeof(u64)) {
-        return FPT_TO(shifted_sign | exponent << 52 | frac);
+        return FPT_TO(shifted_sign | exponent << 51 | frac);
     } else if constexpr (sizeof(FPT_TO) == sizeof(u32)) {
         return FPT_TO(shifted_sign | exponent << 22 | Common::Bits<29, 50>(frac));
     } else {
