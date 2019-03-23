@@ -503,7 +503,11 @@ OPCODE(FPSub32,                                             U32,            U32,
 OPCODE(FPSub64,                                             U64,            U64,            U64                                             )
 
 // Floating-point conversions
+OPCODE(FPHalfToDouble,                                      U64,            U16,            U8                                              )
+OPCODE(FPHalfToSingle,                                      U32,            U16,            U8                                              )
 OPCODE(FPSingleToDouble,                                    U64,            U32,            U8                                              )
+OPCODE(FPSingleToHalf,                                      U16,            U32,            U8                                              )
+OPCODE(FPDoubleToHalf,                                      U16,            U64,            U8                                              )
 OPCODE(FPDoubleToSingle,                                    U32,            U64,            U8                                              )
 OPCODE(FPDoubleToFixedS32,                                  U32,            U64,            U8,             U8                              )
 OPCODE(FPDoubleToFixedS64,                                  U64,            U64,            U8,             U8                              )

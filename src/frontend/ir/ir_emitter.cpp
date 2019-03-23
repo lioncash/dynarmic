@@ -1955,12 +1955,28 @@ U32U64 IREmitter::FPSub(const U32U64& a, const U32U64& b, bool fpcr_controlled) 
     }
 }
 
+U16 IREmitter::FPDoubleToHalf(const U64& a, FP::RoundingMode rounding) {
+    return Inst<U16>(Opcode::FPDoubleToHalf, a, Imm8(static_cast<u8>(rounding)));
+}
+
 U32 IREmitter::FPDoubleToSingle(const U64& a, FP::RoundingMode rounding) {
     return Inst<U32>(Opcode::FPDoubleToSingle, a, Imm8(static_cast<u8>(rounding)));
 }
 
+U64 IREmitter::FPHalfToDouble(const U16& a, FP::RoundingMode rounding) {
+    return Inst<U64>(Opcode::FPHalfToDouble, a, Imm8(static_cast<u8>(rounding)));
+}
+
+U32 IREmitter::FPHalfToSingle(const U16& a, FP::RoundingMode rounding) {
+    return Inst<U32>(Opcode::FPHalfToSingle, a, Imm8(static_cast<u8>(rounding)));
+}
+
 U64 IREmitter::FPSingleToDouble(const U32& a, FP::RoundingMode rounding) {
     return Inst<U64>(Opcode::FPSingleToDouble, a, Imm8(static_cast<u8>(rounding)));
+}
+
+U16 IREmitter::FPSingleToHalf(const U32& a, FP::RoundingMode rounding) {
+    return Inst<U16>(Opcode::FPSingleToHalf, a, Imm8(static_cast<u8>(rounding)));
 }
 
 U32 IREmitter::FPToFixedS32(const U32U64& a, size_t fbits, FP::RoundingMode rounding) {

@@ -1036,6 +1036,28 @@ void EmitX64::EmitFPCompare64(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, nzcv);
 }
 
+void EmitX64::EmitFPHalfToDouble(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
+
+    ctx.reg_alloc.HostCall(inst, args[0]);
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
+    code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.CallFunction(&FP::FPConvert<u64, u16>);
+}
+
+void EmitX64::EmitFPHalfToSingle(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
+
+    ctx.reg_alloc.HostCall(inst, args[0]);
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
+    code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.CallFunction(&FP::FPConvert<u32, u16>);
+}
+
 void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
@@ -1056,6 +1078,28 @@ void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
         code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
         code.CallFunction(&FP::FPConvert<u64, u32>);
     }
+}
+
+void EmitX64::EmitFPSingleToHalf(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
+
+    ctx.reg_alloc.HostCall(inst, args[0]);
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
+    code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.CallFunction(&FP::FPConvert<u16, u32>);
+}
+
+void EmitX64::EmitFPDoubleToHalf(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
+
+    ctx.reg_alloc.HostCall(inst, args[0]);
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
+    code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+    code.CallFunction(&FP::FPConvert<u16, u64>);
 }
 
 void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
