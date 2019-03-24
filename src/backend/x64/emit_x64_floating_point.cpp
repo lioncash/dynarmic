@@ -4,6 +4,7 @@
  * General Public License version 2 or any later version.
  */
 
+#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -71,6 +72,21 @@ T ChooseOnFsize([[maybe_unused]] T f32, [[maybe_unused]] T f64) {
 }
 
 #define FCODE(NAME) (code.*ChooseOnFsize<fsize>(&Xbyak::CodeGenerator::NAME##s, &Xbyak::CodeGenerator::NAME##d))
+
+std::optional<int> ConvertRoundingModeToX64Immediate(FP::RoundingMode rounding_mode) {
+    switch (rounding_mode) {
+    case FP::RoundingMode::ToNearest_TieEven:
+        return 0b00;
+    case FP::RoundingMode::TowardsPlusInfinity:
+        return 0b10;
+    case FP::RoundingMode::TowardsMinusInfinity:
+        return 0b01;
+    case FP::RoundingMode::TowardsZero:
+        return 0b11;
+    default:
+        return std::nullopt;
+    }
+}
 
 template<size_t fsize>
 void DenormalsAreZero(BlockOfCode& code, Xbyak::Xmm xmm_value, Xbyak::Reg64 gpr_scratch) {
@@ -817,33 +833,18 @@ void EmitX64::EmitFPRecipStepFused64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, size_t fsize) {
-    const auto rounding = static_cast<FP::RoundingMode>(inst->GetArg(1).GetU8());
+    const auto rounding_mode = static_cast<FP::RoundingMode>(inst->GetArg(1).GetU8());
     const bool exact = inst->GetArg(2).GetU1();
+    const auto round_imm = ConvertRoundingModeToX64Immediate(rounding_mode);
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && rounding != FP::RoundingMode::ToNearest_TieAwayFromZero && !exact) {
-        const int round_imm = [&]{
-            switch (rounding) {
-            case FP::RoundingMode::ToNearest_TieEven:
-                return 0b00;
-            case FP::RoundingMode::TowardsPlusInfinity:
-                return 0b10;
-            case FP::RoundingMode::TowardsMinusInfinity:
-                return 0b01;
-            case FP::RoundingMode::TowardsZero:
-                return 0b11;
-            default:
-                UNREACHABLE();
-            }
-            return 0;
-        }();
-
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && round_imm && !exact) {
         if (fsize == 64) {
             FPTwoOp<64>(code, ctx, inst, [&](Xbyak::Xmm result) {
-                code.roundsd(result, result, round_imm);
+                code.roundsd(result, result, *round_imm);
             });
         } else {
             FPTwoOp<32>(code, ctx, inst, [&](Xbyak::Xmm result) {
-                code.roundss(result, result, round_imm);
+                code.roundss(result, result, *round_imm);
             });
         }
 
@@ -887,7 +888,7 @@ static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, siz
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.lea(code.ABI_PARAM2, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
-    code.CallFunction(lut.at(std::make_tuple(fsize, rounding, exact)));
+    code.CallFunction(lut.at(std::make_tuple(fsize, rounding_mode, exact)));
 }
 
 void EmitX64::EmitFPRoundInt32(EmitContext& ctx, IR::Inst* inst) {
@@ -1150,25 +1151,11 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
     const size_t fbits = args[1].GetImmediateU8();
-    const auto rounding = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    const auto rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
+    const auto round_imm = ConvertRoundingModeToX64Immediate(rounding_mode);
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && rounding != FP::RoundingMode::ToNearest_TieAwayFromZero){
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && round_imm){
         const Xbyak::Xmm src = ctx.reg_alloc.UseScratchXmm(args[0]);
-
-        const int round_imm = [&]{
-            switch (rounding) {
-            case FP::RoundingMode::ToNearest_TieEven:
-            default:
-                return 0b00;
-            case FP::RoundingMode::TowardsPlusInfinity:
-                return 0b10;
-            case FP::RoundingMode::TowardsMinusInfinity:
-                return 0b01;
-            case FP::RoundingMode::TowardsZero:
-                return 0b11;
-            }
-        }();
-
         const Xbyak::Xmm scratch = ctx.reg_alloc.ScratchXmm();
         const Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr().cvt64();
 
@@ -1178,14 +1165,14 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
                 code.mulsd(src, code.MConst(xword, scale_factor));
             }
 
-            code.roundsd(src, src, round_imm);
+            code.roundsd(src, src, *round_imm);
         } else {
             if (fbits != 0) {
                 const u32 scale_factor = static_cast<u32>((fbits + 127) << 23);
                 code.mulss(src, code.MConst(xword, scale_factor));
             }
 
-            code.roundss(src, src, round_imm);
+            code.roundss(src, src, *round_imm);
             code.cvtss2sd(src, src);
         }
 
@@ -1269,7 +1256,7 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.lea(code.ABI_PARAM2, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
-    code.CallFunction(lut.at(std::make_tuple(fbits, rounding)));
+    code.CallFunction(lut.at(std::make_tuple(fbits, rounding_mode)));
 }
 
 void EmitX64::EmitFPDoubleToFixedS32(EmitContext& ctx, IR::Inst* inst) {
