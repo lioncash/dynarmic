@@ -1062,6 +1062,21 @@ void EmitX64::EmitFPHalfToDouble(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
 
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tF16C) && !ctx.FPCR().AHP() && !ctx.FPCR().FZ16()) {
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm value = ctx.reg_alloc.UseXmm(args[0]);
+
+        // Double-conversion here is acceptable as this is expanding precision.
+        code.vcvtph2ps(result, value);
+        code.vcvtps2pd(result, result);
+        if (ctx.FPCR().DN()) {
+            ForceToDefaultNaN<64>(code, result);
+        }
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
+
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
     code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
@@ -1072,6 +1087,19 @@ void EmitX64::EmitFPHalfToDouble(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitFPHalfToSingle(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
+
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tF16C) && !ctx.FPCR().AHP() && !ctx.FPCR().FZ16()) {
+        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+        const Xbyak::Xmm value = ctx.reg_alloc.UseXmm(args[0]);
+
+        code.vcvtph2ps(result, value);
+        if (ctx.FPCR().DN()) {
+            ForceToDefaultNaN<32>(code, result);
+        }
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
 
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
@@ -1106,6 +1134,8 @@ void EmitX64::EmitFPSingleToHalf(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
 
+    // TODO: F16C implementation requires ForceToDefaultNaN<16> to be implemented.
+
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
     code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
@@ -1116,6 +1146,9 @@ void EmitX64::EmitFPSingleToHalf(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitFPDoubleToHalf(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
+
+    // NOTE: Do not double-convert here as that is inaccurate.
+    //       To be accurate, the first conversion would need to be "round-to-odd", which x64 doesn't support.
 
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
