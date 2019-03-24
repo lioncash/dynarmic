@@ -85,10 +85,14 @@ function(add_fmt_test name)
 endfunction()
 
 add_fmt_test(assert-test)
+add_fmt_test(chrono-test)
 add_fmt_test(core-test)
 add_fmt_test(gtest-extra-test)
 add_fmt_test(format-test mock-allocator.h)
-add_fmt_test(format-impl-test)
+if (NOT (MSVC AND BUILD_SHARED_LIBS))
+  add_fmt_test(format-impl-test)
+endif ()
+add_fmt_test(locale-test)
 add_fmt_test(ostream-test)
 add_fmt_test(printf-test)
 add_fmt_test(time-test)
@@ -165,8 +169,11 @@ if (FMT_PEDANTIC)
     "-DCXX_STANDARD_FLAG=${CXX_STANDARD_FLAG}"
     "-DPEDANTIC_COMPILE_FLAGS=${PEDANTIC_COMPILE_FLAGS}"
     "-DSUPPORTS_USER_DEFINED_LITERALS=${SUPPORTS_USER_DEFINED_LITERALS}")
+endif ()
 
-  # test if the targets are findable from the build directory
+# These tests are disabled on Windows because they take too long.
+if (FMT_PEDANTIC AND NOT WIN32)
+  # Test if the targets are found from the build directory.
   add_test(find-package-test ${CMAKE_CTEST_COMMAND}
     -C ${CMAKE_BUILD_TYPE}
     --build-and-test
@@ -181,7 +188,7 @@ if (FMT_PEDANTIC)
     "-DPEDANTIC_COMPILE_FLAGS=${PEDANTIC_COMPILE_FLAGS}"
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 
-  # test if the targets are findable when add_subdirectory is used
+  # Test if the targets are found when add_subdirectory is used.
   add_test(add-subdirectory-test ${CMAKE_CTEST_COMMAND}
     -C ${CMAKE_BUILD_TYPE}
     --build-and-test

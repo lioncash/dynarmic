@@ -24,6 +24,12 @@
 #undef min
 #undef max
 
+#if FMT_HAS_CPP_ATTRIBUTE(noreturn)
+# define FMT_NORETURN [[noreturn]]
+#else
+# define FMT_NORETURN
+#endif
+
 using fmt::internal::fp;
 
 template <bool is_iec559>
@@ -96,6 +102,11 @@ TEST(FPTest, GetCachedPower) {
   }
 }
 
+TEST(FPTest, Grisu2FormatCompilesWithNonIEEEDouble) {
+  fmt::memory_buffer buf;
+  grisu2_format(4.2f, buf, fmt::core_format_specs());
+}
+
 template <typename T>
 struct ValueExtractor: fmt::internal::function<T> {
   T operator()(T value) {
@@ -118,16 +129,17 @@ TEST(FormatTest, ArgConverter) {
 
 TEST(FormatTest, FormatNegativeNaN) {
   double nan = std::numeric_limits<double>::quiet_NaN();
-  if (fmt::internal::fputil::isnegative(-nan))
+  if (std::signbit(-nan))
     EXPECT_EQ("-nan", fmt::format("{}", -nan));
   else
     fmt::print("Warning: compiler doesn't handle negative NaN correctly");
 }
 
 TEST(FormatTest, StrError) {
-  char *message = nullptr;
+  char *message = FMT_NULL;
   char buffer[BUFFER_SIZE];
-  EXPECT_ASSERT(fmt::safe_strerror(EDOM, message = nullptr, 0), "invalid buffer");
+  EXPECT_ASSERT(fmt::safe_strerror(EDOM, message = FMT_NULL, 0),
+                "invalid buffer");
   EXPECT_ASSERT(fmt::safe_strerror(EDOM, message = buffer, 0),
                 "invalid buffer");
   buffer[0] = 'x';
@@ -140,7 +152,7 @@ TEST(FormatTest, StrError) {
 #endif
 
   int result = fmt::safe_strerror(error_code, message = buffer, BUFFER_SIZE);
-  EXPECT_EQ(0, result);
+  EXPECT_EQ(result, 0);
   std::size_t message_size = std::strlen(message);
   EXPECT_GE(BUFFER_SIZE - 1u, message_size);
   EXPECT_EQ(get_system_error(error_code), message);
@@ -195,8 +207,40 @@ TEST(FormatTest, CountCodePoints) {
 }
 
 TEST(ColorsTest, Colors) {
-  EXPECT_WRITE(stdout, fmt::print(fmt::rgb(255,20,30), "rgb(255,20,30)"),
+  EXPECT_WRITE(stdout, fmt::print(fg(fmt::rgb(255, 20, 30)), "rgb(255,20,30)"),
                "\x1b[38;2;255;020;030mrgb(255,20,30)\x1b[0m");
-  EXPECT_WRITE(stdout, fmt::print(fmt::color::blue, "blue"),
+  EXPECT_WRITE(stdout, fmt::print(fg(fmt::color::blue), "blue"),
                "\x1b[38;2;000;000;255mblue\x1b[0m");
+  EXPECT_WRITE(
+      stdout,
+      fmt::print(fg(fmt::color::blue) | bg(fmt::color::red), "two color"),
+      "\x1b[38;2;000;000;255m\x1b[48;2;255;000;000mtwo color\x1b[0m");
+  EXPECT_WRITE(stdout, fmt::print(fmt::emphasis::bold, "bold"),
+               "\x1b[1mbold\x1b[0m");
+  EXPECT_WRITE(stdout, fmt::print(fmt::emphasis::italic, "italic"),
+               "\x1b[3mitalic\x1b[0m");
+  EXPECT_WRITE(stdout, fmt::print(fmt::emphasis::underline, "underline"),
+               "\x1b[4munderline\x1b[0m");
+  EXPECT_WRITE(stdout,
+               fmt::print(fmt::emphasis::strikethrough, "strikethrough"),
+               "\x1b[9mstrikethrough\x1b[0m");
+  EXPECT_WRITE(
+      stdout,
+      fmt::print(fg(fmt::color::blue) | fmt::emphasis::bold, "blue/bold"),
+      "\x1b[1m\x1b[38;2;000;000;255mblue/bold\x1b[0m");
+  EXPECT_WRITE(stderr, fmt::print(stderr, fmt::emphasis::bold, "bold error"),
+               "\x1b[1mbold error\x1b[0m");
+  EXPECT_WRITE(stderr, fmt::print(stderr, fg(fmt::color::blue), "blue log"),
+                 "\x1b[38;2;000;000;255mblue log\x1b[0m");
+  EXPECT_WRITE(stdout, fmt::print(fmt::text_style(), "hi"), "hi");
+  EXPECT_WRITE(stdout, fmt::print(fg(fmt::terminal_color::red), "tred"),
+               "\x1b[31mtred\x1b[0m");
+  EXPECT_WRITE(stdout, fmt::print(bg(fmt::terminal_color::cyan), "tcyan"),
+               "\x1b[46mtcyan\x1b[0m");
+  EXPECT_WRITE(stdout,
+               fmt::print(fg(fmt::terminal_color::bright_green), "tbgreen"),
+               "\x1b[92mtbgreen\x1b[0m");
+  EXPECT_WRITE(stdout,
+               fmt::print(bg(fmt::terminal_color::bright_magenta), "tbmagenta"),
+               "\x1b[105mtbmagenta\x1b[0m");
 }
