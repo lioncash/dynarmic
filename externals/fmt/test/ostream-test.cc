@@ -146,12 +146,11 @@ TEST(OStreamTest, WriteToOStreamMaxSize) {
   } os(streambuf);
 
   testing::InSequence sequence;
-  const char *data = nullptr;
-  std::size_t size = max_size;
+  const char *data = FMT_NULL;
+  typedef std::make_unsigned<std::streamsize>::type ustreamsize;
+  ustreamsize size = max_size;
   do {
-    typedef std::make_unsigned<std::streamsize>::type ustreamsize;
-    ustreamsize n = std::min<ustreamsize>(
-          size, fmt::internal::to_unsigned(max_streamsize));
+    auto n = std::min(size, fmt::internal::to_unsigned(max_streamsize));
     EXPECT_CALL(streambuf, xsputn(data, static_cast<std::streamsize>(n)))
         .WillOnce(testing::Return(max_streamsize));
     data += n;

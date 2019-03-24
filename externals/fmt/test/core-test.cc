@@ -13,6 +13,7 @@
 #include <limits>
 #include <string>
 #include <type_traits>
+#include <memory>
 
 #include "test-assert.h"
 
@@ -64,6 +65,7 @@ struct formatter<test_struct, Char> {
 };
 FMT_END_NAMESPACE
 
+#if !FMT_GCC_VERSION || FMT_GCC_VERSION >= 470
 TEST(BufferTest, Noncopyable) {
   EXPECT_FALSE(std::is_copy_constructible<basic_buffer<char> >::value);
 #if !FMT_MSC_VER
@@ -79,11 +81,12 @@ TEST(BufferTest, Nonmoveable) {
   EXPECT_FALSE(std::is_move_assignable<basic_buffer<char> >::value);
 #endif
 }
+#endif
 
 // A test buffer with a dummy grow method.
 template <typename T>
 struct test_buffer : basic_buffer<T> {
-  void grow(std::size_t capacity) { this->set(nullptr, capacity); }
+  void grow(std::size_t capacity) { this->set(FMT_NULL, capacity); }
 };
 
 template <typename T>
@@ -103,7 +106,7 @@ struct mock_buffer : basic_buffer<T> {
 TEST(BufferTest, Ctor) {
   {
     mock_buffer<int> buffer;
-    EXPECT_EQ(nullptr, &buffer[0]);
+    EXPECT_EQ(FMT_NULL, &buffer[0]);
     EXPECT_EQ(static_cast<size_t>(0), buffer.size());
     EXPECT_EQ(static_cast<size_t>(0), buffer.capacity());
   }
@@ -218,14 +221,16 @@ struct custom_context {
 
       const char *format(const T &, custom_context& ctx) {
         ctx.called = true;
-        return nullptr;
+        return FMT_NULL;
       }
     };
   };
 
   bool called;
 
-  fmt::parse_context parse_context() { return fmt::parse_context(""); }
+  fmt::format_parse_context parse_context() {
+    return fmt::format_parse_context("");
+  }
   void advance_to(const char *) {}
 };
 
@@ -364,8 +369,8 @@ TEST(ArgTest, WStringArg) {
 }
 
 TEST(ArgTest, PointerArg) {
-  void *p = nullptr;
-  const void *cp = nullptr;
+  void *p = FMT_NULL;
+  const void *cp = FMT_NULL;
   CHECK_ARG_(char, cp, p);
   CHECK_ARG_(wchar_t, cp, p);
   CHECK_ARG(cp, );
@@ -376,7 +381,7 @@ struct check_custom {
       fmt::basic_format_arg<fmt::format_context>::handle h) const {
     struct test_buffer : fmt::internal::basic_buffer<char> {
       char data[10];
-      test_buffer() : basic_buffer(data, 0, 10) {}
+      test_buffer() : fmt::internal::basic_buffer<char>(data, 0, 10) {}
       void grow(std::size_t) {}
     } buffer;
     fmt::internal::basic_buffer<char> &base = buffer;
@@ -451,6 +456,76 @@ TEST(CoreTest, IsEnumConvertibleToInt) {
   EXPECT_TRUE((fmt::convert_to_int<enum_with_underlying_type, char>::value));
 }
 
+namespace my_ns {
+template <typename Char>
+class my_string {
+ public:
+  my_string(const Char *s) : s_(s) {}
+  const Char * data() const FMT_NOEXCEPT { return s_.data(); }
+  std::size_t length() const FMT_NOEXCEPT { return s_.size(); }
+  operator const Char*() const { return s_.c_str(); }
+ private:
+  std::basic_string<Char> s_;
+};
+
+template <typename Char>
+inline fmt::basic_string_view<Char>
+    to_string_view(const my_string<Char> &s) FMT_NOEXCEPT {
+  return { s.data(), s.length() };
+}
+
+struct non_string {};
+}
+
+namespace FakeQt {
+class QString {
+ public:
+  QString(const wchar_t *s) : s_(std::make_shared<std::wstring>(s)) {}
+  const wchar_t *utf16() const FMT_NOEXCEPT { return s_->data(); }
+  int size() const FMT_NOEXCEPT { return static_cast<int>(s_->size()); }
+#ifdef FMT_STRING_VIEW
+  operator FMT_STRING_VIEW<wchar_t>() const FMT_NOEXCEPT { return *s_; }
+#endif
+ private:
+  std::shared_ptr<std::wstring> s_;
+};
+
+inline fmt::basic_string_view<wchar_t> to_string_view(
+    const QString &s) FMT_NOEXCEPT {
+  return {s.utf16(),
+          static_cast<std::size_t>(s.size())};
+}
+}
+
+template <typename T>
+class IsStringTest : public testing::Test {};
+
+typedef ::testing::Types<char, wchar_t, char16_t, char32_t> StringCharTypes;
+TYPED_TEST_CASE(IsStringTest, StringCharTypes);
+
+namespace {
+template <typename Char>
+struct derived_from_string_view : fmt::basic_string_view<Char> {};
+}
+
+TYPED_TEST(IsStringTest, IsString) {
+  EXPECT_TRUE((fmt::internal::is_string<TypeParam *>::value));
+  EXPECT_TRUE((fmt::internal::is_string<const TypeParam *>::value));
+  EXPECT_TRUE((fmt::internal::is_string<TypeParam[2]>::value));
+  EXPECT_TRUE((fmt::internal::is_string<const TypeParam[2]>::value));
+  EXPECT_TRUE((fmt::internal::is_string<std::basic_string<TypeParam>>::value));
+  EXPECT_TRUE(
+        (fmt::internal::is_string<fmt::basic_string_view<TypeParam>>::value));
+  EXPECT_TRUE(
+        (fmt::internal::is_string<derived_from_string_view<TypeParam>>::value));
+#ifdef FMT_STRING_VIEW
+  EXPECT_TRUE((fmt::internal::is_string<FMT_STRING_VIEW<TypeParam>>::value));
+#endif
+  EXPECT_TRUE((fmt::internal::is_string<my_ns::my_string<TypeParam>>::value));
+  EXPECT_FALSE((fmt::internal::is_string<my_ns::non_string>::value));
+  EXPECT_TRUE((fmt::internal::is_string<FakeQt::QString>::value));
+}
+
 TEST(CoreTest, Format) {
   // This should work without including fmt/format.h.
 #ifdef FMT_FORMAT_H_
@@ -458,3 +533,81 @@ TEST(CoreTest, Format) {
 #endif
   EXPECT_EQ(fmt::format("{}", 42), "42");
 }
+
+TEST(CoreTest, FormatTo) {
+  // This should work without including fmt/format.h.
+#ifdef FMT_FORMAT_H_
+# error fmt/format.h must not be included in the core test
+#endif
+  std::string s;
+  fmt::format_to(std::back_inserter(s), "{}", 42);
+  EXPECT_EQ(s, "42");
+}
+
+TEST(CoreTest, ToStringViewForeignStrings) {
+  using namespace my_ns;
+  using namespace FakeQt;
+  EXPECT_EQ(to_string_view(my_string<char>("42")), "42");
+  EXPECT_EQ(to_string_view(my_string<wchar_t>(L"42")), L"42");
+  EXPECT_EQ(to_string_view(QString(L"42")), L"42");
+  fmt::internal::type type =
+      fmt::internal::get_type<fmt::format_context, my_string<char>>::value;
+  EXPECT_EQ(type, fmt::internal::string_type);
+  type =
+      fmt::internal::get_type<fmt::wformat_context, my_string<wchar_t>>::value;
+  EXPECT_EQ(type, fmt::internal::string_type);
+  type = fmt::internal::get_type<fmt::wformat_context, QString>::value;
+  EXPECT_EQ(type, fmt::internal::string_type);
+  // Does not compile: only wide format contexts are compatible with QString!
+  // type = fmt::internal::get_type<fmt::format_context, QString>::value;
+}
+
+TEST(CoreTest, FormatForeignStrings) {
+  using namespace my_ns;
+  using namespace FakeQt;
+  EXPECT_EQ(fmt::format(my_string<char>("{}"), 42), "42");
+  EXPECT_EQ(fmt::format(my_string<wchar_t>(L"{}"), 42), L"42");
+  EXPECT_EQ(fmt::format(QString(L"{}"), 42), L"42");
+  EXPECT_EQ(fmt::format(QString(L"{}"), my_string<wchar_t>(L"42")), L"42");
+  EXPECT_EQ(fmt::format(my_string<wchar_t>(L"{}"), QString(L"42")), L"42");
+}
+
+struct implicitly_convertible_to_string_view {
+  operator fmt::string_view() const { return "foo"; }
+};
+
+TEST(FormatterTest, FormatImplicitlyConvertibleToStringView) {
+  EXPECT_EQ("foo", fmt::format("{}", implicitly_convertible_to_string_view()));
+}
+
+// std::is_constructible is broken in MSVC until version 2015.
+#if FMT_USE_EXPLICIT && (!FMT_MSC_VER || FMT_MSC_VER >= 1900)
+struct explicitly_convertible_to_string_view {
+  explicit operator fmt::string_view() const { return "foo"; }
+};
+
+TEST(FormatterTest, FormatExplicitlyConvertibleToStringView) {
+  EXPECT_EQ("foo", fmt::format("{}", explicitly_convertible_to_string_view()));
+}
+
+struct explicitly_convertible_to_wstring_view {
+  explicit operator fmt::wstring_view() const { return L"foo"; }
+};
+
+TEST(FormatterTest, FormatExplicitlyConvertibleToWStringView) {
+  EXPECT_EQ(L"foo",
+            fmt::format(L"{}", explicitly_convertible_to_wstring_view()));
+}
+
+struct explicitly_convertible_to_string_like {
+  template <
+      typename String,
+      typename = typename std::enable_if<
+        std::is_constructible<String, const char*, std::size_t>::value>::type>
+  FMT_EXPLICIT operator String() const { return String("foo", 3u); }
+};
+
+TEST(FormatterTest, FormatExplicitlyConvertibleToStringLike) {
+  EXPECT_EQ("foo", fmt::format("{}", explicitly_convertible_to_string_like()));
+}
+#endif

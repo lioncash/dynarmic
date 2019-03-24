@@ -10,6 +10,7 @@
 #endif
 
 #include "gmock.h"
+#include "fmt/locale.h"
 #include "fmt/time.h"
 
 TEST(TimeTest, Format) {
@@ -26,8 +27,16 @@ TEST(TimeTest, GrowBuffer) {
   for (int i = 0; i < 30; ++i)
     s += "%c";
   s += "}\n";
-  std::time_t t = std::time(nullptr);
+  std::time_t t = std::time(FMT_NULL);
   fmt::format(s, *std::localtime(&t));
+}
+
+TEST(TimeTest, FormatToEmptyContainer) {
+  std::string s;
+  auto time = std::tm();
+  time.tm_sec = 42;
+  fmt::format_to(std::back_inserter(s), "{:%S}", time);
+  EXPECT_EQ(s, "42");
 }
 
 TEST(TimeTest, EmptyResult) {
@@ -47,13 +56,13 @@ static bool EqualTime(const std::tm &lhs, const std::tm &rhs) {
 }
 
 TEST(TimeTest, LocalTime) {
-  std::time_t t = std::time(nullptr);
+  std::time_t t = std::time(FMT_NULL);
   std::tm tm = *std::localtime(&t);
   EXPECT_TRUE(EqualTime(tm, fmt::localtime(t)));
 }
 
 TEST(TimeTest, GMTime) {
-  std::time_t t = std::time(nullptr);
+  std::time_t t = std::time(FMT_NULL);
   std::tm tm = *std::gmtime(&t);
   EXPECT_TRUE(EqualTime(tm, fmt::gmtime(t)));
 }
