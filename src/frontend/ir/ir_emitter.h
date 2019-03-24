@@ -292,7 +292,7 @@ public:
     U128 VectorZeroUpper(const U128& a);
     U128 ZeroVector();
 
-    U32U64 FPAbs(const U32U64& a);
+    U16U32U64 FPAbs(const U16U32U64& a);
     U32U64 FPAdd(const U32U64& a, const U32U64& b, bool fpcr_controlled);
     NZCV FPCompare(const U32U64& a, const U32U64& b, bool exc_on_qnan, bool fpcr_controlled);
     U32U64 FPDiv(const U32U64& a, const U32U64& b, bool fpcr_controlled);
@@ -303,7 +303,7 @@ public:
     U32U64 FPMul(const U32U64& a, const U32U64& b, bool fpcr_controlled);
     U32U64 FPMulAdd(const U32U64& addend, const U32U64& op1, const U32U64& op2, bool fpcr_controlled);
     U32U64 FPMulX(const U32U64& a, const U32U64& b);
-    U32U64 FPNeg(const U32U64& a);
+    U16U32U64 FPNeg(const U16U32U64& a);
     U32U64 FPRecipEstimate(const U32U64& a);
     U16U32U64 FPRecipExponent(const U16U32U64& a);
     U32U64 FPRecipStepFused(const U32U64& a, const U32U64& b);

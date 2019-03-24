@@ -460,6 +460,7 @@ OPCODE(VectorZeroUpper,                                     U128,           U128
 OPCODE(ZeroVector,                                          U128,                                                                           )
 
 // Floating-point operations
+OPCODE(FPAbs16,                                             U16,            U16                                                             )
 OPCODE(FPAbs32,                                             U32,            U32                                                             )
 OPCODE(FPAbs64,                                             U64,            U64                                                             )
 OPCODE(FPAdd32,                                             U32,            U32,            U32                                             )
@@ -482,6 +483,7 @@ OPCODE(FPMulAdd32,                                          U32,            U32,
 OPCODE(FPMulAdd64,                                          U64,            U64,            U64,            U64                             )
 OPCODE(FPMulX32,                                            U32,            U32,            U32                                             )
 OPCODE(FPMulX64,                                            U64,            U64,            U64                                             )
+OPCODE(FPNeg16,                                             U16,            U16                                                             )
 OPCODE(FPNeg32,                                             U32,            U32                                                             )
 OPCODE(FPNeg64,                                             U64,            U64                                                             )
 OPCODE(FPRecipEstimate32,                                   U32,            U32                                                             )
