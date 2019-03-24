@@ -18,6 +18,7 @@
 
 #include "backend/x64/reg_alloc.h"
 #include "common/bit_util.h"
+#include "common/fp/fpcr.h"
 #include "common/fp/rounding_mode.h"
 #include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/terminal.h"
@@ -44,10 +45,7 @@ struct EmitContext {
 
     void EraseInstruction(IR::Inst* inst);
 
-    virtual FP::RoundingMode FPSCR_RMode() const = 0;
-    virtual u32 FPCR() const = 0;
-    virtual bool FPSCR_FTZ() const = 0;
-    virtual bool FPSCR_DN() const = 0;
+    virtual FP::FPCR FPCR() const = 0;
     virtual bool AccurateNaN() const { return true; }
 
     RegAlloc& reg_alloc;

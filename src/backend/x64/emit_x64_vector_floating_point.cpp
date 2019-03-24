@@ -112,7 +112,7 @@ void HandleNaNs(BlockOfCode& code, EmitContext& ctx, std::array<Xbyak::Xmm, narg
         code.movaps(xword[rsp + ABI_SHADOW_SPACE + i * 16], xmms[i]);
     }
     code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
-    code.mov(code.ABI_PARAM2, ctx.FPCR());
+    code.mov(code.ABI_PARAM2, ctx.FPCR().Value());
 
     code.CallFunction(nan_handler);
 
@@ -169,7 +169,7 @@ Xbyak::Address GetVectorOf(BlockOfCode& code) {
 
 template<size_t fsize>
 void ForceToDefaultNaN(BlockOfCode& code, EmitContext& ctx, Xbyak::Xmm result) {
-    if (ctx.FPSCR_DN()) {
+    if (ctx.FPCR().DN()) {
         const Xbyak::Xmm nan_mask = xmm0;
         if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
             FCODE(vcmpunordp)(nan_mask, result, result);
@@ -199,8 +199,8 @@ void ZeroIfNaN(BlockOfCode& code, Xbyak::Xmm result) {
 
 template<size_t fsize>
 void DenormalsAreZero(BlockOfCode& code, EmitContext& ctx, std::initializer_list<Xbyak::Xmm> to_daz, Xbyak::Xmm tmp) {
-    if (ctx.FPSCR_FTZ()) {
-        if (ctx.FPSCR_RMode() != FP::RoundingMode::TowardsMinusInfinity) {
+    if (ctx.FPCR().FZ()) {
+        if (ctx.FPCR().RMode() != FP::RoundingMode::TowardsMinusInfinity) {
             code.movaps(tmp, GetNegativeZeroVector<fsize>(code));
         } else {
             code.xorps(tmp, tmp);
@@ -271,7 +271,7 @@ template<size_t fsize, template<typename> class Indexer, typename Function>
 void EmitTwoOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, typename NaNHandler<fsize, Indexer, 2>::function_type nan_handler = NaNHandler<fsize, Indexer, 2>::GetDefault()) {
     static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
 
-    if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
+    if (!ctx.AccurateNaN() || ctx.FPCR().DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
         Xbyak::Xmm result;
@@ -320,7 +320,7 @@ template<size_t fsize, template<typename> class Indexer, typename Function>
 void EmitThreeOpVectorOperation(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn, typename NaNHandler<fsize, Indexer, 3>::function_type nan_handler = NaNHandler<fsize, Indexer, 3>::GetDefault()) {
     static_assert(fsize == 32 || fsize == 64, "fsize must be either 32 or 64");
 
-    if (!ctx.AccurateNaN() || ctx.FPSCR_DN()) {
+    if (!ctx.AccurateNaN() || ctx.FPCR().DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         const Xbyak::Xmm xmm_a = ctx.reg_alloc.UseScratchXmm(args[0]);
         const Xbyak::Xmm xmm_b = ctx.reg_alloc.UseXmm(args[1]);
@@ -373,7 +373,7 @@ void EmitTwoOpFallback(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Lamb
     code.sub(rsp, stack_space + ABI_SHADOW_SPACE);
     code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
     code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
-    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
     code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
 
     code.movaps(xword[code.ABI_PARAM2], arg1);
@@ -395,7 +395,7 @@ void EmitThreeOpFallbackWithoutRegAlloc(BlockOfCode& code, EmitContext& ctx, Xby
     code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
     code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
     code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 3 * 16]);
-    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR().Value());
     code.lea(rax, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.mov(qword[rsp + ABI_SHADOW_SPACE + 0], rax);
 #else
@@ -404,7 +404,7 @@ void EmitThreeOpFallbackWithoutRegAlloc(BlockOfCode& code, EmitContext& ctx, Xby
     code.lea(code.ABI_PARAM1, ptr[rsp + ABI_SHADOW_SPACE + 0 * 16]);
     code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
     code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
-    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR().Value());
     code.lea(code.ABI_PARAM5, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
 #endif
 
@@ -446,7 +446,7 @@ void EmitFourOpFallbackWithoutRegAlloc(BlockOfCode& code, EmitContext& ctx, Xbya
     code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
     code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 3 * 16]);
     code.lea(code.ABI_PARAM4, ptr[rsp + ABI_SHADOW_SPACE + 4 * 16]);
-    code.mov(qword[rsp + ABI_SHADOW_SPACE + 0], ctx.FPCR());
+    code.mov(qword[rsp + ABI_SHADOW_SPACE + 0], ctx.FPCR().Value());
     code.lea(rax, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.mov(qword[rsp + ABI_SHADOW_SPACE + 8], rax);
 #else
@@ -456,7 +456,7 @@ void EmitFourOpFallbackWithoutRegAlloc(BlockOfCode& code, EmitContext& ctx, Xbya
     code.lea(code.ABI_PARAM2, ptr[rsp + ABI_SHADOW_SPACE + 1 * 16]);
     code.lea(code.ABI_PARAM3, ptr[rsp + ABI_SHADOW_SPACE + 2 * 16]);
     code.lea(code.ABI_PARAM4, ptr[rsp + ABI_SHADOW_SPACE + 3 * 16]);
-    code.mov(code.ABI_PARAM5.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM5.cvt32(), ctx.FPCR().Value());
     code.lea(code.ABI_PARAM6, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
 #endif
 
@@ -565,7 +565,7 @@ void EmitX64::EmitFPVectorFromSignedFixed32(EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
     const int fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     code.cvtdq2ps(xmm, xmm);
 
@@ -581,7 +581,7 @@ void EmitX64::EmitFPVectorFromSignedFixed64(EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
     const int fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ)) {
         code.vcvtqq2pd(xmm, xmm);
@@ -629,7 +629,7 @@ void EmitX64::EmitFPVectorFromUnsignedFixed32(EmitContext& ctx, IR::Inst* inst) 
     const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
     const int fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
         code.vcvtudq2ps(xmm, xmm);
@@ -664,7 +664,7 @@ void EmitX64::EmitFPVectorFromUnsignedFixed32(EmitContext& ctx, IR::Inst* inst) 
         code.mulps(xmm, GetVectorOf<32>(code, static_cast<u32>(127 - fbits) << 23));
     }
 
-    if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
+    if (ctx.FPCR().RMode() == FP::RoundingMode::TowardsMinusInfinity) {
         code.pand(xmm, code.MConst(xword, 0x7FFFFFFF7FFFFFFF, 0x7FFFFFFF7FFFFFFF));
     }
 
@@ -676,7 +676,7 @@ void EmitX64::EmitFPVectorFromUnsignedFixed64(EmitContext& ctx, IR::Inst* inst) 
     const Xbyak::Xmm xmm = ctx.reg_alloc.UseScratchXmm(args[0]);
     const int fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512DQ) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512VL)) {
         code.vcvtuqq2pd(xmm, xmm);
@@ -728,7 +728,7 @@ void EmitX64::EmitFPVectorFromUnsignedFixed64(EmitContext& ctx, IR::Inst* inst) 
         code.mulpd(xmm, GetVectorOf<64>(code, static_cast<u64>(1023 - fbits) << 52));
     }
 
-    if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
+    if (ctx.FPCR().RMode() == FP::RoundingMode::TowardsMinusInfinity) {
         code.pand(xmm, code.MConst(xword, 0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF));
     }
 
@@ -777,10 +777,10 @@ void EmitX64::EmitFPVectorGreaterEqual64(EmitContext& ctx, IR::Inst* inst) {
 
 template<size_t fsize, bool is_max>
 static void EmitFPVectorMinMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
-    if (ctx.FPSCR_DN()) {
+    if (ctx.FPCR().DN()) {
         auto args = ctx.reg_alloc.GetArgumentInfo(inst);
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
-        const Xbyak::Xmm xmm_b = ctx.FPSCR_FTZ() ? ctx.reg_alloc.UseScratchXmm(args[1]) : ctx.reg_alloc.UseXmm(args[1]);
+        const Xbyak::Xmm xmm_b = ctx.FPCR().FZ() ? ctx.reg_alloc.UseScratchXmm(args[1]) : ctx.reg_alloc.UseXmm(args[1]);
 
         const Xbyak::Xmm mask = xmm0;
         const Xbyak::Xmm eq = ctx.reg_alloc.ScratchXmm();
@@ -833,7 +833,7 @@ static void EmitFPVectorMinMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* in
         const Xbyak::Xmm mask = xmm0;
         const Xbyak::Xmm eq = ctx.reg_alloc.ScratchXmm();
 
-        if (ctx.FPSCR_FTZ()) {
+        if (ctx.FPCR().FZ()) {
             const Xbyak::Xmm prev_xmm_b = xmm_b;
             xmm_b = ctx.reg_alloc.ScratchXmm();
             code.movaps(xmm_b, prev_xmm_b);
@@ -960,7 +960,7 @@ static void EmitFPVectorMulX(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    if (ctx.FPSCR_DN() && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+    if (ctx.FPCR().DN() && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
         const Xbyak::Xmm operand = ctx.reg_alloc.UseXmm(args[1]);
         const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();

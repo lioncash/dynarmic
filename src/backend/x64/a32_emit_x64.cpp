@@ -61,20 +61,8 @@ A32::LocationDescriptor A32EmitContext::Location() const {
     return A32::LocationDescriptor{block.Location()};
 }
 
-FP::RoundingMode A32EmitContext::FPSCR_RMode() const {
-    return Location().FPSCR().RMode();
-}
-
-u32 A32EmitContext::FPCR() const {
-    return Location().FPSCR().Value();
-}
-
-bool A32EmitContext::FPSCR_FTZ() const {
-    return Location().FPSCR().FTZ();
-}
-
-bool A32EmitContext::FPSCR_DN() const {
-    return Location().FPSCR().DN();
+FP::FPCR A32EmitContext::FPCR() const {
+    return FP::FPCR{Location().FPSCR().Value()};
 }
 
 A32EmitX64::A32EmitX64(BlockOfCode& code, A32::UserConfig config, A32::Jit* jit_interface)

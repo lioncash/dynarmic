@@ -42,20 +42,8 @@ A64::LocationDescriptor A64EmitContext::Location() const {
     return A64::LocationDescriptor{block.Location()};
 }
 
-FP::RoundingMode A64EmitContext::FPSCR_RMode() const {
-    return Location().FPCR().RMode();
-}
-
-u32 A64EmitContext::FPCR() const {
-    return Location().FPCR().Value();
-}
-
-bool A64EmitContext::FPSCR_FTZ() const {
-    return Location().FPCR().FZ();
-}
-
-bool A64EmitContext::FPSCR_DN() const {
-    return Location().FPCR().DN() || conf.floating_point_nan_accuracy == A64::UserConfig::NaNAccuracy::AlwaysForceDefaultNaN;
+FP::FPCR A64EmitContext::FPCR() const {
+    return Location().FPCR();
 }
 
 bool A64EmitContext::AccurateNaN() const {

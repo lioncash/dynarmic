@@ -251,7 +251,7 @@ void FPTwoOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
 
     Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-    if (ctx.AccurateNaN() && !ctx.FPSCR_DN()) {
+    if (ctx.AccurateNaN() && !ctx.FPCR().DN()) {
         end = ProcessNaN<fsize>(code, result);
     }
     if constexpr (std::is_member_function_pointer_v<Function>) {
@@ -259,7 +259,7 @@ void FPTwoOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn) {
     } else {
         fn(result);
     }
-    if (ctx.FPSCR_DN()) {
+    if (ctx.FPCR().DN()) {
         ForceToDefaultNaN<fsize>(code, result);
     } else if (ctx.AccurateNaN()) {
         PostProcessNaN<fsize>(code, result, ctx.reg_alloc.ScratchXmm());
@@ -275,7 +275,7 @@ void FPThreeOp(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, Function fn)
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    if (ctx.FPSCR_DN() || !ctx.AccurateNaN()) {
+    if (ctx.FPCR().DN() || !ctx.AccurateNaN()) {
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
         const Xbyak::Xmm operand = ctx.reg_alloc.UseScratchXmm(args[1]);
 
@@ -405,7 +405,7 @@ static void EmitFPMinMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
     const Xbyak::Reg64 gpr_scratch = ctx.reg_alloc.ScratchGpr();
 
-    if (ctx.FPSCR_FTZ()) {
+    if (ctx.FPCR().FZ()) {
         DenormalsAreZero<fsize>(code, result, gpr_scratch);
         DenormalsAreZero<fsize>(code, operand, gpr_scratch);
     }
@@ -433,7 +433,7 @@ static void EmitFPMinMax(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     code.jmp(end);
 
     code.L(nan);
-    if (ctx.FPSCR_DN() || !ctx.AccurateNaN()) {
+    if (ctx.FPCR().DN() || !ctx.AccurateNaN()) {
         code.movaps(result, code.MConst(xword, fsize == 32 ? f32_nan : f64_nan));
         code.jmp(end);
     } else {
@@ -467,7 +467,7 @@ static void EmitFPMinMaxNumeric(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
         }
     };
 
-    if (ctx.FPSCR_FTZ()) {
+    if (ctx.FPCR().FZ()) {
         DenormalsAreZero<fsize>(code, op1, tmp.cvt64());
         DenormalsAreZero<fsize>(code, op2, tmp.cvt64());
     }
@@ -511,7 +511,7 @@ static void EmitFPMinMaxNumeric(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
     move_to_tmp(op1);
     code.bt(tmp, mantissa_msb_bit);
     code.jc(maybe_both_nan);
-    if (ctx.FPSCR_DN()) {
+    if (ctx.FPCR().DN()) {
         code.L(snan);
         code.movaps(op2, code.MConst(xword, FP::FPInfo<FPT>::DefaultNaN()));
         code.jmp(end);
@@ -525,7 +525,7 @@ static void EmitFPMinMaxNumeric(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
     code.L(maybe_both_nan);
     FCODE(ucomis)(op2, op2);
     code.jnp(end, code.T_NEAR);
-    if (ctx.FPSCR_DN()) {
+    if (ctx.FPCR().DN()) {
         code.jmp(snan);
     } else {
         move_to_tmp(op2);
@@ -620,7 +620,7 @@ static void EmitFPMulAdd(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
         code.movq(code.ABI_PARAM1, operand1);
         code.movq(code.ABI_PARAM2, operand2);
         code.movq(code.ABI_PARAM3, operand3);
-        code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
+        code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR().Value());
 #ifdef _WIN32
         code.sub(rsp, 16 + ABI_SHADOW_SPACE);
         code.lea(rax, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
@@ -644,7 +644,7 @@ static void EmitFPMulAdd(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0], args[1], args[2]);
-    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM4.cvt32(), ctx.FPCR().Value());
 #ifdef _WIN32
     code.sub(rsp, 16 + ABI_SHADOW_SPACE);
     code.lea(rax, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
@@ -671,7 +671,7 @@ static void EmitFPMulX(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    const bool do_default_nan = ctx.FPSCR_DN() || !ctx.AccurateNaN();
+    const bool do_default_nan = ctx.FPCR().DN() || !ctx.AccurateNaN();
 
     const Xbyak::Xmm op1 = ctx.reg_alloc.UseXmm(args[0]);
     const Xbyak::Xmm op2 = ctx.reg_alloc.UseXmm(args[1]);
@@ -727,7 +727,7 @@ template<typename FPT>
 static void EmitFPRecipEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0]);
-    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
     code.lea(code.ABI_PARAM3, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.CallFunction(&FP::FPRecipEstimate<FPT>);
 }
@@ -744,7 +744,7 @@ template <typename FPT>
 static void EmitFPRecipExponent(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0]);
-    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
     code.lea(code.ABI_PARAM3, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.CallFunction(&FP::FPRecipExponent<FPT>);
 }
@@ -787,7 +787,7 @@ static void EmitFPRecipStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* 
         ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
         code.movq(code.ABI_PARAM1, operand1);
         code.movq(code.ABI_PARAM2, operand2);
-        code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+        code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
         code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
         code.CallFunction(&FP::FPRecipStepFused<FPT>);
         code.movq(result, code.ABI_RETURN);
@@ -803,7 +803,7 @@ static void EmitFPRecipStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* 
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0], args[1]);
-    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
     code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.CallFunction(&FP::FPRecipStepFused<FPT>);
 }
@@ -886,7 +886,7 @@ static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, siz
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.lea(code.ABI_PARAM2, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
-    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
     code.CallFunction(lut.at(std::make_tuple(fsize, rounding, exact)));
 }
 
@@ -902,7 +902,7 @@ template<typename FPT>
 static void EmitFPRSqrtEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0]);
-    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
     code.lea(code.ABI_PARAM3, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.CallFunction(&FP::FPRSqrtEstimate<FPT>);
 }
@@ -953,7 +953,7 @@ static void EmitFPRSqrtStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* 
         ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
         code.movq(code.ABI_PARAM1, operand1);
         code.movq(code.ABI_PARAM2, operand2);
-        code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+        code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
         code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
         code.CallFunction(&FP::FPRSqrtStepFused<FPT>);
         code.movq(result, code.ABI_RETURN);
@@ -969,7 +969,7 @@ static void EmitFPRSqrtStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* 
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     ctx.reg_alloc.HostCall(inst, args[0], args[1]);
-    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
     code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.CallFunction(&FP::FPRSqrtStepFused<FPT>);
 }
@@ -1062,7 +1062,7 @@ void EmitX64::EmitFPHalfToDouble(EmitContext& ctx, IR::Inst* inst) {
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
 
     ctx.reg_alloc.HostCall(inst, args[0]);
-    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
     code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
     code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.CallFunction(&FP::FPConvert<u64, u16>);
@@ -1073,7 +1073,7 @@ void EmitX64::EmitFPHalfToSingle(EmitContext& ctx, IR::Inst* inst) {
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
 
     ctx.reg_alloc.HostCall(inst, args[0]);
-    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
     code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
     code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.CallFunction(&FP::FPConvert<u32, u16>);
@@ -1084,17 +1084,17 @@ void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
 
     // We special-case the non-IEEE-defined ToOdd rounding mode.
-    if (rounding_mode == ctx.FPSCR_RMode() && rounding_mode != FP::RoundingMode::ToOdd) {
+    if (rounding_mode == ctx.FPCR().RMode() && rounding_mode != FP::RoundingMode::ToOdd) {
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
         code.cvtss2sd(result, result);
-        if (ctx.FPSCR_DN()) {
+        if (ctx.FPCR().DN()) {
             ForceToDefaultNaN<64>(code, result);
         }
         ctx.reg_alloc.DefineValue(inst, result);
     } else {
         ctx.reg_alloc.HostCall(inst, args[0]);
-        code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+        code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
         code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
         code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
         code.CallFunction(&FP::FPConvert<u64, u32>);
@@ -1106,7 +1106,7 @@ void EmitX64::EmitFPSingleToHalf(EmitContext& ctx, IR::Inst* inst) {
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
 
     ctx.reg_alloc.HostCall(inst, args[0]);
-    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
     code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
     code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.CallFunction(&FP::FPConvert<u16, u32>);
@@ -1117,7 +1117,7 @@ void EmitX64::EmitFPDoubleToHalf(EmitContext& ctx, IR::Inst* inst) {
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
 
     ctx.reg_alloc.HostCall(inst, args[0]);
-    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
     code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
     code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.CallFunction(&FP::FPConvert<u16, u64>);
@@ -1128,17 +1128,17 @@ void EmitX64::EmitFPDoubleToSingle(EmitContext& ctx, IR::Inst* inst) {
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
 
     // We special-case the non-IEEE-defined ToOdd rounding mode.
-    if (rounding_mode == ctx.FPSCR_RMode() && rounding_mode != FP::RoundingMode::ToOdd) {
+    if (rounding_mode == ctx.FPCR().RMode() && rounding_mode != FP::RoundingMode::ToOdd) {
         const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
 
         code.cvtsd2ss(result, result);
-        if (ctx.FPSCR_DN()) {
+        if (ctx.FPCR().DN()) {
             ForceToDefaultNaN<32>(code, result);
         }
         ctx.reg_alloc.DefineValue(inst, result);
     } else {
         ctx.reg_alloc.HostCall(inst, args[0]);
-        code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR());
+        code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
         code.mov(code.ABI_PARAM3.cvt32(), static_cast<u32>(rounding_mode));
         code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
         code.CallFunction(&FP::FPConvert<u32, u64>);
@@ -1268,7 +1268,7 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
 
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.lea(code.ABI_PARAM2, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
-    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR());
+    code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
     code.CallFunction(lut.at(std::make_tuple(fbits, rounding)));
 }
 
@@ -1311,7 +1311,7 @@ void EmitX64::EmitFPFixedS32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     const size_t fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     code.cvtsi2ss(result, from);
 
@@ -1329,7 +1329,7 @@ void EmitX64::EmitFPFixedU32ToSingle(EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     const size_t fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
         const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
@@ -1356,7 +1356,7 @@ void EmitX64::EmitFPFixedS32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     const size_t fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     code.cvtsi2sd(result, from);
 
@@ -1375,7 +1375,7 @@ void EmitX64::EmitFPFixedS64ToDouble(EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     const size_t fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     code.cvtsi2sd(result, from);
 
@@ -1394,7 +1394,7 @@ void EmitX64::EmitFPFixedS64ToSingle(EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     const size_t fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     code.cvtsi2ss(result, from);
 
@@ -1412,7 +1412,7 @@ void EmitX64::EmitFPFixedU32ToDouble(EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm to = ctx.reg_alloc.ScratchXmm();
     const size_t fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
         const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);
@@ -1439,7 +1439,7 @@ void EmitX64::EmitFPFixedU64ToDouble(EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     const size_t fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
         code.vcvtusi2sd(result, result, from);
@@ -1451,7 +1451,7 @@ void EmitX64::EmitFPFixedU64ToDouble(EmitContext& ctx, IR::Inst* inst) {
         code.subpd(tmp, code.MConst(xword, 0x4330000000000000, 0x4530000000000000));
         code.pshufd(result, tmp, 0b01001110);
         code.addpd(result, tmp);
-        if (ctx.FPSCR_RMode() == FP::RoundingMode::TowardsMinusInfinity) {
+        if (ctx.FPCR().RMode() == FP::RoundingMode::TowardsMinusInfinity) {
             code.pand(result, code.MConst(xword, f64_non_sign_mask));
         }
     }
@@ -1470,7 +1470,7 @@ void EmitX64::EmitFPFixedU64ToSingle(EmitContext& ctx, IR::Inst* inst) {
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
     const size_t fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    ASSERT(rounding_mode == ctx.FPSCR_RMode());
+    ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     if (code.DoesCpuSupport(Xbyak::util::Cpu::tAVX512F)) {
         const Xbyak::Reg64 from = ctx.reg_alloc.UseGpr(args[0]);

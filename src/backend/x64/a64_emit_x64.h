@@ -24,10 +24,7 @@ class RegAlloc;
 struct A64EmitContext final : public EmitContext {
     A64EmitContext(const A64::UserConfig& conf, RegAlloc& reg_alloc, IR::Block& block);
     A64::LocationDescriptor Location() const;
-    FP::RoundingMode FPSCR_RMode() const override;
-    u32 FPCR() const override;
-    bool FPSCR_FTZ() const override;
-    bool FPSCR_DN() const override;
+    FP::FPCR FPCR() const override;
     bool AccurateNaN() const override;
 
     const A64::UserConfig& conf;
