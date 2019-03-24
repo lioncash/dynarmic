@@ -1133,8 +1133,19 @@ void EmitX64::EmitFPSingleToDouble(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitFPSingleToHalf(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
+    const auto round_imm = ConvertRoundingModeToX64Immediate(rounding_mode);
 
-    // TODO: F16C implementation requires ForceToDefaultNaN<16> to be implemented.
+    if (code.DoesCpuSupport(Xbyak::util::Cpu::tF16C) && !ctx.FPCR().AHP() && !ctx.FPCR().FZ16()) {
+        const Xbyak::Xmm result = ctx.reg_alloc.UseScratchXmm(args[0]);
+
+        if (ctx.FPCR().DN()) {
+            ForceToDefaultNaN<32>(code, result);
+        }
+        code.vcvtps2ph(result, result, static_cast<u8>(*round_imm));
+
+        ctx.reg_alloc.DefineValue(inst, result);
+        return;
+    }
 
     ctx.reg_alloc.HostCall(inst, args[0]);
     code.mov(code.ABI_PARAM2.cvt32(), ctx.FPCR().Value());
