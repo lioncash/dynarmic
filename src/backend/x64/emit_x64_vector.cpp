@@ -3838,7 +3838,7 @@ static bool VectorSignedSaturatedShiftLeft(VectorArray<T>& dst, const VectorArra
             dst[i] = saturate(element);
             qc_flag = true;
         } else {
-            const T shifted = element << shift;
+            const T shifted = T(U(element) << shift);
 
             if ((shifted >> shift) != element) {
                 dst[i] = saturate(element);
