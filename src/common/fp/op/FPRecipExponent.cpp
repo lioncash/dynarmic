@@ -48,8 +48,9 @@ FPT FPRecipExponent(FPT op, FPCR fpcr, FPSR& fpsr) {
     }
 
     // Infinities and normals
-    const auto negated_exponent = (~exponent << FPInfo<FPT>::explicit_mantissa_width) & FPInfo<FPT>::exponent_mask;
-    return FPT(sign_bits | negated_exponent);
+    const FPT negated_exponent = FPT(~exponent);
+    const FPT adjusted_exponent = FPT(negated_exponent << FPInfo<FPT>::explicit_mantissa_width) & FPInfo<FPT>::exponent_mask;
+    return FPT(sign_bits | adjusted_exponent);
 }
 
 template u16 FPRecipExponent<u16>(u16 op, FPCR fpcr, FPSR& fpsr);
