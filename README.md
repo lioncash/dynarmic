@@ -16,6 +16,41 @@ A dynamic recompiler for ARM.
 
 There are no plans to support x86-32.
 
+Alternatives to Dynarmic
+------------------------
+
+If you are looking at a recompiler which you can use with minimal effort to run ARM executables on non-native platforms, we would strongly recommend looking at qemu-user-static ([description of qemu-user-static](https://wiki.debian.org/QemuUserEmulation), [using qemu-user-static in combination with Docker to provide a complete emulated environment](https://github.com/multiarch/qemu-user-static)). Having a complete plug-and-play solution is out-of-scope of this project.
+
+Here are some projects with the same goals as dynarmic:
+
+* [ChocolArm64 from Ryujinx](https://github.com/Ryujinx/Ryujinx/tree/master/ChocolArm64) - ARMv8 recompiler on top of RyuJIT
+* [Unicorn](https://www.unicorn-engine.org/) - Recompiling multi-architecture CPU emulator, based on QEMU
+* [SkyEye](http://skyeye.sourceforge.net) - Cached interpreter for ARM
+
+More general alternatives:
+
+* [tARMac](https://davidsharp.com/tarmac/) - Tarmac's use of armlets was initial inspiration for us to use an intermediate representation
+* [QEMU](https://www.qemu.org/) - Recompiling multi-architecture system emulator
+* [VisUAL](https://salmanarif.bitbucket.io/visual/index.html) - Visual ARM UAL emulator intended for education
+* A wide variety of other recompilers, interpreters and emulators can be found embedded in other projects, here are some we would recommend looking at:
+  * [firebird's recompiler](https://github.com/nspire-emus/firebird) - Takes more of a call-threaded approach to recompilation
+  * [higan's arm7tdmi emulator](https://gitlab.com/higan/higan/tree/master/higan/component/processor/arm7tdmi) - Very clean code-style
+  * [arm-js by ozaki-r](https://github.com/ozaki-r/arm-js) - Emulates ARMv7A and some peripherals of Versatile Express, in the browser
+
+Disadvantages of Dynarmic
+-------------------------
+
+In the pursuit of speed, some behavior not commonly depended upon is elided. Therefore this emulator does not match spec.
+
+Known examples:
+
+* Only user-mode is emulated, there is no emulation of any other privilege levels.
+* FPSR state is approximate.
+* Misaligned loads/stores are not appropriately trapped in certain cases.
+* Exclusive monitor behavior may not match any known physical processor.
+
+As with most other hobby ARM emulation projects, no formal verification has been done. Use this code base at your own risk.
+
 Documentation
 -------------
 
