@@ -253,6 +253,22 @@ bool TranslatorVisitor::SRI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return ShiftAndInsert(*this, immh, immb, Vn, Vd, ShiftDirection::Right);
 }
 
+bool TranslatorVisitor::SQSHL_imm_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    if (immh == 0b0000) {
+        return UnallocatedEncoding();
+    }
+
+    const size_t esize = 8U << Common::HighestSetBit(immh.ZeroExtend());
+    const size_t shift_amount = concatenate(immh, immb).ZeroExtend() - esize;
+
+    const IR::U128 operand = ir.ZeroExtendToQuad(V_scalar(esize, Vn));
+    const IR::U128 shift = ir.ZeroExtendToQuad(I(esize, shift_amount));
+    const IR::U128 result = ir.VectorSignedSaturatedShiftLeft(esize, operand, shift);
+
+    ir.SetQ(Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::SQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
     return ShiftRightNarrowing(*this, immh, immb, Vn, Vd, Narrowing::SaturateToSigned, Signedness::Signed);
 }
