@@ -32,7 +32,7 @@ enum class FloatConversionDirection {
 
 bool SaturatingShiftLeft(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd, Signedness sign) {
     if (immh == 0b0000) {
-        return v.UnallocatedEncoding();
+        return v.ReservedValue();
     }
 
     const size_t esize = 8U << Common::HighestSetBit(immh.ZeroExtend());
