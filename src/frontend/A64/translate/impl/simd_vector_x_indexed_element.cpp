@@ -28,7 +28,7 @@ enum class ExtraBehavior {
 bool MultiplyByElement(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd,
                        ExtraBehavior extra_behavior) {
     if (size != 0b01 && size != 0b10) {
-        return v.UnallocatedEncoding();
+        return v.ReservedValue();
     }
 
     const auto [index, Vm] = Combine(size, H, L, M, Vmlo);
@@ -54,7 +54,7 @@ bool MultiplyByElement(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<
 bool FPMultiplyByElement(TranslatorVisitor& v, bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd,
                          ExtraBehavior extra_behavior) {
     if (sz && L == 1) {
-        return v.UnallocatedEncoding();
+        return v.ReservedValue();
     }
     if (sz && !Q) {
         return v.ReservedValue();
@@ -133,7 +133,7 @@ enum class Signedness {
 bool MultiplyLong(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo,
                   Imm<1> H, Vec Vn, Vec Vd, ExtraBehavior extra_behavior, Signedness sign) {
     if (size == 0b00 || size == 0b11) {
-        return v.UnallocatedEncoding();
+        return v.ReservedValue();
     }
 
     const size_t idxsize = H == 1 ? 128 : 64;
@@ -217,7 +217,7 @@ bool TranslatorVisitor::SMULL_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4
 
 bool TranslatorVisitor::SQDMULL_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     if (size == 0b00 || size == 0b11) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     const size_t part = Q ? 1 : 0;
@@ -237,7 +237,7 @@ bool TranslatorVisitor::SQDMULL_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, I
 
 bool TranslatorVisitor::SQDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     if (size == 0b00 || size == 0b11) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     const size_t idxsize = H == 1 ? 128 : 64;
@@ -256,7 +256,7 @@ bool TranslatorVisitor::SQDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, I
 
 bool TranslatorVisitor::SQRDMULH_elt_2(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     if (size == 0b00 || size == 0b11) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     const size_t idxsize = H == 1 ? 128 : 64;

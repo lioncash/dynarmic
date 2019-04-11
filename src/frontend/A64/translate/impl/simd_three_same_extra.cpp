@@ -55,11 +55,11 @@ bool TranslatorVisitor::UDOT_vec(bool Q, Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
 
 bool TranslatorVisitor::FCMLA_vec(bool Q, Imm<2> size, Vec Vm, Imm<2> rot, Vec Vn, Vec Vd) {
     if (size == 0) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     if (!Q && size == 0b11) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     const size_t esize = 8U << size.ZeroExtend();
@@ -128,11 +128,11 @@ bool TranslatorVisitor::FCMLA_vec(bool Q, Imm<2> size, Vec Vm, Imm<2> rot, Vec V
 
 bool TranslatorVisitor::FCADD_vec(bool Q, Imm<2> size, Vec Vm, Imm<1> rot, Vec Vn, Vec Vd) {
     if (size == 0) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     if (!Q && size == 0b11) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     const size_t esize = 8U << size.ZeroExtend();

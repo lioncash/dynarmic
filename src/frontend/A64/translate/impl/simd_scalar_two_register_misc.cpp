@@ -154,7 +154,7 @@ bool TranslatorVisitor::FCVTPU_2(bool sz, Vec Vn, Vec Vd) {
 
 bool TranslatorVisitor::FCVTXN_1(bool sz, Vec Vn, Vec Vd) {
     if (!sz) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     const IR::U64 element = V_scalar(64, Vn);
