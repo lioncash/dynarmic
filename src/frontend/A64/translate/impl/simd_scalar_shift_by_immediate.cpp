@@ -30,6 +30,27 @@ enum class FloatConversionDirection {
     FloatToFixed,
 };
 
+bool SaturatingShiftLeft(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd, Signedness sign) {
+    if (immh == 0b0000) {
+        return v.ReservedValue();
+    }
+
+    const size_t esize = 8U << Common::HighestSetBit(immh.ZeroExtend());
+    const size_t shift_amount = concatenate(immh, immb).ZeroExtend() - esize;
+
+    const IR::U128 operand = v.ir.ZeroExtendToQuad(v.V_scalar(esize, Vn));
+    const IR::U128 shift = v.ir.ZeroExtendToQuad(v.I(esize, shift_amount));
+    const IR::U128 result = [&v, esize, operand, shift, sign] {
+        if (sign == Signedness::Signed) {
+            return v.ir.VectorSignedSaturatedShiftLeft(esize, operand, shift);
+        }
+        return v.ir.VectorUnsignedSaturatedShiftLeft(esize, operand, shift);
+    }();
+
+    v.ir.SetQ(Vd, result);
+    return true;
+}
+
 bool ShiftRight(TranslatorVisitor& v, Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd,
                 ShiftExtraBehavior behavior, Signedness signedness) {
     if (!immh.Bit<3>()) {
@@ -254,19 +275,7 @@ bool TranslatorVisitor::SRI_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
 }
 
 bool TranslatorVisitor::SQSHL_imm_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
-    if (immh == 0b0000) {
-        return UnallocatedEncoding();
-    }
-
-    const size_t esize = 8U << Common::HighestSetBit(immh.ZeroExtend());
-    const size_t shift_amount = concatenate(immh, immb).ZeroExtend() - esize;
-
-    const IR::U128 operand = ir.ZeroExtendToQuad(V_scalar(esize, Vn));
-    const IR::U128 shift = ir.ZeroExtendToQuad(I(esize, shift_amount));
-    const IR::U128 result = ir.VectorSignedSaturatedShiftLeft(esize, operand, shift);
-
-    ir.SetQ(Vd, result);
-    return true;
+    return SaturatingShiftLeft(*this, immh, immb, Vn, Vd, Signedness::Signed);
 }
 
 bool TranslatorVisitor::SQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
@@ -306,6 +315,10 @@ bool TranslatorVisitor::SHL_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
 
     V_scalar(esize, Vd, result);
     return true;
+}
+
+bool TranslatorVisitor::UQSHL_imm_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
+    return SaturatingShiftLeft(*this, immh, immb, Vn, Vd, Signedness::Unsigned);
 }
 
 bool TranslatorVisitor::UQSHRN_1(Imm<4> immh, Imm<3> immb, Vec Vn, Vec Vd) {
