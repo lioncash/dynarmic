@@ -173,7 +173,7 @@ IR::ResultAndCarry<IR::U32> ArmTranslatorVisitor::EmitImmShift(IR::U32 value, Sh
         else
             return ir.RotateRightExtended(value, carry_in);
     }
-    ASSERT_MSG(false, "Unreachable");
+    UNREACHABLE();
     return {};
 }
 
@@ -188,7 +188,7 @@ IR::ResultAndCarry<IR::U32> ArmTranslatorVisitor::EmitRegShift(IR::U32 value, Sh
     case ShiftType::ROR:
         return ir.RotateRight(value, amount, carry_in);
     }
-    ASSERT_MSG(false, "Unreachable");
+    UNREACHABLE();
     return {};
 }
 

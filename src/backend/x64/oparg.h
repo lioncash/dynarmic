@@ -26,7 +26,7 @@ struct OpArg {
         case Type::Reg:
             return inner_reg;
         }
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
     }
 
     void setBit(int bits) {
@@ -56,7 +56,7 @@ struct OpArg {
                 return;
             }
         }
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
     }
 
 private:
