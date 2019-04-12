@@ -226,7 +226,8 @@ IR::UAnyU128 TranslatorVisitor::V_scalar(size_t bitsize, Vec vec) {
 
 void TranslatorVisitor::V_scalar(size_t bitsize, Vec vec, IR::UAnyU128 value) {
     if (bitsize == 128) {
-        return V(128, vec, value);
+        V(128, vec, value);
+        return;
     }
     // TODO: Optimize
     ir.SetQ(vec, ir.ZeroExtendToQuad(value));
