@@ -25,7 +25,7 @@ void A64CallbackConfigPass(IR::Block& block, const A64::UserConfig& conf) {
             continue;
         }
 
-        auto op = static_cast<A64::DataCacheOperation>(inst.GetArg(0).GetU64());
+        const auto op = static_cast<A64::DataCacheOperation>(inst.GetArg(0).GetU64());
         if (op == A64::DataCacheOperation::ZeroByVA) {
             A64::IREmitter ir{block};
             ir.SetInsertionPoint(&inst);

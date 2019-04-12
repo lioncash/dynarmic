@@ -56,48 +56,49 @@ void A32GetSetElimination(IR::Block& block) {
     for (auto inst = block.begin(); inst != block.end(); ++inst) {
         switch (inst->GetOpcode()) {
         case IR::Opcode::A32SetRegister: {
-            A32::Reg reg = inst->GetArg(0).GetA32RegRef();
-            if (reg == A32::Reg::PC)
+            const A32::Reg reg = inst->GetArg(0).GetA32RegRef();
+            if (reg == A32::Reg::PC) {
                 break;
-            size_t reg_index = static_cast<size_t>(reg);
+            }
+            const auto reg_index = static_cast<size_t>(reg);
             do_set(reg_info[reg_index], inst->GetArg(1), inst);
             break;
         }
         case IR::Opcode::A32GetRegister: {
-            A32::Reg reg = inst->GetArg(0).GetA32RegRef();
+            const A32::Reg reg = inst->GetArg(0).GetA32RegRef();
             ASSERT(reg != A32::Reg::PC);
-            size_t reg_index = static_cast<size_t>(reg);
+            const size_t reg_index = static_cast<size_t>(reg);
             do_get(reg_info[reg_index], inst);
             break;
         }
         case IR::Opcode::A32SetExtendedRegister32: {
-            A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
-            size_t reg_index = A32::RegNumber(reg);
+            const A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
+            const size_t reg_index = A32::RegNumber(reg);
             do_set(ext_reg_singles_info[reg_index], inst->GetArg(1), inst);
 
-            size_t doubles_reg_index = reg_index / 2;
+            const size_t doubles_reg_index = reg_index / 2;
             if (doubles_reg_index < ext_reg_doubles_info.size()) {
                 ext_reg_doubles_info[doubles_reg_index] = {};
             }
             break;
         }
         case IR::Opcode::A32GetExtendedRegister32: {
-            A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
-            size_t reg_index = A32::RegNumber(reg);
+            const A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
+            const size_t reg_index = A32::RegNumber(reg);
             do_get(ext_reg_singles_info[reg_index], inst);
 
-            size_t doubles_reg_index = reg_index / 2;
+            const size_t doubles_reg_index = reg_index / 2;
             if (doubles_reg_index < ext_reg_doubles_info.size()) {
                 ext_reg_doubles_info[doubles_reg_index] = {};
             }
             break;
         }
         case IR::Opcode::A32SetExtendedRegister64: {
-            A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
-            size_t reg_index = A32::RegNumber(reg);
+            const A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
+            const size_t reg_index = A32::RegNumber(reg);
             do_set(ext_reg_doubles_info[reg_index], inst->GetArg(1), inst);
 
-            size_t singles_reg_index = reg_index * 2;
+            const size_t singles_reg_index = reg_index * 2;
             if (singles_reg_index < ext_reg_singles_info.size()) {
                 ext_reg_singles_info[singles_reg_index] = {};
                 ext_reg_singles_info[singles_reg_index+1] = {};
@@ -105,11 +106,11 @@ void A32GetSetElimination(IR::Block& block) {
             break;
         }
         case IR::Opcode::A32GetExtendedRegister64: {
-            A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
-            size_t reg_index = A32::RegNumber(reg);
+            const A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
+            const size_t reg_index = A32::RegNumber(reg);
             do_get(ext_reg_doubles_info[reg_index], inst);
 
-            size_t singles_reg_index = reg_index * 2;
+            const size_t singles_reg_index = reg_index * 2;
             if (singles_reg_index < ext_reg_singles_info.size()) {
                 ext_reg_singles_info[singles_reg_index] = {};
                 ext_reg_singles_info[singles_reg_index+1] = {};
