@@ -38,13 +38,13 @@ std::ostream& operator<<(std::ostream& o, const LocationDescriptor& descriptor);
 namespace std {
 template <>
 struct less<Dynarmic::IR::LocationDescriptor> {
-    bool operator()(const Dynarmic::IR::LocationDescriptor& x, const Dynarmic::IR::LocationDescriptor& y) const {
+    bool operator()(const Dynarmic::IR::LocationDescriptor& x, const Dynarmic::IR::LocationDescriptor& y) const noexcept {
         return x.Value() < y.Value();
     }
 };
 template <>
 struct hash<Dynarmic::IR::LocationDescriptor> {
-    size_t operator()(const Dynarmic::IR::LocationDescriptor& x) const {
+    size_t operator()(const Dynarmic::IR::LocationDescriptor& x) const noexcept {
         return std::hash<u64>()(x.Value());
     }
 };

@@ -79,13 +79,13 @@ public:
         return LocationDescriptor(arm_pc, cpsr, A32::FPSCR{new_fpscr & FPSCR_MODE_MASK});
     }
 
-    u64 UniqueHash() const {
+    u64 UniqueHash() const noexcept {
         // This value MUST BE UNIQUE.
         // This calculation has to match up with EmitX64::EmitTerminalPopRSBHint
-        u64 pc_u64 = u64(arm_pc) << 32;
-        u64 fpscr_u64 = u64(fpscr.Value());
-        u64 t_u64 = cpsr.T() ? 1 : 0;
-        u64 e_u64 = cpsr.E() ? 2 : 0;
+        const u64 pc_u64 = u64(arm_pc) << 32;
+        const u64 fpscr_u64 = u64(fpscr.Value());
+        const u64 t_u64 = cpsr.T() ? 1 : 0;
+        const u64 e_u64 = cpsr.E() ? 2 : 0;
         return pc_u64 | fpscr_u64 | t_u64 | e_u64;
     }
 
@@ -112,13 +112,13 @@ std::ostream& operator<<(std::ostream& o, const LocationDescriptor& descriptor);
 namespace std {
 template <>
 struct less<Dynarmic::A32::LocationDescriptor> {
-    bool operator()(const Dynarmic::A32::LocationDescriptor& x, const Dynarmic::A32::LocationDescriptor& y) const {
+    bool operator()(const Dynarmic::A32::LocationDescriptor& x, const Dynarmic::A32::LocationDescriptor& y) const noexcept {
         return x.UniqueHash() < y.UniqueHash();
     }
 };
 template <>
 struct hash<Dynarmic::A32::LocationDescriptor> {
-    size_t operator()(const Dynarmic::A32::LocationDescriptor& x) const {
+    size_t operator()(const Dynarmic::A32::LocationDescriptor& x) const noexcept {
         return std::hash<u64>()(x.UniqueHash());
     }
 };

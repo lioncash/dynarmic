@@ -81,7 +81,7 @@ struct A64JitState {
     void SetFpcr(u32 new_fpcr);
     void SetFpsr(u32 new_fpcr);
 
-    u64 GetUniqueHash() const;
+    u64 GetUniqueHash() const noexcept;
 };
 
 #ifdef _MSC_VER

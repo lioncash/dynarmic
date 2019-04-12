@@ -10,9 +10,9 @@
 
 namespace Dynarmic::BackendX64 {
 
-u64 A64JitState::GetUniqueHash() const {
-    u64 fpcr_u64 = static_cast<u64>(fpcr & A64::LocationDescriptor::FPCR_MASK) << 37;
-    u64 pc_u64 = pc & A64::LocationDescriptor::PC_MASK;
+u64 A64JitState::GetUniqueHash() const noexcept {
+    const u64 fpcr_u64 = static_cast<u64>(fpcr & A64::LocationDescriptor::FPCR_MASK) << 37;
+    const u64 pc_u64 = pc & A64::LocationDescriptor::PC_MASK;
     return pc_u64 | fpcr_u64;
 }
 
