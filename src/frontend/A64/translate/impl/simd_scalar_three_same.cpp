@@ -155,6 +155,22 @@ bool TranslatorVisitor::SQDMULH_vec_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     return true;
 }
 
+bool TranslatorVisitor::SQRDMULH_vec_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
+    if (size == 0b00 || size == 0b11) {
+        return ReservedValue();
+    }
+
+    const size_t esize = 8 << size.ZeroExtend();
+
+    const IR::U128 operand1 = ir.ZeroExtendToQuad(ir.VectorGetElement(esize, V(128, Vn), 0));
+    const IR::U128 operand2 = ir.ZeroExtendToQuad(ir.VectorGetElement(esize, V(128, Vm), 0));
+    const IR::UpperAndLower multiply = ir.VectorSignedSaturatedDoublingMultiply(esize, operand1, operand2);
+    const IR::U128 result = ir.VectorAdd(esize, multiply.upper, ir.VectorLogicalShiftRight(esize, multiply.lower, static_cast<u8>(esize - 1)));
+
+    V_scalar(esize, Vd, ir.VectorGetElement(esize, result, 0));
+    return true;
+}
+
 bool TranslatorVisitor::SQSUB_1(Imm<2> size, Vec Vm, Vec Vn, Vec Vd) {
     const size_t esize = 8 << size.ZeroExtend<size_t>();
 
