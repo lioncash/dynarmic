@@ -51,10 +51,10 @@ public:
         return LocationDescriptor(static_cast<u64>(pc + amount), fpcr);
     }
 
-    u64 UniqueHash() const {
+    u64 UniqueHash() const noexcept {
         // This value MUST BE UNIQUE.
         // This calculation has to match up with EmitTerminalPopRSBHint
-        u64 fpcr_u64 = static_cast<u64>(fpcr.Value()) << 37;
+        const u64 fpcr_u64 = static_cast<u64>(fpcr.Value()) << 37;
         return pc | fpcr_u64;
     }
 
@@ -80,13 +80,13 @@ std::ostream& operator<<(std::ostream& o, const LocationDescriptor& descriptor);
 namespace std {
 template <>
 struct less<Dynarmic::A64::LocationDescriptor> {
-    bool operator()(const Dynarmic::A64::LocationDescriptor& x, const Dynarmic::A64::LocationDescriptor& y) const {
+    bool operator()(const Dynarmic::A64::LocationDescriptor& x, const Dynarmic::A64::LocationDescriptor& y) const noexcept {
         return x.UniqueHash() < y.UniqueHash();
     }
 };
 template <>
 struct hash<Dynarmic::A64::LocationDescriptor> {
-    size_t operator()(const Dynarmic::A64::LocationDescriptor& x) const {
+    size_t operator()(const Dynarmic::A64::LocationDescriptor& x) const noexcept {
         return std::hash<u64>()(x.UniqueHash());
     }
 };

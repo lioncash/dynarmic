@@ -76,7 +76,7 @@ struct A32JitState {
     u32 Fpscr() const;
     void SetFpscr(u32 FPSCR);
 
-    u64 GetUniqueHash() const;
+    u64 GetUniqueHash() const noexcept;
 };
 
 #ifdef _MSC_VER

@@ -196,7 +196,7 @@ void A32JitState::SetFpscr(u32 FPSCR) {
     }
 }
 
-u64 A32JitState::GetUniqueHash() const {
+u64 A32JitState::GetUniqueHash() const noexcept {
     return CPSR_et | FPSCR_mode | (static_cast<u64>(Reg[15]) << 32);
 }
 
