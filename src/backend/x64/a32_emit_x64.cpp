@@ -1018,7 +1018,7 @@ void A32EmitX64::EmitA32CoprocSendOneWord(A32EmitContext& ctx, IR::Inst* inst) {
         return;
     }
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
     }
 }
 
@@ -1060,7 +1060,7 @@ void A32EmitX64::EmitA32CoprocSendTwoWords(A32EmitContext& ctx, IR::Inst* inst) 
         return;
     }
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
     }
 }
 
@@ -1102,7 +1102,7 @@ void A32EmitX64::EmitA32CoprocGetOneWord(A32EmitContext& ctx, IR::Inst* inst) {
         return;
     }
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
     }
 }
 
@@ -1147,7 +1147,7 @@ void A32EmitX64::EmitA32CoprocGetTwoWords(A32EmitContext& ctx, IR::Inst* inst) {
         return;
     }
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
     }
 }
 

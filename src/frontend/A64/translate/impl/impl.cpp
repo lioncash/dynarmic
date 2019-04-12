@@ -368,7 +368,7 @@ IR::U32U64 TranslatorVisitor::ShiftReg(size_t bitsize, Reg reg, Imm<2> shift, IR
     case 0b11:
         return ir.RotateRight(result, amount);
     }
-    ASSERT_MSG(false, "Unreachable");
+    UNREACHABLE();
     return {};
 }
 
@@ -432,7 +432,7 @@ IR::U32U64 TranslatorVisitor::ExtendReg(size_t bitsize, Reg reg, Imm<3> option, 
         break;
     }
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
     }
 
     if (len < bitsize) {

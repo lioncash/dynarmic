@@ -330,7 +330,7 @@ U64 IREmitter::SignExtendToLong(const UAny& a) {
     case Type::U64:
         return U64(a);
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
         return {};
     }
 }
@@ -346,7 +346,7 @@ U32 IREmitter::SignExtendToWord(const UAny& a) {
     case Type::U64:
         return Inst<U32>(Opcode::LeastSignificantWord, a);
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
         return {};
     }
 }
@@ -374,7 +374,7 @@ U64 IREmitter::ZeroExtendToLong(const UAny& a) {
     case Type::U64:
         return U64(a);
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
         return {};
     }
 }
@@ -390,7 +390,7 @@ U32 IREmitter::ZeroExtendToWord(const UAny& a) {
     case Type::U64:
         return Inst<U32>(Opcode::LeastSignificantWord, a);
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
         return {};
     }
 }
@@ -817,7 +817,7 @@ UAny IREmitter::VectorGetElement(size_t esize, const U128& a, size_t index) {
     case 64:
         return Inst<U64>(Opcode::VectorGetElement64, a, Imm8(static_cast<u8>(index)));
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
         return {};
     }
 }
@@ -834,7 +834,7 @@ U128 IREmitter::VectorSetElement(size_t esize, const U128& a, size_t index, cons
     case 64:
         return Inst<U128>(Opcode::VectorSetElement64, a, Imm8(static_cast<u8>(index)), elem);
     default:
-        ASSERT_MSG(false, "Unreachable");
+        UNREACHABLE();
         return {};
     }
 }

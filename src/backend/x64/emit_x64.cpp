@@ -129,7 +129,7 @@ void EmitX64::EmitGetNZCVFromOp(EmitContext& ctx, IR::Inst* inst) {
         case IR::Type::U64:
             return 64;
         default:
-            ASSERT_MSG(false, "Unreachable");
+            UNREACHABLE();
             return 0;
         }
     }();
