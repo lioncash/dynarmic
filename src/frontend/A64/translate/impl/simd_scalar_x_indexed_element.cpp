@@ -27,7 +27,7 @@ enum class ExtraBehavior {
 bool MultiplyByElement(TranslatorVisitor& v, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H,
                        Vec Vn, Vec Vd, ExtraBehavior extra_behavior) {
     if (sz && L == 1) {
-        return v.UnallocatedEncoding();
+        return v.ReservedValue();
     }
 
     const size_t idxdsize = H == 1 ? 128 : 64;
@@ -78,7 +78,7 @@ bool TranslatorVisitor::FMULX_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Im
 
 bool TranslatorVisitor::SQDMULH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     if (size == 0b00 || size == 0b11) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     const size_t esize = 8 << size.ZeroExtend();
@@ -96,7 +96,7 @@ bool TranslatorVisitor::SQDMULH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vm
 
 bool TranslatorVisitor::SQRDMULH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     if (size == 0b00 || size == 0b11) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     const size_t esize = 8 << size.ZeroExtend();
@@ -114,7 +114,7 @@ bool TranslatorVisitor::SQRDMULH_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> V
 
 bool TranslatorVisitor::SQDMULL_elt_1(Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     if (size == 0b00 || size == 0b11) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     const size_t esize = 8 << size.ZeroExtend();

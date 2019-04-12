@@ -10,7 +10,7 @@ namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::EXT(bool Q, Vec Vm, Imm<4> imm4, Vec Vn, Vec Vd) {
     if (!Q && imm4.Bit<3>()) {
-        return UnallocatedEncoding();
+        return ReservedValue();
     }
 
     const size_t datasize = Q ? 128 : 64;
