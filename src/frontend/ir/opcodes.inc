@@ -498,6 +498,7 @@ OPCODE(FPRecipExponent32,                                   U32,            U32 
 OPCODE(FPRecipExponent64,                                   U64,            U64                                                             )
 OPCODE(FPRecipStepFused32,                                  U32,            U32,            U32                                             )
 OPCODE(FPRecipStepFused64,                                  U64,            U64,            U64                                             )
+OPCODE(FPRoundInt16,                                        U16,            U16,            U8,             U1                              )
 OPCODE(FPRoundInt32,                                        U32,            U32,            U8,             U1                              )
 OPCODE(FPRoundInt64,                                        U64,            U64,            U8,             U1                              )
 OPCODE(FPRSqrtEstimate32,                                   U32,            U32                                                             )

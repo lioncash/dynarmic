@@ -843,7 +843,7 @@ static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, siz
     const bool exact = inst->GetArg(2).GetU1();
     const auto round_imm = ConvertRoundingModeToX64Immediate(rounding_mode);
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && round_imm && !exact) {
+    if (fsize != 16 && code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && round_imm && !exact) {
         if (fsize == 64) {
             FPTwoOp<64>(code, ctx, inst, [&](Xbyak::Xmm result) {
                 code.roundsd(result, result, *round_imm);
@@ -857,7 +857,9 @@ static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, siz
         return;
     }
 
-    using fsize_list = mp::list<mp::vlift<size_t(32)>, mp::vlift<size_t(64)>>;
+    using fsize_list = mp::list<mp::vlift<size_t(16)>,
+                                mp::vlift<size_t(32)>,
+                                mp::vlift<size_t(64)>>;
     using rounding_list = mp::list<
         std::integral_constant<FP::RoundingMode, FP::RoundingMode::ToNearest_TieEven>,
         std::integral_constant<FP::RoundingMode, FP::RoundingMode::TowardsPlusInfinity>,
@@ -895,6 +897,10 @@ static void EmitFPRound(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, siz
     code.lea(code.ABI_PARAM2, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
     code.CallFunction(lut.at(std::make_tuple(fsize, rounding_mode, exact)));
+}
+
+void EmitX64::EmitFPRoundInt16(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRound(code, ctx, inst, 16);
 }
 
 void EmitX64::EmitFPRoundInt32(EmitContext& ctx, IR::Inst* inst) {

@@ -1950,11 +1950,21 @@ U32U64 IREmitter::FPRecipStepFused(const U32U64& a, const U32U64& b) {
     return Inst<U64>(Opcode::FPRecipStepFused64, a, b);
 }
 
-U32U64 IREmitter::FPRoundInt(const U32U64& a, FP::RoundingMode rounding, bool exact) {
-    if (a.GetType() == Type::U32) {
-        return Inst<U32>(Opcode::FPRoundInt32, a, static_cast<u8>(rounding), Imm1(exact));
+U16U32U64 IREmitter::FPRoundInt(const U16U32U64& a, FP::RoundingMode rounding, bool exact) {
+    const u8 rounding_value = static_cast<u8>(rounding);
+    const IR::U1 exact_imm = Imm1(exact);
+
+    switch (a.GetType()) {
+    case Type::U16:
+        return Inst<U16>(Opcode::FPRoundInt16, a, rounding_value, exact_imm);
+    case Type::U32:
+        return Inst<U32>(Opcode::FPRoundInt32, a, rounding_value, exact_imm);
+    case Type::U64:
+        return Inst<U64>(Opcode::FPRoundInt64, a, rounding_value, exact_imm);
+    default:
+        UNREACHABLE();
+        return U16U32U64{};
     }
-    return Inst<U64>(Opcode::FPRoundInt64, a, static_cast<u8>(rounding), Imm1(exact));
 }
 
 U32U64 IREmitter::FPRSqrtEstimate(const U32U64& a) {
