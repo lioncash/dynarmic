@@ -31,12 +31,12 @@ FPT FPRecipEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
     }
 
     if (type == FPType::Infinity) {
-        return FPInfo<FPT>::Zero(sign);
+        return FPT(FPInfo<FPT>::Zero(sign));
     }
 
     if (type == FPType::Zero) {
         FPProcessException(FPExc::DivideByZero, fpcr, fpsr);
-        return FPInfo<FPT>::Infinity(sign);
+        return FPT(FPInfo<FPT>::Infinity(sign));
     }
 
     if (value.exponent < FPInfo<FPT>::exponent_min - 2) {
@@ -58,13 +58,13 @@ FPT FPRecipEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
 
         FPProcessException(FPExc::Overflow, fpcr, fpsr);
         FPProcessException(FPExc::Inexact, fpcr, fpsr);
-        return overflow_to_inf ? FPInfo<FPT>::Infinity(sign) : FPInfo<FPT>::MaxNormal(sign);
+        return overflow_to_inf ? FPT(FPInfo<FPT>::Infinity(sign)) : FPT(FPInfo<FPT>::MaxNormal(sign));
     }
 
     if ((fpcr.FZ() && !std::is_same_v<FPT, u16>) || (fpcr.FZ16() && std::is_same_v<FPT, u16>)) {
         if (value.exponent >= -FPInfo<FPT>::exponent_min) {
             fpsr.UFC(true);
-            return FPInfo<FPT>::Zero(sign);
+            return FPT(FPInfo<FPT>::Zero(sign));
         }
     }
 
@@ -87,12 +87,13 @@ FPT FPRecipEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
         }
     }
 
-    const FPT bits_sign = FPInfo<FPT>::Zero(sign);
+    const FPT bits_sign = FPT(FPInfo<FPT>::Zero(sign));
     const FPT bits_exponent = static_cast<FPT>(result_exponent + FPInfo<FPT>::exponent_bias);
     const FPT bits_mantissa = static_cast<FPT>(estimate);
-    return (bits_exponent << FPInfo<FPT>::explicit_mantissa_width) | (bits_mantissa & FPInfo<FPT>::mantissa_mask) | bits_sign;
+    return FPT((bits_exponent << FPInfo<FPT>::explicit_mantissa_width) | (bits_mantissa & FPInfo<FPT>::mantissa_mask) | bits_sign);
 }
 
+template u16 FPRecipEstimate<u16>(u16 op, FPCR fpcr, FPSR& fpsr);
 template u32 FPRecipEstimate<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
 template u64 FPRecipEstimate<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
 
