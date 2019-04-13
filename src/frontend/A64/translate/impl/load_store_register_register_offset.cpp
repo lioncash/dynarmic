@@ -51,12 +51,12 @@ static bool RegSharedDecodeAndOperation(TranslatorVisitor& v, size_t scale, u8 s
 
     switch (memop) {
     case MemOp::STORE: {
-        IR::UAny data = v.X(datasize, Rt);
+        const IR::UAny data = v.X(datasize, Rt);
         v.Mem(address, datasize / 8, acctype, data);
         break;
     }
     case MemOp::LOAD: {
-        IR::UAny data = v.Mem(address, datasize / 8, acctype);
+        const IR::UAny data = v.Mem(address, datasize / 8, acctype);
         if (signed_) {
             v.X(regsize, Rt, v.SignExtend(data, regsize));
         } else {

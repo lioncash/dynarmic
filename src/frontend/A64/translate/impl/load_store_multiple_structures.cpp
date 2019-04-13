@@ -57,11 +57,12 @@ static bool SharedDecodeAndOperation(TranslatorVisitor& v, bool wback, MemOp mem
     }
 
     IR::U64 address;
-    if (Rn == Reg::SP)
+    if (Rn == Reg::SP) {
         // TODO: Check SP Alignment
         address = v.SP(64);
-    else
+    } else {
         address = v.X(64, Rn);
+    }
 
     IR::U64 offs = v.ir.Imm64(0);
     if (selem == 1) {
@@ -94,12 +95,15 @@ static bool SharedDecodeAndOperation(TranslatorVisitor& v, bool wback, MemOp mem
     }
 
     if (wback) {
-        if (*Rm != Reg::SP)
+        if (*Rm != Reg::SP) {
             offs = v.X(64, *Rm);
-        if (Rn == Reg::SP)
+        }
+
+        if (Rn == Reg::SP) {
             v.SP(64, v.ir.Add(address, offs));
-        else
+        } else {
             v.X(64, Rn, v.ir.Add(address, offs));
+        }
     }
 
     return true;
