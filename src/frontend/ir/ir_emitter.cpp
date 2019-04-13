@@ -2277,6 +2277,8 @@ U128 IREmitter::FPVectorRecipEstimate(size_t esize, const U128& a) {
 
 U128 IREmitter::FPVectorRecipStepFused(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorRecipStepFused16, a, b);
     case 32:
         return Inst<U128>(Opcode::FPVectorRecipStepFused32, a, b);
     case 64:
