@@ -1967,11 +1967,18 @@ U16U32U64 IREmitter::FPRoundInt(const U16U32U64& a, FP::RoundingMode rounding, b
     }
 }
 
-U32U64 IREmitter::FPRSqrtEstimate(const U32U64& a) {
-    if (a.GetType() == Type::U32) {
+U16U32U64 IREmitter::FPRSqrtEstimate(const U16U32U64& a) {
+    switch (a.GetType()) {
+    case Type::U16:
+        return Inst<U16>(Opcode::FPRSqrtEstimate16, a);
+    case Type::U32:
         return Inst<U32>(Opcode::FPRSqrtEstimate32, a);
+    case Type::U64:
+        return Inst<U64>(Opcode::FPRSqrtEstimate64, a);
+    default:
+        UNREACHABLE();
+        return U16U32U64{};
     }
-    return Inst<U64>(Opcode::FPRSqrtEstimate64, a);
 }
 
 U32U64 IREmitter::FPRSqrtStepFused(const U32U64& a, const U32U64& b) {

@@ -920,6 +920,10 @@ static void EmitFPRSqrtEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
     code.CallFunction(&FP::FPRSqrtEstimate<FPT>);
 }
 
+void EmitX64::EmitFPRSqrtEstimate16(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRSqrtEstimate<u16>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPRSqrtEstimate32(EmitContext& ctx, IR::Inst* inst) {
     EmitFPRSqrtEstimate<u32>(code, ctx, inst);
 }
