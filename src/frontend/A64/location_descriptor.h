@@ -25,7 +25,7 @@ namespace Dynarmic::A64 {
 class LocationDescriptor {
 public:
     static constexpr u64 PC_MASK = 0x00FF'FFFF'FFFF'FFFFull;
-    static constexpr u32 FPCR_MASK = 0x07C0'0000;
+    static constexpr u32 FPCR_MASK = 0x07C8'0000;
 
     LocationDescriptor(u64 pc, FP::FPCR fpcr) : pc(pc & PC_MASK), fpcr(fpcr.Value() & FPCR_MASK) {}
 
