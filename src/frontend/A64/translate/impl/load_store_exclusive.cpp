@@ -52,13 +52,13 @@ static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& v, bool pair, s
         } else {
             data = v.X(elsize, Rt);
         }
-        IR::U32 status = v.ExclusiveMem(address, dbytes, acctype, data);
+        const IR::U32 status = v.ExclusiveMem(address, dbytes, acctype, data);
         v.X(32, *Rs, status);
         break;
     }
     case MemOp::LOAD: {
         v.ir.SetExclusive(address, dbytes);
-        IR::UAnyU128 data = v.Mem(address, dbytes, acctype);
+        const IR::UAnyU128 data = v.Mem(address, dbytes, acctype);
         if (pair && elsize == 64) {
             v.X(64, Rt, v.ir.VectorGetElement(64, data, 0));
             v.X(64, *Rt2, v.ir.VectorGetElement(64, data, 1));
@@ -164,12 +164,12 @@ static bool OrderedSharedDecodeAndOperation(TranslatorVisitor& v, size_t size, b
 
     switch (memop) {
     case MemOp::STORE: {
-        IR::UAny data = v.X(datasize, Rt);
+        const IR::UAny data = v.X(datasize, Rt);
         v.Mem(address, dbytes, acctype, data);
         break;
     }
     case MemOp::LOAD: {
-        IR::UAny data = v.Mem(address, dbytes, acctype);
+        const IR::UAny data = v.Mem(address, dbytes, acctype);
         v.X(regsize, Rt, v.ZeroExtend(data, regsize));
         break;
     }

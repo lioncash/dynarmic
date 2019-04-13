@@ -9,46 +9,51 @@
 namespace Dynarmic::A64 {
 
 bool TranslatorVisitor::STP_LDP_gen(Imm<2> opc, bool not_postindex, bool wback, Imm<1> L, Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt) {
-    const bool postindex = !not_postindex;
+    if ((L == 0 && opc.Bit<0>() == 1) || opc == 0b11) {
+        return UnallocatedEncoding();
+    }
 
     const MemOp memop = L == 1 ? MemOp::LOAD : MemOp::STORE;
-    if ((L == 0 && opc.Bit<0>() == 1) || opc == 0b11)
-        return UnallocatedEncoding();
+    if (memop == MemOp::LOAD && wback && (Rt == Rn || Rt2 == Rn) && Rn != Reg::R31) {
+        return UnpredictableInstruction();
+    }
+    if (memop == MemOp::STORE && wback && (Rt == Rn || Rt2 == Rn) && Rn != Reg::R31) {
+        return UnpredictableInstruction();
+    }
+    if (memop == MemOp::LOAD && Rt == Rt2) {
+        return UnpredictableInstruction();
+    }
+
+    IR::U64 address;
+    if (Rn == Reg::SP) {
+        // TODO: Check SP Alignment
+        address = SP(64);
+    } else {
+        address = X(64, Rn);
+    }
+
+    const bool postindex = !not_postindex;
     const bool signed_ = opc.Bit<0>() != 0;
     const size_t scale = 2 + opc.Bit<1>();
     const size_t datasize = 8 << scale;
     const u64 offset = imm7.SignExtend<u64>() << scale;
 
-    if (memop == MemOp::LOAD && wback && (Rt == Rn || Rt2 == Rn) && Rn != Reg::R31)
-        return UnpredictableInstruction();
-    if (memop == MemOp::STORE && wback && (Rt == Rn || Rt2 == Rn) && Rn != Reg::R31)
-        return UnpredictableInstruction();
-    if (memop == MemOp::LOAD && Rt == Rt2)
-        return UnpredictableInstruction();
-
-    IR::U64 address;
-    const size_t dbytes = datasize / 8;
-
-    if (Rn == Reg::SP)
-        // TODO: Check SP Alignment
-        address = SP(64);
-    else
-        address = X(64, Rn);
-
-    if (!postindex)
+    if (!postindex) {
         address = ir.Add(address, ir.Imm64(offset));
+    }
 
+    const size_t dbytes = datasize / 8;
     switch (memop) {
     case MemOp::STORE: {
-        IR::U32U64 data1 = X(datasize, Rt);
-        IR::U32U64 data2 = X(datasize, Rt2);
+        const IR::U32U64 data1 = X(datasize, Rt);
+        const IR::U32U64 data2 = X(datasize, Rt2);
         Mem(address, dbytes, AccType::NORMAL, data1);
         Mem(ir.Add(address, ir.Imm64(dbytes)), dbytes, AccType::NORMAL, data2);
         break;
     }
     case MemOp::LOAD: {
-        IR::U32U64 data1 = Mem(address, dbytes, AccType::NORMAL);
-        IR::U32U64 data2 = Mem(ir.Add(address, ir.Imm64(dbytes)), dbytes, AccType::NORMAL);
+        const IR::U32U64 data1 = Mem(address, dbytes, AccType::NORMAL);
+        const IR::U32U64 data2 = Mem(ir.Add(address, ir.Imm64(dbytes)), dbytes, AccType::NORMAL);
         if (signed_) {
             X(64, Rt, SignExtend(data1, 64));
             X(64, Rt2, SignExtend(data2, 64));
@@ -63,42 +68,47 @@ bool TranslatorVisitor::STP_LDP_gen(Imm<2> opc, bool not_postindex, bool wback, 
     }
 
     if (wback) {
-        if (postindex)
+        if (postindex) {
             address = ir.Add(address, ir.Imm64(offset));
-        if (Rn == Reg::SP)
+        }
+
+        if (Rn == Reg::SP) {
             SP(64, address);
-        else
+        } else {
             X(64, Rn, address);
+        }
     }
 
     return true;
 }
 
 bool TranslatorVisitor::STP_LDP_fpsimd(Imm<2> opc, bool not_postindex, bool wback, Imm<1> L, Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt) {
-    const bool postindex = !not_postindex;
+    if (opc == 0b11) {
+        return UnallocatedEncoding();
+    }
 
     const MemOp memop = L == 1 ? MemOp::LOAD : MemOp::STORE;
-    if (opc == 0b11)
-        return UnallocatedEncoding();
+    if (memop == MemOp::LOAD && Vt == Vt2) {
+        return UnpredictableInstruction();
+    }
+
+    IR::U64 address;
+    if (Rn == Reg::SP) {
+        // TODO: Check SP Alignment
+        address = SP(64);
+    } else {
+        address = X(64, Rn);
+    }
+
+    const bool postindex = !not_postindex;
     const size_t scale = 2 + opc.ZeroExtend<size_t>();
     const size_t datasize = 8 << scale;
     const u64 offset = imm7.SignExtend<u64>() << scale;
-
     const size_t dbytes = datasize / 8;
 
-    if (memop == MemOp::LOAD && Vt == Vt2)
-        return UnpredictableInstruction();
-
-    IR::U64 address;
-
-    if (Rn == Reg::SP)
-        // TODO: Check SP Alignment
-        address = SP(64);
-    else
-        address = X(64, Rn);
-
-    if (!postindex)
+    if (!postindex) {
         address = ir.Add(address, ir.Imm64(offset));
+    }
 
     switch (memop) {
     case MemOp::STORE: {
@@ -128,12 +138,15 @@ bool TranslatorVisitor::STP_LDP_fpsimd(Imm<2> opc, bool not_postindex, bool wbac
     }
 
     if (wback) {
-        if (postindex)
+        if (postindex) {
             address = ir.Add(address, ir.Imm64(offset));
-        if (Rn == Reg::SP)
+        }
+
+        if (Rn == Reg::SP) {
             SP(64, address);
-        else
+        } else {
             X(64, Rn, address);
+        }
     }
 
     return true;
