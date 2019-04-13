@@ -88,7 +88,7 @@ struct FPInfo<u64> {
 template<typename FPT, bool sign, int exponent, FPT value>
 constexpr FPT FPValue() {
     if constexpr (value == 0) {
-        return FPInfo<FPT>::Zero(sign);
+        return FPT(FPInfo<FPT>::Zero(sign));
     }
 
     constexpr int point_position = static_cast<int>(FPInfo<FPT>::explicit_mantissa_width);
@@ -100,7 +100,7 @@ constexpr FPT FPValue() {
 
     constexpr FPT mantissa = (value << offset) & FPInfo<FPT>::mantissa_mask;
     constexpr FPT biased_exponent = static_cast<FPT>(normalized_exponent + FPInfo<FPT>::exponent_bias);
-    return FPInfo<FPT>::Zero(sign) | mantissa | (biased_exponent << FPInfo<FPT>::explicit_mantissa_width);
+    return FPT(FPInfo<FPT>::Zero(sign) | mantissa | (biased_exponent << FPInfo<FPT>::explicit_mantissa_width));
 }
 
 } // namespace Dynarmic::FP 
