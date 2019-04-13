@@ -572,6 +572,7 @@ OPCODE(FPVectorPairedAdd32,                                 U128,           U128
 OPCODE(FPVectorPairedAdd64,                                 U128,           U128,           U128                                            )
 OPCODE(FPVectorPairedAddLower32,                            U128,           U128,           U128                                            )
 OPCODE(FPVectorPairedAddLower64,                            U128,           U128,           U128                                            )
+OPCODE(FPVectorRecipEstimate16,                             U128,           U128                                                            )
 OPCODE(FPVectorRecipEstimate32,                             U128,           U128                                                            )
 OPCODE(FPVectorRecipEstimate64,                             U128,           U128                                                            )
 OPCODE(FPVectorRecipStepFused16,                            U128,           U128,           U128                                            )

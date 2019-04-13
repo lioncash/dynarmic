@@ -1092,6 +1092,10 @@ static void EmitRecipEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* ins
     });
 }
 
+void EmitX64::EmitFPVectorRecipEstimate16(EmitContext& ctx, IR::Inst* inst) {
+    EmitRecipEstimate<u16>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPVectorRecipEstimate32(EmitContext& ctx, IR::Inst* inst) {
     EmitRecipEstimate<u32>(code, ctx, inst);
 }

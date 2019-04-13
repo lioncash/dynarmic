@@ -2273,6 +2273,8 @@ U128 IREmitter::FPVectorPairedAddLower(size_t esize, const U128& a, const U128& 
 
 U128 IREmitter::FPVectorRecipEstimate(size_t esize, const U128& a) {
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorRecipEstimate16, a);
     case 32:
         return Inst<U128>(Opcode::FPVectorRecipEstimate32, a);
     case 64:
