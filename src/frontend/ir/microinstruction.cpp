@@ -327,6 +327,7 @@ bool Inst::ReadsFromAndWritesToFPSRCumulativeExceptionBits() const {
     case Opcode::FPVectorGreaterEqual64:
     case Opcode::FPVectorMul32:
     case Opcode::FPVectorMul64:
+    case Opcode::FPVectorMulAdd16:
     case Opcode::FPVectorMulAdd32:
     case Opcode::FPVectorMulAdd64:
     case Opcode::FPVectorPairedAddLower32:

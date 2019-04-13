@@ -2173,6 +2173,8 @@ U128 IREmitter::FPVectorMul(size_t esize, const U128& a, const U128& b) {
 
 U128 IREmitter::FPVectorMulAdd(size_t esize, const U128& a, const U128& b, const U128& c) {
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorMulAdd16, a, b, c);
     case 32:
         return Inst<U128>(Opcode::FPVectorMulAdd32, a, b, c);
     case 64:
