@@ -89,6 +89,39 @@ bool FPMultiplyByElement(TranslatorVisitor& v, bool Q, bool sz, Imm<1> L, Imm<1>
     return true;
 }
 
+bool FPMultiplyByElementHalfPrecision(TranslatorVisitor& v, bool Q, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H,
+                                      Vec Vn, Vec Vd, ExtraBehavior extra_behavior) {
+    const size_t idxdsize = H == 1 ? 128 : 64;
+    const size_t index = concatenate(H, L, M).ZeroExtend();
+    const Vec Vm = Vmlo.ZeroExtend<Vec>();
+    const size_t esize = 16;
+    const size_t datasize = Q ? 128 : 64;
+    
+    const IR::UAny element2 = v.ir.VectorGetElement(esize, v.V(idxdsize, Vm), index);
+    const IR::U128 operand1 = v.V(datasize, Vn);
+    const IR::U128 operand2 = Q ? v.ir.VectorBroadcast(esize, element2) : v.ir.VectorBroadcastLower(esize, element2);
+    const IR::U128 operand3 = v.V(datasize, Vd);
+
+    // TODO: We currently don't implement half-precision paths for
+    //       regular multiplies and extended multiplies.
+    const IR::U128 result = [&]{
+        switch (extra_behavior) {
+        case ExtraBehavior::None:
+            break;
+        case ExtraBehavior::Extended:
+            break;
+        case ExtraBehavior::Accumulate:
+            return v.ir.FPVectorMulAdd(esize, operand3, operand1, operand2);
+        case ExtraBehavior::Subtract:
+            return v.ir.FPVectorMulAdd(esize, operand3, v.ir.FPVectorNeg(esize, operand1), operand2);
+        }
+        UNREACHABLE();
+        return IR::U128{};
+    }();
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 using ExtensionFunction = IR::U32 (IREmitter::*)(const IR::UAny&);
 
 bool DotProduct(TranslatorVisitor& v, bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H,
@@ -276,8 +309,16 @@ bool TranslatorVisitor::FCMLA_elt(bool Q, Imm<2> size, Imm<1> L, Imm<1> M, Imm<4
     return true;
 }
 
+bool TranslatorVisitor::FMLA_elt_3(bool Q, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return FPMultiplyByElementHalfPrecision(*this, Q, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Accumulate);
+}
+
 bool TranslatorVisitor::FMLA_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     return FPMultiplyByElement(*this, Q, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Accumulate);
+}
+
+bool TranslatorVisitor::FMLS_elt_3(bool Q, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return FPMultiplyByElementHalfPrecision(*this, Q, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Subtract);
 }
 
 bool TranslatorVisitor::FMLS_elt_4(bool Q, bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {

@@ -1882,13 +1882,20 @@ U32U64 IREmitter::FPMul(const U32U64& a, const U32U64& b, bool fpcr_controlled) 
     }
 }
 
-U32U64 IREmitter::FPMulAdd(const U32U64& a, const U32U64& b, const U32U64& c, bool fpcr_controlled) {
+U16U32U64 IREmitter::FPMulAdd(const U16U32U64& a, const U16U32U64& b, const U16U32U64& c, bool fpcr_controlled) {
     ASSERT(fpcr_controlled);
     ASSERT(a.GetType() == b.GetType());
-    if (a.GetType() == Type::U32) {
+
+    switch (a.GetType()) {
+    case Type::U16:
+        return Inst<U16>(Opcode::FPMulAdd16, a, b, c);
+    case Type::U32:
         return Inst<U32>(Opcode::FPMulAdd32, a, b, c);
-    } else {
+    case Type::U64:
         return Inst<U64>(Opcode::FPMulAdd64, a, b, c);
+    default:
+        UNREACHABLE();
+        return U16U32U64{};
     }
 }
 
@@ -2181,6 +2188,8 @@ U128 IREmitter::FPVectorMul(size_t esize, const U128& a, const U128& b) {
 
 U128 IREmitter::FPVectorMulAdd(size_t esize, const U128& a, const U128& b, const U128& c) {
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorMulAdd16, a, b, c);
     case 32:
         return Inst<U128>(Opcode::FPVectorMulAdd32, a, b, c);
     case 64:

@@ -302,7 +302,7 @@ public:
     U32U64 FPMin(const U32U64& a, const U32U64& b, bool fpcr_controlled);
     U32U64 FPMinNumeric(const U32U64& a, const U32U64& b, bool fpcr_controlled);
     U32U64 FPMul(const U32U64& a, const U32U64& b, bool fpcr_controlled);
-    U32U64 FPMulAdd(const U32U64& addend, const U32U64& op1, const U32U64& op2, bool fpcr_controlled);
+    U16U32U64 FPMulAdd(const U16U32U64& addend, const U16U32U64& op1, const U16U32U64& op2, bool fpcr_controlled);
     U32U64 FPMulX(const U32U64& a, const U32U64& b);
     U16U32U64 FPNeg(const U16U32U64& a);
     U32U64 FPRecipEstimate(const U32U64& a);
