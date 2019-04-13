@@ -31,19 +31,18 @@
 #include "ir_opt/passes.h"
 #include "rand_int.h"
 #include "testenv.h"
-#include "A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
-#include "A32/skyeye_interpreter/skyeye_common/armstate.h"
+#include "unicorn_emu/a32_unicorn.h"
 
 using Dynarmic::Common::Bits;
 
-static Dynarmic::A32::UserConfig GetUserConfig(ArmTestEnv* testenv) {
+namespace {
+Dynarmic::A32::UserConfig GetUserConfig(ArmTestEnv* testenv) {
     Dynarmic::A32::UserConfig user_config;
     user_config.enable_fast_dispatch = false;
     user_config.callbacks = testenv;
     return user_config;
 }
 
-namespace {
 struct InstructionGenerator final {
 public:
     InstructionGenerator(const char* format, std::function<bool(u32)> is_valid = [](u32){ return true; }) : is_valid(is_valid) {
@@ -92,16 +91,16 @@ private:
     u32 mask = 0;
     std::function<bool(u32)> is_valid;
 };
-} // namespace
 
 using WriteRecords = std::map<u32, u8>;
 
-static bool DoesBehaviorMatch(const ARMul_State& interp, const Dynarmic::A32::Jit& jit, const WriteRecords& interp_write_records, const WriteRecords& jit_write_records) {
-    return interp.Reg == jit.Regs()
-           && interp.ExtReg == jit.ExtRegs()
-           && interp.Cpsr == jit.Cpsr()
-           //&& interp.VFP[VFP_FPSCR] == jit.Fpscr()
-           && interp_write_records == jit_write_records;
+bool DoesBehaviorMatch(const A32Unicorn<ArmTestEnv>& uni, const Dynarmic::A32::Jit& jit,
+                       const WriteRecords& interp_write_records, const WriteRecords& jit_write_records) {
+    return uni.GetRegisters() == jit.Regs() &&
+           uni.GetExtRegs() == jit.ExtRegs() &&
+           uni.GetCpsr() == jit.Cpsr() &&
+           // uni.GetFpscr() == jit.Fpscr() &&
+           interp_write_records == jit_write_records;
 }
 
 void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_execute_count, const size_t run_count, const std::function<u32()> instruction_generator) {
@@ -112,34 +111,32 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
     test_env.code_mem.back() = 0xEAFFFFFE; // b +#0
 
     // Prepare test subjects
-    ARMul_State interp{USER32MODE};
-    interp.user_callbacks = &test_env;
+    A32Unicorn<ArmTestEnv> uni{test_env};
     Dynarmic::A32::Jit jit{GetUserConfig(&test_env)};
 
     for (size_t run_number = 0; run_number < run_count; run_number++) {
-        interp.instruction_cache.clear();
-        InterpreterClearCache();
+        uni.ClearPageCache();
         jit.ClearCache();
 
         // Setup initial state
 
-        u32 initial_cpsr = 0x000001D0;
+        const u32 initial_cpsr = 0x000001D0;
 
         ArmTestEnv::RegisterArray initial_regs;
-        std::generate_n(initial_regs.begin(), 15, []{ return RandInt<u32>(0, 0xFFFFFFFF); });
+        std::generate_n(initial_regs.begin(), initial_regs.size() - 1, []{ return RandInt<u32>(0, 0xFFFFFFFF); });
         initial_regs[15] = 0;
 
         ArmTestEnv::ExtRegsArray initial_extregs;
         std::generate(initial_extregs.begin(), initial_extregs.end(),
                       []{ return RandInt<u32>(0, 0xFFFFFFFF); });
 
-        u32 initial_fpscr = 0x01000000 | (RandInt<u32>(0, 3) << 22);
+        const u32 initial_fpscr = 0x01000000 | (RandInt<u32>(0, 3) << 22);
 
-        interp.UnsetExclusiveMemoryAddress();
-        interp.Cpsr = initial_cpsr;
-        interp.Reg = initial_regs;
-        interp.ExtReg = initial_extregs;
-        interp.VFP[VFP_FPSCR] = initial_fpscr;
+        uni.SetCpsr(initial_cpsr);
+        uni.SetRegisters(initial_regs);
+        uni.SetExtRegs(initial_extregs);
+        uni.SetFpscr(initial_fpscr);
+        uni.EnableFloatingPointAccess();
         jit.Reset();
         jit.SetCpsr(initial_cpsr);
         jit.Regs() = initial_regs;
@@ -157,35 +154,37 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
             }
 
             printf("\nInitial Register Listing: \n");
-            for (int i = 0; i <= 15; i++) {
-                auto reg = Dynarmic::A32::RegToString(static_cast<Dynarmic::A32::Reg>(i));
+            for (size_t i = 0; i < initial_regs.size(); i++) {
+                const auto reg = Dynarmic::A32::RegToString(static_cast<Dynarmic::A32::Reg>(i));
                 printf("%4s: %08x\n", reg, initial_regs[i]);
             }
             printf("CPSR: %08x\n", initial_cpsr);
             printf("FPSCR:%08x\n", initial_fpscr);
-            for (int i = 0; i <= 63; i++) {
-                printf("S%3i: %08x\n", i, initial_extregs[i]);
+            for (size_t i = 0; i < initial_extregs.size(); i++) {
+                printf("S%3zu: %08x\n", i, initial_extregs[i]);
             }
 
             printf("\nFinal Register Listing: \n");
-            printf("      interp   jit\n");
-            for (int i = 0; i <= 15; i++) {
-                auto reg = Dynarmic::A32::RegToString(static_cast<Dynarmic::A32::Reg>(i));
-                printf("%4s: %08x %08x %s\n", reg, interp.Reg[i], jit.Regs()[i], interp.Reg[i] != jit.Regs()[i] ? "*" : "");
+            printf("      unicorn   jit\n");
+            const auto uni_registers = uni.GetRegisters();
+            for (size_t i = 0; i < uni_registers.size(); i++) {
+                const auto reg = Dynarmic::A32::RegToString(static_cast<Dynarmic::A32::Reg>(i));
+                printf("%4s: %08x %08x %s\n", reg, uni_registers[i], jit.Regs()[i], uni_registers[i] != jit.Regs()[i] ? "*" : "");
             }
-            printf("CPSR: %08x %08x %s\n", interp.Cpsr, jit.Cpsr(), interp.Cpsr != jit.Cpsr() ? "*" : "");
-            printf("FPSCR:%08x %08x %s\n", interp.VFP[VFP_FPSCR], jit.Fpscr(), interp.VFP[VFP_FPSCR] != jit.Fpscr() ? "*" : "");
-            for (int i = 0; i <= 63; i++) {
-                printf("S%3i: %08x %08x %s\n", i, interp.ExtReg[i], jit.ExtRegs()[i], interp.ExtReg[i] != jit.ExtRegs()[i] ? "*" : "");
+            printf("CPSR: %08x %08x %s\n", uni.GetCpsr(), jit.Cpsr(), uni.GetCpsr() != jit.Cpsr() ? "*" : "");
+            printf("FPSCR:%08x %08x %s\n", uni.GetFpscr(), jit.Fpscr(), uni.GetFpscr() != jit.Fpscr() ? "*" : "");
+            const auto uni_ext_regs = uni.GetExtRegs();
+            for (size_t i = 0; i < uni_ext_regs.size(); i++) {
+                printf("S%3zu: %08x %08x %s\n", i, uni_ext_regs[i], jit.ExtRegs()[i], uni_ext_regs[i] != jit.ExtRegs()[i] ? "*" : "");
             }
 
             printf("\nInterp Write Records:\n");
-            for (auto& record : interp_write_records) {
+            for (const auto& record : interp_write_records) {
                 printf("[%08x] = %02x\n", record.first, record.second);
             }
 
             printf("\nJIT Write Records:\n");
-            for (auto& record : jit_write_records) {
+            for (const auto& record : jit_write_records) {
                 printf("[%08x] = %02x\n", record.first, record.second);
             }
 
@@ -209,12 +208,14 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
 
         // Run interpreter
         test_env.modified_memory.clear();
-        interp.NumInstrsToExecute = static_cast<unsigned>(instructions_to_execute_count);
-        InterpreterMainLoop(&interp);
+        test_env.ticks_left = instructions_to_execute_count;
+        uni.Run();
         interp_write_records = test_env.modified_memory;
         {
-            bool T = Dynarmic::Common::Bit<5>(interp.Cpsr);
-            interp.Reg[15] &= T ? 0xFFFFFFFE : 0xFFFFFFFC;
+            const bool T = Dynarmic::Common::Bit<5>(uni.GetCpsr());
+            const u32 mask = T ? 0xFFFFFFFE : 0xFFFFFFFC;
+            const u32 new_pc = uni.GetPC() & mask;
+            uni.SetPC(new_pc);
         }
 
         // Run jit
@@ -223,9 +224,10 @@ void FuzzJitArm(const size_t instruction_count, const size_t instructions_to_exe
         jit.Run();
         jit_write_records = test_env.modified_memory;
 
-        REQUIRE(DoesBehaviorMatch(interp, jit, interp_write_records, jit_write_records));
+        REQUIRE(DoesBehaviorMatch(uni, jit, interp_write_records, jit_write_records));
     }
 }
+} // Anonymous namespace
 
 TEST_CASE( "arm: Optimization Failure (Randomized test case)", "[arm][A32]" ) {
     // This was a randomized test-case that was failing.
