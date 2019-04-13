@@ -754,6 +754,10 @@ static void EmitFPRecipEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
     code.CallFunction(&FP::FPRecipEstimate<FPT>);
 }
 
+void EmitX64::EmitFPRecipEstimate16(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRecipEstimate<u16>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPRecipEstimate32(EmitContext& ctx, IR::Inst* inst) {
     EmitFPRecipEstimate<u32>(code, ctx, inst);
 }

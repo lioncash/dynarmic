@@ -272,6 +272,7 @@ bool Inst::ReadsFromAndWritesToFPSRCumulativeExceptionBits() const {
     case Opcode::FPMulAdd16:
     case Opcode::FPMulAdd32:
     case Opcode::FPMulAdd64:
+    case Opcode::FPRecipEstimate16:
     case Opcode::FPRecipEstimate32:
     case Opcode::FPRecipEstimate64:
     case Opcode::FPRecipExponent16:
