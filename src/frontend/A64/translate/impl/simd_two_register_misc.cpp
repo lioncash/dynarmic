@@ -518,6 +518,17 @@ bool TranslatorVisitor::FRINTI_2(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatRoundToIntegral(*this, Q, sz, Vn, Vd,ir.current_location->FPCR().RMode(), false);
 }
 
+bool TranslatorVisitor::FRECPE_3(bool Q, Vec Vn, Vec Vd) {
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = 16;
+
+    const IR::U128 operand = V(datasize, Vn);
+    const IR::U128 result = ir.FPVectorRecipEstimate(esize, operand);
+
+    V(datasize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FRECPE_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     if (sz && !Q) {
         return ReservedValue();
