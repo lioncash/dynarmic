@@ -58,10 +58,52 @@ bool MultiplyByElement(TranslatorVisitor& v, bool sz, Imm<1> L, Imm<1> M, Imm<4>
     v.V_scalar(esize, Vd, result);
     return true;
 }
+
+bool MultiplyByElementHalfPrecision(TranslatorVisitor& v, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H,
+                                    Vec Vn, Vec Vd, ExtraBehavior extra_behavior) {
+    const size_t esize = 16;
+    const size_t idxsize = H == 1 ? 128 : 64;
+    const size_t index = concatenate(H, L, M).ZeroExtend();
+
+    const auto Vm = Vmlo.ZeroExtend<Vec>();
+    const IR::U16 element = v.ir.VectorGetElement(esize, v.V(idxsize, Vm), index);
+    const IR::U16 result = [&]() -> IR::U16 {
+        IR::U16 operand1 = v.V_scalar(esize, Vn);
+
+        // TODO: Currently we don't implement half-precision paths
+        //       for regular multiplication and extended multiplication.
+
+        if (extra_behavior == ExtraBehavior::None) {
+            UNIMPLEMENTED();
+        }
+
+        if (extra_behavior == ExtraBehavior::MultiplyExtended) {
+            UNIMPLEMENTED();
+        }
+
+        if (extra_behavior == ExtraBehavior::Subtract) {
+            operand1 = v.ir.FPNeg(operand1);
+        }
+
+        const IR::U16 operand2 = v.V_scalar(esize, Vd);
+        return v.ir.FPMulAdd(operand2, operand1, element, true);
+    }();
+
+    v.V_scalar(esize, Vd, result);
+    return true;
+}
 } // Anonymous namespace
+
+bool TranslatorVisitor::FMLA_elt_1(Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return MultiplyByElementHalfPrecision(*this, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Accumulate);
+}
 
 bool TranslatorVisitor::FMLA_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
     return MultiplyByElement(*this, sz, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Accumulate);
+}
+
+bool TranslatorVisitor::FMLS_elt_1(Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
+    return MultiplyByElementHalfPrecision(*this, L, M, Vmlo, H, Vn, Vd, ExtraBehavior::Subtract);
 }
 
 bool TranslatorVisitor::FMLS_elt_2(bool sz, Imm<1> L, Imm<1> M, Imm<4> Vmlo, Imm<1> H, Vec Vn, Vec Vd) {
