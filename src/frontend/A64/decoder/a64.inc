@@ -692,7 +692,7 @@ INST(FCVTPU_4,               "FCVTPU (vector)",                           "0Q101
 //INST(FCVTZU_int_3,           "FCVTZU (vector, integer)",                  "0Q10111011111001101110nnnnnddddd")
 INST(FCVTZU_int_4,           "FCVTZU (vector, integer)",                  "0Q1011101z100001101110nnnnnddddd")
 INST(URSQRTE,                "URSQRTE",                                   "0Q1011101z100001110010nnnnnddddd")
-//INST(FRSQRTE_3,              "FRSQRTE",                                   "0Q10111011111001110110nnnnnddddd")
+INST(FRSQRTE_3,              "FRSQRTE",                                   "0Q10111011111001110110nnnnnddddd")
 INST(FRSQRTE_4,              "FRSQRTE",                                   "0Q1011101z100001110110nnnnnddddd")
 //INST(FSQRT_1,                "FSQRT (vector)",                            "0Q10111011111001111110nnnnnddddd")
 INST(FSQRT_2,                "FSQRT (vector)",                            "0Q1011101z100001111110nnnnnddddd")
