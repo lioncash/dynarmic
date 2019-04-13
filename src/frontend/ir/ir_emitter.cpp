@@ -2278,11 +2278,16 @@ U128 IREmitter::FPVectorRecipStepFused(size_t esize, const U128& a, const U128& 
 }
 
 U128 IREmitter::FPVectorRoundInt(size_t esize, const U128& operand, FP::RoundingMode rounding, bool exact) {
+    const IR::U8 rounding_imm = Imm8(static_cast<u8>(rounding));
+    const IR::U1 exact_imm = Imm1(exact);
+
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorRoundInt16, operand, rounding_imm, exact_imm);
     case 32:
-        return Inst<U128>(Opcode::FPVectorRoundInt32, operand, Imm8(static_cast<u8>(rounding)), Imm1(exact));
+        return Inst<U128>(Opcode::FPVectorRoundInt32, operand, rounding_imm, exact_imm);
     case 64:
-        return Inst<U128>(Opcode::FPVectorRoundInt64, operand, Imm8(static_cast<u8>(rounding)), Imm1(exact));
+        return Inst<U128>(Opcode::FPVectorRoundInt64, operand, rounding_imm, exact_imm);
     }
     UNREACHABLE();
     return {};
