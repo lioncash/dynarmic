@@ -343,6 +343,7 @@ bool Inst::ReadsFromAndWritesToFPSRCumulativeExceptionBits() const {
     case Opcode::FPVectorRoundInt16:
     case Opcode::FPVectorRoundInt32:
     case Opcode::FPVectorRoundInt64:
+    case Opcode::FPVectorRSqrtEstimate16:
     case Opcode::FPVectorRSqrtEstimate32:
     case Opcode::FPVectorRSqrtEstimate64:
     case Opcode::FPVectorRSqrtStepFused32:

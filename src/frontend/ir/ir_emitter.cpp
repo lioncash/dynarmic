@@ -2302,6 +2302,8 @@ U128 IREmitter::FPVectorRoundInt(size_t esize, const U128& operand, FP::Rounding
 
 U128 IREmitter::FPVectorRSqrtEstimate(size_t esize, const U128& a) {
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorRSqrtEstimate16, a);
     case 32:
         return Inst<U128>(Opcode::FPVectorRSqrtEstimate32, a);
     case 64:
