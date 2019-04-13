@@ -36,7 +36,7 @@ bool MultiplyByElement(TranslatorVisitor& v, bool sz, Imm<1> L, Imm<1> M, Imm<4>
     const size_t esize = sz ? 64 : 32;
 
     const IR::U32U64 element = v.ir.VectorGetElement(esize, v.V(idxdsize, Vm), index);
-    const IR::U32U64 result = [&] {
+    const IR::U32U64 result = [&]() -> IR::U32U64 {
         IR::U32U64 operand1 = v.V_scalar(esize, Vn);
 
         if (extra_behavior == ExtraBehavior::None) {

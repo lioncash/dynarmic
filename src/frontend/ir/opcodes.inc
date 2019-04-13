@@ -479,6 +479,7 @@ OPCODE(FPMinNumeric32,                                      U32,            U32,
 OPCODE(FPMinNumeric64,                                      U64,            U64,            U64                                             )
 OPCODE(FPMul32,                                             U32,            U32,            U32                                             )
 OPCODE(FPMul64,                                             U64,            U64,            U64                                             )
+OPCODE(FPMulAdd16,                                          U16,            U16,            U16,            U16                             )
 OPCODE(FPMulAdd32,                                          U32,            U32,            U32,            U32                             )
 OPCODE(FPMulAdd64,                                          U64,            U64,            U64,            U64                             )
 OPCODE(FPMulX32,                                            U32,            U32,            U32                                             )
