@@ -309,7 +309,7 @@ public:
     U16U32U64 FPRecipExponent(const U16U32U64& a);
     U32U64 FPRecipStepFused(const U32U64& a, const U32U64& b);
     U16U32U64 FPRoundInt(const U16U32U64& a, FP::RoundingMode rounding, bool exact);
-    U32U64 FPRSqrtEstimate(const U32U64& a);
+    U16U32U64 FPRSqrtEstimate(const U16U32U64& a);
     U32U64 FPRSqrtStepFused(const U32U64& a, const U32U64& b);
     U32U64 FPSqrt(const U32U64& a);
     U32U64 FPSub(const U32U64& a, const U32U64& b, bool fpcr_controlled);

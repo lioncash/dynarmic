@@ -1241,6 +1241,10 @@ static void EmitRSqrtEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* ins
     });
 }
 
+void EmitX64::EmitFPVectorRSqrtEstimate16(EmitContext& ctx, IR::Inst* inst) {
+    EmitRSqrtEstimate<u16>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPVectorRSqrtEstimate32(EmitContext& ctx, IR::Inst* inst) {
     EmitRSqrtEstimate<u32>(code, ctx, inst);
 }

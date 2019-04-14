@@ -19,7 +19,7 @@ namespace Dynarmic::FP {
 
 template<typename FPT>
 FPT FPRSqrtEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
-    auto [type, sign, value] = FPUnpack<FPT>(op, fpcr, fpsr);
+    const auto [type, sign, value] = FPUnpack<FPT>(op, fpcr, fpsr);
 
     if (type == FPType::SNaN || type == FPType::QNaN) {
         return FPProcessNaN(type, op, fpcr, fpsr);
@@ -27,16 +27,16 @@ FPT FPRSqrtEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
 
     if (type == FPType::Zero) {
         FPProcessException(FPExc::DivideByZero, fpcr, fpsr);
-        return FPInfo<FPT>::Infinity(sign);
+        return FPT(FPInfo<FPT>::Infinity(sign));
     }
 
     if (sign) {
         FPProcessException(FPExc::InvalidOp, fpcr, fpsr);
-        return FPInfo<FPT>::DefaultNaN();
+        return FPT(FPInfo<FPT>::DefaultNaN());
     }
 
     if (type == FPType::Infinity) {
-        return FPInfo<FPT>::Zero(false);
+        return FPT(FPInfo<FPT>::Zero(false));
     }
 
     const int result_exponent = (-(value.exponent + 1)) >> 1;
@@ -50,6 +50,7 @@ FPT FPRSqrtEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
     return (bits_exponent << FPInfo<FPT>::explicit_mantissa_width) | (bits_mantissa & FPInfo<FPT>::mantissa_mask);
 }
 
+template u16 FPRSqrtEstimate<u16>(u16 op, FPCR fpcr, FPSR& fpsr);
 template u32 FPRSqrtEstimate<u32>(u32 op, FPCR fpcr, FPSR& fpsr);
 template u64 FPRSqrtEstimate<u64>(u64 op, FPCR fpcr, FPSR& fpsr);
 
