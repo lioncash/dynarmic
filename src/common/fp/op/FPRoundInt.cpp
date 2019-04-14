@@ -31,11 +31,11 @@ u64 FPRoundInt(FPT op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr)
     }
 
     if (type == FPType::Infinity) {
-        return FPInfo<FPT>::Infinity(sign);
+        return FPT(FPInfo<FPT>::Infinity(sign));
     }
     
     if (type == FPType::Zero) {
-        return FPInfo<FPT>::Zero(sign);
+        return FPT(FPInfo<FPT>::Zero(sign));
     }
 
     // Reshift decimal point back to bit zero.
@@ -79,7 +79,7 @@ u64 FPRoundInt(FPT op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr)
     const u64 abs_int_result = new_sign ? Safe::Negate<u64>(int_result) : static_cast<u64>(int_result);
 
     const FPT result = int_result == 0
-                     ? FPInfo<FPT>::Zero(sign)
+                     ? FPT(FPInfo<FPT>::Zero(sign))
                      : FPRound<FPT>(FPUnpacked{new_sign, normalized_point_position, abs_int_result}, fpcr, RoundingMode::TowardsZero, fpsr);
 
     if (error != ResidualError::Zero && exact) {
@@ -89,6 +89,7 @@ u64 FPRoundInt(FPT op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr)
     return result;
 }
 
+template u64 FPRoundInt<u16>(u16 op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr);
 template u64 FPRoundInt<u32>(u32 op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr);
 template u64 FPRoundInt<u64>(u64 op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr);
 

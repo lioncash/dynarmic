@@ -1160,28 +1160,30 @@ void EmitFPVectorRoundInt(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     const auto rounding = static_cast<FP::RoundingMode>(inst->GetArg(1).GetU8());
     const bool exact = inst->GetArg(2).GetU1();
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && rounding != FP::RoundingMode::ToNearest_TieAwayFromZero && !exact) {
-        const u8 round_imm = [&]() -> u8 {
-            switch (rounding) {
-            case FP::RoundingMode::ToNearest_TieEven:
-                return 0b00;
-            case FP::RoundingMode::TowardsPlusInfinity:
-                return 0b10;
-            case FP::RoundingMode::TowardsMinusInfinity:
-                return 0b01;
-            case FP::RoundingMode::TowardsZero:
-                return 0b11;
-            default:
-                UNREACHABLE();
-            }
-            return 0;
-        }();
+    if constexpr (fsize != 16) {
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && rounding != FP::RoundingMode::ToNearest_TieAwayFromZero && !exact) {
+            const u8 round_imm = [&]() -> u8 {
+                switch (rounding) {
+                case FP::RoundingMode::ToNearest_TieEven:
+                    return 0b00;
+                case FP::RoundingMode::TowardsPlusInfinity:
+                    return 0b10;
+                case FP::RoundingMode::TowardsMinusInfinity:
+                    return 0b01;
+                case FP::RoundingMode::TowardsZero:
+                    return 0b11;
+                default:
+                    UNREACHABLE();
+                }
+                return 0;
+            }();
 
-        EmitTwoOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, const Xbyak::Xmm& xmm_a){
-            FCODE(roundp)(result, xmm_a, round_imm);
-        });
+            EmitTwoOpVectorOperation<fsize, DefaultIndexer>(code, ctx, inst, [&](const Xbyak::Xmm& result, const Xbyak::Xmm& xmm_a){
+                FCODE(roundp)(result, xmm_a, round_imm);
+            });
 
-        return;
+            return;
+        }
     }
 
     using rounding_list = mp::list<
@@ -1216,6 +1218,10 @@ void EmitFPVectorRoundInt(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     );
 
     EmitTwoOpFallback(code, ctx, inst, lut.at(std::make_tuple(rounding, exact)));
+}
+
+void EmitX64::EmitFPVectorRoundInt16(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorRoundInt<16>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPVectorRoundInt32(EmitContext& ctx, IR::Inst* inst) {

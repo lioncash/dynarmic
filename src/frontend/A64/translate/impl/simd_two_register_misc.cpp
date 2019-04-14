@@ -138,6 +138,17 @@ bool FloatRoundToIntegral(TranslatorVisitor& v, bool Q, bool sz, Vec Vn, Vec Vd,
     return true;
 }
 
+bool FloatRoundToIntegralHalfPrecision(TranslatorVisitor& v, bool Q, Vec Vn, Vec Vd, FP::RoundingMode rounding_mode, bool exact) {
+    const size_t datasize = Q ? 128 : 64;
+    const size_t esize = 16;
+
+    const IR::U128 operand = v.V(datasize, Vn);
+    const IR::U128 result = v.ir.FPVectorRoundInt(esize, operand, rounding_mode, exact);
+
+    v.V(datasize, Vd, result);
+    return true;
+}
+
 bool SaturatedNarrow(TranslatorVisitor& v, bool Q, Imm<2> size, Vec Vn, Vec Vd, IR::U128 (IR::IREmitter::*fn)(size_t, const IR::U128&)) {
     if (size == 0b11) {
         return v.ReservedValue();
@@ -451,28 +462,56 @@ bool TranslatorVisitor::FCVTZU_int_4(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatConvertToInteger(*this, Q, sz, Vn, Vd, Signedness::Unsigned, FP::RoundingMode::TowardsZero);
 }
 
+bool TranslatorVisitor::FRINTN_1(bool Q, Vec Vn, Vec Vd) {
+    return FloatRoundToIntegralHalfPrecision(*this, Q, Vn, Vd, FP::RoundingMode::ToNearest_TieEven, false);
+}
+
 bool TranslatorVisitor::FRINTN_2(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatRoundToIntegral(*this, Q, sz, Vn, Vd, FP::RoundingMode::ToNearest_TieEven, false);
+}
+
+bool TranslatorVisitor::FRINTM_1(bool Q, Vec Vn, Vec Vd) {
+    return FloatRoundToIntegralHalfPrecision(*this, Q, Vn, Vd, FP::RoundingMode::TowardsMinusInfinity, false);
 }
 
 bool TranslatorVisitor::FRINTM_2(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatRoundToIntegral(*this, Q, sz, Vn, Vd, FP::RoundingMode::TowardsMinusInfinity, false);
 }
 
+bool TranslatorVisitor::FRINTP_1(bool Q, Vec Vn, Vec Vd) {
+    return FloatRoundToIntegralHalfPrecision(*this, Q, Vn, Vd, FP::RoundingMode::TowardsPlusInfinity, false);
+}
+
 bool TranslatorVisitor::FRINTP_2(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatRoundToIntegral(*this, Q, sz, Vn, Vd, FP::RoundingMode::TowardsPlusInfinity, false);
+}
+
+bool TranslatorVisitor::FRINTZ_1(bool Q, Vec Vn, Vec Vd) {
+    return FloatRoundToIntegralHalfPrecision(*this, Q, Vn, Vd, FP::RoundingMode::TowardsZero, false);
 }
 
 bool TranslatorVisitor::FRINTZ_2(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatRoundToIntegral(*this, Q, sz, Vn, Vd, FP::RoundingMode::TowardsZero, false);
 }
 
+bool TranslatorVisitor::FRINTA_1(bool Q, Vec Vn, Vec Vd) {
+    return FloatRoundToIntegralHalfPrecision(*this, Q, Vn, Vd, FP::RoundingMode::ToNearest_TieAwayFromZero, false);
+}
+
 bool TranslatorVisitor::FRINTA_2(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatRoundToIntegral(*this, Q, sz, Vn, Vd, FP::RoundingMode::ToNearest_TieAwayFromZero, false);
 }
 
+bool TranslatorVisitor::FRINTX_1(bool Q, Vec Vn, Vec Vd) {
+    return FloatRoundToIntegralHalfPrecision(*this, Q, Vn, Vd, ir.current_location->FPCR().RMode(), true);
+}
+
 bool TranslatorVisitor::FRINTX_2(bool Q, bool sz, Vec Vn, Vec Vd) {
     return FloatRoundToIntegral(*this, Q, sz, Vn, Vd, ir.current_location->FPCR().RMode(), true);
+}
+
+bool TranslatorVisitor::FRINTI_1(bool Q, Vec Vn, Vec Vd) {
+    return FloatRoundToIntegralHalfPrecision(*this, Q, Vn, Vd, ir.current_location->FPCR().RMode(), false);
 }
 
 bool TranslatorVisitor::FRINTI_2(bool Q, bool sz, Vec Vn, Vec Vd) {
