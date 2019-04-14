@@ -305,9 +305,9 @@ public:
     U16U32U64 FPMulAdd(const U16U32U64& addend, const U16U32U64& op1, const U16U32U64& op2, bool fpcr_controlled);
     U32U64 FPMulX(const U32U64& a, const U32U64& b);
     U16U32U64 FPNeg(const U16U32U64& a);
-    U32U64 FPRecipEstimate(const U32U64& a);
+    U16U32U64 FPRecipEstimate(const U16U32U64& a);
     U16U32U64 FPRecipExponent(const U16U32U64& a);
-    U32U64 FPRecipStepFused(const U32U64& a, const U32U64& b);
+    U16U32U64 FPRecipStepFused(const U16U32U64& a, const U16U32U64& b);
     U16U32U64 FPRoundInt(const U16U32U64& a, FP::RoundingMode rounding, bool exact);
     U16U32U64 FPRSqrtEstimate(const U16U32U64& a);
     U32U64 FPRSqrtStepFused(const U32U64& a, const U32U64& b);

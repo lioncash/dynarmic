@@ -1922,11 +1922,18 @@ U16U32U64 IREmitter::FPNeg(const U16U32U64& a) {
     }
 }
 
-U32U64 IREmitter::FPRecipEstimate(const U32U64& a) {
-    if (a.GetType() == Type::U32) {
+U16U32U64 IREmitter::FPRecipEstimate(const U16U32U64& a) {
+    switch (a.GetType()) {
+    case Type::U16:
+        return Inst<U16>(Opcode::FPRecipEstimate16, a);
+    case Type::U32:
         return Inst<U32>(Opcode::FPRecipEstimate32, a);
+    case Type::U64:
+        return Inst<U64>(Opcode::FPRecipEstimate64, a);
+    default:
+        UNREACHABLE();
+        return U16U32U64{};
     }
-    return Inst<U64>(Opcode::FPRecipEstimate64, a);
 }
 
 U16U32U64 IREmitter::FPRecipExponent(const U16U32U64& a) {
@@ -1943,11 +1950,20 @@ U16U32U64 IREmitter::FPRecipExponent(const U16U32U64& a) {
     }
 }
 
-U32U64 IREmitter::FPRecipStepFused(const U32U64& a, const U32U64& b) {
-    if (a.GetType() == Type::U32) {
+U16U32U64 IREmitter::FPRecipStepFused(const U16U32U64& a, const U16U32U64& b) {
+    ASSERT(a.GetType() == b.GetType());
+
+    switch (a.GetType()) {
+    case Type::U16:
+        return Inst<U16>(Opcode::FPRecipStepFused16, a, b);
+    case Type::U32:
         return Inst<U32>(Opcode::FPRecipStepFused32, a, b);
+    case Type::U64:
+        return Inst<U64>(Opcode::FPRecipStepFused64, a, b);
+    default:
+        UNREACHABLE();
+        return U16U32U64{};
     }
-    return Inst<U64>(Opcode::FPRecipStepFused64, a, b);
 }
 
 U16U32U64 IREmitter::FPRoundInt(const U16U32U64& a, FP::RoundingMode rounding, bool exact) {
@@ -2264,6 +2280,8 @@ U128 IREmitter::FPVectorPairedAddLower(size_t esize, const U128& a, const U128& 
 
 U128 IREmitter::FPVectorRecipEstimate(size_t esize, const U128& a) {
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorRecipEstimate16, a);
     case 32:
         return Inst<U128>(Opcode::FPVectorRecipEstimate32, a);
     case 64:
@@ -2275,6 +2293,8 @@ U128 IREmitter::FPVectorRecipEstimate(size_t esize, const U128& a) {
 
 U128 IREmitter::FPVectorRecipStepFused(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorRecipStepFused16, a, b);
     case 32:
         return Inst<U128>(Opcode::FPVectorRecipStepFused32, a, b);
     case 64:

@@ -1092,6 +1092,10 @@ static void EmitRecipEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* ins
     });
 }
 
+void EmitX64::EmitFPVectorRecipEstimate16(EmitContext& ctx, IR::Inst* inst) {
+    EmitRecipEstimate<u16>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPVectorRecipEstimate32(EmitContext& ctx, IR::Inst* inst) {
     EmitRecipEstimate<u32>(code, ctx, inst);
 }
@@ -1110,39 +1114,45 @@ static void EmitRecipStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* in
         }
     };
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    if constexpr (fsize != 16) {
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA) && code.DoesCpuSupport(Xbyak::util::Cpu::tAVX)) {
+            auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Xmm operand1 = ctx.reg_alloc.UseXmm(args[0]);
-        const Xbyak::Xmm operand2 = ctx.reg_alloc.UseXmm(args[1]);
-        const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+            const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+            const Xbyak::Xmm operand1 = ctx.reg_alloc.UseXmm(args[0]);
+            const Xbyak::Xmm operand2 = ctx.reg_alloc.UseXmm(args[1]);
+            const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
 
-        Xbyak::Label end, fallback;
+            Xbyak::Label end, fallback;
 
-        code.movaps(result, GetVectorOf<fsize, false, 0, 2>(code));
-        FCODE(vfnmadd231p)(result, operand1, operand2);
+            code.movaps(result, GetVectorOf<fsize, false, 0, 2>(code));
+            FCODE(vfnmadd231p)(result, operand1, operand2);
 
-        FCODE(vcmpunordp)(tmp, result, result);
-        code.vptest(tmp, tmp);
-        code.jnz(fallback, code.T_NEAR);
-        code.L(end);
+            FCODE(vcmpunordp)(tmp, result, result);
+            code.vptest(tmp, tmp);
+            code.jnz(fallback, code.T_NEAR);
+            code.L(end);
 
-        code.SwitchToFarCode();
-        code.L(fallback);
-        code.sub(rsp, 8);
-        ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
-        EmitThreeOpFallbackWithoutRegAlloc(code, ctx, result, operand1, operand2, fallback_fn);
-        ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
-        code.add(rsp, 8);
-        code.jmp(end, code.T_NEAR);
-        code.SwitchToNearCode();
+            code.SwitchToFarCode();
+            code.L(fallback);
+            code.sub(rsp, 8);
+            ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+            EmitThreeOpFallbackWithoutRegAlloc(code, ctx, result, operand1, operand2, fallback_fn);
+            ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+            code.add(rsp, 8);
+            code.jmp(end, code.T_NEAR);
+            code.SwitchToNearCode();
 
-        ctx.reg_alloc.DefineValue(inst, result);
-        return;
+            ctx.reg_alloc.DefineValue(inst, result);
+            return;
+        }
     }
 
     EmitThreeOpFallback(code, ctx, inst, fallback_fn);
+}
+
+void EmitX64::EmitFPVectorRecipStepFused16(EmitContext& ctx, IR::Inst* inst) {
+    EmitRecipStepFused<16>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPVectorRecipStepFused32(EmitContext& ctx, IR::Inst* inst) {

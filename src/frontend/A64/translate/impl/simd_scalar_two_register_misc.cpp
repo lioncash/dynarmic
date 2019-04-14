@@ -172,6 +172,16 @@ bool TranslatorVisitor::FCVTZU_int_2(bool sz, Vec Vn, Vec Vd) {
     return ScalarFPConvertWithRound(*this, sz, Vn, Vd, FP::RoundingMode::TowardsZero, Signedness::Unsigned);
 }
 
+bool TranslatorVisitor::FRECPE_1(Vec Vn, Vec Vd) {
+    const size_t esize = 16;
+
+    const IR::U16 operand = V_scalar(esize, Vn);
+    const IR::U16 result = ir.FPRecipEstimate(operand);
+
+    V_scalar(esize, Vd, result);
+    return true;
+}
+
 bool TranslatorVisitor::FRECPE_2(bool sz, Vec Vn, Vec Vd) {
     const size_t esize = sz ? 64 : 32;
 

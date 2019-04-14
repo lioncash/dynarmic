@@ -754,6 +754,10 @@ static void EmitFPRecipEstimate(BlockOfCode& code, EmitContext& ctx, IR::Inst* i
     code.CallFunction(&FP::FPRecipEstimate<FPT>);
 }
 
+void EmitX64::EmitFPRecipEstimate16(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRecipEstimate<u16>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPRecipEstimate32(EmitContext& ctx, IR::Inst* inst) {
     EmitFPRecipEstimate<u32>(code, ctx, inst);
 }
@@ -787,40 +791,42 @@ template<size_t fsize>
 static void EmitFPRecipStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     using FPT = mp::unsigned_integer_of_size<fsize>;
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    if constexpr (fsize != 16) {
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tFMA)) {
+            auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-        Xbyak::Label end, fallback;
+            Xbyak::Label end, fallback;
 
-        const Xbyak::Xmm operand1 = ctx.reg_alloc.UseXmm(args[0]);
-        const Xbyak::Xmm operand2 = ctx.reg_alloc.UseXmm(args[1]);
-        const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
+            const Xbyak::Xmm operand1 = ctx.reg_alloc.UseXmm(args[0]);
+            const Xbyak::Xmm operand2 = ctx.reg_alloc.UseXmm(args[1]);
+            const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm();
 
-        code.movaps(result, code.MConst(xword, FP::FPValue<FPT, false, 0, 2>()));
-        FCODE(vfnmadd231s)(result, operand1, operand2);
-        FCODE(ucomis)(result, result);
-        code.jp(fallback, code.T_NEAR);
-        code.L(end);
+            code.movaps(result, code.MConst(xword, FP::FPValue<FPT, false, 0, 2>()));
+            FCODE(vfnmadd231s)(result, operand1, operand2);
+            FCODE(ucomis)(result, result);
+            code.jp(fallback, code.T_NEAR);
+            code.L(end);
 
-        code.SwitchToFarCode();
-        code.L(fallback);
+            code.SwitchToFarCode();
+            code.L(fallback);
 
-        code.sub(rsp, 8);
-        ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
-        code.movq(code.ABI_PARAM1, operand1);
-        code.movq(code.ABI_PARAM2, operand2);
-        code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
-        code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
-        code.CallFunction(&FP::FPRecipStepFused<FPT>);
-        code.movq(result, code.ABI_RETURN);
-        ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
-        code.add(rsp, 8);
+            code.sub(rsp, 8);
+            ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+            code.movq(code.ABI_PARAM1, operand1);
+            code.movq(code.ABI_PARAM2, operand2);
+            code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
+            code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
+            code.CallFunction(&FP::FPRecipStepFused<FPT>);
+            code.movq(result, code.ABI_RETURN);
+            ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocXmmIdx(result.getIdx()));
+            code.add(rsp, 8);
 
-        code.jmp(end, code.T_NEAR);
-        code.SwitchToNearCode();
+            code.jmp(end, code.T_NEAR);
+            code.SwitchToNearCode();
 
-        ctx.reg_alloc.DefineValue(inst, result);
-        return;
+            ctx.reg_alloc.DefineValue(inst, result);
+            return;
+        }
     }
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -828,6 +834,10 @@ static void EmitFPRecipStepFused(BlockOfCode& code, EmitContext& ctx, IR::Inst* 
     code.mov(code.ABI_PARAM3.cvt32(), ctx.FPCR().Value());
     code.lea(code.ABI_PARAM4, code.ptr[code.r15 + code.GetJitStateInfo().offsetof_fpsr_exc]);
     code.CallFunction(&FP::FPRecipStepFused<FPT>);
+}
+
+void EmitX64::EmitFPRecipStepFused16(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPRecipStepFused<16>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPRecipStepFused32(EmitContext& ctx, IR::Inst* inst) {
