@@ -69,7 +69,7 @@ bool TranslatorVisitor::UCVTF_float_fix(bool sf, Imm<2> type, Imm<6> scale, Reg 
 bool TranslatorVisitor::FCVTZS_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec Vn, Reg Rd) {
     const size_t intsize = sf ? 64 : 32;
     const auto fltsize = FPGetDataSize(type);
-    if (!fltsize || *fltsize == 16) {
+    if (!fltsize) {
         return UnallocatedEncoding();
     }
     if (!sf && !scale.Bit<5>()) {
@@ -77,7 +77,7 @@ bool TranslatorVisitor::FCVTZS_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec
     }
     const u8 fracbits = 64 - scale.ZeroExtend<u8>();
 
-    const IR::U32U64 fltval = V_scalar(*fltsize, Vn);
+    const IR::U16U32U64 fltval = V_scalar(*fltsize, Vn);
     IR::U32U64 intval;
     if (intsize == 32) {
         intval = ir.FPToFixedS32(fltval, fracbits, FP::RoundingMode::TowardsZero);
@@ -94,7 +94,7 @@ bool TranslatorVisitor::FCVTZS_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec
 bool TranslatorVisitor::FCVTZU_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec Vn, Reg Rd) {
     const size_t intsize = sf ? 64 : 32;
     const auto fltsize = FPGetDataSize(type);
-    if (!fltsize || *fltsize == 16) {
+    if (!fltsize) {
         return UnallocatedEncoding();
     }
     if (!sf && !scale.Bit<5>()) {
@@ -102,7 +102,7 @@ bool TranslatorVisitor::FCVTZU_float_fix(bool sf, Imm<2> type, Imm<6> scale, Vec
     }
     const u8 fracbits = 64 - scale.ZeroExtend<u8>();
 
-    const IR::U32U64 fltval = V_scalar(*fltsize, Vn);
+    const IR::U16U32U64 fltval = V_scalar(*fltsize, Vn);
     IR::U32U64 intval;
     if (intsize == 32) {
         intval = ir.FPToFixedU32(fltval, fracbits, FP::RoundingMode::TowardsZero);

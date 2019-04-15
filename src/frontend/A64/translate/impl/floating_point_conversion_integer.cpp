@@ -119,11 +119,11 @@ bool TranslatorVisitor::FMOV_float_gen(bool sf, Imm<2> type, Imm<1> rmode_0, Imm
 static bool FloaingPointConvertSignedInteger(TranslatorVisitor& v, bool sf, Imm<2> type, Vec Vn, Reg Rd, FP::RoundingMode rounding_mode) {
     const size_t intsize = sf ? 64 : 32;
     const auto fltsize = FPGetDataSize(type);
-    if (!fltsize || *fltsize == 16) {
+    if (!fltsize) {
         return v.UnallocatedEncoding();
     }
 
-    const IR::U32U64 fltval = v.V_scalar(*fltsize, Vn);
+    const IR::U16U32U64 fltval = v.V_scalar(*fltsize, Vn);
     IR::U32U64 intval;
 
     if (intsize == 32) {
@@ -135,18 +135,17 @@ static bool FloaingPointConvertSignedInteger(TranslatorVisitor& v, bool sf, Imm<
     }
 
     v.X(intsize, Rd, intval);
-
     return true;
 }
 
 static bool FloaingPointConvertUnsignedInteger(TranslatorVisitor& v, bool sf, Imm<2> type, Vec Vn, Reg Rd, FP::RoundingMode rounding_mode) {
     const size_t intsize = sf ? 64 : 32;
     const auto fltsize = FPGetDataSize(type);
-    if (!fltsize || *fltsize == 16) {
+    if (!fltsize) {
         return v.UnallocatedEncoding();
     }
 
-    const IR::U32U64 fltval = v.V_scalar(*fltsize, Vn);
+    const IR::U16U32U64 fltval = v.V_scalar(*fltsize, Vn);
     IR::U32U64 intval;
 
     if (intsize == 32) {
@@ -158,7 +157,6 @@ static bool FloaingPointConvertUnsignedInteger(TranslatorVisitor& v, bool sf, Im
     }
 
     v.X(intsize, Rd, intval);
-
     return true;
 }
 
