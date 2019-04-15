@@ -1222,74 +1222,77 @@ static void EmitFPToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
 
     const size_t fbits = args[1].GetImmediateU8();
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
-    const auto round_imm = ConvertRoundingModeToX64Immediate(rounding_mode);
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && round_imm){
-        const Xbyak::Xmm src = ctx.reg_alloc.UseScratchXmm(args[0]);
-        const Xbyak::Xmm scratch = ctx.reg_alloc.ScratchXmm();
-        const Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr().cvt64();
+    if constexpr (fsize != 16) {
+        const auto round_imm = ConvertRoundingModeToX64Immediate(rounding_mode);
 
-        if constexpr (fsize == 64) {
-            if (fbits != 0) {
-                const u64 scale_factor = static_cast<u64>((fbits + 1023) << 52);
-                code.mulsd(src, code.MConst(xword, scale_factor));
-            }
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && round_imm){
+            const Xbyak::Xmm src = ctx.reg_alloc.UseScratchXmm(args[0]);
+            const Xbyak::Xmm scratch = ctx.reg_alloc.ScratchXmm();
+            const Xbyak::Reg64 result = ctx.reg_alloc.ScratchGpr().cvt64();
 
-            code.roundsd(src, src, *round_imm);
-        } else {
-            if (fbits != 0) {
-                const u32 scale_factor = static_cast<u32>((fbits + 127) << 23);
-                code.mulss(src, code.MConst(xword, scale_factor));
-            }
+            if constexpr (fsize == 64) {
+                if (fbits != 0) {
+                    const u64 scale_factor = static_cast<u64>((fbits + 1023) << 52);
+                    code.mulsd(src, code.MConst(xword, scale_factor));
+                }
 
-            code.roundss(src, src, *round_imm);
-            code.cvtss2sd(src, src);
-        }
-
-        ZeroIfNaN<64>(code, src, scratch);
-
-        if constexpr (isize == 64) {
-            Xbyak::Label saturate_max, end;
-
-            if (unsigned_) {
-                code.maxsd(src, code.MConst(xword, f64_min_u64));
-            }
-            code.movsd(scratch, code.MConst(xword, unsigned_ ? f64_max_u64_lim : f64_max_s64_lim));
-            code.comisd(scratch, src);
-            code.jna(saturate_max, code.T_NEAR);
-            if (unsigned_) {
-                Xbyak::Label below_max;
-
-                code.movsd(scratch, code.MConst(xword, f64_max_s64_lim));
-                code.comisd(src, scratch);
-                code.jb(below_max);
-                code.subsd(src, scratch);
-                code.cvttsd2si(result, src);
-                code.btc(result, 63);
-                code.jmp(end);
-                code.L(below_max);
-            }
-            code.cvttsd2si(result, src); // 64 bit gpr
-            code.L(end);
-
-            code.SwitchToFarCode();
-            code.L(saturate_max);
-            code.mov(result, unsigned_ ? 0xFFFF'FFFF'FFFF'FFFF : 0x7FFF'FFFF'FFFF'FFFF);
-            code.jmp(end, code.T_NEAR);
-            code.SwitchToNearCode();
-        } else {
-            code.minsd(src, code.MConst(xword, unsigned_ ? f64_max_u32 : f64_max_s32));
-            if (unsigned_) {
-                code.maxsd(src, code.MConst(xword, f64_min_u32));
-                code.cvttsd2si(result, src); // 64 bit gpr
+                code.roundsd(src, src, *round_imm);
             } else {
-                code.cvttsd2si(result.cvt32(), src);
+                if (fbits != 0) {
+                    const u32 scale_factor = static_cast<u32>((fbits + 127) << 23);
+                    code.mulss(src, code.MConst(xword, scale_factor));
+                }
+
+                code.roundss(src, src, *round_imm);
+                code.cvtss2sd(src, src);
             }
+
+            ZeroIfNaN<64>(code, src, scratch);
+
+            if constexpr (isize == 64) {
+                Xbyak::Label saturate_max, end;
+
+                if (unsigned_) {
+                    code.maxsd(src, code.MConst(xword, f64_min_u64));
+                }
+                code.movsd(scratch, code.MConst(xword, unsigned_ ? f64_max_u64_lim : f64_max_s64_lim));
+                code.comisd(scratch, src);
+                code.jna(saturate_max, code.T_NEAR);
+                if (unsigned_) {
+                    Xbyak::Label below_max;
+
+                    code.movsd(scratch, code.MConst(xword, f64_max_s64_lim));
+                    code.comisd(src, scratch);
+                    code.jb(below_max);
+                    code.subsd(src, scratch);
+                    code.cvttsd2si(result, src);
+                    code.btc(result, 63);
+                    code.jmp(end);
+                    code.L(below_max);
+                }
+                code.cvttsd2si(result, src); // 64 bit gpr
+                code.L(end);
+
+                code.SwitchToFarCode();
+                code.L(saturate_max);
+                code.mov(result, unsigned_ ? 0xFFFF'FFFF'FFFF'FFFF : 0x7FFF'FFFF'FFFF'FFFF);
+                code.jmp(end, code.T_NEAR);
+                code.SwitchToNearCode();
+            } else {
+                code.minsd(src, code.MConst(xword, unsigned_ ? f64_max_u32 : f64_max_s32));
+                if (unsigned_) {
+                    code.maxsd(src, code.MConst(xword, f64_min_u32));
+                    code.cvttsd2si(result, src); // 64 bit gpr
+                } else {
+                    code.cvttsd2si(result.cvt32(), src);
+                }
+            }
+
+            ctx.reg_alloc.DefineValue(inst, result);
+
+            return;
         }
-
-        ctx.reg_alloc.DefineValue(inst, result);
-
-        return;
     }
 
     using fbits_list = mp::vllift<std::make_index_sequence<isize + 1>>;
@@ -1343,6 +1346,22 @@ void EmitX64::EmitFPDoubleToFixedU32(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitX64::EmitFPDoubleToFixedU64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPToFixed<64, true, 64>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPHalfToFixedS32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixed<16, false, 32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPHalfToFixedS64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixed<16, false, 64>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPHalfToFixedU32(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixed<16, true, 32>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPHalfToFixedU64(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPToFixed<16, true, 64>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPSingleToFixedS32(EmitContext& ctx, IR::Inst* inst) {
