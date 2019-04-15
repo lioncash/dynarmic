@@ -20,6 +20,16 @@
 
 namespace Dynarmic::IR {
 
+Block::Block(const LocationDescriptor& location)
+    : location{location}, end_location{location},
+      instruction_alloc_pool{std::make_unique<Common::Pool>(sizeof(Inst), 4096)} {}
+
+Block::~Block() = default;
+
+Block::Block(Block&&) = default;
+
+Block& Block::operator=(Block&&) = default;
+
 void Block::AppendNewInst(Opcode opcode, std::initializer_list<IR::Value> args) {
     PrependNewInst(end(), opcode, args);
 }

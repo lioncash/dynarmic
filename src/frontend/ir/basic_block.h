@@ -39,8 +39,14 @@ public:
     using reverse_iterator       = InstructionList::reverse_iterator;
     using const_reverse_iterator = InstructionList::const_reverse_iterator;
 
-    explicit Block(const LocationDescriptor& location)
-        : location(location), end_location(location) {}
+    explicit Block(const LocationDescriptor& location);
+    ~Block();
+
+    Block(const Block&) = delete;
+    Block& operator=(const Block&) = delete;
+
+    Block(Block&&);
+    Block& operator=(Block&&);
 
     bool                   empty()   const { return instructions.empty();   }
     size_type              size()    const { return instructions.size();    }
@@ -145,7 +151,7 @@ private:
     /// List of instructions in this block.
     InstructionList instructions;
     /// Memory pool for instruction list
-    std::unique_ptr<Common::Pool> instruction_alloc_pool = std::make_unique<Common::Pool>(sizeof(Inst), 4096);
+    std::unique_ptr<Common::Pool> instruction_alloc_pool;
     /// Terminal instruction of this block.
     Terminal terminal = Term::Invalid{};
 
