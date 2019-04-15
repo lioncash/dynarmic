@@ -1997,11 +1997,20 @@ U16U32U64 IREmitter::FPRSqrtEstimate(const U16U32U64& a) {
     }
 }
 
-U32U64 IREmitter::FPRSqrtStepFused(const U32U64& a, const U32U64& b) {
-    if (a.GetType() == Type::U32) {
+U16U32U64 IREmitter::FPRSqrtStepFused(const U16U32U64& a, const U16U32U64& b) {
+    ASSERT(a.GetType() == b.GetType());
+
+    switch (a.GetType()) {
+    case Type::U16:
+        return Inst<U16>(Opcode::FPRSqrtStepFused16, a, b);
+    case Type::U32:
         return Inst<U32>(Opcode::FPRSqrtStepFused32, a, b);
+    case Type::U64:
+        return Inst<U64>(Opcode::FPRSqrtStepFused64, a, b);
+    default:
+        UNREACHABLE();
+        return U16U32U64{};
     }
-    return Inst<U64>(Opcode::FPRSqrtStepFused64, a, b);
 }
 
 U32U64 IREmitter::FPSqrt(const U32U64& a) {
@@ -2335,6 +2344,8 @@ U128 IREmitter::FPVectorRSqrtEstimate(size_t esize, const U128& a) {
 
 U128 IREmitter::FPVectorRSqrtStepFused(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorRSqrtStepFused16, a, b);
     case 32:
         return Inst<U128>(Opcode::FPVectorRSqrtStepFused32, a, b);
     case 64:
