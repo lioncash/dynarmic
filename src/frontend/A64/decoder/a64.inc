@@ -576,7 +576,7 @@ INST(INS_elt,                "INS (element)",                             "01101
 //INST(FMULX_vec_3,            "FMULX",                                     "0Q001110010mmmmm000111nnnnnddddd")
 //INST(FCMEQ_reg_3,            "FCMEQ (register)",                          "0Q001110010mmmmm001001nnnnnddddd")
 INST(FRECPS_3,               "FRECPS",                                    "0Q001110010mmmmm001111nnnnnddddd")
-//INST(FRSQRTS_3,              "FRSQRTS",                                   "0Q001110110mmmmm001111nnnnnddddd")
+INST(FRSQRTS_3,              "FRSQRTS",                                   "0Q001110110mmmmm001111nnnnnddddd")
 //INST(FCMGE_reg_3,            "FCMGE (register)",                          "0Q101110010mmmmm001001nnnnnddddd")
 //INST(FACGE_3,                "FACGE",                                     "0Q101110010mmmmm001011nnnnnddddd")
 //INST(FABD_3,                 "FABD",                                      "0Q101110110mmmmm000101nnnnnddddd")
