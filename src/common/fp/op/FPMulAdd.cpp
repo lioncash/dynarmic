@@ -35,7 +35,7 @@ FPT FPMulAdd(FPT addend, FPT op1, FPT op2, FPCR fpcr, FPSR& fpsr) {
 
     if (typeA == FPType::QNaN && ((inf1 && zero2) || (zero1 && inf2))) {
         FPProcessException(FPExc::InvalidOp, fpcr, fpsr);
-        return FPT(FPInfo<FPT>::DefaultNaN());
+        return FPInfo<FPT>::DefaultNaN();
     }
 
     if (maybe_nan) {
@@ -50,25 +50,25 @@ FPT FPMulAdd(FPT addend, FPT op1, FPT op2, FPCR fpcr, FPSR& fpsr) {
     // Raise NaN on (inf * inf) of opposite signs or (inf * zero).
     if ((inf1 && zero2) || (zero1 && inf2) || (infA && infP && signA != signP)) {
         FPProcessException(FPExc::InvalidOp, fpcr, fpsr);
-        return FPT(FPInfo<FPT>::DefaultNaN());
+        return FPInfo<FPT>::DefaultNaN();
     }
 
     // Handle infinities
     if ((infA && !signA) || (infP && !signP)) {
-        return FPT(FPInfo<FPT>::Infinity(false));
+        return FPInfo<FPT>::Infinity(false);
     }
     if ((infA && signA) || (infP && signP)) {
-        return FPT(FPInfo<FPT>::Infinity(true));
+        return FPInfo<FPT>::Infinity(true);
     }
 
     // Result is exactly zero
     if (zeroA && zeroP && signA == signP) {
-        return FPT(FPInfo<FPT>::Zero(signA));
+        return FPInfo<FPT>::Zero(signA);
     }
 
     const FPUnpacked result_value = FusedMulAdd(valueA, value1, value2);
     if (result_value.mantissa == 0) {
-        return FPT(FPInfo<FPT>::Zero(rounding == RoundingMode::TowardsMinusInfinity));
+        return FPInfo<FPT>::Zero(rounding == RoundingMode::TowardsMinusInfinity);
     }
     return FPRound<FPT>(result_value, fpcr, fpsr);
 }
