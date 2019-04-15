@@ -1361,98 +1361,100 @@ void EmitFPVectorToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
 
     // TODO: AVX512 implementation
 
-    if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && rounding != FP::RoundingMode::ToNearest_TieAwayFromZero) {
-        auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    if constexpr (fsize != 16) {
+        if (code.DoesCpuSupport(Xbyak::util::Cpu::tSSE41) && rounding != FP::RoundingMode::ToNearest_TieAwayFromZero) {
+            auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-        const Xbyak::Xmm src = ctx.reg_alloc.UseScratchXmm(args[0]);
+            const Xbyak::Xmm src = ctx.reg_alloc.UseScratchXmm(args[0]);
 
-        const int round_imm = [&]{
-            switch (rounding) {
-            case FP::RoundingMode::ToNearest_TieEven:
-            default:
-                return 0b00;
-            case FP::RoundingMode::TowardsPlusInfinity:
-                return 0b10;
-            case FP::RoundingMode::TowardsMinusInfinity:
-                return 0b01;
-            case FP::RoundingMode::TowardsZero:
-                return 0b11;
+            const int round_imm = [&]{
+                switch (rounding) {
+                case FP::RoundingMode::ToNearest_TieEven:
+                default:
+                    return 0b00;
+                case FP::RoundingMode::TowardsPlusInfinity:
+                    return 0b10;
+                case FP::RoundingMode::TowardsMinusInfinity:
+                    return 0b01;
+                case FP::RoundingMode::TowardsZero:
+                    return 0b11;
+                }
+            }();
+
+            const auto perform_conversion = [&code, &ctx](const Xbyak::Xmm& src) {
+                // MSVC doesn't allow us to use a [&] capture, so we have to do this instead.
+                (void)ctx;
+
+                if constexpr (fsize == 32) {
+                    code.cvttps2dq(src, src);
+                } else {
+                    const Xbyak::Reg64 hi = ctx.reg_alloc.ScratchGpr();
+                    const Xbyak::Reg64 lo = ctx.reg_alloc.ScratchGpr();
+
+                    code.cvttsd2si(lo, src);
+                    code.punpckhqdq(src, src);
+                    code.cvttsd2si(hi, src);
+                    code.movq(src, lo);
+                    code.pinsrq(src, hi, 1);
+
+                    ctx.reg_alloc.Release(hi);
+                    ctx.reg_alloc.Release(lo);
+                }
+            };
+
+            if (fbits != 0) {
+                const u64 scale_factor = fsize == 32
+                                         ? static_cast<u64>(fbits + 127) << 23
+                                         : static_cast<u64>(fbits + 1023) << 52;
+                FCODE(mulp)(src, GetVectorOf<fsize>(code, scale_factor));
             }
-        }();
 
-        const auto perform_conversion = [&code, &ctx](const Xbyak::Xmm& src) {
-            // MSVC doesn't allow us to use a [&] capture, so we have to do this instead.
-            (void)ctx;
+            FCODE(roundp)(src, src, static_cast<u8>(round_imm));
+            ZeroIfNaN<fsize>(code, src);
 
-            if constexpr (fsize == 32) {
-                code.cvttps2dq(src, src);
+            constexpr u64 float_upper_limit_signed = fsize == 32 ? 0x4f000000 : 0x43e0000000000000;
+            [[maybe_unused]] constexpr u64 float_upper_limit_unsigned = fsize == 32 ? 0x4f800000 : 0x43f0000000000000;
+
+            if constexpr (unsigned_) {
+                // Zero is minimum
+                code.xorps(xmm0, xmm0);
+                FCODE(cmplep)(xmm0, src);
+                FCODE(andp)(src, xmm0);
+
+                // Will we exceed unsigned range?
+                const Xbyak::Xmm exceed_unsigned = ctx.reg_alloc.ScratchXmm();
+                code.movaps(exceed_unsigned, GetVectorOf<fsize, float_upper_limit_unsigned>(code));
+                FCODE(cmplep)(exceed_unsigned, src);
+
+                // Will be exceed signed range?
+                const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
+                code.movaps(tmp, GetVectorOf<fsize, float_upper_limit_signed>(code));
+                code.movaps(xmm0, tmp);
+                FCODE(cmplep)(xmm0, src);
+                FCODE(andp)(tmp, xmm0);
+                FCODE(subp)(src, tmp);
+                perform_conversion(src);
+                if constexpr (fsize == 32) {
+                    code.pslld(xmm0, 31);
+                } else {
+                    code.psllq(xmm0, 63);
+                }
+                FCODE(orp)(src, xmm0);
+
+                // Saturate to max
+                FCODE(orp)(src, exceed_unsigned);
             } else {
-                const Xbyak::Reg64 hi = ctx.reg_alloc.ScratchGpr();
-                const Xbyak::Reg64 lo = ctx.reg_alloc.ScratchGpr();
+                constexpr u64 integer_max = static_cast<FPT>(std::numeric_limits<std::conditional_t<unsigned_, FPT, std::make_signed_t<FPT>>>::max());
 
-                code.cvttsd2si(lo, src);
-                code.punpckhqdq(src, src);
-                code.cvttsd2si(hi, src);
-                code.movq(src, lo);
-                code.pinsrq(src, hi, 1);
-
-                ctx.reg_alloc.Release(hi);
-                ctx.reg_alloc.Release(lo);
+                code.movaps(xmm0, GetVectorOf<fsize, float_upper_limit_signed>(code));
+                FCODE(cmplep)(xmm0, src);
+                perform_conversion(src);
+                FCODE(blendvp)(src, GetVectorOf<fsize, integer_max>(code));
             }
-        };
 
-        if (fbits != 0) {
-            const u64 scale_factor = fsize == 32
-                                     ? static_cast<u64>(fbits + 127) << 23
-                                     : static_cast<u64>(fbits + 1023) << 52;
-            FCODE(mulp)(src, GetVectorOf<fsize>(code, scale_factor));
+            ctx.reg_alloc.DefineValue(inst, src);
+            return;
         }
-
-        FCODE(roundp)(src, src, static_cast<u8>(round_imm));
-        ZeroIfNaN<fsize>(code, src);
-
-        constexpr u64 float_upper_limit_signed = fsize == 32 ? 0x4f000000 : 0x43e0000000000000;
-        [[maybe_unused]] constexpr u64 float_upper_limit_unsigned = fsize == 32 ? 0x4f800000 : 0x43f0000000000000;
-
-        if constexpr (unsigned_) {
-            // Zero is minimum
-            code.xorps(xmm0, xmm0);
-            FCODE(cmplep)(xmm0, src);
-            FCODE(andp)(src, xmm0);
-
-            // Will we exceed unsigned range?
-            const Xbyak::Xmm exceed_unsigned = ctx.reg_alloc.ScratchXmm();
-            code.movaps(exceed_unsigned, GetVectorOf<fsize, float_upper_limit_unsigned>(code));
-            FCODE(cmplep)(exceed_unsigned, src);
-
-            // Will be exceed signed range?
-            const Xbyak::Xmm tmp = ctx.reg_alloc.ScratchXmm();
-            code.movaps(tmp, GetVectorOf<fsize, float_upper_limit_signed>(code));
-            code.movaps(xmm0, tmp);
-            FCODE(cmplep)(xmm0, src);
-            FCODE(andp)(tmp, xmm0);
-            FCODE(subp)(src, tmp);
-            perform_conversion(src);
-            if constexpr (fsize == 32) {
-                code.pslld(xmm0, 31);
-            } else {
-                code.psllq(xmm0, 63);
-            }
-            FCODE(orp)(src, xmm0);
-
-            // Saturate to max
-            FCODE(orp)(src, exceed_unsigned);
-        } else {
-            constexpr u64 integer_max = static_cast<FPT>(std::numeric_limits<std::conditional_t<unsigned_, FPT, std::make_signed_t<FPT>>>::max());
-
-            code.movaps(xmm0, GetVectorOf<fsize, float_upper_limit_signed>(code));
-            FCODE(cmplep)(xmm0, src);
-            perform_conversion(src);
-            FCODE(blendvp)(src, GetVectorOf<fsize, integer_max>(code));
-        }
-
-        ctx.reg_alloc.DefineValue(inst, src);
-        return;
     }
 
     using fbits_list = mp::vllift<std::make_index_sequence<fsize + 1>>;
@@ -1489,12 +1491,20 @@ void EmitFPVectorToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     EmitTwoOpFallback(code, ctx, inst, lut.at(std::make_tuple(fbits, rounding)));
 }
 
+void EmitX64::EmitFPVectorToSignedFixed16(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorToFixed<16, false>(code, ctx, inst);
+}
+
 void EmitX64::EmitFPVectorToSignedFixed32(EmitContext& ctx, IR::Inst* inst) {
     EmitFPVectorToFixed<32, false>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPVectorToSignedFixed64(EmitContext& ctx, IR::Inst* inst) {
     EmitFPVectorToFixed<64, false>(code, ctx, inst);
+}
+
+void EmitX64::EmitFPVectorToUnsignedFixed16(EmitContext& ctx, IR::Inst* inst) {
+    EmitFPVectorToFixed<16, true>(code, ctx, inst);
 }
 
 void EmitX64::EmitFPVectorToUnsignedFixed32(EmitContext& ctx, IR::Inst* inst) {
