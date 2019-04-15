@@ -726,11 +726,9 @@ void EmitX64::EmitRotateRightExtended(EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-const Xbyak::Reg64 INVALID_REG = Xbyak::Reg64(-1);
-
 static Xbyak::Reg8 DoCarry(RegAlloc& reg_alloc, Argument& carry_in, IR::Inst* carry_out) {
     if (carry_in.IsImmediate()) {
-        return carry_out ? reg_alloc.ScratchGpr().cvt8() : INVALID_REG.cvt8();
+        return carry_out ? reg_alloc.ScratchGpr().cvt8() : Xbyak::Reg8{-1};
     } else {
         return carry_out ? reg_alloc.UseScratchGpr(carry_in).cvt8() : reg_alloc.UseGpr(carry_in).cvt8();
     }
@@ -738,30 +736,30 @@ static Xbyak::Reg8 DoCarry(RegAlloc& reg_alloc, Argument& carry_in, IR::Inst* ca
 
 static Xbyak::Reg64 DoNZCV(BlockOfCode& code, RegAlloc& reg_alloc, IR::Inst* nzcv_out) {
     if (!nzcv_out)
-        return INVALID_REG;
+        return Xbyak::Reg64{-1};
 
-    Xbyak::Reg64 nzcv = reg_alloc.ScratchGpr({HostLoc::RAX});
+    const Xbyak::Reg64 nzcv = reg_alloc.ScratchGpr({HostLoc::RAX});
     code.xor_(nzcv.cvt32(), nzcv.cvt32());
     return nzcv;
 }
 
 static void EmitAdd(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int bitsize) {
-    auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
-    auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
-    auto nzcv_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetNZCVFromOp);
+    const auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
+    const auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
+    const auto nzcv_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetNZCVFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& carry_in = args[2];
 
-    Xbyak::Reg64 nzcv = DoNZCV(code, ctx.reg_alloc, nzcv_inst);
-    Xbyak::Reg result = ctx.reg_alloc.UseScratchGpr(args[0]).changeBit(bitsize);
-    Xbyak::Reg8 carry = DoCarry(ctx.reg_alloc, carry_in, carry_inst);
-    Xbyak::Reg8 overflow = overflow_inst ? ctx.reg_alloc.ScratchGpr().cvt8() : INVALID_REG.cvt8();
+    const Xbyak::Reg64 nzcv = DoNZCV(code, ctx.reg_alloc, nzcv_inst);
+    const Xbyak::Reg result = ctx.reg_alloc.UseScratchGpr(args[0]).changeBit(bitsize);
+    const Xbyak::Reg8 carry = DoCarry(ctx.reg_alloc, carry_in, carry_inst);
+    const Xbyak::Reg8 overflow = overflow_inst ? ctx.reg_alloc.ScratchGpr().cvt8() : Xbyak::Reg8{-1};
 
     // TODO: Consider using LEA.
 
     if (args[1].IsImmediate() && args[1].GetType() == IR::Type::U32) {
-        u32 op_arg = args[1].GetImmediateU32();
+        const u32 op_arg = args[1].GetImmediateU32();
         if (carry_in.IsImmediate()) {
             if (carry_in.GetImmediateU1()) {
                 code.stc();
@@ -818,24 +816,24 @@ void EmitX64::EmitAdd64(EmitContext& ctx, IR::Inst* inst) {
 }
 
 static void EmitSub(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst, int bitsize) {
-    auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
-    auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
-    auto nzcv_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetNZCVFromOp);
+    const auto carry_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetCarryFromOp);
+    const auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
+    const auto nzcv_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetNZCVFromOp);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& carry_in = args[2];
 
-    Xbyak::Reg64 nzcv = DoNZCV(code, ctx.reg_alloc, nzcv_inst);
-    Xbyak::Reg result = ctx.reg_alloc.UseScratchGpr(args[0]).changeBit(bitsize);
-    Xbyak::Reg8 carry = DoCarry(ctx.reg_alloc, carry_in, carry_inst);
-    Xbyak::Reg8 overflow = overflow_inst ? ctx.reg_alloc.ScratchGpr().cvt8() : INVALID_REG.cvt8();
+    const Xbyak::Reg64 nzcv = DoNZCV(code, ctx.reg_alloc, nzcv_inst);
+    const Xbyak::Reg result = ctx.reg_alloc.UseScratchGpr(args[0]).changeBit(bitsize);
+    const Xbyak::Reg8 carry = DoCarry(ctx.reg_alloc, carry_in, carry_inst);
+    const Xbyak::Reg8 overflow = overflow_inst ? ctx.reg_alloc.ScratchGpr().cvt8() : Xbyak::Reg8{-1};
 
     // TODO: Consider using LEA.
     // TODO: Optimize CMP case.
     // Note that x64 CF is inverse of what the ARM carry flag is here.
 
     if (args[1].IsImmediate() && args[1].GetType() == IR::Type::U32) {
-        u32 op_arg = args[1].GetImmediateU32();
+        const u32 op_arg = args[1].GetImmediateU32();
         if (carry_in.IsImmediate()) {
             if (carry_in.GetImmediateU1()) {
                 code.sub(result, op_arg);
