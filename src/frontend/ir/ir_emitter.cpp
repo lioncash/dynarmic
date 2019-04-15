@@ -2344,6 +2344,8 @@ U128 IREmitter::FPVectorRSqrtEstimate(size_t esize, const U128& a) {
 
 U128 IREmitter::FPVectorRSqrtStepFused(size_t esize, const U128& a, const U128& b) {
     switch (esize) {
+    case 16:
+        return Inst<U128>(Opcode::FPVectorRSqrtStepFused16, a, b);
     case 32:
         return Inst<U128>(Opcode::FPVectorRSqrtStepFused32, a, b);
     case 64:
