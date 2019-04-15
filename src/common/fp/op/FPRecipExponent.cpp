@@ -38,7 +38,7 @@ FPT FPRecipExponent(FPT op, FPCR fpcr, FPSR& fpsr) {
         return FPProcessNaN(type, op, fpcr, fpsr);
     }
 
-    const FPT sign_bits = FPT(FPInfo<FPT>::Zero(sign));
+    const FPT sign_bits = FPInfo<FPT>::Zero(sign);
     const FPT exponent = DetermineExponentValue<FPT>(op);
 
     // Zero and denormals

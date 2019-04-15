@@ -31,7 +31,7 @@ FPT FPProcessNaN(FPType type, FPT op, FPCR fpcr, FPSR& fpsr) {
     }
 
     if (fpcr.DN()) {
-        result = FPT(FPInfo<FPT>::DefaultNaN());
+        result = FPInfo<FPT>::DefaultNaN();
     }
 
     return result;

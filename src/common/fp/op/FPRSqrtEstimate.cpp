@@ -27,16 +27,16 @@ FPT FPRSqrtEstimate(FPT op, FPCR fpcr, FPSR& fpsr) {
 
     if (type == FPType::Zero) {
         FPProcessException(FPExc::DivideByZero, fpcr, fpsr);
-        return FPT(FPInfo<FPT>::Infinity(sign));
+        return FPInfo<FPT>::Infinity(sign);
     }
 
     if (sign) {
         FPProcessException(FPExc::InvalidOp, fpcr, fpsr);
-        return FPT(FPInfo<FPT>::DefaultNaN());
+        return FPInfo<FPT>::DefaultNaN();
     }
 
     if (type == FPType::Infinity) {
-        return FPT(FPInfo<FPT>::Zero(false));
+        return FPInfo<FPT>::Zero(false);
     }
 
     const int result_exponent = (-(value.exponent + 1)) >> 1;

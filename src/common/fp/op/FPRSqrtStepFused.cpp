@@ -37,7 +37,7 @@ FPT FPRSqrtStepFused(FPT op1, FPT op2, FPCR fpcr, FPSR& fpsr) {
     }
 
     if (inf1 || inf2) {
-        return FPT(FPInfo<FPT>::Infinity(sign1 != sign2));
+        return FPInfo<FPT>::Infinity(sign1 != sign2);
     }
 
     // result_value = (3.0 + (value1 * value2)) / 2.0
@@ -45,7 +45,7 @@ FPT FPRSqrtStepFused(FPT op1, FPT op2, FPCR fpcr, FPSR& fpsr) {
     result_value.exponent--;
 
     if (result_value.mantissa == 0) {
-        return FPT(FPInfo<FPT>::Zero(fpcr.RMode() == RoundingMode::TowardsMinusInfinity));
+        return FPInfo<FPT>::Zero(fpcr.RMode() == RoundingMode::TowardsMinusInfinity);
     }
     return FPRound<FPT>(result_value, fpcr, fpsr);
 }
