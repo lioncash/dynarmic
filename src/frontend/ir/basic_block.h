@@ -13,15 +13,18 @@
 
 #include "common/common_types.h"
 #include "common/intrusive_list.h"
-#include "common/memory_pool.h"
-#include "frontend/ir/cond.h"
 #include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/terminal.h"
 #include "frontend/ir/value.h"
 
+namespace Dynarmic::Common {
+class Pool;
+}
+
 namespace Dynarmic::IR {
 
+enum class Cond;
 enum class Opcode;
 
 /**
@@ -142,7 +145,7 @@ private:
     /// Description of the end location of this block
     LocationDescriptor end_location;
     /// Conditional to pass in order to execute this block
-    Cond cond = Cond::AL;
+    Cond cond;
     /// Block to execute next if `cond` did not pass.
     std::optional<LocationDescriptor> cond_failed = {};
     /// Number of cycles this block takes to execute if the conditional fails.
