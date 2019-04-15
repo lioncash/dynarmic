@@ -386,7 +386,7 @@ INST(FMULX_vec_2,            "FMULX",                                     "01011
 INST(FCMEQ_reg_2,            "FCMEQ (register)",                          "010111100z1mmmmm111001nnnnnddddd")
 INST(FRECPS_1,               "FRECPS",                                    "01011110010mmmmm001111nnnnnddddd")
 INST(FRECPS_2,               "FRECPS",                                    "010111100z1mmmmm111111nnnnnddddd")
-//INST(FRSQRTS_1,              "FRSQRTS",                                   "01011110110mmmmm001111nnnnnddddd")
+INST(FRSQRTS_1,              "FRSQRTS",                                   "01011110110mmmmm001111nnnnnddddd")
 INST(FRSQRTS_2,              "FRSQRTS",                                   "010111101z1mmmmm111111nnnnnddddd")
 //INST(FCMGE_reg_1,            "FCMGE (register)",                          "01111110010mmmmm001001nnnnnddddd")
 INST(FCMGE_reg_2,            "FCMGE (register)",                          "011111100z1mmmmm111001nnnnnddddd")
