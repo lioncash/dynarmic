@@ -13,15 +13,18 @@
 
 #include "common/common_types.h"
 #include "common/intrusive_list.h"
-#include "common/memory_pool.h"
-#include "frontend/ir/cond.h"
 #include "frontend/ir/location_descriptor.h"
 #include "frontend/ir/microinstruction.h"
 #include "frontend/ir/terminal.h"
 #include "frontend/ir/value.h"
 
+namespace Dynarmic::Common {
+class Pool;
+}
+
 namespace Dynarmic::IR {
 
+enum class Cond;
 enum class Opcode;
 
 /**
@@ -39,8 +42,14 @@ public:
     using reverse_iterator       = InstructionList::reverse_iterator;
     using const_reverse_iterator = InstructionList::const_reverse_iterator;
 
-    explicit Block(const LocationDescriptor& location)
-        : location(location), end_location(location) {}
+    explicit Block(const LocationDescriptor& location);
+    ~Block();
+
+    Block(const Block&) = delete;
+    Block& operator=(const Block&) = delete;
+
+    Block(Block&&);
+    Block& operator=(Block&&);
 
     bool                   empty()   const { return instructions.empty();   }
     size_type              size()    const { return instructions.size();    }
@@ -136,7 +145,7 @@ private:
     /// Description of the end location of this block
     LocationDescriptor end_location;
     /// Conditional to pass in order to execute this block
-    Cond cond = Cond::AL;
+    Cond cond;
     /// Block to execute next if `cond` did not pass.
     std::optional<LocationDescriptor> cond_failed = {};
     /// Number of cycles this block takes to execute if the conditional fails.
@@ -145,7 +154,7 @@ private:
     /// List of instructions in this block.
     InstructionList instructions;
     /// Memory pool for instruction list
-    std::unique_ptr<Common::Pool> instruction_alloc_pool = std::make_unique<Common::Pool>(sizeof(Inst), 4096);
+    std::unique_ptr<Common::Pool> instruction_alloc_pool;
     /// Terminal instruction of this block.
     Terminal terminal = Term::Invalid{};
 

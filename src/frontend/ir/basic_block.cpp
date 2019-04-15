@@ -13,12 +13,24 @@
 #include <fmt/ostream.h>
 
 #include "common/assert.h"
+#include "common/memory_pool.h"
 #include "frontend/A32/types.h"
 #include "frontend/A64/types.h"
 #include "frontend/ir/basic_block.h"
+#include "frontend/ir/cond.h"
 #include "frontend/ir/opcodes.h"
 
 namespace Dynarmic::IR {
+
+Block::Block(const LocationDescriptor& location)
+    : location{location}, end_location{location}, cond{Cond::AL},
+      instruction_alloc_pool{std::make_unique<Common::Pool>(sizeof(Inst), 4096)} {}
+
+Block::~Block() = default;
+
+Block::Block(Block&&) = default;
+
+Block& Block::operator=(Block&&) = default;
 
 void Block::AppendNewInst(Opcode opcode, std::initializer_list<IR::Value> args) {
     PrependNewInst(end(), opcode, args);
