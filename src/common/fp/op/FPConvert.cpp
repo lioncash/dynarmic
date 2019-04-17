@@ -73,11 +73,11 @@ FPT_TO FPConvert(FPT_FROM op, FPCR fpcr, RoundingMode rounding_mode, FPSR& fpsr)
             return FPT_TO(u32{sign} << 15 | 0b111111111111111);
         }
 
-        return FPT_TO(FPInfo<FPT_TO>::Infinity(sign));
+        return FPInfo<FPT_TO>::Infinity(sign);
     }
 
     if (type == FPType::Zero) {
-        return FPT_TO(FPInfo<FPT_TO>::Zero(sign));
+        return FPInfo<FPT_TO>::Zero(sign);
     }
 
     return FPRoundCV<FPT_TO>(value, fpcr, rounding_mode, fpsr);
