@@ -6,17 +6,11 @@
 
 #pragma once
 
-#include "common/common_types.h"
-
 namespace Dynarmic::IR {
 
 enum class Cond {
     EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL, NV,
     HS = CS, LO = CC,
 };
-
-inline Cond invert(Cond c) {
-	return static_cast<Cond>(static_cast<size_t>(c) ^ 1);
-}
 
 } // namespace Dynarmic::IR
