@@ -1103,11 +1103,15 @@ TEST_CASE("Test ARM misc instructions", "[JitX64][A32]") {
                Bits<12, 15>(instr) != 0b1111 &&
                msb < Dynarmic::Common::BitSize<u32>();
     };
+    const auto is_movt_valid = [](u32 instr) {
+        return Bits<12, 15>(instr) != 0b1111;
+    };
 
     const std::array instructions = {
         InstructionGenerator("cccc0111110vvvvvddddvvvvv0011111", is_bfc_bfi_valid), // BFC
         InstructionGenerator("cccc0111110vvvvvddddvvvvv001nnnn", is_bfc_bfi_valid), // BFI
         InstructionGenerator("cccc000101101111dddd11110001mmmm", is_clz_valid),     // CLZ
+        InstructionGenerator("cccc00110100vvvvddddvvvvvvvvvvvv", is_movt_valid),    // MOVT
         InstructionGenerator("cccc0111101wwwwwddddvvvvv101nnnn", is_extract_valid), // SBFX
         InstructionGenerator("cccc0111111wwwwwddddvvvvv101nnnn", is_extract_valid), // UBFX
     };

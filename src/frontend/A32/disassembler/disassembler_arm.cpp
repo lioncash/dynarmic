@@ -592,6 +592,9 @@ public:
     std::string arm_CLZ(Cond cond, Reg d, Reg m) {
         return fmt::format("clz{} {}, {}", CondToString(cond), d, m);
     }
+    std::string arm_MOVT(Cond cond, Imm4 imm4, Reg d, Imm12 imm12) {
+        return fmt::format("movt{} {}, #{}", CondToString(cond), d, (imm4 << 12) | imm12);
+    }
     std::string arm_NOP() {
         return "nop";
     }

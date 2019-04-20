@@ -67,6 +67,24 @@ bool ArmTranslatorVisitor::arm_CLZ(Cond cond, Reg d, Reg m) {
     return true;
 }
 
+// MOVT<c> <Rd>, #<imm16>
+bool ArmTranslatorVisitor::arm_MOVT(Cond cond, Imm4 imm4, Reg d, Imm12 imm12) {
+    if (d == Reg::PC) {
+        return UnpredictableInstruction();
+    }
+
+    if (!ConditionPassed(cond)) {
+        return true;
+    }
+
+    const IR::U32 imm16 = ir.Imm32(((u32(imm4) << 12 | u32(imm12)) << 16));
+    const IR::U32 operand = ir.GetRegister(d);
+    const IR::U32 result = ir.Or(ir.And(operand, ir.Imm32(0x0000FFFFU)), imm16);
+
+    ir.SetRegister(d, result);
+    return true;
+}
+
 // SBFX<c> <Rd>, <Rn>, #<lsb>, #<width>
 bool ArmTranslatorVisitor::arm_SBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n) {
     if (d == Reg::PC || n == Reg::PC) {
