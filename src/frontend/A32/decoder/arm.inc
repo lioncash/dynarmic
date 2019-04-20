@@ -177,6 +177,7 @@ INST(arm_PKHBT,         "PKHBT",               "cccc01101000nnnnddddvvvvv001mmmm
 INST(arm_PKHTB,         "PKHTB",               "cccc01101000nnnnddddvvvvv101mmmm") // v6K
 
 // Reversal instructions
+INST(arm_RBIT,          "RBIT",                "cccc011011111111dddd11110011mmmm") // v6T2
 INST(arm_REV,           "REV",                 "cccc011010111111dddd11110011mmmm") // v6
 INST(arm_REV16,         "REV16",               "cccc011010111111dddd11111011mmmm") // v6
 INST(arm_REVSH,         "REVSH",               "cccc011011111111dddd11111011mmmm") // v6

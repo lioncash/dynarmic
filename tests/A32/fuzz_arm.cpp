@@ -763,9 +763,10 @@ TEST_CASE("Fuzz ARM reversal instructions", "[JitX64][A32]") {
     };
 
     const std::array rev_instructions = {
-        InstructionGenerator("cccc011010111111dddd11110011mmmm", is_valid),
-        InstructionGenerator("cccc011010111111dddd11111011mmmm", is_valid),
-        InstructionGenerator("cccc011011111111dddd11111011mmmm", is_valid),
+        InstructionGenerator("cccc011011111111dddd11110011mmmm", is_valid), // RBIT
+        InstructionGenerator("cccc011010111111dddd11110011mmmm", is_valid), // REV
+        InstructionGenerator("cccc011010111111dddd11111011mmmm", is_valid), // REV16
+        InstructionGenerator("cccc011011111111dddd11111011mmmm", is_valid), // REVSH
     };
 
     SECTION("Reverse tests") {

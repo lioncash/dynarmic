@@ -589,6 +589,9 @@ public:
     std::string arm_NOP() {
         return "nop";
     }
+    std::string arm_RBIT(Cond cond, Reg d, Reg m) {
+        return fmt::format("rbit{} {}, {}", CondToString(cond), d, m);
+    }
     std::string arm_SEL(Cond cond, Reg n, Reg d, Reg m) {
         return fmt::format("sel{} {}, {}, {}", CondToString(cond), d, n, m);
     }

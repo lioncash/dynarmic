@@ -209,6 +209,7 @@ struct ArmTranslatorVisitor final {
     // Miscellaneous instructions
     bool arm_CLZ(Cond cond, Reg d, Reg m);
     bool arm_NOP() { return true; }
+    bool arm_RBIT(Cond cond, Reg d, Reg m);
     bool arm_SEL(Cond cond, Reg n, Reg d, Reg m);
 
     // Unsigned sum of absolute difference functions
