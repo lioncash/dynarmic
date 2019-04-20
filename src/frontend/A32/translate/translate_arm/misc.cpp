@@ -67,6 +67,33 @@ bool ArmTranslatorVisitor::arm_CLZ(Cond cond, Reg d, Reg m) {
     return true;
 }
 
+// SBFX<c> <Rd>, <Rn>, #<lsb>, #<width>
+bool ArmTranslatorVisitor::arm_SBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n) {
+    if (d == Reg::PC || n == Reg::PC) {
+        return UnpredictableInstruction();
+    }
+
+    const u32 msb = u32{lsb} + widthm1;
+    if (msb >= Common::BitSize<u32>()) {
+        return UnpredictableInstruction();
+    }
+
+    if (!ConditionPassed(cond)) {
+        return true;
+    }
+
+    constexpr size_t max_width = Common::BitSize<u32>();
+    const u8 width = widthm1 + 1;
+    const u8 left_shift_amount = static_cast<u8>(max_width - width - lsb);
+    const u8 right_shift_amount = static_cast<u8>(max_width - width);
+    const IR::U32 operand = ir.GetRegister(n);
+    const IR::U32 tmp = ir.LogicalShiftLeft(operand, ir.Imm8(left_shift_amount));
+    const IR::U32 result = ir.ArithmeticShiftRight(tmp, ir.Imm8(right_shift_amount));
+
+    ir.SetRegister(d, result);
+    return true;
+}
+
 // SEL<c> <Rd>, <Rn>, <Rm>
 bool ArmTranslatorVisitor::arm_SEL(Cond cond, Reg n, Reg d, Reg m) {
     if (n == Reg::PC || d == Reg::PC || m == Reg::PC) {

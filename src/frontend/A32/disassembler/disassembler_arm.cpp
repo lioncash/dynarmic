@@ -598,6 +598,9 @@ public:
     std::string arm_RBIT(Cond cond, Reg d, Reg m) {
         return fmt::format("rbit{} {}, {}", CondToString(cond), d, m);
     }
+    std::string arm_SBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n) {
+        return fmt::format("sbfx{} {}, {}, #{}, #{}", CondToString(cond), d, n, lsb, widthm1 + 1);
+    }
     std::string arm_SEL(Cond cond, Reg n, Reg d, Reg m) {
         return fmt::format("sel{} {}, {}, {}", CondToString(cond), d, n, m);
     }

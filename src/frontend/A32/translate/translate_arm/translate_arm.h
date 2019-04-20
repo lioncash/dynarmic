@@ -212,6 +212,7 @@ struct ArmTranslatorVisitor final {
     bool arm_CLZ(Cond cond, Reg d, Reg m);
     bool arm_NOP() { return true; }
     bool arm_RBIT(Cond cond, Reg d, Reg m);
+    bool arm_SBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n);
     bool arm_SEL(Cond cond, Reg n, Reg d, Reg m);
     bool arm_UBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n);
 
