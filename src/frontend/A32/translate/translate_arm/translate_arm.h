@@ -208,6 +208,7 @@ struct ArmTranslatorVisitor final {
 
     // Miscellaneous instructions
     bool arm_BFC(Cond cond, Imm5 msb, Reg d, Imm5 lsb);
+    bool arm_BFI(Cond cond, Imm5 msb, Reg d, Imm5 lsb, Reg n);
     bool arm_CLZ(Cond cond, Reg d, Reg m);
     bool arm_NOP() { return true; }
     bool arm_RBIT(Cond cond, Reg d, Reg m);

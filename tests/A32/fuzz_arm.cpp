@@ -1080,7 +1080,7 @@ TEST_CASE("VFP: VPUSH, VPOP", "[JitX64][.vfp][A32]") {
 }
 
 TEST_CASE("Test ARM misc instructions", "[JitX64][A32]") {
-    const auto is_bfc_valid = [](u32 instr) {
+    const auto is_bfc_bfi_valid = [](u32 instr) {
         if (Bits<12, 15>(instr) == 0b1111) {
             // Destination register may not be the PC.
             return false;
@@ -1095,8 +1095,9 @@ TEST_CASE("Test ARM misc instructions", "[JitX64][A32]") {
     };
 
     const std::array instructions = {
-        InstructionGenerator("cccc0111110vvvvvddddvvvvv0011111", is_bfc_valid), // BFC
-        InstructionGenerator("cccc000101101111dddd11110001mmmm", is_clz_valid), // CLZ
+        InstructionGenerator("cccc0111110vvvvvddddvvvvv0011111", is_bfc_bfi_valid), // BFC
+        InstructionGenerator("cccc0111110vvvvvddddvvvvv001nnnn", is_bfc_bfi_valid), // BFI
+        InstructionGenerator("cccc000101101111dddd11110001mmmm", is_clz_valid),     // CLZ
     };
 
     FuzzJitArm(1, 1, 10000, [&instructions]() -> u32 {

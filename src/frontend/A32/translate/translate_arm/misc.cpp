@@ -30,6 +30,29 @@ bool ArmTranslatorVisitor::arm_BFC(Cond cond, Imm5 msb, Reg d, Imm5 lsb) {
     return true;
 }
 
+// BFI<c> <Rd>, <Rn>, #<lsb>, #<width>
+bool ArmTranslatorVisitor::arm_BFI(Cond cond, Imm5 msb, Reg d, Imm5 lsb, Reg n) {
+    if (d == Reg::PC) {
+        return UnpredictableInstruction();
+    }
+    if (msb < lsb) {
+        return UnpredictableInstruction();
+    }
+
+    if (!ConditionPassed(cond)) {
+        return true;
+    }
+
+    const u32 inclusion_mask = Common::Ones<u32>(msb - lsb + 1) << lsb;
+    const u32 exclusion_mask = ~inclusion_mask;
+    const IR::U32 operand1 = ir.And(ir.GetRegister(d), ir.Imm32(exclusion_mask));
+    const IR::U32 operand2 = ir.And(ir.LogicalShiftLeft(ir.GetRegister(n), ir.Imm8(lsb)), ir.Imm32(inclusion_mask));
+    const IR::U32 result = ir.Or(operand1, operand2);
+
+    ir.SetRegister(d, result);
+    return true;
+}
+
 // CLZ<c> <Rd>, <Rm>
 bool ArmTranslatorVisitor::arm_CLZ(Cond cond, Reg d, Reg m) {
     if (d == Reg::PC || m == Reg::PC) {
