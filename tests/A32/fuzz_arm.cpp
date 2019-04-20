@@ -1093,11 +1093,22 @@ TEST_CASE("Test ARM misc instructions", "[JitX64][A32]") {
         // R15 as Rd, or Rm is UNPREDICTABLE
         return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111;
     };
+    const auto is_ubfx_valid = [](u32 instr) {
+        const u32 lsb = Bits<7, 11>(instr);
+        const u32 widthm1 = Bits<16, 20>(instr);
+        const u32 msb = lsb + widthm1;
+
+        // Rd or Rn as R15 or the case where msb > 32 is UNPREDICTABLE.
+        return Bits<0, 3>(instr) != 0b1111 &&
+               Bits<12, 15>(instr) != 0b1111 &&
+               msb < Dynarmic::Common::BitSize<u32>();
+    };
 
     const std::array instructions = {
         InstructionGenerator("cccc0111110vvvvvddddvvvvv0011111", is_bfc_bfi_valid), // BFC
         InstructionGenerator("cccc0111110vvvvvddddvvvvv001nnnn", is_bfc_bfi_valid), // BFI
         InstructionGenerator("cccc000101101111dddd11110001mmmm", is_clz_valid),     // CLZ
+        InstructionGenerator("cccc0111111wwwwwddddvvvvv101nnnn", is_ubfx_valid),    // UBFX
     };
 
     FuzzJitArm(1, 1, 10000, [&instructions]() -> u32 {

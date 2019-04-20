@@ -85,4 +85,27 @@ bool ArmTranslatorVisitor::arm_SEL(Cond cond, Reg n, Reg d, Reg m) {
     return true;
 }
 
+// UBFX<c> <Rd>, <Rn>, #<lsb>, #<width>
+bool ArmTranslatorVisitor::arm_UBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n) {
+    if (d == Reg::PC || n == Reg::PC) {
+        return UnpredictableInstruction();
+    }
+
+    const u32 msb = u32{lsb} + widthm1;
+    if (msb >= Common::BitSize<u32>()) {
+        return UnpredictableInstruction();
+    }
+
+    if (!ConditionPassed(cond)) {
+        return true;
+    }
+
+    const IR::U32 operand = ir.GetRegister(n);
+    const IR::U32 mask = ir.Imm32(Common::Ones<u32>(widthm1 + 1));
+    const IR::U32 result = ir.And(ir.LogicalShiftRight(operand, ir.Imm8(lsb)), mask);
+
+    ir.SetRegister(d, result);
+    return true;
+}
+
 } // namespace Dynarmic::A32

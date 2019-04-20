@@ -601,6 +601,9 @@ public:
     std::string arm_SEL(Cond cond, Reg n, Reg d, Reg m) {
         return fmt::format("sel{} {}, {}, {}", CondToString(cond), d, n, m);
     }
+    std::string arm_UBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n) {
+        return fmt::format("ubfx{} {}, {}, #{}, #{}", CondToString(cond), d, n, lsb, widthm1 + 1);
+    }
 
     // Unsigned sum of absolute difference functions
     std::string arm_USAD8(Cond cond, Reg d, Reg m, Reg n) {

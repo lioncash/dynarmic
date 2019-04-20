@@ -169,6 +169,7 @@ INST(arm_BFI,           "BFI",                 "cccc0111110vvvvvddddvvvvv001nnnn
 INST(arm_CLZ,           "CLZ",                 "cccc000101101111dddd11110001mmmm") // v5
 INST(arm_NOP,           "NOP",                 "----0011001000001111000000000000") // v6K
 INST(arm_SEL,           "SEL",                 "cccc01101000nnnndddd11111011mmmm") // v6
+INST(arm_UBFX,          "UBFX",                "cccc0111111wwwwwddddvvvvv101nnnn") // v6T2
 
 // Unsigned Sum of Absolute Differences instructions
 INST(arm_USAD8,         "USAD8",               "cccc01111000dddd1111mmmm0001nnnn") // v6
