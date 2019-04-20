@@ -8,6 +8,7 @@
 #include "A32/testenv.h"
 #include "a32_unicorn.h"
 #include "common/assert.h"
+#include "common/bit_util.h"
 
 #define CHECKED(expr)                                                                              \
     do {                                                                                           \
@@ -41,15 +42,19 @@ A32Unicorn<TestEnvironment>::~A32Unicorn() {
 template <class TestEnvironment>
 void A32Unicorn<TestEnvironment>::Run() {
     // Thumb execution mode requires the LSB to be set to 1.
-    constexpr u64 mask = std::is_same_v<TestEnvironment, ArmTestEnv> ? 0 : 1;
-
+    constexpr u64 pc_mask = std::is_same_v<TestEnvironment, ArmTestEnv> ? 0 : 1;
     while (testenv.ticks_left > 0) {
-        CHECKED(uc_emu_start(uc, GetPC() | mask, END_ADDRESS, 0, 1));
+        CHECKED(uc_emu_start(uc, GetPC() | pc_mask, END_ADDRESS, 0, 1));
         testenv.ticks_left--;
         if (!testenv.interrupts.empty() || testenv.code_mem_modified_by_guest) {
             return;
         }
     }
+
+    const bool T = Dynarmic::Common::Bit<5>(GetCpsr());
+    const u32 mask = T ? 0xFFFFFFFE : 0xFFFFFFFC;
+    const u32 new_pc = GetPC() & mask;
+    SetPC(new_pc);
 }
 
 template <class TestEnvironment>
