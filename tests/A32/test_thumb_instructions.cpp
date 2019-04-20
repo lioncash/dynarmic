@@ -9,8 +9,6 @@
 #include <dynarmic/A32/a32.h>
 
 #include "common/common_types.h"
-#include "A32/skyeye_interpreter/dyncom/arm_dyncom_interpreter.h"
-#include "A32/skyeye_interpreter/skyeye_common/armstate.h"
 #include "testenv.h"
 
 static Dynarmic::A32::UserConfig GetUserConfig(ThumbTestEnv* testenv) {
