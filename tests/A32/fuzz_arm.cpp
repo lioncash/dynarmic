@@ -1080,18 +1080,28 @@ TEST_CASE("VFP: VPUSH, VPOP", "[JitX64][.vfp][A32]") {
 }
 
 TEST_CASE("Test ARM misc instructions", "[JitX64][A32]") {
-    const auto is_clz_valid = [](u32 instr) -> bool {
+    const auto is_bfc_valid = [](u32 instr) {
+        if (Bits<12, 15>(instr) == 0b1111) {
+            // Destination register may not be the PC.
+            return false;
+        }
+        // msb must be greater than or equal to the lsb,
+        // otherwise the instruction is UNPREDICTABLE.
+        return Bits<16, 20>(instr) >= Bits<7, 11>(instr);
+    };
+    const auto is_clz_valid = [](u32 instr) {
         // R15 as Rd, or Rm is UNPREDICTABLE
         return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111;
     };
 
-    const InstructionGenerator clz_instr = InstructionGenerator("cccc000101101111dddd11110001mmmm", is_clz_valid); // CLZ
+    const std::array instructions = {
+        InstructionGenerator("cccc0111110vvvvvddddvvvvv0011111", is_bfc_valid), // BFC
+        InstructionGenerator("cccc000101101111dddd11110001mmmm", is_clz_valid), // CLZ
+    };
 
-    SECTION("Fuzz CLZ") {
-        FuzzJitArm(1, 1, 1000, [&clz_instr]() -> u32 {
-            return clz_instr.Generate();
-        });
-    }
+    FuzzJitArm(1, 1, 10000, [&instructions]() -> u32 {
+        return instructions[RandInt<size_t>(0, instructions.size() - 1)].Generate();
+    });
 }
 
 TEST_CASE("Test ARM MSR instructions", "[JitX64][A32]") {

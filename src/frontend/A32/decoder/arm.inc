@@ -164,6 +164,7 @@ INST(arm_STMIB,         "STMIB",               "cccc100110w0nnnnxxxxxxxxxxxxxxxx
 INST(arm_STM_usr,       "STM (usr reg)",       "----100--100--------------------") // all
 
 // Miscellaneous instructions
+INST(arm_BFC,           "BFC",                 "cccc0111110vvvvvddddvvvvv0011111") // v6T2
 INST(arm_CLZ,           "CLZ",                 "cccc000101101111dddd11110001mmmm") // v5
 INST(arm_NOP,           "NOP",                 "----0011001000001111000000000000") // v6K
 INST(arm_SEL,           "SEL",                 "cccc01101000nnnndddd11111011mmmm") // v6

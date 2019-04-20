@@ -583,6 +583,9 @@ public:
     std::string arm_STM_usr() { return "ice"; }
 
     // Miscellaneous instructions
+    std::string arm_BFC(Cond cond, Imm5 msb, Reg d, Imm5 lsb) {
+        return fmt::format("bfc{} {}, #{}, #{}", CondToString(cond), d, lsb, msb - lsb + 1);
+    }
     std::string arm_CLZ(Cond cond, Reg d, Reg m) {
         return fmt::format("clz{} {}, {}", CondToString(cond), d, m);
     }

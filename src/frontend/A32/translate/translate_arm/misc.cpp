@@ -4,9 +4,31 @@
  * General Public License version 2 or any later version.
  */
 
+#include "common/bit_util.h"
 #include "translate_arm.h"
 
 namespace Dynarmic::A32 {
+
+// BFC<c> <Rd>, #<lsb>, #<width>
+bool ArmTranslatorVisitor::arm_BFC(Cond cond, Imm5 msb, Reg d, Imm5 lsb) {
+    if (d == Reg::PC) {
+        return UnpredictableInstruction();
+    }
+    if (msb < lsb) {
+        return UnpredictableInstruction();
+    }
+
+    if (!ConditionPassed(cond)) {
+        return true;
+    }
+
+    const u32 mask = ~(Common::Ones<u32>(msb - lsb + 1) << lsb);
+    const IR::U32 operand = ir.GetRegister(d);
+    const IR::U32 result = ir.And(operand, ir.Imm32(mask));
+
+    ir.SetRegister(d, result);
+    return true;
+}
 
 // CLZ<c> <Rd>, <Rm>
 bool ArmTranslatorVisitor::arm_CLZ(Cond cond, Reg d, Reg m) {
