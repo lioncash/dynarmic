@@ -15,17 +15,23 @@
 
 #include "A32/testenv.h"
 
+namespace Unicorn::A32 {
+static constexpr size_t num_gprs = 16;
+static constexpr size_t num_ext_regs = 64;
+
+using ExtRegArray = std::array<u32, num_ext_regs>;
+using RegisterArray = std::array<u32, num_gprs>;
+using RegisterPtrArray = std::array<RegisterArray::pointer, num_gprs>;
+using RegisterConstPtrArray = std::array<RegisterArray::const_pointer, num_gprs>;
+} // namespace Unicorn::A32
+
+template <class TestEnvironment>
 class A32Unicorn final {
 public:
-    static constexpr size_t num_gprs = 16;
-    using RegisterArray = std::array<u32, num_gprs>;
-    using RegisterPtrArray = std::array<RegisterArray::pointer, num_gprs>;
-    using RegisterConstPtrArray = std::array<RegisterArray::const_pointer, num_gprs>;
+    using ExtRegArray = Unicorn::A32::ExtRegArray;
+    using RegisterArray = Unicorn::A32::RegisterArray;
 
-    static constexpr size_t num_ext_regs = 64;
-    using ExtRegArray = std::array<u32, num_ext_regs>;
-
-    explicit A32Unicorn(ArmTestEnv& testenv);
+    explicit A32Unicorn(TestEnvironment& testenv);
     ~A32Unicorn();
 
     void Run();
@@ -45,8 +51,13 @@ public:
     u32 GetFpscr() const;
     void SetFpscr(u32 value);
 
+    u32 GetFpexc() const;
+    void SetFpexc(u32 value);
+
     u32 GetCpsr() const;
     void SetCpsr(u32 value);
+
+    void EnableFloatingPointAccess();
 
     void ClearPageCache();
 
@@ -62,7 +73,7 @@ private:
         std::array<u8, 4096> data;
     };
 
-    ArmTestEnv& testenv;
+    TestEnvironment& testenv;
     uc_engine* uc{};
     uc_hook intr_hook{};
     uc_hook mem_invalid_hook{};

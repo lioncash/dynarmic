@@ -17,9 +17,10 @@
 #include "common/assert.h"
 #include "common/common_types.h"
 
-template <typename InstructionType, u32 infinite_loop>
+template <typename InstructionType_, u32 infinite_loop>
 class A32TestEnv final : public Dynarmic::A32::UserCallbacks {
 public:
+    using InstructionType = InstructionType_;
     using RegisterArray = std::array<u32, 16>;
     using ExtRegsArray = std::array<u32, 64>;
 
