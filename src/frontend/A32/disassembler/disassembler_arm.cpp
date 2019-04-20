@@ -634,6 +634,14 @@ public:
         return fmt::format("usat16{} {}, #{}, {}", CondToString(cond), d, sat_imm, n);
     }
 
+    // Divide instructions
+    std::string arm_SDIV(Cond cond, Reg d, Reg m, Reg n) {
+        return fmt::format("sdiv{} {}, {}, {}", CondToString(cond), d, n, m);
+    }
+    std::string arm_UDIV(Cond cond, Reg d, Reg m, Reg n) {
+        return fmt::format("udiv{} {}, {}, {}", CondToString(cond), d, n, m);
+    }
+
     // Multiply (Normal) instructions
     std::string arm_MLA(Cond cond, bool S, Reg d, Reg a, Reg m, Reg n) {
         return fmt::format("mla{}{} {}, {}, {}, {}", S ? "s" : "", CondToString(cond), d, n, m, a);

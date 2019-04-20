@@ -230,6 +230,10 @@ struct ArmTranslatorVisitor final {
     bool arm_USAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, bool sh, Reg n);
     bool arm_USAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n);
 
+    // Divide instructions
+    bool arm_SDIV(Cond cond, Reg d, Reg m, Reg n);
+    bool arm_UDIV(Cond cond, Reg d, Reg m, Reg n);
+
     // Multiply (Normal) instructions
     bool arm_MLA(Cond cond, bool S, Reg d, Reg a, Reg m, Reg n);
     bool arm_MUL(Cond cond, bool S, Reg d, Reg m, Reg n);

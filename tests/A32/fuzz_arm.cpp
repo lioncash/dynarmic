@@ -812,6 +812,24 @@ TEST_CASE("Fuzz ARM extension instructions", "[JitX64][A32]") {
     }
 }
 
+TEST_CASE("Fuzz ARM divide instructions", "[JitX64][A32]") {
+    const auto is_valid = [](u32 instr) {
+        return Bits<0, 3>(instr) != 0b1111 &&
+               Bits<8, 11>(instr) != 0b1111 &&
+               Bits<16, 19>(instr) != 0b1111;
+    };
+
+    const std::array instructions = {
+        InstructionGenerator("cccc01110001dddd1111mmmm0001nnnn", is_valid), // SDIV
+        InstructionGenerator("cccc01110011dddd1111mmmm0001nnnn", is_valid), // UDIV
+    };
+
+    FuzzJitArm(1, 1, 5000, [&instructions]() -> u32 {
+        return instructions[RandInt<size_t>(0, instructions.size() - 1)].Generate();
+    });
+}
+
+
 TEST_CASE("Fuzz ARM multiply instructions", "[JitX64][A32]") {
     const auto validate_d_m_n = [](u32 inst) -> bool {
         return Bits<16, 19>(inst) != 15 &&

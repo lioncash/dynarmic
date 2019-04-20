@@ -187,6 +187,10 @@ INST(arm_SSAT16,        "SSAT16",              "cccc01101010vvvvdddd11110011nnnn
 INST(arm_USAT,          "USAT",                "cccc0110111vvvvvddddvvvvvr01nnnn") // v6
 INST(arm_USAT16,        "USAT16",              "cccc01101110vvvvdddd11110011nnnn") // v6
 
+// Divide instructions
+INST(arm_SDIV,          "SDIV",                "cccc01110001dddd1111mmmm0001nnnn") // v7a
+INST(arm_UDIV,          "UDIV",                "cccc01110011dddd1111mmmm0001nnnn") // v7a
+
 // Multiply (Normal) instructions
 INST(arm_MLA,           "MLA",                 "cccc0000001Sddddaaaammmm1001nnnn") // v2
 INST(arm_MUL,           "MUL",                 "cccc0000000Sdddd0000mmmm1001nnnn") // v2
