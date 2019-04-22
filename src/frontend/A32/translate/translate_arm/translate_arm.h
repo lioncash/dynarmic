@@ -242,6 +242,7 @@ struct ArmTranslatorVisitor final {
 
     // Multiply (Normal) instructions
     bool arm_MLA(Cond cond, bool S, Reg d, Reg a, Reg m, Reg n);
+    bool arm_MLS(Cond cond, Reg d, Reg a, Reg m, Reg n);
     bool arm_MUL(Cond cond, bool S, Reg d, Reg m, Reg n);
 
     // Multiply (Long) instructions

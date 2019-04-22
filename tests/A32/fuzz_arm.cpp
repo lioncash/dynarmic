@@ -848,6 +848,7 @@ TEST_CASE("Fuzz ARM multiply instructions", "[JitX64][A32]") {
 
     const std::array instructions = {
         InstructionGenerator("cccc0000001Sddddaaaammmm1001nnnn", validate_d_a_m_n), // MLA
+        InstructionGenerator("cccc00000110ddddaaaammmm1001nnnn", validate_d_a_m_n), // MLS
         InstructionGenerator("cccc0000000Sdddd0000mmmm1001nnnn", validate_d_m_n),   // MUL
 
         InstructionGenerator("cccc0000111Sddddaaaammmm1001nnnn", validate_h_l_m_n), // SMLAL

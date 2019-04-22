@@ -664,6 +664,9 @@ public:
     std::string arm_MLA(Cond cond, bool S, Reg d, Reg a, Reg m, Reg n) {
         return fmt::format("mla{}{} {}, {}, {}, {}", S ? "s" : "", CondToString(cond), d, n, m, a);
     }
+    std::string arm_MLS(Cond cond, Reg d, Reg a, Reg m, Reg n) {
+        return fmt::format("mls{} {}, {}, {}, {}", CondToString(cond), d, n, m, a);
+    }
     std::string arm_MUL(Cond cond, bool S, Reg d, Reg m, Reg n) {
         return fmt::format("mul{}{} {}, {}, {}", S ? "s" : "", CondToString(cond), d, n, m);
     }
