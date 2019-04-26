@@ -76,6 +76,29 @@ public:
         return "<internal error>";
     }
 
+    static const char* BarrierOptionStr(Imm4 option) {
+        switch (option) {
+        case 0b0010:
+            return " oshst";
+        case 0b0011:
+            return " osh";
+        case 0b0110:
+            return " nshst";
+        case 0b0111:
+            return " nsh";
+        case 0b1010:
+            return " ishst";
+        case 0b1011:
+            return " ish";
+        case 0b1110:
+            return " st";
+        case 0b1111: // SY can be omitted.
+            return "";
+        default:
+            return " unknown";
+        }
+    }
+
     std::string FPRegStr(bool dp_operation, size_t base, bool bit) {
         size_t reg_num;
         if (dp_operation) {
@@ -98,6 +121,17 @@ public:
 
     std::string CondOrTwo(Cond cond) {
         return cond == Cond::NV ? "2" : CondToString(cond);
+    }
+
+    // Barrier instructions
+    std::string arm_DMB(Imm4 option) {
+        return fmt::format("dmb{}", BarrierOptionStr(option));
+    }
+    std::string arm_DSB(Imm4 option) {
+        return fmt::format("dsb{}", BarrierOptionStr(option));
+    }
+    std::string arm_ISB([[maybe_unused]] Imm4 option) {
+        return "isb";
     }
 
     // Branch instructions

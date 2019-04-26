@@ -64,6 +64,11 @@ struct ArmTranslatorVisitor final {
     template <typename FnT> bool EmitVfpVectorOperation(bool sz, ExtReg d, ExtReg n, ExtReg m, const FnT& fn);
     template <typename FnT> bool EmitVfpVectorOperation(bool sz, ExtReg d, ExtReg m, const FnT& fn);
 
+    // Barrier instructions
+    bool arm_DMB(Imm4 option);
+    bool arm_DSB(Imm4 option);
+    bool arm_ISB(Imm4 option);
+
     // Branch instructions
     bool arm_B(Cond cond, Imm24 imm24);
     bool arm_BL(Cond cond, Imm24 imm24);

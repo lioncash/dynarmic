@@ -61,6 +61,10 @@ public:
     void SetGEFlags(const IR::U32& value);
     void SetGEFlagsCompressed(const IR::U32& value);
 
+    void DataSynchronizationBarrier();
+    void DataMemoryBarrier();
+    void InstructionSynchronizationBarrier();
+
     IR::U32 GetFpscr();
     void SetFpscr(const IR::U32& new_fpscr);
     IR::U32 GetFpscrNZCV();

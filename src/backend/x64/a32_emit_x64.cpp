@@ -615,6 +615,23 @@ void A32EmitX64::EmitA32SetGEFlagsCompressed(A32EmitContext& ctx, IR::Inst* inst
     }
 }
 
+void A32EmitX64::EmitA32DataSynchronizationBarrier(A32EmitContext&, IR::Inst*) {
+    code.mfence();
+}
+
+void A32EmitX64::EmitA32DataMemoryBarrier(A32EmitContext&, IR::Inst*) {
+    code.lfence();
+}
+
+void A32EmitX64::EmitA32InstructionSynchronizationBarrier(A32EmitContext& ctx, IR::Inst*) {
+    ctx.reg_alloc.HostCall(nullptr);
+
+    code.mov(code.ABI_PARAM1, reinterpret_cast<u64>(jit_interface));
+    code.CallFunction(static_cast<void(*)(A32::Jit*)>([](A32::Jit* jit) {
+        jit->ClearCache();
+    }));
+}
+
 void A32EmitX64::EmitA32BXWritePC(A32EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto& arg = args[0];
