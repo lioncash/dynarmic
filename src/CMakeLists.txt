@@ -98,6 +98,7 @@ add_library(dynarmic
     frontend/A32/translate/translate_arm/branch.cpp
     frontend/A32/translate/translate_arm/coprocessor.cpp
     frontend/A32/translate/translate_arm/data_processing.cpp
+    frontend/A32/translate/translate_arm/divide.cpp
     frontend/A32/translate/translate_arm/exception_generating.cpp
     frontend/A32/translate/translate_arm/extension.cpp
     frontend/A32/translate/translate_arm/load_store.cpp

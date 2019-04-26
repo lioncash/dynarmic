@@ -28,6 +28,25 @@ bool ArmTranslatorVisitor::arm_MLA(Cond cond, bool S, Reg d, Reg a, Reg m, Reg n
     return true;
 }
 
+// MLS<c> <Rd>, <Rn>, <Rm>, <Ra>
+bool ArmTranslatorVisitor::arm_MLS(Cond cond, Reg d, Reg a, Reg m, Reg n) {
+    if (d == Reg::PC || a == Reg::PC || m == Reg::PC || n == Reg::PC) {
+        return UnpredictableInstruction();
+    }
+
+    if (!ConditionPassed(cond)) {
+        return true;
+    }
+
+    const IR::U32 operand1 = ir.GetRegister(n);
+    const IR::U32 operand2 = ir.GetRegister(m);
+    const IR::U32 operand3 = ir.GetRegister(a);
+    const IR::U32 result = ir.Sub(operand3, ir.Mul(operand1, operand2));
+
+    ir.SetRegister(d, result);
+    return true;
+}
+
 // MUL{S}<c> <Rd>, <Rn>, <Rm>
 bool ArmTranslatorVisitor::arm_MUL(Cond cond, bool S, Reg d, Reg m, Reg n) {
     if (d == Reg::PC || n == Reg::PC || m == Reg::PC) {

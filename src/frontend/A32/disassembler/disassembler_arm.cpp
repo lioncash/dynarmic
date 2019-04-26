@@ -583,14 +583,32 @@ public:
     std::string arm_STM_usr() { return "ice"; }
 
     // Miscellaneous instructions
+    std::string arm_BFC(Cond cond, Imm5 msb, Reg d, Imm5 lsb) {
+        return fmt::format("bfc{} {}, #{}, #{}", CondToString(cond), d, lsb, msb - lsb + 1);
+    }
+    std::string arm_BFI(Cond cond, Imm5 msb, Reg d, Imm5 lsb, Reg n) {
+        return fmt::format("bfi{} {}, {}, #{}, #{}", CondToString(cond), d, n, lsb, msb - lsb + 1);
+    }
     std::string arm_CLZ(Cond cond, Reg d, Reg m) {
         return fmt::format("clz{} {}, {}", CondToString(cond), d, m);
+    }
+    std::string arm_MOVT(Cond cond, Imm4 imm4, Reg d, Imm12 imm12) {
+        return fmt::format("movt{} {}, #{}", CondToString(cond), d, (imm4 << 12) | imm12);
     }
     std::string arm_NOP() {
         return "nop";
     }
+    std::string arm_RBIT(Cond cond, Reg d, Reg m) {
+        return fmt::format("rbit{} {}, {}", CondToString(cond), d, m);
+    }
+    std::string arm_SBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n) {
+        return fmt::format("sbfx{} {}, {}, #{}, #{}", CondToString(cond), d, n, lsb, widthm1 + 1);
+    }
     std::string arm_SEL(Cond cond, Reg n, Reg d, Reg m) {
         return fmt::format("sel{} {}, {}, {}", CondToString(cond), d, n, m);
+    }
+    std::string arm_UBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n) {
+        return fmt::format("ubfx{} {}, {}, #{}, #{}", CondToString(cond), d, n, lsb, widthm1 + 1);
     }
 
     // Unsigned sum of absolute difference functions
@@ -634,9 +652,20 @@ public:
         return fmt::format("usat16{} {}, #{}, {}", CondToString(cond), d, sat_imm, n);
     }
 
+    // Divide instructions
+    std::string arm_SDIV(Cond cond, Reg d, Reg m, Reg n) {
+        return fmt::format("sdiv{} {}, {}, {}", CondToString(cond), d, n, m);
+    }
+    std::string arm_UDIV(Cond cond, Reg d, Reg m, Reg n) {
+        return fmt::format("udiv{} {}, {}, {}", CondToString(cond), d, n, m);
+    }
+
     // Multiply (Normal) instructions
     std::string arm_MLA(Cond cond, bool S, Reg d, Reg a, Reg m, Reg n) {
         return fmt::format("mla{}{} {}, {}, {}, {}", S ? "s" : "", CondToString(cond), d, n, m, a);
+    }
+    std::string arm_MLS(Cond cond, Reg d, Reg a, Reg m, Reg n) {
+        return fmt::format("mls{} {}, {}, {}, {}", CondToString(cond), d, n, m, a);
     }
     std::string arm_MUL(Cond cond, bool S, Reg d, Reg m, Reg n) {
         return fmt::format("mul{}{} {}, {}, {}", S ? "s" : "", CondToString(cond), d, n, m);

@@ -164,9 +164,14 @@ INST(arm_STMIB,         "STMIB",               "cccc100110w0nnnnxxxxxxxxxxxxxxxx
 INST(arm_STM_usr,       "STM (usr reg)",       "----100--100--------------------") // all
 
 // Miscellaneous instructions
+INST(arm_BFC,           "BFC",                 "cccc0111110vvvvvddddvvvvv0011111") // v6T2
+INST(arm_BFI,           "BFI",                 "cccc0111110vvvvvddddvvvvv001nnnn") // v6T2
 INST(arm_CLZ,           "CLZ",                 "cccc000101101111dddd11110001mmmm") // v5
+INST(arm_MOVT,          "MOVT",                "cccc00110100vvvvddddvvvvvvvvvvvv") // v6T2
 INST(arm_NOP,           "NOP",                 "----0011001000001111000000000000") // v6K
+INST(arm_SBFX,          "SBFX",                "cccc0111101wwwwwddddvvvvv101nnnn") // v6T2
 INST(arm_SEL,           "SEL",                 "cccc01101000nnnndddd11111011mmmm") // v6
+INST(arm_UBFX,          "UBFX",                "cccc0111111wwwwwddddvvvvv101nnnn") // v6T2
 
 // Unsigned Sum of Absolute Differences instructions
 INST(arm_USAD8,         "USAD8",               "cccc01111000dddd1111mmmm0001nnnn") // v6
@@ -177,6 +182,7 @@ INST(arm_PKHBT,         "PKHBT",               "cccc01101000nnnnddddvvvvv001mmmm
 INST(arm_PKHTB,         "PKHTB",               "cccc01101000nnnnddddvvvvv101mmmm") // v6K
 
 // Reversal instructions
+INST(arm_RBIT,          "RBIT",                "cccc011011111111dddd11110011mmmm") // v6T2
 INST(arm_REV,           "REV",                 "cccc011010111111dddd11110011mmmm") // v6
 INST(arm_REV16,         "REV16",               "cccc011010111111dddd11111011mmmm") // v6
 INST(arm_REVSH,         "REVSH",               "cccc011011111111dddd11111011mmmm") // v6
@@ -187,8 +193,13 @@ INST(arm_SSAT16,        "SSAT16",              "cccc01101010vvvvdddd11110011nnnn
 INST(arm_USAT,          "USAT",                "cccc0110111vvvvvddddvvvvvr01nnnn") // v6
 INST(arm_USAT16,        "USAT16",              "cccc01101110vvvvdddd11110011nnnn") // v6
 
+// Divide instructions
+INST(arm_SDIV,          "SDIV",                "cccc01110001dddd1111mmmm0001nnnn") // v7a
+INST(arm_UDIV,          "UDIV",                "cccc01110011dddd1111mmmm0001nnnn") // v7a
+
 // Multiply (Normal) instructions
 INST(arm_MLA,           "MLA",                 "cccc0000001Sddddaaaammmm1001nnnn") // v2
+INST(arm_MLS,           "MLS",                 "cccc00000110ddddaaaammmm1001nnnn") // v6T2
 INST(arm_MUL,           "MUL",                 "cccc0000000Sdddd0000mmmm1001nnnn") // v2
 
 // Multiply (Long) instructions

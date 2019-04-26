@@ -207,9 +207,15 @@ struct ArmTranslatorVisitor final {
     bool arm_STM_usr();
 
     // Miscellaneous instructions
+    bool arm_BFC(Cond cond, Imm5 msb, Reg d, Imm5 lsb);
+    bool arm_BFI(Cond cond, Imm5 msb, Reg d, Imm5 lsb, Reg n);
     bool arm_CLZ(Cond cond, Reg d, Reg m);
+    bool arm_MOVT(Cond cond, Imm4 imm4, Reg d, Imm12 imm12);
     bool arm_NOP() { return true; }
+    bool arm_RBIT(Cond cond, Reg d, Reg m);
+    bool arm_SBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n);
     bool arm_SEL(Cond cond, Reg n, Reg d, Reg m);
+    bool arm_UBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n);
 
     // Unsigned sum of absolute difference functions
     bool arm_USAD8(Cond cond, Reg d, Reg m, Reg n);
@@ -230,8 +236,13 @@ struct ArmTranslatorVisitor final {
     bool arm_USAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, bool sh, Reg n);
     bool arm_USAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n);
 
+    // Divide instructions
+    bool arm_SDIV(Cond cond, Reg d, Reg m, Reg n);
+    bool arm_UDIV(Cond cond, Reg d, Reg m, Reg n);
+
     // Multiply (Normal) instructions
     bool arm_MLA(Cond cond, bool S, Reg d, Reg a, Reg m, Reg n);
+    bool arm_MLS(Cond cond, Reg d, Reg a, Reg m, Reg n);
     bool arm_MUL(Cond cond, bool S, Reg d, Reg m, Reg n);
 
     // Multiply (Long) instructions

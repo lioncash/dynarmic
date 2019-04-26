@@ -763,9 +763,10 @@ TEST_CASE("Fuzz ARM reversal instructions", "[JitX64][A32]") {
     };
 
     const std::array rev_instructions = {
-        InstructionGenerator("cccc011010111111dddd11110011mmmm", is_valid),
-        InstructionGenerator("cccc011010111111dddd11111011mmmm", is_valid),
-        InstructionGenerator("cccc011011111111dddd11111011mmmm", is_valid),
+        InstructionGenerator("cccc011011111111dddd11110011mmmm", is_valid), // RBIT
+        InstructionGenerator("cccc011010111111dddd11110011mmmm", is_valid), // REV
+        InstructionGenerator("cccc011010111111dddd11111011mmmm", is_valid), // REV16
+        InstructionGenerator("cccc011011111111dddd11111011mmmm", is_valid), // REVSH
     };
 
     SECTION("Reverse tests") {
@@ -812,6 +813,24 @@ TEST_CASE("Fuzz ARM extension instructions", "[JitX64][A32]") {
     }
 }
 
+TEST_CASE("Fuzz ARM divide instructions", "[JitX64][A32]") {
+    const auto is_valid = [](u32 instr) {
+        return Bits<0, 3>(instr) != 0b1111 &&
+               Bits<8, 11>(instr) != 0b1111 &&
+               Bits<16, 19>(instr) != 0b1111;
+    };
+
+    const std::array instructions = {
+        InstructionGenerator("cccc01110001dddd1111mmmm0001nnnn", is_valid), // SDIV
+        InstructionGenerator("cccc01110011dddd1111mmmm0001nnnn", is_valid), // UDIV
+    };
+
+    FuzzJitArm(1, 1, 5000, [&instructions]() -> u32 {
+        return instructions[RandInt<size_t>(0, instructions.size() - 1)].Generate();
+    });
+}
+
+
 TEST_CASE("Fuzz ARM multiply instructions", "[JitX64][A32]") {
     const auto validate_d_m_n = [](u32 inst) -> bool {
         return Bits<16, 19>(inst) != 15 &&
@@ -829,6 +848,7 @@ TEST_CASE("Fuzz ARM multiply instructions", "[JitX64][A32]") {
 
     const std::array instructions = {
         InstructionGenerator("cccc0000001Sddddaaaammmm1001nnnn", validate_d_a_m_n), // MLA
+        InstructionGenerator("cccc00000110ddddaaaammmm1001nnnn", validate_d_a_m_n), // MLS
         InstructionGenerator("cccc0000000Sdddd0000mmmm1001nnnn", validate_d_m_n),   // MUL
 
         InstructionGenerator("cccc0000111Sddddaaaammmm1001nnnn", validate_h_l_m_n), // SMLAL
@@ -1061,18 +1081,45 @@ TEST_CASE("VFP: VPUSH, VPOP", "[JitX64][.vfp][A32]") {
 }
 
 TEST_CASE("Test ARM misc instructions", "[JitX64][A32]") {
-    const auto is_clz_valid = [](u32 instr) -> bool {
+    const auto is_bfc_bfi_valid = [](u32 instr) {
+        if (Bits<12, 15>(instr) == 0b1111) {
+            // Destination register may not be the PC.
+            return false;
+        }
+        // msb must be greater than or equal to the lsb,
+        // otherwise the instruction is UNPREDICTABLE.
+        return Bits<16, 20>(instr) >= Bits<7, 11>(instr);
+    };
+    const auto is_clz_valid = [](u32 instr) {
         // R15 as Rd, or Rm is UNPREDICTABLE
         return Bits<0, 3>(instr) != 0b1111 && Bits<12, 15>(instr) != 0b1111;
     };
+    const auto is_extract_valid = [](u32 instr) {
+        const u32 lsb = Bits<7, 11>(instr);
+        const u32 widthm1 = Bits<16, 20>(instr);
+        const u32 msb = lsb + widthm1;
 
-    const InstructionGenerator clz_instr = InstructionGenerator("cccc000101101111dddd11110001mmmm", is_clz_valid); // CLZ
+        // Rd or Rn as R15 or the case where msb > 32 is UNPREDICTABLE.
+        return Bits<0, 3>(instr) != 0b1111 &&
+               Bits<12, 15>(instr) != 0b1111 &&
+               msb < Dynarmic::Common::BitSize<u32>();
+    };
+    const auto is_movt_valid = [](u32 instr) {
+        return Bits<12, 15>(instr) != 0b1111;
+    };
 
-    SECTION("Fuzz CLZ") {
-        FuzzJitArm(1, 1, 1000, [&clz_instr]() -> u32 {
-            return clz_instr.Generate();
-        });
-    }
+    const std::array instructions = {
+        InstructionGenerator("cccc0111110vvvvvddddvvvvv0011111", is_bfc_bfi_valid), // BFC
+        InstructionGenerator("cccc0111110vvvvvddddvvvvv001nnnn", is_bfc_bfi_valid), // BFI
+        InstructionGenerator("cccc000101101111dddd11110001mmmm", is_clz_valid),     // CLZ
+        InstructionGenerator("cccc00110100vvvvddddvvvvvvvvvvvv", is_movt_valid),    // MOVT
+        InstructionGenerator("cccc0111101wwwwwddddvvvvv101nnnn", is_extract_valid), // SBFX
+        InstructionGenerator("cccc0111111wwwwwddddvvvvv101nnnn", is_extract_valid), // UBFX
+    };
+
+    FuzzJitArm(1, 1, 10000, [&instructions]() -> u32 {
+        return instructions[RandInt<size_t>(0, instructions.size() - 1)].Generate();
+    });
 }
 
 TEST_CASE("Test ARM MSR instructions", "[JitX64][A32]") {
