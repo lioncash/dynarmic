@@ -45,6 +45,21 @@ bool Inst::IsShift() const {
            IsLogicalShift();
 }
 
+bool Inst::IsBarrier() const {
+    switch (op) {
+    case Opcode::A32DataMemoryBarrier:
+    case Opcode::A32DataSynchronizationBarrier:
+    case Opcode::A32InstructionSynchronizationBarrier:
+    case Opcode::A64DataMemoryBarrier:
+    case Opcode::A64DataSynchronizationBarrier:
+    case Opcode::A64InstructionSynchronizationBarrier:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
 bool Inst::IsSharedMemoryRead() const {
     switch (op) {
     case Opcode::A32ReadMemory8:
@@ -463,20 +478,18 @@ bool Inst::IsCoprocessorInstruction() const {
 }
 
 bool Inst::MayHaveSideEffects() const {
-    return op == Opcode::PushRSB                              ||
-           op == Opcode::A64SetCheckBit                       ||
-           op == Opcode::A64DataCacheOperationRaised          ||
-           op == Opcode::A64DataSynchronizationBarrier        ||
-           op == Opcode::A64DataMemoryBarrier                 ||
-           op == Opcode::A64InstructionSynchronizationBarrier ||
-           CausesCPUException()                               ||
-           WritesToCoreRegister()                             ||
-           WritesToSystemRegister()                           ||
-           WritesToCPSR()                                     ||
-           WritesToFPCR()                                     ||
-           WritesToFPSR()                                     ||
-           AltersExclusiveState()                             ||
-           IsMemoryWrite()                                    ||
+    return op == Opcode::PushRSB                        ||
+           op == Opcode::A64SetCheckBit                 ||
+           op == Opcode::A64DataCacheOperationRaised    ||
+           IsBarrier()                                  ||
+           CausesCPUException()                         ||
+           WritesToCoreRegister()                       ||
+           WritesToSystemRegister()                     ||
+           WritesToCPSR()                               ||
+           WritesToFPCR()                               ||
+           WritesToFPSR()                               ||
+           AltersExclusiveState()                       ||
+           IsMemoryWrite()                              ||
            IsCoprocessorInstruction();
 }
 

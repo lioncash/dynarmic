@@ -142,6 +142,18 @@ void IREmitter::SetGEFlagsCompressed(const IR::U32& value) {
     Inst(Opcode::A32SetGEFlagsCompressed, value);
 }
 
+void IREmitter::DataSynchronizationBarrier() {
+    Inst(Opcode::A32DataSynchronizationBarrier);
+}
+
+void IREmitter::DataMemoryBarrier() {
+    Inst(Opcode::A32DataMemoryBarrier);
+}
+
+void IREmitter::InstructionSynchronizationBarrier() {
+    Inst(Opcode::A32InstructionSynchronizationBarrier);
+}
+
 IR::U32 IREmitter::GetFpscr() {
     return Inst<IR::U32>(Opcode::A32GetFpscr);
 }

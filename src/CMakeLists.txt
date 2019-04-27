@@ -95,6 +95,7 @@ add_library(dynarmic
     frontend/A32/translate/translate.cpp
     frontend/A32/translate/translate.h
     frontend/A32/translate/translate_arm.cpp
+    frontend/A32/translate/translate_arm/barrier.cpp
     frontend/A32/translate/translate_arm/branch.cpp
     frontend/A32/translate/translate_arm/coprocessor.cpp
     frontend/A32/translate/translate_arm/data_processing.cpp

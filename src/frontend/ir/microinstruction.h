@@ -36,6 +36,9 @@ public:
     /// Determines whether or not this instruction performs any kind of shift.
     bool IsShift() const;
 
+    /// Determines whether or not this instruction is a form of barrier.
+    bool IsBarrier() const;
+
     /// Determines whether or not this instruction performs a shared memory read.
     bool IsSharedMemoryRead() const;
     /// Determines whether or not this instruction performs a shared memory write.

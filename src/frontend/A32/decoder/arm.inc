@@ -1,3 +1,8 @@
+// Barrier instructions
+INST(arm_DMB,           "DMB",                 "1111010101111111111100000101oooo") // v7
+INST(arm_DSB,           "DSB",                 "1111010101111111111100000100oooo") // v7
+INST(arm_ISB,           "ISB",                 "1111010101111111111100000110oooo") // v7
+
 // Branch instructions
 INST(arm_BLX_imm,       "BLX (imm)",           "1111101hvvvvvvvvvvvvvvvvvvvvvvvv") // v5
 INST(arm_BLX_reg,       "BLX (reg)",           "cccc000100101111111111110011mmmm") // v5
