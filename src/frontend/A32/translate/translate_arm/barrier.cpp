@@ -20,7 +20,7 @@ bool ArmTranslatorVisitor::arm_DSB([[maybe_unused]] Imm4 option) {
 
 bool ArmTranslatorVisitor::arm_ISB([[maybe_unused]] Imm4 option) {
     ir.InstructionSynchronizationBarrier();
-    ir.SetRegister(Reg::PC, ir.Imm32(ir.current_location.PC() + 4));
+    ir.BranchWritePC(ir.Imm32(ir.current_location.PC() + 4));
     ir.SetTerm(IR::Term::ReturnToDispatch{});
     return false;
 }
