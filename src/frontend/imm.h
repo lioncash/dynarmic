@@ -11,10 +11,10 @@
 #include "common/common_types.h"
 #include "common/math_util.h"
 
-namespace Dynarmic::A64 {
+namespace Dynarmic {
 
 /**
- * Imm represents an immediate value in an AArch64 instruction.
+ * Imm represents an immediate value in an AArch32/AArch64 instruction.
  * Imm is used during translation as a typesafe way of passing around immediates of fixed sizes.
  */
 template <size_t bit_size_>
@@ -158,4 +158,4 @@ auto concatenate(Imm<first_bit_size> first, Imm<rest_bit_sizes> ...rest) {
     }
 }
 
-} // namespace Dynarmic::A64
+} // namespace Dynarmic

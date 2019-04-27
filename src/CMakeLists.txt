@@ -77,6 +77,7 @@ add_library(dynarmic
     common/u128.cpp
     common/u128.h
     common/variant_util.h
+    frontend/imm.h
     frontend/A32/decoder/arm.h
     frontend/A32/decoder/arm.inc
     frontend/A32/decoder/thumb16.h
@@ -118,7 +119,6 @@ add_library(dynarmic
     frontend/A32/types.h
     frontend/A64/decoder/a64.h
     frontend/A64/decoder/a64.inc
-    frontend/A64/imm.h
     frontend/A64/ir_emitter.cpp
     frontend/A64/ir_emitter.h
     frontend/A64/location_descriptor.cpp
