@@ -8,7 +8,7 @@
 
 #include <optional>
 
-#include "frontend/A64/imm.h"
+#include "frontend/imm.h"
 #include "frontend/A64/ir_emitter.h"
 #include "frontend/A64/location_descriptor.h"
 #include "frontend/A64/translate/translate.h"
