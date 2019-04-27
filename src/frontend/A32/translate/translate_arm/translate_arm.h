@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/bit_util.h"
+#include "frontend/imm.h"
 #include "frontend/A32/ir_emitter.h"
 #include "frontend/A32/location_descriptor.h"
 #include "frontend/A32/translate/translate.h"
@@ -40,8 +41,8 @@ struct ArmTranslatorVisitor final {
     bool UnpredictableInstruction();
     bool UndefinedInstruction();
 
-    static u32 ArmExpandImm(int rotate, Imm8 imm8) {
-        return Common::RotateRight<u32>(imm8, rotate * 2);
+    static u32 ArmExpandImm(int rotate, Imm<8> imm8) {
+        return Common::RotateRight<u32>(imm8.ZeroExtend(), rotate * 2);
     }
 
     struct ImmAndCarry {
@@ -49,96 +50,96 @@ struct ArmTranslatorVisitor final {
         IR::U1 carry;
     };
 
-    ImmAndCarry ArmExpandImm_C(int rotate, u32 imm8, IR::U1 carry_in) {
-        u32 imm32 = imm8;
+    ImmAndCarry ArmExpandImm_C(int rotate, Imm<8> imm8, IR::U1 carry_in) {
+        u32 imm32 = imm8.ZeroExtend();
         auto carry_out = carry_in;
         if (rotate) {
-            imm32 = ArmExpandImm(rotate, static_cast<Imm8>(imm8));
+            imm32 = ArmExpandImm(rotate, imm8);
             carry_out = ir.Imm1(Common::Bit<31>(imm32));
         }
         return {imm32, carry_out};
     }
 
-    IR::ResultAndCarry<IR::U32> EmitImmShift(IR::U32 value, ShiftType type, Imm5 imm5, IR::U1 carry_in);
+    IR::ResultAndCarry<IR::U32> EmitImmShift(IR::U32 value, ShiftType type, Imm<5> imm5, IR::U1 carry_in);
     IR::ResultAndCarry<IR::U32> EmitRegShift(IR::U32 value, ShiftType type, IR::U8 amount, IR::U1 carry_in);
     template <typename FnT> bool EmitVfpVectorOperation(bool sz, ExtReg d, ExtReg n, ExtReg m, const FnT& fn);
     template <typename FnT> bool EmitVfpVectorOperation(bool sz, ExtReg d, ExtReg m, const FnT& fn);
 
     // Barrier instructions
-    bool arm_DMB(Imm4 option);
-    bool arm_DSB(Imm4 option);
-    bool arm_ISB(Imm4 option);
+    bool arm_DMB(Imm<4> option);
+    bool arm_DSB(Imm<4> option);
+    bool arm_ISB(Imm<4> option);
 
     // Branch instructions
-    bool arm_B(Cond cond, Imm24 imm24);
-    bool arm_BL(Cond cond, Imm24 imm24);
-    bool arm_BLX_imm(bool H, Imm24 imm24);
+    bool arm_B(Cond cond, Imm<24> imm24);
+    bool arm_BL(Cond cond, Imm<24> imm24);
+    bool arm_BLX_imm(bool H, Imm<24> imm24);
     bool arm_BLX_reg(Cond cond, Reg m);
     bool arm_BX(Cond cond, Reg m);
     bool arm_BXJ(Cond cond, Reg m);
 
     // Coprocessor instructions
     bool arm_CDP(Cond cond, size_t opc1, CoprocReg CRn, CoprocReg CRd, size_t coproc_no, size_t opc2, CoprocReg CRm);
-    bool arm_LDC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm8 imm8);
+    bool arm_LDC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm<8> imm8);
     bool arm_MCR(Cond cond, size_t opc1, CoprocReg CRn, Reg t, size_t coproc_no, size_t opc2, CoprocReg CRm);
     bool arm_MCRR(Cond cond, Reg t2, Reg t, size_t coproc_no, size_t opc, CoprocReg CRm);
     bool arm_MRC(Cond cond, size_t opc1, CoprocReg CRn, Reg t, size_t coproc_no, size_t opc2, CoprocReg CRm);
     bool arm_MRRC(Cond cond, Reg t2, Reg t, size_t coproc_no, size_t opc, CoprocReg CRm);
-    bool arm_STC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm8 imm8);
+    bool arm_STC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm<8> imm8);
 
     // Data processing instructions
-    bool arm_ADC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8);
-    bool arm_ADC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_ADC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8);
+    bool arm_ADC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_ADC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_ADD_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8);
-    bool arm_ADD_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_ADD_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8);
+    bool arm_ADD_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_ADD_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_AND_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8);
-    bool arm_AND_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_AND_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8);
+    bool arm_AND_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_AND_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_BIC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8);
-    bool arm_BIC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_BIC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8);
+    bool arm_BIC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_BIC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_CMN_imm(Cond cond, Reg n, int rotate, Imm8 imm8);
-    bool arm_CMN_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_CMN_imm(Cond cond, Reg n, int rotate, Imm<8> imm8);
+    bool arm_CMN_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_CMN_rsr(Cond cond, Reg n, Reg s, ShiftType shift, Reg m);
-    bool arm_CMP_imm(Cond cond, Reg n, int rotate, Imm8 imm8);
-    bool arm_CMP_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_CMP_imm(Cond cond, Reg n, int rotate, Imm<8> imm8);
+    bool arm_CMP_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_CMP_rsr(Cond cond, Reg n, Reg s, ShiftType shift, Reg m);
-    bool arm_EOR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8);
-    bool arm_EOR_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_EOR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8);
+    bool arm_EOR_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_EOR_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_MOV_imm(Cond cond, bool S, Reg d, int rotate, Imm8 imm8);
-    bool arm_MOV_reg(Cond cond, bool S, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_MOV_imm(Cond cond, bool S, Reg d, int rotate, Imm<8> imm8);
+    bool arm_MOV_reg(Cond cond, bool S, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_MOV_rsr(Cond cond, bool S, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_MVN_imm(Cond cond, bool S, Reg d, int rotate, Imm8 imm8);
-    bool arm_MVN_reg(Cond cond, bool S, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_MVN_imm(Cond cond, bool S, Reg d, int rotate, Imm<8> imm8);
+    bool arm_MVN_reg(Cond cond, bool S, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_MVN_rsr(Cond cond, bool S, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_ORR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8);
-    bool arm_ORR_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_ORR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8);
+    bool arm_ORR_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_ORR_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_RSB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8);
-    bool arm_RSB_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_RSB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8);
+    bool arm_RSB_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_RSB_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_RSC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8);
-    bool arm_RSC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_RSC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8);
+    bool arm_RSC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_RSC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_SBC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8);
-    bool arm_SBC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_SBC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8);
+    bool arm_SBC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_SBC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_SUB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8);
-    bool arm_SUB_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_SUB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8);
+    bool arm_SUB_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_SUB_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m);
-    bool arm_TEQ_imm(Cond cond, Reg n, int rotate, Imm8 imm8);
-    bool arm_TEQ_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_TEQ_imm(Cond cond, Reg n, int rotate, Imm<8> imm8);
+    bool arm_TEQ_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_TEQ_rsr(Cond cond, Reg n, Reg s, ShiftType shift, Reg m);
-    bool arm_TST_imm(Cond cond, Reg n, int rotate, Imm8 imm8);
-    bool arm_TST_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m);
+    bool arm_TST_imm(Cond cond, Reg n, int rotate, Imm<8> imm8);
+    bool arm_TST_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m);
     bool arm_TST_rsr(Cond cond, Reg n, Reg s, ShiftType shift, Reg m);
 
     // Exception generating instructions
-    bool arm_BKPT(Cond cond, Imm12 imm12, Imm4 imm4);
-    bool arm_SVC(Cond cond, Imm24 imm24);
+    bool arm_BKPT(Cond cond, Imm<12> imm12, Imm<4> imm4);
+    bool arm_SVC(Cond cond, Imm<24> imm24);
     bool arm_UDF();
 
     // Extension instructions
@@ -171,31 +172,31 @@ struct ArmTranslatorVisitor final {
     bool arm_STRBT();
     bool arm_STRHT();
     bool arm_STRT();
-    bool arm_LDR_lit(Cond cond, bool U, Reg t, Imm12 imm12);
-    bool arm_LDR_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg d, Imm12 imm12);
-    bool arm_LDR_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m);
-    bool arm_LDRB_lit(Cond cond, bool U, Reg t, Imm12 imm12);
-    bool arm_LDRB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm12 imm12);
-    bool arm_LDRB_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm5 imm5, ShiftType shift, Reg m);
-    bool arm_LDRD_lit(Cond cond, bool U, Reg t, Imm4 imm8a, Imm4 imm8b);
-    bool arm_LDRD_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b);
+    bool arm_LDR_lit(Cond cond, bool U, Reg t, Imm<12> imm12);
+    bool arm_LDR_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg d, Imm<12> imm12);
+    bool arm_LDR_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m);
+    bool arm_LDRB_lit(Cond cond, bool U, Reg t, Imm<12> imm12);
+    bool arm_LDRB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<12> imm12);
+    bool arm_LDRB_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<5> imm5, ShiftType shift, Reg m);
+    bool arm_LDRD_lit(Cond cond, bool U, Reg t, Imm<4> imm8a, Imm<4> imm8b);
+    bool arm_LDRD_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b);
     bool arm_LDRD_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg d, Reg m);
-    bool arm_LDRH_lit(Cond cond, bool P, bool U, bool W, Reg t, Imm4 imm8a, Imm4 imm8b);
-    bool arm_LDRH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b);
+    bool arm_LDRH_lit(Cond cond, bool P, bool U, bool W, Reg t, Imm<4> imm8a, Imm<4> imm8b);
+    bool arm_LDRH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b);
     bool arm_LDRH_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg d, Reg m);
-    bool arm_LDRSB_lit(Cond cond, bool U, Reg t, Imm4 imm8a, Imm4 imm8b);
-    bool arm_LDRSB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b);
+    bool arm_LDRSB_lit(Cond cond, bool U, Reg t, Imm<4> imm8a, Imm<4> imm8b);
+    bool arm_LDRSB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b);
     bool arm_LDRSB_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m);
-    bool arm_LDRSH_lit(Cond cond, bool U, Reg t, Imm4 imm8a, Imm4 imm8b);
-    bool arm_LDRSH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b);
+    bool arm_LDRSH_lit(Cond cond, bool U, Reg t, Imm<4> imm8a, Imm<4> imm8b);
+    bool arm_LDRSH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b);
     bool arm_LDRSH_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m);
-    bool arm_STR_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm12 imm12);
-    bool arm_STR_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm5 imm5, ShiftType shift, Reg m);
-    bool arm_STRB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm12 imm12);
-    bool arm_STRB_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm5 imm5, ShiftType shift, Reg m);
-    bool arm_STRD_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b);
+    bool arm_STR_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<12> imm12);
+    bool arm_STR_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<5> imm5, ShiftType shift, Reg m);
+    bool arm_STRB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<12> imm12);
+    bool arm_STRB_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<5> imm5, ShiftType shift, Reg m);
+    bool arm_STRD_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b);
     bool arm_STRD_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m);
-    bool arm_STRH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b);
+    bool arm_STRH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b);
     bool arm_STRH_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m);
 
     // Load/Store multiple instructions
@@ -212,23 +213,23 @@ struct ArmTranslatorVisitor final {
     bool arm_STM_usr();
 
     // Miscellaneous instructions
-    bool arm_BFC(Cond cond, Imm5 msb, Reg d, Imm5 lsb);
-    bool arm_BFI(Cond cond, Imm5 msb, Reg d, Imm5 lsb, Reg n);
+    bool arm_BFC(Cond cond, Imm<5> msb, Reg d, Imm<5> lsb);
+    bool arm_BFI(Cond cond, Imm<5> msb, Reg d, Imm<5> lsb, Reg n);
     bool arm_CLZ(Cond cond, Reg d, Reg m);
-    bool arm_MOVT(Cond cond, Imm4 imm4, Reg d, Imm12 imm12);
+    bool arm_MOVT(Cond cond, Imm<4> imm4, Reg d, Imm<12> imm12);
     bool arm_NOP() { return true; }
     bool arm_RBIT(Cond cond, Reg d, Reg m);
-    bool arm_SBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n);
+    bool arm_SBFX(Cond cond, Imm<5> widthm1, Reg d, Imm<5> lsb, Reg n);
     bool arm_SEL(Cond cond, Reg n, Reg d, Reg m);
-    bool arm_UBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n);
+    bool arm_UBFX(Cond cond, Imm<5> widthm1, Reg d, Imm<5> lsb, Reg n);
 
     // Unsigned sum of absolute difference functions
     bool arm_USAD8(Cond cond, Reg d, Reg m, Reg n);
     bool arm_USADA8(Cond cond, Reg d, Reg a, Reg m, Reg n);
 
     // Packing instructions
-    bool arm_PKHBT(Cond cond, Reg n, Reg d, Imm5 imm5, Reg m);
-    bool arm_PKHTB(Cond cond, Reg n, Reg d, Imm5 imm5, Reg m);
+    bool arm_PKHBT(Cond cond, Reg n, Reg d, Imm<5> imm5, Reg m);
+    bool arm_PKHTB(Cond cond, Reg n, Reg d, Imm<5> imm5, Reg m);
 
     // Reversal instructions
     bool arm_REV(Cond cond, Reg d, Reg m);
@@ -236,10 +237,10 @@ struct ArmTranslatorVisitor final {
     bool arm_REVSH(Cond cond, Reg d, Reg m);
 
     // Saturation instructions
-    bool arm_SSAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, bool sh, Reg n);
-    bool arm_SSAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n);
-    bool arm_USAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, bool sh, Reg n);
-    bool arm_USAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n);
+    bool arm_SSAT(Cond cond, Imm<5> sat_imm, Reg d, Imm<5> imm5, bool sh, Reg n);
+    bool arm_SSAT16(Cond cond, Imm<4> sat_imm, Reg d, Reg n);
+    bool arm_USAT(Cond cond, Imm<5> sat_imm, Reg d, Imm<5> imm5, bool sh, Reg n);
+    bool arm_USAT16(Cond cond, Imm<4> sat_imm, Reg d, Reg n);
 
     // Divide instructions
     bool arm_SDIV(Cond cond, Reg d, Reg m, Reg n);
@@ -343,7 +344,7 @@ struct ArmTranslatorVisitor final {
     // Status register access instructions
     bool arm_CPS();
     bool arm_MRS(Cond cond, Reg d);
-    bool arm_MSR_imm(Cond cond, int mask, int rotate, Imm8 imm8);
+    bool arm_MSR_imm(Cond cond, int mask, int rotate, Imm<8> imm8);
     bool arm_MSR_reg(Cond cond, int mask, Reg n);
     bool arm_RFE();
     bool arm_SETEND(bool E);
@@ -387,14 +388,14 @@ struct ArmTranslatorVisitor final {
     bool vfp2_VMRS(Cond cond, Reg t);
 
     // Floating-point load-store instructions
-    bool vfp2_VLDR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm8 imm8);
-    bool vfp2_VSTR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm8 imm8);
-    bool vfp2_VPOP(Cond cond, bool D, size_t Vd, bool sz, Imm8 imm8);
-    bool vfp2_VPUSH(Cond cond, bool D, size_t Vd, bool sz, Imm8 imm8);
-    bool vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8);
-    bool vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8);
-    bool vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8);
-    bool vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8);
+    bool vfp2_VLDR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm<8> imm8);
+    bool vfp2_VSTR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm<8> imm8);
+    bool vfp2_VPOP(Cond cond, bool D, size_t Vd, bool sz, Imm<8> imm8);
+    bool vfp2_VPUSH(Cond cond, bool D, size_t Vd, bool sz, Imm<8> imm8);
+    bool vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8);
+    bool vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8);
+    bool vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8);
+    bool vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8);
 };
 
 } // namespace Dynarmic::A32

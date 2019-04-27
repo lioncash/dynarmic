@@ -25,7 +25,7 @@ bool ArmTranslatorVisitor::arm_CDP(Cond cond, size_t opc1, CoprocReg CRn, Coproc
 // LDC{2}{L}<c> <coproc_no>, <CRd>, [<Rn>, #+/-<imm32>]{!}
 // LDC{2}{L}<c> <coproc_no>, <CRd>, [<Rn>], #+/-<imm32>
 // LDC{2}{L}<c> <coproc_no>, <CRd>, [<Rn>], <imm8>
-bool ArmTranslatorVisitor::arm_LDC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_LDC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm<8> imm8) {
     if (!p && !u && !d && !w) {
         return arm_UDF();
     }
@@ -37,7 +37,7 @@ bool ArmTranslatorVisitor::arm_LDC(Cond cond, bool p, bool u, bool d, bool w, Re
     const bool two = cond == Cond::NV;
 
     if (two || ConditionPassed(cond)) {
-        const u32 imm32 = static_cast<u8>(imm8) << 2;
+        const u32 imm32 = imm8.ZeroExtend() << 2;
         const bool index = p;
         const bool add = u;
         const bool wback = w;
@@ -45,7 +45,7 @@ bool ArmTranslatorVisitor::arm_LDC(Cond cond, bool p, bool u, bool d, bool w, Re
         const IR::U32 reg_n = ir.GetRegister(n);
         const IR::U32 offset_address = add ? ir.Add(reg_n, ir.Imm32(imm32)) : ir.Sub(reg_n, ir.Imm32(imm32));
         const IR::U32 address = index ? offset_address : reg_n;
-        ir.CoprocLoadWords(coproc_no, two, d, CRd, address, has_option, imm8);
+        ir.CoprocLoadWords(coproc_no, two, d, CRd, address, has_option, imm8.ZeroExtend<u8>());
         if (wback) {
             ir.SetRegister(n, offset_address);
         }
@@ -132,7 +132,7 @@ bool ArmTranslatorVisitor::arm_MRRC(Cond cond, Reg t2, Reg t, size_t coproc_no, 
 // STC{2}{L}<c> <coproc>, <CRd>, [<Rn>, #+/-<imm32>]{!}
 // STC{2}{L}<c> <coproc>, <CRd>, [<Rn>], #+/-<imm32>
 // STC{2}{L}<c> <coproc>, <CRd>, [<Rn>], <imm8>
-bool ArmTranslatorVisitor::arm_STC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_STC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm<8> imm8) {
     if ((coproc_no & 0b1110) == 0b1010) {
         return arm_UDF();
     }
@@ -148,7 +148,7 @@ bool ArmTranslatorVisitor::arm_STC(Cond cond, bool p, bool u, bool d, bool w, Re
     const bool two = cond == Cond::NV;
 
     if (two || ConditionPassed(cond)) {
-        const u32 imm32 = static_cast<u8>(imm8) << 2;
+        const u32 imm32 = imm8.ZeroExtend() << 2;
         const bool index = p;
         const bool add = u;
         const bool wback = w;
@@ -156,7 +156,7 @@ bool ArmTranslatorVisitor::arm_STC(Cond cond, bool p, bool u, bool d, bool w, Re
         const IR::U32 reg_n = ir.GetRegister(n);
         const IR::U32 offset_address = add ? ir.Add(reg_n, ir.Imm32(imm32)) : ir.Sub(reg_n, ir.Imm32(imm32));
         const IR::U32 address = index ? offset_address : reg_n;
-        ir.CoprocStoreWords(coproc_no, two, d, CRd, address, has_option, imm8);
+        ir.CoprocStoreWords(coproc_no, two, d, CRd, address, has_option, imm8.ZeroExtend<u8>());
         if (wback) {
             ir.SetRegister(n, offset_address);
         }

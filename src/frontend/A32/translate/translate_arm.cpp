@@ -157,22 +157,26 @@ bool ArmTranslatorVisitor::UndefinedInstruction() {
     return false;
 }
 
-IR::ResultAndCarry<IR::U32> ArmTranslatorVisitor::EmitImmShift(IR::U32 value, ShiftType type, Imm5 imm5, IR::U1 carry_in) {
+IR::ResultAndCarry<IR::U32> ArmTranslatorVisitor::EmitImmShift(IR::U32 value, ShiftType type, Imm<5> imm5, IR::U1 carry_in) {
+    u8 imm5_value = imm5.ZeroExtend<u8>();
+
     switch (type) {
     case ShiftType::LSL:
-        return ir.LogicalShiftLeft(value, ir.Imm8(imm5), carry_in);
+        return ir.LogicalShiftLeft(value, ir.Imm8(imm5_value), carry_in);
     case ShiftType::LSR:
-        imm5 = imm5 ? imm5 : 32;
-        return ir.LogicalShiftRight(value, ir.Imm8(imm5), carry_in);
+        imm5_value = imm5_value ? imm5_value : 32;
+        return ir.LogicalShiftRight(value, ir.Imm8(imm5_value), carry_in);
     case ShiftType::ASR:
-        imm5 = imm5 ? imm5 : 32;
-        return ir.ArithmeticShiftRight(value, ir.Imm8(imm5), carry_in);
+        imm5_value = imm5_value ? imm5_value : 32;
+        return ir.ArithmeticShiftRight(value, ir.Imm8(imm5_value), carry_in);
     case ShiftType::ROR:
-        if (imm5)
-            return ir.RotateRight(value, ir.Imm8(imm5), carry_in);
-        else
+        if (imm5_value) {
+            return ir.RotateRight(value, ir.Imm8(imm5_value), carry_in);
+        } else {
             return ir.RotateRightExtended(value, carry_in);
+        }
     }
+
     UNREACHABLE();
     return {};
 }

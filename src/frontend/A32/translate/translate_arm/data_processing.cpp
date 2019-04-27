@@ -9,7 +9,7 @@
 namespace Dynarmic::A32 {
 
 // ADC{S}<c> <Rd>, <Rn>, #<imm>
-bool ArmTranslatorVisitor::arm_ADC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_ADC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -38,7 +38,7 @@ bool ArmTranslatorVisitor::arm_ADC_imm(Cond cond, bool S, Reg n, Reg d, int rota
 }
 
 // ADC{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_ADC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_ADC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -94,7 +94,7 @@ bool ArmTranslatorVisitor::arm_ADC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, S
 }
 
 // ADD{S}<c> <Rd>, <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_ADD_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_ADD_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -124,7 +124,7 @@ bool ArmTranslatorVisitor::arm_ADD_imm(Cond cond, bool S, Reg n, Reg d, int rota
 }
 
 // ADD{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_ADD_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_ADD_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -180,7 +180,7 @@ bool ArmTranslatorVisitor::arm_ADD_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, S
 }
 
 // AND{S}<c> <Rd>, <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_AND_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_AND_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -209,7 +209,7 @@ bool ArmTranslatorVisitor::arm_AND_imm(Cond cond, bool S, Reg n, Reg d, int rota
 }
 
 // AND{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_AND_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_AND_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -263,7 +263,7 @@ bool ArmTranslatorVisitor::arm_AND_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, S
 }
 
 // BIC{S}<c> <Rd>, <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_BIC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_BIC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -292,7 +292,7 @@ bool ArmTranslatorVisitor::arm_BIC_imm(Cond cond, bool S, Reg n, Reg d, int rota
 }
 
 // BIC{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_BIC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_BIC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -347,7 +347,7 @@ bool ArmTranslatorVisitor::arm_BIC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, S
 }
 
 // CMN<c> <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_CMN_imm(Cond cond, Reg n, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_CMN_imm(Cond cond, Reg n, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -363,7 +363,7 @@ bool ArmTranslatorVisitor::arm_CMN_imm(Cond cond, Reg n, int rotate, Imm8 imm8) 
 }
 
 // CMN<c> <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_CMN_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_CMN_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -401,7 +401,7 @@ bool ArmTranslatorVisitor::arm_CMN_rsr(Cond cond, Reg n, Reg s, ShiftType shift,
 }
 
 // CMP<c> <Rn>, #<imm>
-bool ArmTranslatorVisitor::arm_CMP_imm(Cond cond, Reg n, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_CMP_imm(Cond cond, Reg n, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -417,7 +417,7 @@ bool ArmTranslatorVisitor::arm_CMP_imm(Cond cond, Reg n, int rotate, Imm8 imm8) 
 }
 
 // CMP<c> <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_CMP_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_CMP_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -455,7 +455,7 @@ bool ArmTranslatorVisitor::arm_CMP_rsr(Cond cond, Reg n, Reg s, ShiftType shift,
 }
 
 // EOR{S}<c> <Rd>, <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_EOR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_EOR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -484,7 +484,7 @@ bool ArmTranslatorVisitor::arm_EOR_imm(Cond cond, bool S, Reg n, Reg d, int rota
 }
 
 // EOR{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_EOR_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_EOR_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -539,7 +539,7 @@ bool ArmTranslatorVisitor::arm_EOR_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, S
 }
 
 // MOV{S}<c> <Rd>, #<const>
-bool ArmTranslatorVisitor::arm_MOV_imm(Cond cond, bool S, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_MOV_imm(Cond cond, bool S, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -568,7 +568,7 @@ bool ArmTranslatorVisitor::arm_MOV_imm(Cond cond, bool S, Reg d, int rotate, Imm
 }
 
 // MOV{S}<c> <Rd>, <Rm>
-bool ArmTranslatorVisitor::arm_MOV_reg(Cond cond, bool S, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_MOV_reg(Cond cond, bool S, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -621,7 +621,7 @@ bool ArmTranslatorVisitor::arm_MOV_rsr(Cond cond, bool S, Reg d, Reg s, ShiftTyp
 }
 
 // MVN{S}<c> <Rd>, #<const>
-bool ArmTranslatorVisitor::arm_MVN_imm(Cond cond, bool S, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_MVN_imm(Cond cond, bool S, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -650,7 +650,7 @@ bool ArmTranslatorVisitor::arm_MVN_imm(Cond cond, bool S, Reg d, int rotate, Imm
 }
 
 // MVN{S}<c> <Rd>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_MVN_reg(Cond cond, bool S, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_MVN_reg(Cond cond, bool S, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -705,7 +705,7 @@ bool ArmTranslatorVisitor::arm_MVN_rsr(Cond cond, bool S, Reg d, Reg s, ShiftTyp
 }
 
 // ORR{S}<c> <Rd>, <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_ORR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_ORR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -734,7 +734,7 @@ bool ArmTranslatorVisitor::arm_ORR_imm(Cond cond, bool S, Reg n, Reg d, int rota
 }
 
 // ORR{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_ORR_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_ORR_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -789,7 +789,7 @@ bool ArmTranslatorVisitor::arm_ORR_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, S
 }
 
 // RSB{S}<c> <Rd>, <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_RSB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_RSB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -819,7 +819,7 @@ bool ArmTranslatorVisitor::arm_RSB_imm(Cond cond, bool S, Reg n, Reg d, int rota
 }
 
 // RSB{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_RSB_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_RSB_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -875,7 +875,7 @@ bool ArmTranslatorVisitor::arm_RSB_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, S
 }
 
 // RSC{S}<c> <Rd>, <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_RSC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_RSC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -904,7 +904,7 @@ bool ArmTranslatorVisitor::arm_RSC_imm(Cond cond, bool S, Reg n, Reg d, int rota
     return true;
 }
 
-bool ArmTranslatorVisitor::arm_RSC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_RSC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -960,7 +960,7 @@ bool ArmTranslatorVisitor::arm_RSC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, S
 }
 
 // SBC{S}<c> <Rd>, <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_SBC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_SBC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -990,7 +990,7 @@ bool ArmTranslatorVisitor::arm_SBC_imm(Cond cond, bool S, Reg n, Reg d, int rota
 }
 
 // SBC{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_SBC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_SBC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -1046,7 +1046,7 @@ bool ArmTranslatorVisitor::arm_SBC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, S
 }
 
 // SUB{S}<c> <Rd>, <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_SUB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_SUB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -1076,7 +1076,7 @@ bool ArmTranslatorVisitor::arm_SUB_imm(Cond cond, bool S, Reg n, Reg d, int rota
 }
 
 // SUB{S}<c> <Rd>, <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_SUB_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_SUB_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -1131,7 +1131,7 @@ bool ArmTranslatorVisitor::arm_SUB_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, S
 }
 
 // TEQ<c> <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_TEQ_imm(Cond cond, Reg n, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_TEQ_imm(Cond cond, Reg n, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -1146,7 +1146,7 @@ bool ArmTranslatorVisitor::arm_TEQ_imm(Cond cond, Reg n, int rotate, Imm8 imm8) 
 }
 
 // TEQ<c> <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_TEQ_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_TEQ_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -1183,7 +1183,7 @@ bool ArmTranslatorVisitor::arm_TEQ_rsr(Cond cond, Reg n, Reg s, ShiftType shift,
 }
 
 // TST<c> <Rn>, #<const>
-bool ArmTranslatorVisitor::arm_TST_imm(Cond cond, Reg n, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_TST_imm(Cond cond, Reg n, int rotate, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -1198,7 +1198,7 @@ bool ArmTranslatorVisitor::arm_TST_imm(Cond cond, Reg n, int rotate, Imm8 imm8) 
 }
 
 // TST<c> <Rn>, <Rm>{, <shift>}
-bool ArmTranslatorVisitor::arm_TST_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m) {
+bool ArmTranslatorVisitor::arm_TST_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m) {
     if (!ConditionPassed(cond)) {
         return true;
     }

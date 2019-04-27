@@ -8,6 +8,7 @@
 
 #include "common/assert.h"
 #include "common/bit_util.h"
+#include "frontend/imm.h"
 #include "frontend/A32/decoder/thumb16.h"
 #include "frontend/A32/decoder/thumb32.h"
 #include "frontend/A32/ir_emitter.h"
@@ -39,8 +40,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // LSLS <Rd>, <Rm>, #<imm5>
-    bool thumb16_LSL_imm(Imm5 imm5, Reg m, Reg d) {
-        const u8 shift_n = imm5;
+    bool thumb16_LSL_imm(Imm<5> imm5, Reg m, Reg d) {
+        const u8 shift_n = imm5.ZeroExtend<u8>();
         const auto cpsr_c = ir.GetCFlag();
         const auto result = ir.LogicalShiftLeft(ir.GetRegister(m), ir.Imm8(shift_n), cpsr_c);
 
@@ -52,8 +53,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // LSRS <Rd>, <Rm>, #<imm5>
-    bool thumb16_LSR_imm(Imm5 imm5, Reg m, Reg d) {
-        const u8 shift_n = imm5 != 0 ? imm5 : 32;
+    bool thumb16_LSR_imm(Imm<5> imm5, Reg m, Reg d) {
+        const u8 shift_n = imm5 != 0 ? imm5.ZeroExtend<u8>() : u8(32);
         const auto cpsr_c = ir.GetCFlag();
         const auto result = ir.LogicalShiftRight(ir.GetRegister(m), ir.Imm8(shift_n), cpsr_c);
 
@@ -65,8 +66,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // ASRS <Rd>, <Rm>, #<imm5>
-    bool thumb16_ASR_imm(Imm5 imm5, Reg m, Reg d) {
-        const u8 shift_n = imm5 != 0 ? imm5 : 32;
+    bool thumb16_ASR_imm(Imm<5> imm5, Reg m, Reg d) {
+        const u8 shift_n = imm5 != 0 ? imm5.ZeroExtend<u8>() : u8(32);
         const auto cpsr_c = ir.GetCFlag();
         const auto result = ir.ArithmeticShiftRight(ir.GetRegister(m), ir.Imm8(shift_n), cpsr_c);
 
@@ -103,8 +104,8 @@ struct ThumbTranslatorVisitor final {
 
     // ADDS <Rd>, <Rn>, #<imm3>
     // Rd can never encode R15.
-    bool thumb16_ADD_imm_t1(Imm3 imm3, Reg n, Reg d) {
-        const u32 imm32 = imm3 & 0x7;
+    bool thumb16_ADD_imm_t1(Imm<3> imm3, Reg n, Reg d) {
+        const u32 imm32 = imm3.ZeroExtend();
         const auto result = ir.AddWithCarry(ir.GetRegister(n), ir.Imm32(imm32), ir.Imm1(0));
 
         ir.SetRegister(d, result.result);
@@ -117,8 +118,8 @@ struct ThumbTranslatorVisitor final {
 
     // SUBS <Rd>, <Rn>, #<imm3>
     // Rd can never encode R15.
-    bool thumb16_SUB_imm_t1(Imm3 imm3, Reg n, Reg d) {
-        const u32 imm32 = imm3 & 0x7;
+    bool thumb16_SUB_imm_t1(Imm<3> imm3, Reg n, Reg d) {
+        const u32 imm32 = imm3.ZeroExtend();
         const auto result = ir.SubWithCarry(ir.GetRegister(n), ir.Imm32(imm32), ir.Imm1(1));
 
         ir.SetRegister(d, result.result);
@@ -131,8 +132,8 @@ struct ThumbTranslatorVisitor final {
 
     // MOVS <Rd>, #<imm8>
     // Rd can never encode R15.
-    bool thumb16_MOV_imm(Reg d, Imm8 imm8) {
-        const u32 imm32 = imm8 & 0xFF;
+    bool thumb16_MOV_imm(Reg d, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend();
         const auto result = ir.Imm32(imm32);
 
         ir.SetRegister(d, result);
@@ -142,8 +143,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // CMP <Rn>, #<imm8>
-    bool thumb16_CMP_imm(Reg n, Imm8 imm8) {
-        const u32 imm32 = imm8 & 0xFF;
+    bool thumb16_CMP_imm(Reg n, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend();
         const auto result = ir.SubWithCarry(ir.GetRegister(n), ir.Imm32(imm32), ir.Imm1(1));
 
         ir.SetNFlag(ir.MostSignificantBit(result.result));
@@ -155,8 +156,8 @@ struct ThumbTranslatorVisitor final {
 
     // ADDS <Rdn>, #<imm8>
     // Rd can never encode R15.
-    bool thumb16_ADD_imm_t2(Reg d_n, Imm8 imm8) {
-        const u32 imm32 = imm8 & 0xFF;
+    bool thumb16_ADD_imm_t2(Reg d_n, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend();
         const Reg d = d_n;
         const Reg n = d_n;
         const auto result = ir.AddWithCarry(ir.GetRegister(n), ir.Imm32(imm32), ir.Imm1(0));
@@ -171,8 +172,8 @@ struct ThumbTranslatorVisitor final {
 
     // SUBS <Rd>, <Rn>, #<imm3>
     // Rd can never encode R15.
-    bool thumb16_SUB_imm_t2(Reg d_n, Imm8 imm8) {
-        const u32 imm32 = imm8 & 0xFF;
+    bool thumb16_SUB_imm_t2(Reg d_n, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend();
         const Reg d = d_n;
         const Reg n = d_n;
         const auto result = ir.SubWithCarry(ir.GetRegister(n), ir.Imm32(imm32), ir.Imm1(1));
@@ -448,8 +449,8 @@ struct ThumbTranslatorVisitor final {
 
     // LDR <Rt>, <label>
     // Rt cannot encode R15.
-    bool thumb16_LDR_literal(Reg t, Imm8 imm8) {
-        const u32 imm32 = imm8 << 2;
+    bool thumb16_LDR_literal(Reg t, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend() << 2;
         const u32 address = ir.AlignPC(4) + imm32;
         const auto data = ir.ReadMemory32(ir.Imm32(address));
 
@@ -539,8 +540,8 @@ struct ThumbTranslatorVisitor final {
 
     // STR <Rt>, [<Rn>, #<imm>]
     // Rt cannot encode R15.
-    bool thumb16_STR_imm_t1(Imm5 imm5, Reg n, Reg t) {
-        const u32 imm32 = imm5 << 2;
+    bool thumb16_STR_imm_t1(Imm<5> imm5, Reg n, Reg t) {
+        const u32 imm32 = imm5.ZeroExtend() << 2;
         const auto address = ir.Add(ir.GetRegister(n), ir.Imm32(imm32));
         const auto data = ir.GetRegister(t);
 
@@ -550,8 +551,8 @@ struct ThumbTranslatorVisitor final {
 
     // LDR <Rt>, [<Rn>, #<imm>]
     // Rt cannot encode R15.
-    bool thumb16_LDR_imm_t1(Imm5 imm5, Reg n, Reg t) {
-        const u32 imm32 = imm5 << 2;
+    bool thumb16_LDR_imm_t1(Imm<5> imm5, Reg n, Reg t) {
+        const u32 imm32 = imm5.ZeroExtend() << 2;
         const auto address = ir.Add(ir.GetRegister(n), ir.Imm32(imm32));
         const auto data = ir.ReadMemory32(address);
 
@@ -561,8 +562,8 @@ struct ThumbTranslatorVisitor final {
 
     // STRB <Rt>, [<Rn>, #<imm>]
     // Rt cannot encode R15.
-    bool thumb16_STRB_imm(Imm5 imm5, Reg n, Reg t) {
-        const u32 imm32 = imm5;
+    bool thumb16_STRB_imm(Imm<5> imm5, Reg n, Reg t) {
+        const u32 imm32 = imm5.ZeroExtend();
         const auto address = ir.Add(ir.GetRegister(n), ir.Imm32(imm32));
         const auto data = ir.LeastSignificantByte(ir.GetRegister(t));
 
@@ -572,8 +573,8 @@ struct ThumbTranslatorVisitor final {
 
     // LDRB <Rt>, [<Rn>, #<imm>]
     // Rt cannot encode R15.
-    bool thumb16_LDRB_imm(Imm5 imm5, Reg n, Reg t) {
-        const u32 imm32 = imm5;
+    bool thumb16_LDRB_imm(Imm<5> imm5, Reg n, Reg t) {
+        const u32 imm32 = imm5.ZeroExtend();
         const auto address = ir.Add(ir.GetRegister(n), ir.Imm32(imm32));
         const auto data = ir.ZeroExtendByteToWord(ir.ReadMemory8(address));
 
@@ -582,8 +583,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // STRH <Rt>, [<Rn>, #<imm5>]
-    bool thumb16_STRH_imm(Imm5 imm5, Reg n, Reg t) {
-        const u32 imm32 = imm5 << 1;
+    bool thumb16_STRH_imm(Imm<5> imm5, Reg n, Reg t) {
+        const u32 imm32 = imm5.ZeroExtend() << 1;
         const auto address = ir.Add(ir.GetRegister(n), ir.Imm32(imm32));
         const auto data = ir.LeastSignificantHalf(ir.GetRegister(t));
 
@@ -592,8 +593,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // LDRH <Rt>, [<Rn>, #<imm5>]
-    bool thumb16_LDRH_imm(Imm5 imm5, Reg n, Reg t) {
-        const u32 imm32 = imm5 << 1;
+    bool thumb16_LDRH_imm(Imm<5> imm5, Reg n, Reg t) {
+        const u32 imm32 = imm5.ZeroExtend() << 1;
         const auto address = ir.Add(ir.GetRegister(n), ir.Imm32(imm32));
         const auto data = ir.ZeroExtendHalfToWord(ir.ReadMemory16(address));
 
@@ -603,8 +604,8 @@ struct ThumbTranslatorVisitor final {
 
     // STR <Rt>, [<Rn>, #<imm>]
     // Rt cannot encode R15.
-    bool thumb16_STR_imm_t2(Reg t, Imm5 imm5) {
-        const u32 imm32 = imm5 << 2;
+    bool thumb16_STR_imm_t2(Reg t, Imm<5> imm5) {
+        const u32 imm32 = imm5.ZeroExtend() << 2;
         const Reg n = Reg::SP;
         const auto address = ir.Add(ir.GetRegister(n), ir.Imm32(imm32));
         const auto data = ir.GetRegister(t);
@@ -615,8 +616,8 @@ struct ThumbTranslatorVisitor final {
 
     // LDR <Rt>, [<Rn>, #<imm>]
     // Rt cannot encode R15.
-    bool thumb16_LDR_imm_t2(Reg t, Imm5 imm5) {
-        const u32 imm32 = imm5 << 2;
+    bool thumb16_LDR_imm_t2(Reg t, Imm<5> imm5) {
+        const u32 imm32 = imm5.ZeroExtend() << 2;
         const Reg n = Reg::SP;
         const auto address = ir.Add(ir.GetRegister(n), ir.Imm32(imm32));
         const auto data = ir.ReadMemory32(address);
@@ -627,8 +628,8 @@ struct ThumbTranslatorVisitor final {
 
     // ADR <Rd>, <label>
     // Rd cannot encode R15.
-    bool thumb16_ADR(Reg d, Imm8 imm8) {
-        const u32 imm32 = imm8 << 2;
+    bool thumb16_ADR(Reg d, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend() << 2;
         const auto result = ir.Imm32(ir.AlignPC(4) + imm32);
 
         ir.SetRegister(d, result);
@@ -636,8 +637,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // ADD <Rd>, SP, #<imm>
-    bool thumb16_ADD_sp_t1(Reg d, Imm8 imm8) {
-        const u32 imm32 = imm8 << 2;
+    bool thumb16_ADD_sp_t1(Reg d, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend() << 2;
         const auto result = ir.AddWithCarry(ir.GetRegister(Reg::SP), ir.Imm32(imm32), ir.Imm1(0));
 
         ir.SetRegister(d, result.result);
@@ -645,8 +646,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // ADD SP, SP, #<imm>
-    bool thumb16_ADD_sp_t2(Imm7 imm7) {
-        const u32 imm32 = imm7 << 2;
+    bool thumb16_ADD_sp_t2(Imm<7> imm7) {
+        const u32 imm32 = imm7.ZeroExtend() << 2;
         const Reg d = Reg::SP;
         const auto result = ir.AddWithCarry(ir.GetRegister(Reg::SP), ir.Imm32(imm32), ir.Imm1(0));
 
@@ -655,8 +656,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // SUB SP, SP, #<imm>
-    bool thumb16_SUB_sp(Imm7 imm7) {
-        const u32 imm32 = imm7 << 2;
+    bool thumb16_SUB_sp(Imm<7> imm7) {
+        const u32 imm32 = imm7.ZeroExtend() << 2;
         const Reg d = Reg::SP;
         const auto result = ir.SubWithCarry(ir.GetRegister(Reg::SP), ir.Imm32(imm32), ir.Imm1(1));
 
@@ -861,8 +862,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // SVC #<imm8>
-    bool thumb16_SVC(Imm8 imm8) {
-        const u32 imm32 = imm8;
+    bool thumb16_SVC(Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend();
         ir.BranchWritePC(ir.Imm32(ir.current_location.PC() + 2));
         ir.PushRSB(ir.current_location.AdvancePC(2));
         ir.CallSupervisor(ir.Imm32(imm32));
@@ -871,12 +872,12 @@ struct ThumbTranslatorVisitor final {
     }
 
     // B<cond> <label>
-    bool thumb16_B_t1(Cond cond, Imm8 imm8) {
+    bool thumb16_B_t1(Cond cond, Imm<8> imm8) {
         if (cond == Cond::AL) {
             return thumb16_UDF();
         }
 
-        const s32 imm32 = Common::SignExtend<9, s32>(imm8 << 1) + 4;
+        const s32 imm32 = static_cast<s32>((imm8.SignExtend<u32>() << 1) + 4);
         const auto then_location = ir.current_location.AdvancePC(imm32);
         const auto else_location = ir.current_location.AdvancePC(2);
 
@@ -885,8 +886,8 @@ struct ThumbTranslatorVisitor final {
     }
 
     // B <label>
-    bool thumb16_B_t2(Imm11 imm11) {
-        const s32 imm32 = Common::SignExtend<12, s32>(imm11 << 1) + 4;
+    bool thumb16_B_t2(Imm<11> imm11) {
+        const s32 imm32 = static_cast<s32>((imm11.SignExtend<u32>() << 1) + 4);
         const auto next_location = ir.current_location.AdvancePC(imm32);
 
         ir.SetTerm(IR::Term::LinkBlock{next_location});
@@ -894,26 +895,26 @@ struct ThumbTranslatorVisitor final {
     }
 
     // BL <label>
-    bool thumb32_BL_imm(Imm11 hi, Imm11 lo) {
+    bool thumb32_BL_imm(Imm<11> hi, Imm<11> lo) {
         ir.PushRSB(ir.current_location.AdvancePC(4));
         ir.SetRegister(Reg::LR, ir.Imm32((ir.current_location.PC() + 4) | 1));
 
-        const s32 imm32 = Common::SignExtend<23, s32>((hi << 12) | (lo << 1)) + 4;
+        const s32 imm32 = static_cast<s32>((concatenate(hi, lo).SignExtend<u32>() << 1) + 4);
         const auto new_location = ir.current_location.AdvancePC(imm32);
         ir.SetTerm(IR::Term::LinkBlock{new_location});
         return false;
     }
 
     // BLX <label>
-    bool thumb32_BLX_imm(Imm11 hi, Imm11 lo) {
-        if ((lo & 1) != 0) {
+    bool thumb32_BLX_imm(Imm<11> hi, Imm<11> lo) {
+        if (lo.Bit<0>()) {
             return UnpredictableInstruction();
         }
 
         ir.PushRSB(ir.current_location.AdvancePC(4));
         ir.SetRegister(Reg::LR, ir.Imm32((ir.current_location.PC() + 4) | 1));
 
-        const s32 imm32 = Common::SignExtend<23, s32>((hi << 12) | (lo << 1));
+        const s32 imm32 = static_cast<s32>(concatenate(hi, lo).SignExtend<u32>() << 1);
         const auto new_location = ir.current_location
                                     .SetPC(ir.AlignPC(4) + imm32)
                                     .SetTFlag(false);

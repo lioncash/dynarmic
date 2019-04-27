@@ -11,19 +11,19 @@
 namespace Dynarmic::A32 {
 
 // B <label>
-bool ArmTranslatorVisitor::arm_B(Cond cond, Imm24 imm24) {
+bool ArmTranslatorVisitor::arm_B(Cond cond, Imm<24> imm24) {
     if (!ConditionPassed(cond)) {
         return true;
     }
 
-    const u32 imm32 = Common::SignExtend<26, u32>(imm24 << 2) + 8;
+    const u32 imm32 = Common::SignExtend<26, u32>(imm24.ZeroExtend() << 2) + 8;
     const auto new_location = ir.current_location.AdvancePC(imm32);
     ir.SetTerm(IR::Term::LinkBlock{new_location});
     return false;
 }
 
 // BL <label>
-bool ArmTranslatorVisitor::arm_BL(Cond cond, Imm24 imm24) {
+bool ArmTranslatorVisitor::arm_BL(Cond cond, Imm<24> imm24) {
     if (!ConditionPassed(cond)) {
         return true;
     }
@@ -31,18 +31,18 @@ bool ArmTranslatorVisitor::arm_BL(Cond cond, Imm24 imm24) {
     ir.PushRSB(ir.current_location.AdvancePC(4));
     ir.SetRegister(Reg::LR, ir.Imm32(ir.current_location.PC() + 4));
 
-    const u32 imm32 = Common::SignExtend<26, u32>(imm24 << 2) + 8;
+    const u32 imm32 = Common::SignExtend<26, u32>(imm24.ZeroExtend() << 2) + 8;
     const auto new_location = ir.current_location.AdvancePC(imm32);
     ir.SetTerm(IR::Term::LinkBlock{new_location});
     return false;
 }
 
 // BLX <label>
-bool ArmTranslatorVisitor::arm_BLX_imm(bool H, Imm24 imm24) {
+bool ArmTranslatorVisitor::arm_BLX_imm(bool H, Imm<24> imm24) {
     ir.PushRSB(ir.current_location.AdvancePC(4));
     ir.SetRegister(Reg::LR, ir.Imm32(ir.current_location.PC() + 4));
 
-    const u32 imm32 = Common::SignExtend<26, u32>((imm24 << 2)) + (H ? 2 : 0) + 8;
+    const u32 imm32 = Common::SignExtend<26, u32>((imm24.ZeroExtend() << 2)) + (H ? 2 : 0) + 8;
     const auto new_location = ir.current_location.AdvancePC(imm32).SetTFlag(true);
     ir.SetTerm(IR::Term::LinkBlock{new_location});
     return false;

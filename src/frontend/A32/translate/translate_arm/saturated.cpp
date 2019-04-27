@@ -19,7 +19,7 @@ static IR::U16 MostSignificantHalf(A32::IREmitter& ir, IR::U32 value) {
 // Saturation instructions
 
 // SSAT<c> <Rd>, #<imm>, <Rn>{, <shift>}
-bool ArmTranslatorVisitor::arm_SSAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, bool sh, Reg n) {
+bool ArmTranslatorVisitor::arm_SSAT(Cond cond, Imm<5> sat_imm, Reg d, Imm<5> imm5, bool sh, Reg n) {
     if (d == Reg::PC || n == Reg::PC) {
         return UnpredictableInstruction();
     }
@@ -28,7 +28,7 @@ bool ArmTranslatorVisitor::arm_SSAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, b
         return true;
     }
 
-    const auto saturate_to = static_cast<size_t>(sat_imm) + 1;
+    const auto saturate_to = static_cast<size_t>(sat_imm.ZeroExtend()) + 1;
     const auto shift = !sh ? ShiftType::LSL : ShiftType::ASR;
     const auto operand = EmitImmShift(ir.GetRegister(n), shift, imm5, ir.GetCFlag());
     const auto result = ir.SignedSaturation(operand.result, saturate_to);
@@ -39,7 +39,7 @@ bool ArmTranslatorVisitor::arm_SSAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, b
 }
 
 // SSAT16<c> <Rd>, #<imm>, <Rn>
-bool ArmTranslatorVisitor::arm_SSAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n) {
+bool ArmTranslatorVisitor::arm_SSAT16(Cond cond, Imm<4> sat_imm, Reg d, Reg n) {
     if (d == Reg::PC || n == Reg::PC) {
         return UnpredictableInstruction();
     }
@@ -48,7 +48,7 @@ bool ArmTranslatorVisitor::arm_SSAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n) {
         return true;
     }
 
-    const auto saturate_to = static_cast<size_t>(sat_imm) + 1;
+    const auto saturate_to = static_cast<size_t>(sat_imm.ZeroExtend()) + 1;
     const auto lo_operand = ir.SignExtendHalfToWord(ir.LeastSignificantHalf(ir.GetRegister(n)));
     const auto hi_operand = ir.SignExtendHalfToWord(MostSignificantHalf(ir, ir.GetRegister(n)));
     const auto lo_result = ir.SignedSaturation(lo_operand, saturate_to);
@@ -61,7 +61,7 @@ bool ArmTranslatorVisitor::arm_SSAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n) {
 }
 
 // USAT<c> <Rd>, #<imm5>, <Rn>{, <shift>}
-bool ArmTranslatorVisitor::arm_USAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, bool sh, Reg n) {
+bool ArmTranslatorVisitor::arm_USAT(Cond cond, Imm<5> sat_imm, Reg d, Imm<5> imm5, bool sh, Reg n) {
     if (d == Reg::PC || n == Reg::PC) {
         return UnpredictableInstruction();
     }
@@ -70,7 +70,7 @@ bool ArmTranslatorVisitor::arm_USAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, b
         return true;
     }
 
-    const auto saturate_to = static_cast<size_t>(sat_imm);
+    const auto saturate_to = static_cast<size_t>(sat_imm.ZeroExtend());
     const auto shift = !sh ? ShiftType::LSL : ShiftType::ASR;
     const auto operand = EmitImmShift(ir.GetRegister(n), shift, imm5, ir.GetCFlag());
     const auto result = ir.UnsignedSaturation(operand.result, saturate_to);
@@ -81,7 +81,7 @@ bool ArmTranslatorVisitor::arm_USAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, b
 }
 
 // USAT16<c> <Rd>, #<imm4>, <Rn>
-bool ArmTranslatorVisitor::arm_USAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n) {
+bool ArmTranslatorVisitor::arm_USAT16(Cond cond, Imm<4> sat_imm, Reg d, Reg n) {
     if (d == Reg::PC || n == Reg::PC) {
         return UnpredictableInstruction();
     }
@@ -91,7 +91,7 @@ bool ArmTranslatorVisitor::arm_USAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n) {
     }
 
     // UnsignedSaturation takes a *signed* value as input, hence sign extension is required.
-    const auto saturate_to = static_cast<size_t>(sat_imm);
+    const auto saturate_to = static_cast<size_t>(sat_imm.ZeroExtend());
     const auto lo_operand = ir.SignExtendHalfToWord(ir.LeastSignificantHalf(ir.GetRegister(n)));
     const auto hi_operand = ir.SignExtendHalfToWord(MostSignificantHalf(ir, ir.GetRegister(n)));
     const auto lo_result = ir.UnsignedSaturation(lo_operand, saturate_to);

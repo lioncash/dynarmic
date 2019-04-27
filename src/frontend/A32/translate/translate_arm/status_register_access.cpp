@@ -31,7 +31,7 @@ bool ArmTranslatorVisitor::arm_MRS(Cond cond, Reg d) {
 }
 
 // MSR<c> <spec_reg>, #<const>
-bool ArmTranslatorVisitor::arm_MSR_imm(Cond cond, int mask, int rotate, Imm8 imm8) {
+bool ArmTranslatorVisitor::arm_MSR_imm(Cond cond, int mask, int rotate, Imm<8> imm8) {
     ASSERT_MSG(mask != 0, "Decode error");
 
     if (!ConditionPassed(cond)) {

@@ -9,7 +9,7 @@
 namespace Dynarmic::A32 {
 
 // PKHBT<c> <Rd>, <Rn>, <Rm>{, LSL #<imm>}
-bool ArmTranslatorVisitor::arm_PKHBT(Cond cond, Reg n, Reg d, Imm5 imm5, Reg m) {
+bool ArmTranslatorVisitor::arm_PKHBT(Cond cond, Reg n, Reg d, Imm<5> imm5, Reg m) {
     if (n == Reg::PC || d == Reg::PC || m == Reg::PC) {
         return UnpredictableInstruction();
     }
@@ -27,7 +27,7 @@ bool ArmTranslatorVisitor::arm_PKHBT(Cond cond, Reg n, Reg d, Imm5 imm5, Reg m) 
 }
 
 // PKHTB<c> <Rd>, <Rn>, <Rm>{, ASR #<imm>}
-bool ArmTranslatorVisitor::arm_PKHTB(Cond cond, Reg n, Reg d, Imm5 imm5, Reg m) {
+bool ArmTranslatorVisitor::arm_PKHTB(Cond cond, Reg n, Reg d, Imm<5> imm5, Reg m) {
     if (n == Reg::PC || d == Reg::PC || m == Reg::PC) {
         return UnpredictableInstruction();
     }

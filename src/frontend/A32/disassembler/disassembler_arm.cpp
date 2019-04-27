@@ -12,6 +12,7 @@
 
 #include "common/bit_util.h"
 #include "common/string_util.h"
+#include "frontend/imm.h"
 #include "frontend/A32/decoder/arm.h"
 #include "frontend/A32/decoder/vfp2.h"
 #include "frontend/A32/disassembler/disassembler.h"
@@ -23,24 +24,24 @@ class DisassemblerVisitor {
 public:
     using instruction_return_type = std::string;
 
-    static u32 ArmExpandImm(int rotate, Imm8 imm8) {
-        return Common::RotateRight(static_cast<u32>(imm8), rotate*2);
+    static u32 ArmExpandImm(int rotate, Imm<8> imm8) {
+        return Common::RotateRight(static_cast<u32>(imm8.ZeroExtend()), rotate*2);
     }
 
-    static std::string ShiftStr(ShiftType shift, Imm5 imm5) {
+    static std::string ShiftStr(ShiftType shift, Imm<5> imm5) {
         switch (shift) {
         case ShiftType::LSL:
             if (imm5 == 0) return "";
-            return fmt::format(", lsl #{}", imm5);
+            return fmt::format(", lsl #{}", imm5.ZeroExtend());
         case ShiftType::LSR:
             if (imm5 == 0) return ", lsr #32";
-            return fmt::format(", lsr #{}", imm5);
+            return fmt::format(", lsr #{}", imm5.ZeroExtend());
         case ShiftType::ASR:
             if (imm5 == 0) return ", asr #32";
-            return fmt::format(", asr #{}", imm5);
+            return fmt::format(", asr #{}", imm5.ZeroExtend());
         case ShiftType::ROR:
             if (imm5 == 0) return ", rrx";
-            return fmt::format(", ror #{}", imm5);
+            return fmt::format(", ror #{}", imm5.ZeroExtend());
         }
         ASSERT(false);
         return "<internal error>";
@@ -76,8 +77,8 @@ public:
         return "<internal error>";
     }
 
-    static const char* BarrierOptionStr(Imm4 option) {
-        switch (option) {
+    static const char* BarrierOptionStr(Imm<4> option) {
+        switch (option.ZeroExtend()) {
         case 0b0010:
             return " oshst";
         case 0b0011:
@@ -124,27 +125,27 @@ public:
     }
 
     // Barrier instructions
-    std::string arm_DMB(Imm4 option) {
+    std::string arm_DMB(Imm<4> option) {
         return fmt::format("dmb{}", BarrierOptionStr(option));
     }
-    std::string arm_DSB(Imm4 option) {
+    std::string arm_DSB(Imm<4> option) {
         return fmt::format("dsb{}", BarrierOptionStr(option));
     }
-    std::string arm_ISB([[maybe_unused]] Imm4 option) {
+    std::string arm_ISB([[maybe_unused]] Imm<4> option) {
         return "isb";
     }
 
     // Branch instructions
-    std::string arm_B(Cond cond, Imm24 imm24) {
-        s32 offset = Common::SignExtend<26, s32>(imm24 << 2) + 8;
+    std::string arm_B(Cond cond, Imm<24> imm24) {
+        const s32 offset = Common::SignExtend<26, s32>(imm24.ZeroExtend() << 2) + 8;
         return fmt::format("b{} {}#{}", CondToString(cond), Common::SignToChar(offset), abs(offset));
     }
-    std::string arm_BL(Cond cond, Imm24 imm24) {
-        s32 offset = Common::SignExtend<26, s32>(imm24 << 2) + 8;
+    std::string arm_BL(Cond cond, Imm<24> imm24) {
+        const s32 offset = Common::SignExtend<26, s32>(imm24.ZeroExtend() << 2) + 8;
         return fmt::format("bl{} {}#{}", CondToString(cond), Common::SignToChar(offset), abs(offset));
     }
-    std::string arm_BLX_imm(bool H, Imm24 imm24) {
-        s32 offset = Common::SignExtend<26, s32>(imm24 << 2) + 8 + (H ? 2 : 0);
+    std::string arm_BLX_imm(bool H, Imm<24> imm24) {
+        const s32 offset = Common::SignExtend<26, s32>(imm24.ZeroExtend() << 2) + 8 + (H ? 2 : 0);
         return fmt::format("blx {}#{}", Common::SignToChar(offset), abs(offset));
     }
     std::string arm_BLX_reg(Cond cond, Reg m) {
@@ -162,16 +163,24 @@ public:
         return fmt::format("cdp{} p{}, #{}, {}, {}, {}, #{}", CondToString(cond), coproc_no, opc1, CRd, CRn, CRm, opc2);
     }
 
-    std::string arm_LDC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm8 imm8) {
-        const u32 imm32 = static_cast<u32>(imm8) << 2;
-        if (!p && !u && !d && !w)
+    std::string arm_LDC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm<8> imm8) {
+        const u32 imm32 = static_cast<u32>(imm8.ZeroExtend()) << 2;
+        if (!p && !u && !d && !w) {
             return "<undefined>";
-        if (p)
-            return fmt::format("ldc{}{} {}, {}, [{}, #{}{}]{}", d ? "l" : "", CondOrTwo(cond), coproc_no, CRd, n, u ? "+" : "-", imm32, w ? "!" : "");
-        if (!p && w)
-            return fmt::format("ldc{}{} {}, {}, [{}], #{}{}", d ? "l" : "", CondOrTwo(cond), coproc_no, CRd, n, u ? "+" : "-", imm32);
-        if (!p && !w && u)
-            return fmt::format("ldc{}{} {}, {}, [{}], {}", d ? "l" : "", CondOrTwo(cond), coproc_no, CRd, n, imm8);
+        }
+        if (p) {
+            return fmt::format("ldc{}{} {}, {}, [{}, #{}{}]{}", d ? "l" : "",
+                               CondOrTwo(cond), coproc_no, CRd, n, u ? "+" : "-", imm32,
+                               w ? "!" : "");
+        }
+        if (!p && w) {
+            return fmt::format("ldc{}{} {}, {}, [{}], #{}{}", d ? "l" : "",
+                               CondOrTwo(cond), coproc_no, CRd, n, u ? "+" : "-", imm32);
+        }
+        if (!p && !w && u) {
+            return fmt::format("ldc{}{} {}, {}, [{}], {}", d ? "l" : "",
+                               CondOrTwo(cond), coproc_no, CRd, n, imm8.ZeroExtend());
+        }
         UNREACHABLE();
         return "<internal error>";
     }
@@ -192,160 +201,169 @@ public:
         return fmt::format("mrrc{} p{}, #{}, {}, {}, {}", CondOrTwo(cond), coproc_no, opc, t, t2, CRm);
     }
 
-    std::string arm_STC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm8 imm8) {
-        const u32 imm32 = static_cast<u32>(imm8) << 2;
-        if (!p && !u && !d && !w)
+    std::string arm_STC(Cond cond, bool p, bool u, bool d, bool w, Reg n, CoprocReg CRd, size_t coproc_no, Imm<8> imm8) {
+        const u32 imm32 = static_cast<u32>(imm8.ZeroExtend()) << 2;
+        if (!p && !u && !d && !w) {
             return "<undefined>";
-        if (p)
-            return fmt::format("stc{}{} {}, {}, [{}, #{}{}]{}", d ? "l" : "", CondOrTwo(cond), coproc_no, CRd, n, u ? "+" : "-", imm32, w ? "!" : "");
-        if (!p && w)
-            return fmt::format("stc{}{} {}, {}, [{}], #{}{}", d ? "l" : "", CondOrTwo(cond), coproc_no, CRd, n, u ? "+" : "-", imm32);
-        if (!p && !w && u)
-            return fmt::format("stc{}{} {}, {}, [{}], {}", d ? "l" : "", CondOrTwo(cond), coproc_no, CRd, n, imm8);
+        }
+        if (p) {
+            return fmt::format("stc{}{} {}, {}, [{}, #{}{}]{}", d ? "l" : "",
+                               CondOrTwo(cond), coproc_no, CRd, n,
+                               u ? "+" : "-", imm32, w ? "!" : "");
+        }
+        if (!p && w) {
+            return fmt::format("stc{}{} {}, {}, [{}], #{}{}", d ? "l" : "",
+                               CondOrTwo(cond), coproc_no, CRd, n,
+                               u ? "+" : "-", imm32);
+        }
+        if (!p && !w && u) {
+            return fmt::format("stc{}{} {}, {}, [{}], {}", d ? "l" : "",
+                               CondOrTwo(cond), coproc_no, CRd, n, imm8.ZeroExtend());
+        }
         UNREACHABLE();
         return "<internal error>";
     }
 
     // Data processing instructions
-    std::string arm_ADC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_ADC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("adc{}{} {}, {}, #{}", CondToString(cond), S ? "s" : "", d, n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_ADC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_ADC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("adc{}{} {}, {}, {}{}", CondToString(cond), S ? "s" : "", d, n, m, ShiftStr(shift, imm5));
     }
     std::string arm_ADC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("adc{}{} {}, {}, {}", CondToString(cond), S ? "s" : "", d, n, RsrStr(s, shift, m));
     }
-    std::string arm_ADD_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_ADD_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("add{}{} {}, {}, #{}", CondToString(cond), S ? "s" : "", d, n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_ADD_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_ADD_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("add{}{} {}, {}, {}{}", CondToString(cond), S ? "s" : "", d, n, m, ShiftStr(shift, imm5));
     }
     std::string arm_ADD_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("add{}{} {}, {}, {}", CondToString(cond), S ? "s" : "", d, n, RsrStr(s, shift, m));
     }
-    std::string arm_AND_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_AND_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("and{}{} {}, {}, #{}", CondToString(cond), S ? "s" : "", d, n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_AND_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_AND_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("and{}{} {}, {}, {}{}", CondToString(cond), S ? "s" : "", d, n, m, ShiftStr(shift, imm5));
     }
     std::string arm_AND_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("and{}{} {}, {}, {}", CondToString(cond), S ? "s" : "", d, n, RsrStr(s, shift, m));
     }
-    std::string arm_BIC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_BIC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("bic{}{} {}, {}, #{}", CondToString(cond), S ? "s" : "", d, n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_BIC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_BIC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("bic{}{} {}, {}, {}{}", CondToString(cond), S ? "s" : "", d, n, m, ShiftStr(shift, imm5));
     }
     std::string arm_BIC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("bic{}{} {}, {}, {}", CondToString(cond), S ? "s" : "", d, n, RsrStr(s, shift, m));
     }
-    std::string arm_CMN_imm(Cond cond, Reg n, int rotate, Imm8 imm8) {
+    std::string arm_CMN_imm(Cond cond, Reg n, int rotate, Imm<8> imm8) {
         return fmt::format("cmn{} {}, #{}", CondToString(cond), n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_CMN_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_CMN_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("cmn{} {}, {}{}", CondToString(cond), n, m, ShiftStr(shift, imm5));
     }
     std::string arm_CMN_rsr(Cond cond, Reg n, Reg s, ShiftType shift, Reg m) {
         return fmt::format("cmn{} {}, {}", CondToString(cond), n, RsrStr(s, shift, m));
     }
-    std::string arm_CMP_imm(Cond cond, Reg n, int rotate, Imm8 imm8) {
+    std::string arm_CMP_imm(Cond cond, Reg n, int rotate, Imm<8> imm8) {
         return fmt::format("cmp{} {}, #{}", CondToString(cond), n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_CMP_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_CMP_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("cmp{} {}, {}{}", CondToString(cond), n, m, ShiftStr(shift, imm5));
     }
     std::string arm_CMP_rsr(Cond cond, Reg n, Reg s, ShiftType shift, Reg m) {
         return fmt::format("cmp{} {}, {}", CondToString(cond), n, RsrStr(s, shift, m));
     }
-    std::string arm_EOR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_EOR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("eor{}{} {}, {}, #{}", CondToString(cond), S ? "s" : "", d, n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_EOR_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_EOR_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("eor{}{} {}, {}, {}{}", CondToString(cond), S ? "s" : "", d, n, m, ShiftStr(shift, imm5));
     }
     std::string arm_EOR_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("eor{}{} {}, {}, {}", CondToString(cond), S ? "s" : "", d, n, RsrStr(s, shift, m));
     }
-    std::string arm_MOV_imm(Cond cond, bool S, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_MOV_imm(Cond cond, bool S, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("mov{}{} {}, #{}", CondToString(cond), S ? "s" : "", d, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_MOV_reg(Cond cond, bool S, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_MOV_reg(Cond cond, bool S, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("mov{}{} {}, {}{}", CondToString(cond), S ? "s" : "", d, m, ShiftStr(shift, imm5));
     }
     std::string arm_MOV_rsr(Cond cond, bool S, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("mov{}{} {}, {}", CondToString(cond), S ? "s" : "", d, RsrStr(s, shift, m));
     }
-    std::string arm_MVN_imm(Cond cond, bool S, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_MVN_imm(Cond cond, bool S, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("mvn{}{} {}, #{}", CondToString(cond), S ? "s" : "", d, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_MVN_reg(Cond cond, bool S, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_MVN_reg(Cond cond, bool S, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("mvn{}{} {}, {}{}", CondToString(cond), S ? "s" : "", d, m, ShiftStr(shift, imm5));
     }
     std::string arm_MVN_rsr(Cond cond, bool S, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("mvn{}{} {}, {}", CondToString(cond), S ? "s" : "", d, RsrStr(s, shift, m));
     }
-    std::string arm_ORR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_ORR_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("orr{}{} {}, {}, #{}", CondToString(cond), S ? "s" : "", d, n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_ORR_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_ORR_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("orr{}{} {}, {}, {}{}", CondToString(cond), S ? "s" : "", d, n, m, ShiftStr(shift, imm5));
     }
     std::string arm_ORR_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("orr{}{} {}, {}, {}", CondToString(cond), S ? "s" : "", d, n, RsrStr(s, shift, m));
     }
-    std::string arm_RSB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_RSB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("rsb{}{} {}, {}, #{}", CondToString(cond), S ? "s" : "", d, n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_RSB_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_RSB_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("rsb{}{} {}, {}, {}{}", CondToString(cond), S ? "s" : "", d, n, m, ShiftStr(shift, imm5));
     }
     std::string arm_RSB_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("rsb{}{} {}, {}, {}", CondToString(cond), S ? "s" : "", d, n, RsrStr(s, shift, m));
     }
-    std::string arm_RSC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_RSC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("rsc{}{} {}, {}, #{}", CondToString(cond), S ? "s" : "", d, n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_RSC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_RSC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("rsc{}{} {}, {}, {}{}", CondToString(cond), S ? "s" : "", d, n, m, ShiftStr(shift, imm5));
     }
     std::string arm_RSC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("rsc{}{} {}, {}, {}", CondToString(cond), S ? "s" : "", d, n, RsrStr(s, shift, m));
     }
-    std::string arm_SBC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_SBC_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("sbc{}{} {}, {}, #{}", CondToString(cond), S ? "s" : "", d, n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_SBC_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_SBC_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("sbc{}{} {}, {}, {}{}", CondToString(cond), S ? "s" : "", d, n, m, ShiftStr(shift, imm5));
     }
     std::string arm_SBC_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("sbc{}{} {}, {}, {}", CondToString(cond), S ? "s" : "", d, n, RsrStr(s, shift, m));
     }
-    std::string arm_SUB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm8 imm8) {
+    std::string arm_SUB_imm(Cond cond, bool S, Reg n, Reg d, int rotate, Imm<8> imm8) {
         return fmt::format("sub{}{} {}, {}, #{}", CondToString(cond), S ? "s" : "", d, n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_SUB_reg(Cond cond, bool S, Reg n, Reg d, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_SUB_reg(Cond cond, bool S, Reg n, Reg d, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("sub{}{} {}, {}, {}{}", CondToString(cond), S ? "s" : "", d, n, m, ShiftStr(shift, imm5));
     }
     std::string arm_SUB_rsr(Cond cond, bool S, Reg n, Reg d, Reg s, ShiftType shift, Reg m) {
         return fmt::format("sub{}{} {}, {}, {}", CondToString(cond), S ? "s" : "", d, n, RsrStr(s, shift, m));
     }
-    std::string arm_TEQ_imm(Cond cond, Reg n, int rotate, Imm8 imm8) {
+    std::string arm_TEQ_imm(Cond cond, Reg n, int rotate, Imm<8> imm8) {
         return fmt::format("teq{} {}, #{}", CondToString(cond), n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_TEQ_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_TEQ_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("teq{} {}, {}{}", CondToString(cond), n, m, ShiftStr(shift, imm5));
     }
     std::string arm_TEQ_rsr(Cond cond, Reg n, Reg s, ShiftType shift, Reg m) {
         return fmt::format("teq{} {}, {}", CondToString(cond), n, RsrStr(s, shift, m));
     }
-    std::string arm_TST_imm(Cond cond, Reg n, int rotate, Imm8 imm8) {
+    std::string arm_TST_imm(Cond cond, Reg n, int rotate, Imm<8> imm8) {
         return fmt::format("tst{} {}, #{}", CondToString(cond), n, ArmExpandImm(rotate, imm8));
     }
-    std::string arm_TST_reg(Cond cond, Reg n, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_TST_reg(Cond cond, Reg n, Imm<5> imm5, ShiftType shift, Reg m) {
         return fmt::format("tst{} {}, {}{}", CondToString(cond), n, m, ShiftStr(shift, imm5));
     }
     std::string arm_TST_rsr(Cond cond, Reg n, Reg s, ShiftType shift, Reg m) {
@@ -353,11 +371,11 @@ public:
     }
 
     // Exception generation instructions
-    std::string arm_BKPT(Cond cond, Imm12 imm12, Imm4 imm4) {
-        return fmt::format("bkpt{} #{}", CondToString(cond), imm12 << 4 | imm4);
+    std::string arm_BKPT(Cond cond, Imm<12> imm12, Imm<4> imm4) {
+        return fmt::format("bkpt{} #{}", CondToString(cond), concatenate(imm12, imm4).ZeroExtend());
     }
-    std::string arm_SVC(Cond cond, Imm24 imm24) {
-        return fmt::format("svc{} #{}", CondToString(cond), imm24);
+    std::string arm_SVC(Cond cond, Imm<24> imm24) {
+        return fmt::format("svc{} #{}", CondToString(cond), imm24.ZeroExtend());
     }
     std::string arm_UDF() {
         return fmt::format("udf");
@@ -409,179 +427,307 @@ public:
     std::string arm_YIELD() { return "yield <unimplemented>"; }
 
     // Load/Store instructions
-    std::string arm_LDR_lit(Cond cond, bool U, Reg t, Imm12 imm12) {
+    std::string arm_LDR_lit(Cond cond, bool U, Reg t, Imm<12> imm12) {
         bool P = true, W = false;
         return arm_LDR_imm(cond, P, U, W, Reg::PC, t, imm12);
     }
-    std::string arm_LDR_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm12 imm12) {
+    std::string arm_LDR_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<12> imm12) {
+        const u32 imm12_value = imm12.ZeroExtend();
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldr{} {}, [{}, #{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', imm12, W ? "!" : "");
+            return fmt::format("ldr{} {}, [{}, #{}{}]{}",
+                               CondToString(cond), t, n, sign,
+                               imm12_value, W ? "!" : "");
         } else {
-            return fmt::format("ldr{} {}, [{}], #{}{}{}", CondToString(cond), t, n, U ? '+' : '-', imm12, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldr{} {}, [{}], #{}{}{}",
+                               CondToString(cond), t, n, sign,
+                               imm12_value, W ? " (err: W == 1!!!)" : "");
         }
     }
-    std::string arm_LDR_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_LDR_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<5> imm5, ShiftType shift, Reg m) {
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldr{} {}, [{}, {}{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', m, ShiftStr(shift, imm5), W ? "!" : "");
+            return fmt::format("ldr{} {}, [{}, {}{}{}]{}",
+                               CondToString(cond), t, n, sign, m,
+                               ShiftStr(shift, imm5), W ? "!" : "");
         } else {
-            return fmt::format("ldr{} {}, [{}], {}{}{}{}", CondToString(cond), t, n, U ? '+' : '-', m, ShiftStr(shift, imm5), W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldr{} {}, [{}], {}{}{}{}",
+                               CondToString(cond), t, n, sign, m,
+                               ShiftStr(shift, imm5), W ? " (err: W == 1!!!)" : "");
         }
     }
-    std::string arm_LDRB_lit(Cond cond, bool U, Reg t, Imm12 imm12) {
-        bool P = true, W = false;
+    std::string arm_LDRB_lit(Cond cond, bool U, Reg t, Imm<12> imm12) {
+        const bool P = true;
+        const bool W = false;
         return arm_LDRB_imm(cond, P, U, W, Reg::PC, t, imm12);
     }
-    std::string arm_LDRB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm12 imm12) {
+    std::string arm_LDRB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<12> imm12) {
+        const u32 imm12_value = imm12.ZeroExtend();
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldrb{} {}, [{}, #{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', imm12, W ? "!" : "");
+            return fmt::format("ldrb{} {}, [{}, #{}{}]{}",
+                               CondToString(cond), t, n, sign, imm12_value,
+                               W ? "!" : "");
         } else {
-            return fmt::format("ldrb{} {}, [{}], #{}{}{}", CondToString(cond), t, n, U ? '+' : '-', imm12, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldrb{} {}, [{}], #{}{}{}",
+                               CondToString(cond), t, n, sign, imm12_value,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
-    std::string arm_LDRB_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_LDRB_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<5> imm5, ShiftType shift, Reg m) {
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldrb{} {}, [{}, {}{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', m, ShiftStr(shift, imm5), W ? "!" : "");
+            return fmt::format("ldrb{} {}, [{}, {}{}{}]{}",
+                               CondToString(cond), t, n, sign, m,
+                               ShiftStr(shift, imm5), W ? "!" : "");
         } else {
-            return fmt::format("ldrb{} {}, [{}], {}{}{}{}", CondToString(cond), t, n, U ? '+' : '-', m, ShiftStr(shift, imm5), W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldrb{} {}, [{}], {}{}{}{}",
+                               CondToString(cond), t, n, sign, m,
+                               ShiftStr(shift, imm5), W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_LDRBT() { return "ice"; }
-    std::string arm_LDRD_lit(Cond cond, bool U, Reg t, Imm4 imm8a, Imm4 imm8b) {
-        bool P = true, W = false;
+    std::string arm_LDRD_lit(Cond cond, bool U, Reg t, Imm<4> imm8a, Imm<4> imm8b) {
+        const bool P = true;
+        const bool W = false;
         return arm_LDRD_imm(cond, P, U, W, Reg::PC, t, imm8a, imm8b);
     }
-    std::string arm_LDRD_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b) {
-        u32 imm32 = (imm8a << 4) | imm8b;
+    std::string arm_LDRD_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b) {
+        const u32 imm32 = concatenate(imm8a, imm8b).ZeroExtend();
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldrd{} {}, {}, [{}, #{}{}]{}", CondToString(cond), t, t+1, n, U ? '+' : '-', imm32, W ? "!" : "");
+            return fmt::format("ldrd{} {}, {}, [{}, #{}{}]{}",
+                               CondToString(cond), t, t+1, n, sign, imm32,
+                               W ? "!" : "");
         } else {
-            return fmt::format("ldrd{} {}, {}, [{}], #{}{}{}", CondToString(cond), t, t+1, n, U ? '+' : '-', imm32, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldrd{} {}, {}, [{}], #{}{}{}",
+                               CondToString(cond), t, t+1, n, sign, imm32,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_LDRD_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m) {
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldrd{} {}, {}, [{}, {}{}]{}", CondToString(cond), t, t+1, n, U ? '+' : '-', m, W ? "!" : "");
+            return fmt::format("ldrd{} {}, {}, [{}, {}{}]{}",
+                               CondToString(cond), t, t+1, n, sign, m,
+                               W ? "!" : "");
         } else {
-            return fmt::format("ldrd{} {}, {}, [{}], {}{}{}", CondToString(cond), t, t+1, n, U ? '+' : '-', m, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldrd{} {}, {}, [{}], {}{}{}",
+                               CondToString(cond), t, t+1, n, sign, m,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
-    std::string arm_LDRH_lit(Cond cond, bool P, bool U, bool W, Reg t, Imm4 imm8a, Imm4 imm8b) {
+    std::string arm_LDRH_lit(Cond cond, bool P, bool U, bool W, Reg t, Imm<4> imm8a, Imm<4> imm8b) {
         return arm_LDRH_imm(cond, P, U, W, Reg::PC, t, imm8a, imm8b);
     }
-    std::string arm_LDRH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b) {
-        u32 imm32 = (imm8a << 4) | imm8b;
+    std::string arm_LDRH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b) {
+        const u32 imm32 = concatenate(imm8a, imm8b).ZeroExtend();
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldrh{} {}, [{}, #{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', imm32, W ? "!" : "");
+            return fmt::format("ldrh{} {}, [{}, #{}{}]{}",
+                               CondToString(cond), t, n, sign, imm32,
+                               W ? "!" : "");
         } else {
-            return fmt::format("ldrh{} {}, [{}], #{}{}{}", CondToString(cond), t, n, U ? '+' : '-', imm32, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldrh{} {}, [{}], #{}{}{}",
+                               CondToString(cond), t, n, sign, imm32,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_LDRH_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m) {
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldrh{} {}, [{}, {}{}]{}", CondToString(cond), t, n, U ? '+' : '-', m, W ? "!" : "");
+            return fmt::format("ldrh{} {}, [{}, {}{}]{}",
+                               CondToString(cond), t, n, sign, m,
+                               W ? "!" : "");
         } else {
-            return fmt::format("ldrh{} {}, [{}], {}{}{}", CondToString(cond), t, n, U ? '+' : '-', m, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldrh{} {}, [{}], {}{}{}",
+                               CondToString(cond), t, n, sign, m,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_LDRHT() { return "ice"; }
-    std::string arm_LDRSB_lit(Cond cond, bool U, Reg t, Imm4 imm8a, Imm4 imm8b) {
-        bool P = true, W = false;
+    std::string arm_LDRSB_lit(Cond cond, bool U, Reg t, Imm<4> imm8a, Imm<4> imm8b) {
+        const bool P = true;
+        const bool W = false;
         return arm_LDRSB_imm(cond, P, U, W, Reg::PC, t, imm8a, imm8b);
     }
-    std::string arm_LDRSB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b) {
-        u32 imm32 = (imm8a << 4) | imm8b;
+    std::string arm_LDRSB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b) {
+        const u32 imm32 = concatenate(imm8a, imm8b).ZeroExtend();
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldrsb{} {}, [{}, #{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', imm32, W ? "!" : "");
+            return fmt::format("ldrsb{} {}, [{}, #{}{}]{}",
+                               CondToString(cond), t, n, sign, imm32,
+                               W ? "!" : "");
         } else {
-            return fmt::format("ldrsb{} {}, [{}], #{}{}{}", CondToString(cond), t, n, U ? '+' : '-', imm32, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldrsb{} {}, [{}], #{}{}{}",
+                               CondToString(cond), t, n, sign, imm32,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_LDRSB_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m) {
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldrsb{} {}, [{}, {}{}]{}", CondToString(cond), t, n, U ? '+' : '-', m, W ? "!" : "");
+            return fmt::format("ldrsb{} {}, [{}, {}{}]{}",
+                               CondToString(cond), t, n, sign, m,
+                               W ? "!" : "");
         } else {
-            return fmt::format("ldrsb{} {}, [{}], {}{}{}", CondToString(cond), t, n, U ? '+' : '-', m, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldrsb{} {}, [{}], {}{}{}",
+                               CondToString(cond), t, n, sign, m,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_LDRSBT() { return "ice"; }
-    std::string arm_LDRSH_lit(Cond cond, bool U, Reg t, Imm4 imm8a, Imm4 imm8b) {
-        bool P = true, W = false;
+    std::string arm_LDRSH_lit(Cond cond, bool U, Reg t, Imm<4> imm8a, Imm<4> imm8b) {
+        const bool P = true;
+        const bool W = false;
         return arm_LDRSH_imm(cond, P, U, W, Reg::PC, t, imm8a, imm8b);
     }
-    std::string arm_LDRSH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b) {
-        u32 imm32 = (imm8a << 4) | imm8b;
+    std::string arm_LDRSH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b) {
+        const u32 imm32 = concatenate(imm8a, imm8b).ZeroExtend();
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldrsh{} {}, [{}, #{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', imm32, W ? "!" : "");
+            return fmt::format("ldrsh{} {}, [{}, #{}{}]{}",
+                               CondToString(cond), t, n, sign, imm32,
+                               W ? "!" : "");
         } else {
-            return fmt::format("ldrsh{} {}, [{}], #{}{}{}", CondToString(cond), t, n, U ? '+' : '-', imm32, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldrsh{} {}, [{}], #{}{}{}",
+                               CondToString(cond), t, n, sign, imm32,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_LDRSH_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m) {
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("ldrsh{} {}, [{}, {}{}]{}", CondToString(cond), t, n, U ? '+' : '-', m, W ? "!" : "");
+            return fmt::format("ldrsh{} {}, [{}, {}{}]{}",
+                               CondToString(cond), t, n, sign, m,
+                               W ? "!" : "");
         } else {
-            return fmt::format("ldrsh{} {}, [{}], {}{}{}", CondToString(cond), t, n, U ? '+' : '-', m, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("ldrsh{} {}, [{}], {}{}{}",
+                               CondToString(cond), t, n, sign, m,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_LDRSHT() { return "ice"; }
     std::string arm_LDRT() { return "ice"; }
-    std::string arm_STR_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm12 imm12) {
+    std::string arm_STR_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<12> imm12) {
+        const u32 imm12_value = imm12.ZeroExtend();
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("str{} {}, [{}, #{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', imm12, W ? "!" : "");
+            return fmt::format("str{} {}, [{}, #{}{}]{}",
+                               CondToString(cond), t, n, sign, imm12_value,
+                               W ? "!" : "");
         } else {
-            return fmt::format("str{} {}, [{}], #{}{}{}", CondToString(cond), t, n, U ? '+' : '-', imm12, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("str{} {}, [{}], #{}{}{}",
+                               CondToString(cond), t, n, sign, imm12_value,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
-    std::string arm_STR_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_STR_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<5> imm5, ShiftType shift, Reg m) {
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("str{} {}, [{}, {}{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', m, ShiftStr(shift, imm5), W ? "!" : "");
+            return fmt::format("str{} {}, [{}, {}{}{}]{}",
+                               CondToString(cond), t, n, sign, m,
+                               ShiftStr(shift, imm5), W ? "!" : "");
         } else {
-            return fmt::format("str{} {}, [{}], {}{}{}{}", CondToString(cond), t, n, U ? '+' : '-', m, ShiftStr(shift, imm5), W ? " (err: W == 1!!!)" : "");
+            return fmt::format("str{} {}, [{}], {}{}{}{}",
+                               CondToString(cond), t, n, sign, m,
+                               ShiftStr(shift, imm5), W ? " (err: W == 1!!!)" : "");
         }
     }
-    std::string arm_STRB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm12 imm12) {
+    std::string arm_STRB_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<12> imm12) {
+        const u32 imm12_value = imm12.ZeroExtend();
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("strb{} {}, [{}, #{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', imm12, W ? "!" : "");
+            return fmt::format("strb{} {}, [{}, #{}{}]{}",
+                               CondToString(cond), t, n, sign, imm12_value,
+                               W ? "!" : "");
         } else {
-            return fmt::format("strb{} {}, [{}], #{}{}{}", CondToString(cond), t, n, U ? '+' : '-', imm12, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("strb{} {}, [{}], #{}{}{}",
+                               CondToString(cond), t, n, sign, imm12_value,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
-    std::string arm_STRB_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm5 imm5, ShiftType shift, Reg m) {
+    std::string arm_STRB_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<5> imm5, ShiftType shift, Reg m) {
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("strb{} {}, [{}, {}{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', m, ShiftStr(shift, imm5), W ? "!" : "");
+            return fmt::format("strb{} {}, [{}, {}{}{}]{}",
+                               CondToString(cond), t, n, sign, m,
+                               ShiftStr(shift, imm5), W ? "!" : "");
         } else {
-            return fmt::format("strb{} {}, [{}], {}{}{}{}", CondToString(cond), t, n, U ? '+' : '-', m, ShiftStr(shift, imm5), W ? " (err: W == 1!!!)" : "");
+            return fmt::format("strb{} {}, [{}], {}{}{}{}",
+                               CondToString(cond), t, n, sign, m,
+                               ShiftStr(shift, imm5), W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_STRBT() { return "ice"; }
-    std::string arm_STRD_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b) {
-        u32 imm32 = (imm8a << 4) | imm8b;
+    std::string arm_STRD_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b) {
+        const u32 imm32 = concatenate(imm8a, imm8b).ZeroExtend();
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("strd{} {}, {}, [{}, #{}{}]{}", CondToString(cond), t, t+1, n, U ? '+' : '-', imm32, W ? "!" : "");
+            return fmt::format("strd{} {}, {}, [{}, #{}{}]{}",
+                               CondToString(cond), t, t+1, n, sign, imm32,
+                               W ? "!" : "");
         } else {
-            return fmt::format("strd{} {}, {}, [{}], #{}{}{}", CondToString(cond), t, t+1, n, U ? '+' : '-', imm32, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("strd{} {}, {}, [{}], #{}{}{}",
+                               CondToString(cond), t, t+1, n, sign, imm32,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_STRD_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m) {
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("strd{} {}, {}, [{}, {}{}]{}", CondToString(cond), t, t+1, n, U ? '+' : '-', m, W ? "!" : "");
+            return fmt::format("strd{} {}, {}, [{}, {}{}]{}",
+                               CondToString(cond), t, t+1, n, sign, m,
+                               W ? "!" : "");
         } else {
-            return fmt::format("strd{} {}, {}, [{}], {}{}{}", CondToString(cond), t, t+1, n, U ? '+' : '-', m, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("strd{} {}, {}, [{}], {}{}{}",
+                               CondToString(cond), t, t+1, n, sign, m,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
-    std::string arm_STRH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm4 imm8a, Imm4 imm8b) {
-        u32 imm32 = (imm8a << 4) | imm8b;
+    std::string arm_STRH_imm(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Imm<4> imm8a, Imm<4> imm8b) {
+        const u32 imm32 = concatenate(imm8a, imm8b).ZeroExtend();
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("strh{} {}, [{}, #{}{}]{}", CondToString(cond), t, n, U ? '+' : '-', imm32, W ? "!" : "");
+            return fmt::format("strh{} {}, [{}, #{}{}]{}",
+                               CondToString(cond), t, n, sign, imm32,
+                               W ? "!" : "");
         } else {
-            return fmt::format("strh{} {}, [{}], #{}{}{}", CondToString(cond), t, n, U ? '+' : '-', imm32, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("strh{} {}, [{}], #{}{}{}",
+                               CondToString(cond), t, n, sign, imm32,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_STRH_reg(Cond cond, bool P, bool U, bool W, Reg n, Reg t, Reg m) {
+        const char sign = U ? '+' : '-';
+
         if (P) {
-            return fmt::format("strd{} {}, [{}, {}{}]{}", CondToString(cond), t, n, U ? '+' : '-', m, W ? "!" : "");
+            return fmt::format("strd{} {}, [{}, {}{}]{}",
+                               CondToString(cond), t, n, sign, m,
+                               W ? "!" : "");
         } else {
-            return fmt::format("strd{} {}, [{}], {}{}{}", CondToString(cond), t, n, U ? '+' : '-', m, W ? " (err: W == 1!!!)" : "");
+            return fmt::format("strd{} {}, [{}], {}{}{}",
+                               CondToString(cond), t, n, sign, m,
+                               W ? " (err: W == 1!!!)" : "");
         }
     }
     std::string arm_STRHT() { return "ice"; }
@@ -617,17 +763,24 @@ public:
     std::string arm_STM_usr() { return "ice"; }
 
     // Miscellaneous instructions
-    std::string arm_BFC(Cond cond, Imm5 msb, Reg d, Imm5 lsb) {
-        return fmt::format("bfc{} {}, #{}, #{}", CondToString(cond), d, lsb, msb - lsb + 1);
+    std::string arm_BFC(Cond cond, Imm<5> msb, Reg d, Imm<5> lsb) {
+        const u32 lsb_value = lsb.ZeroExtend();
+        const u32 width = msb.ZeroExtend() - lsb_value + 1;
+        return fmt::format("bfc{} {}, #{}, #{}",
+                           CondToString(cond), d, lsb_value, width);
     }
-    std::string arm_BFI(Cond cond, Imm5 msb, Reg d, Imm5 lsb, Reg n) {
-        return fmt::format("bfi{} {}, {}, #{}, #{}", CondToString(cond), d, n, lsb, msb - lsb + 1);
+    std::string arm_BFI(Cond cond, Imm<5> msb, Reg d, Imm<5> lsb, Reg n) {
+        const u32 lsb_value = lsb.ZeroExtend();
+        const u32 width = msb.ZeroExtend() - lsb_value + 1;
+        return fmt::format("bfi{} {}, {}, #{}, #{}",
+                           CondToString(cond), d, n, lsb_value, width);
     }
     std::string arm_CLZ(Cond cond, Reg d, Reg m) {
         return fmt::format("clz{} {}, {}", CondToString(cond), d, m);
     }
-    std::string arm_MOVT(Cond cond, Imm4 imm4, Reg d, Imm12 imm12) {
-        return fmt::format("movt{} {}, #{}", CondToString(cond), d, (imm4 << 12) | imm12);
+    std::string arm_MOVT(Cond cond, Imm<4> imm4, Reg d, Imm<12> imm12) {
+        const u32 imm = concatenate(imm4, imm12).ZeroExtend();
+        return fmt::format("movt{} {}, #{}", CondToString(cond), d, imm);
     }
     std::string arm_NOP() {
         return "nop";
@@ -635,14 +788,20 @@ public:
     std::string arm_RBIT(Cond cond, Reg d, Reg m) {
         return fmt::format("rbit{} {}, {}", CondToString(cond), d, m);
     }
-    std::string arm_SBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n) {
-        return fmt::format("sbfx{} {}, {}, #{}, #{}", CondToString(cond), d, n, lsb, widthm1 + 1);
+    std::string arm_SBFX(Cond cond, Imm<5> widthm1, Reg d, Imm<5> lsb, Reg n) {
+        const u32 lsb_value = lsb.ZeroExtend();
+        const u32 width = widthm1.ZeroExtend() + 1;
+        return fmt::format("sbfx{} {}, {}, #{}, #{}",
+                           CondToString(cond), d, n, lsb_value, width);
     }
     std::string arm_SEL(Cond cond, Reg n, Reg d, Reg m) {
         return fmt::format("sel{} {}, {}, {}", CondToString(cond), d, n, m);
     }
-    std::string arm_UBFX(Cond cond, Imm5 widthm1, Reg d, Imm5 lsb, Reg n) {
-        return fmt::format("ubfx{} {}, {}, #{}, #{}", CondToString(cond), d, n, lsb, widthm1 + 1);
+    std::string arm_UBFX(Cond cond, Imm<5> widthm1, Reg d, Imm<5> lsb, Reg n) {
+        const u32 lsb_value = lsb.ZeroExtend();
+        const u32 width = widthm1.ZeroExtend() + 1;
+        return fmt::format("ubfx{} {}, {}, #{}, #{}",
+                           CondToString(cond), d, n, lsb_value, width);
     }
 
     // Unsigned sum of absolute difference functions
@@ -654,10 +813,10 @@ public:
     }
 
     // Packing instructions
-    std::string arm_PKHBT(Cond cond, Reg n, Reg d, Imm5 imm5, Reg m) {
+    std::string arm_PKHBT(Cond cond, Reg n, Reg d, Imm<5> imm5, Reg m) {
         return fmt::format("pkhbt{} {}, {}, {}{}", CondToString(cond), d, n, m, ShiftStr(ShiftType::LSL, imm5));
     }
-    std::string arm_PKHTB(Cond cond, Reg n, Reg d, Imm5 imm5, Reg m) {
+    std::string arm_PKHTB(Cond cond, Reg n, Reg d, Imm<5> imm5, Reg m) {
         return fmt::format("pkhtb{} {}, {}, {}{}", CondToString(cond), d, n, m, ShiftStr(ShiftType::ASR, imm5));
     }
 
@@ -673,17 +832,25 @@ public:
     }
 
     // Saturation instructions
-    std::string arm_SSAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, bool sh, Reg n) {
-        return fmt::format("ssat{} {}, #{}, {}{}", CondToString(cond), d, sat_imm + 1, n, ShiftStr(ShiftType(sh << 1), imm5));
+    std::string arm_SSAT(Cond cond, Imm<5> sat_imm, Reg d, Imm<5> imm5, bool sh, Reg n) {
+        const u32 bit_position = sat_imm.ZeroExtend() + 1;
+        return fmt::format("ssat{} {}, #{}, {}{}",
+                           CondToString(cond), d, bit_position, n,
+                           ShiftStr(ShiftType(sh << 1), imm5));
     }
-    std::string arm_SSAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n) {
-        return fmt::format("ssat16{} {}, #{}, {}", CondToString(cond), d, sat_imm + 1, n);
+    std::string arm_SSAT16(Cond cond, Imm<4> sat_imm, Reg d, Reg n) {
+        const u32 bit_position = sat_imm.ZeroExtend() + 1;
+        return fmt::format("ssat16{} {}, #{}, {}",
+                           CondToString(cond), d, bit_position, n);
     }
-    std::string arm_USAT(Cond cond, Imm5 sat_imm, Reg d, Imm5 imm5, bool sh, Reg n) {
-        return fmt::format("usat{} {}, #{}, {}{}", CondToString(cond), d, sat_imm, n, ShiftStr(ShiftType(sh << 1), imm5));
+    std::string arm_USAT(Cond cond, Imm<5> sat_imm, Reg d, Imm<5> imm5, bool sh, Reg n) {
+        return fmt::format("usat{} {}, #{}, {}{}",
+                           CondToString(cond), d, sat_imm.ZeroExtend(), n,
+                           ShiftStr(ShiftType(sh << 1), imm5));
     }
-    std::string arm_USAT16(Cond cond, Imm4 sat_imm, Reg d, Reg n) {
-        return fmt::format("usat16{} {}, #{}, {}", CondToString(cond), d, sat_imm, n);
+    std::string arm_USAT16(Cond cond, Imm<4> sat_imm, Reg d, Reg n) {
+        return fmt::format("usat16{} {}, #{}, {}",
+                           CondToString(cond), d, sat_imm.ZeroExtend(), n);
     }
 
     // Divide instructions
@@ -940,19 +1107,31 @@ public:
     std::string arm_MRS(Cond cond, Reg d) {
         return fmt::format("mrs{} {}, apsr", CondToString(cond), d);
     }
-    std::string arm_MSR_imm(Cond cond, int mask, int rotate, Imm8 imm8) {
+    std::string arm_MSR_imm(Cond cond, int mask, int rotate, Imm<8> imm8) {
         const bool write_c = Common::Bit<0>(mask);
         const bool write_x = Common::Bit<1>(mask);
         const bool write_s = Common::Bit<2>(mask);
         const bool write_f = Common::Bit<3>(mask);
-        return fmt::format("msr{} cpsr_{}{}{}{}, #{}", CondToString(cond), write_c ? "c" : "", write_x ? "x" : "", write_s ? "s" : "", write_f ? "f" : "", ArmExpandImm(rotate, imm8));
+        return fmt::format("msr{} cpsr_{}{}{}{}, #{}",
+                           CondToString(cond),
+                           write_c ? "c" : "",
+                           write_x ? "x" : "",
+                           write_s ? "s" : "",
+                           write_f ? "f" : "",
+                           ArmExpandImm(rotate, imm8));
     }
     std::string arm_MSR_reg(Cond cond, int mask, Reg n) {
         const bool write_c = Common::Bit<0>(mask);
         const bool write_x = Common::Bit<1>(mask);
         const bool write_s = Common::Bit<2>(mask);
         const bool write_f = Common::Bit<3>(mask);
-        return fmt::format("msr{} cpsr_{}{}{}{}, {}", CondToString(cond), write_c ? "c" : "", write_x ? "x" : "", write_s ? "s" : "", write_f ? "f" : "", n);
+        return fmt::format("msr{} cpsr_{}{}{}{}, {}",
+                           CondToString(cond),
+                           write_c ? "c" : "",
+                           write_x ? "x" : "",
+                           write_s ? "s" : "",
+                           write_f ? "f" : "",
+                           n);
     }
     std::string arm_RFE() { return "ice"; }
     std::string arm_SETEND(bool E) {
@@ -1080,52 +1259,83 @@ public:
         }
     }
 
-    std::string vfp2_VPOP(Cond cond, bool D, size_t Vd, bool sz, Imm8 imm8) {
-        return fmt::format("vpop{} {}(+{})", CondToString(cond), FPRegStr(sz, Vd, D), imm8 >> (sz ? 1 : 0));
+    std::string vfp2_VPOP(Cond cond, bool D, size_t Vd, bool sz, Imm<8> imm8) {
+        return fmt::format("vpop{} {}(+{})",
+                           CondToString(cond), FPRegStr(sz, Vd, D),
+                           imm8.ZeroExtend() >> (sz ? 1 : 0));
     }
 
-    std::string vfp2_VPUSH(Cond cond, bool D, size_t Vd, bool sz, Imm8 imm8) {
-        return fmt::format("vpush{} {}(+{})", CondToString(cond), FPRegStr(sz, Vd, D), imm8 >> (sz ? 1 : 0));
+    std::string vfp2_VPUSH(Cond cond, bool D, size_t Vd, bool sz, Imm<8> imm8) {
+        return fmt::format("vpush{} {}(+{})",
+                           CondToString(cond), FPRegStr(sz, Vd, D),
+                           imm8.ZeroExtend() >> (sz ? 1 : 0));
     }
 
-    std::string vfp2_VLDR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm8 imm8) {
-        u32 imm32 = imm8 << 2;
-        return fmt::format("vldr{} {}, [{}, #{}{}]", CondToString(cond), FPRegStr(sz, Vd, D), n, U ? '+' : '-', imm32);
+    std::string vfp2_VLDR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend() << 2;
+        const char sign = U ? '+' : '-';
+        return fmt::format("vldr{} {}, [{}, #{}{}]",
+                           CondToString(cond), FPRegStr(sz, Vd, D), n, sign, imm32);
     }
 
-    std::string vfp2_VSTR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm8 imm8) {
-        u32 imm32 = imm8 << 2;
-        return fmt::format("vstr{} {}, [{}, #{}{}]", CondToString(cond), FPRegStr(sz, Vd, D), n, U ? '+' : '-', imm32);
+    std::string vfp2_VSTR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend() << 2;
+        const char sign = U ? '+' : '-';
+        return fmt::format("vstr{} {}, [{}, #{}{}]",
+                           CondToString(cond), FPRegStr(sz, Vd, D), n, sign, imm32);
     }
 
-    std::string vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8) {
+    std::string vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
         const char* mode = "<invalid mode>";
-        if (!p && u) mode = "ia";
-        if (p && !u) mode = "db";
-        return fmt::format("vstm{}{}.f64 {}{}, {}(+{})", mode, CondToString(cond), n, w ? "!" : "", FPRegStr(true, Vd, D), imm8);
+        if (!p && u) {
+            mode = "ia";
+        }
+        if (p && !u) {
+            mode = "db";
+        }
+        return fmt::format("vstm{}{}.f64 {}{}, {}(+{})", mode,
+                           CondToString(cond), n, w ? "!" : "",
+                           FPRegStr(true, Vd, D), imm8.ZeroExtend());
     }
 
-    std::string vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8) {
+    std::string vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
         const char* mode = "<invalid mode>";
-        if (!p && u) mode = "ia";
-        if (p && !u) mode = "db";
-        return fmt::format("vstm{}{}.f32 {}{}, {}(+{})", mode, CondToString(cond), n, w ? "!" : "", FPRegStr(false, Vd, D), imm8);
+        if (!p && u) {
+            mode = "ia";
+        }
+        if (p && !u) {
+            mode = "db";
+        }
+        return fmt::format("vstm{}{}.f32 {}{}, {}(+{})", mode,
+                           CondToString(cond), n, w ? "!" : "",
+                           FPRegStr(false, Vd, D), imm8.ZeroExtend());
     }
 
-    std::string vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8) {
+    std::string vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
         const char* mode = "<invalid mode>";
-        if (!p && u) mode = "ia";
-        if (p && !u) mode = "db";
-        return fmt::format("vldm{}{}.f64 {}{}, {}(+{})", mode, CondToString(cond), n, w ? "!" : "", FPRegStr(true, Vd, D), imm8);
+        if (!p && u) {
+            mode = "ia";
+        }
+        if (p && !u) {
+            mode = "db";
+        }
+        return fmt::format("vldm{}{}.f64 {}{}, {}(+{})", mode,
+                           CondToString(cond), n, w ? "!" : "",
+                           FPRegStr(true, Vd, D), imm8.ZeroExtend());
     }
 
-    std::string vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8) {
+    std::string vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
         const char* mode = "<invalid mode>";
-        if (!p && u) mode = "ia";
-        if (p && !u) mode = "db";
-        return fmt::format("vldm{}{}.f32 {}{}, {}(+{})", mode, CondToString(cond), n, w ? "!" : "", FPRegStr(false, Vd, D), imm8);
+        if (!p && u) {
+            mode = "ia";
+        }
+        if (p && !u) {
+            mode = "db";
+        }
+        return fmt::format("vldm{}{}.f32 {}{}, {}(+{})", mode,
+                           CondToString(cond), n, w ? "!" : "",
+                           FPRegStr(false, Vd, D), imm8.ZeroExtend());
     }
-
 };
 
 std::string DisassembleArm(u32 instruction) {

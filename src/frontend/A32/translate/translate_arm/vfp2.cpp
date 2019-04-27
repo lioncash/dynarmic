@@ -628,9 +628,9 @@ bool ArmTranslatorVisitor::vfp2_VMRS(Cond cond, Reg t) {
 }
 
 // VPOP.{F32,F64} <list>
-bool ArmTranslatorVisitor::vfp2_VPOP(Cond cond, bool D, size_t Vd, bool sz, Imm8 imm8) {
+bool ArmTranslatorVisitor::vfp2_VPOP(Cond cond, bool D, size_t Vd, bool sz, Imm<8> imm8) {
     const ExtReg d = ToExtReg(sz, Vd, D);
-    const size_t regs = sz ? imm8 >> 1 : imm8;
+    const size_t regs = sz ? imm8.ZeroExtend() >> 1 : imm8.ZeroExtend();
 
     if (regs == 0 || RegNumber(d)+regs > 32) {
         return UnpredictableInstruction();
@@ -668,9 +668,9 @@ bool ArmTranslatorVisitor::vfp2_VPOP(Cond cond, bool D, size_t Vd, bool sz, Imm8
 }
 
 // VPUSH.{F32,F64} <list>
-bool ArmTranslatorVisitor::vfp2_VPUSH(Cond cond, bool D, size_t Vd, bool sz, Imm8 imm8) {
+bool ArmTranslatorVisitor::vfp2_VPUSH(Cond cond, bool D, size_t Vd, bool sz, Imm<8> imm8) {
     const ExtReg d = ToExtReg(sz, Vd, D);
-    const size_t regs = sz ? imm8 >> 1 : imm8;
+    const size_t regs = sz ? imm8.ZeroExtend() >> 1 : imm8.ZeroExtend();
 
     if (regs == 0 || RegNumber(d)+regs > 32) {
         return UnpredictableInstruction();
@@ -684,7 +684,7 @@ bool ArmTranslatorVisitor::vfp2_VPUSH(Cond cond, bool D, size_t Vd, bool sz, Imm
         return true;
     }
 
-    const u32 imm32 = imm8 << 2;
+    const u32 imm32 = imm8.ZeroExtend() << 2;
     auto address = ir.Sub(ir.GetRegister(Reg::SP), ir.Imm32(imm32));
     ir.SetRegister(Reg::SP, address);
 
@@ -709,12 +709,12 @@ bool ArmTranslatorVisitor::vfp2_VPUSH(Cond cond, bool D, size_t Vd, bool sz, Imm
 
 // VLDR<c> <Dd>, [<Rn>{, #+/-<imm>}]
 // VLDR<c> <Sd>, [<Rn>{, #+/-<imm>}]
-bool ArmTranslatorVisitor::vfp2_VLDR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm8 imm8) {
+bool ArmTranslatorVisitor::vfp2_VLDR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
 
-    const u32 imm32 = imm8 << 2;
+    const u32 imm32 = imm8.ZeroExtend() << 2;
     const auto d = ToExtReg(sz, Vd, D);
     const auto base = n == Reg::PC ? ir.Imm32(ir.AlignPC(4)) : ir.GetRegister(n);
     const auto address = U ? ir.Add(base, ir.Imm32(imm32)) : ir.Sub(base, ir.Imm32(imm32));
@@ -735,12 +735,12 @@ bool ArmTranslatorVisitor::vfp2_VLDR(Cond cond, bool U, bool D, Reg n, size_t Vd
 
 // VSTR<c> <Dd>, [<Rn>{, #+/-<imm>}]
 // VSTR<c> <Sd>, [<Rn>{, #+/-<imm>}]
-bool ArmTranslatorVisitor::vfp2_VSTR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm8 imm8) {
+bool ArmTranslatorVisitor::vfp2_VSTR(Cond cond, bool U, bool D, Reg n, size_t Vd, bool sz, Imm<8> imm8) {
     if (!ConditionPassed(cond)) {
         return true;
     }
 
-    const u32 imm32 = imm8 << 2;
+    const u32 imm32 = imm8.ZeroExtend() << 2;
     const auto d = ToExtReg(sz, Vd, D);
     const auto base = n == Reg::PC ? ir.Imm32(ir.AlignPC(4)) : ir.GetRegister(n);
     const auto address = U ? ir.Add(base, ir.Imm32(imm32)) : ir.Sub(base, ir.Imm32(imm32));
@@ -761,7 +761,7 @@ bool ArmTranslatorVisitor::vfp2_VSTR(Cond cond, bool U, bool D, Reg n, size_t Vd
 }
 
 // VSTM{mode}<c> <Rn>{!}, <list of double registers>
-bool ArmTranslatorVisitor::vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8) {
+bool ArmTranslatorVisitor::vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
     if (!p && !u && !w) {
         ASSERT_MSG(false, "Decode error");
     }
@@ -779,7 +779,7 @@ bool ArmTranslatorVisitor::vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool 
     }
 
     const auto d = ToExtReg(true, Vd, D);
-    const size_t regs = imm8 / 2;
+    const size_t regs = imm8.ZeroExtend() / 2;
 
     if (regs == 0 || regs > 16 || A32::RegNumber(d)+regs > 32) {
         return UnpredictableInstruction();
@@ -789,7 +789,7 @@ bool ArmTranslatorVisitor::vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool 
         return true;
     }
 
-    const u32 imm32 = imm8 << 2;
+    const u32 imm32 = imm8.ZeroExtend() << 2;
     auto address = u ? ir.GetRegister(n) : IR::U32(ir.Sub(ir.GetRegister(n), ir.Imm32(imm32)));
     if (w) {
         ir.SetRegister(n, u ? IR::U32(ir.Add(address, ir.Imm32(imm32))) : address);
@@ -813,7 +813,7 @@ bool ArmTranslatorVisitor::vfp2_VSTM_a1(Cond cond, bool p, bool u, bool D, bool 
 }
 
 // VSTM{mode}<c> <Rn>{!}, <list of single registers>
-bool ArmTranslatorVisitor::vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8) {
+bool ArmTranslatorVisitor::vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
     if (!p && !u && !w) {
         ASSERT_MSG(false, "Decode error");
     }
@@ -831,7 +831,7 @@ bool ArmTranslatorVisitor::vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool 
     }
 
     const auto d = ToExtReg(false, Vd, D);
-    const size_t regs = imm8;
+    const size_t regs = imm8.ZeroExtend();
 
     if (regs == 0 || A32::RegNumber(d)+regs > 32) {
         return UnpredictableInstruction();
@@ -841,7 +841,7 @@ bool ArmTranslatorVisitor::vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool 
         return true;
     }
 
-    const u32 imm32 = imm8 << 2;
+    const u32 imm32 = imm8.ZeroExtend() << 2;
     auto address = u ? ir.GetRegister(n) : IR::U32(ir.Sub(ir.GetRegister(n), ir.Imm32(imm32)));
     if (w) {
         ir.SetRegister(n, u ? IR::U32(ir.Add(address, ir.Imm32(imm32))) : address);
@@ -856,7 +856,7 @@ bool ArmTranslatorVisitor::vfp2_VSTM_a2(Cond cond, bool p, bool u, bool D, bool 
 }
 
 // VLDM{mode}<c> <Rn>{!}, <list of double registers>
-bool ArmTranslatorVisitor::vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8) {
+bool ArmTranslatorVisitor::vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
     if (!p && !u && !w) {
         ASSERT_MSG(false, "Decode error");
     }
@@ -874,7 +874,7 @@ bool ArmTranslatorVisitor::vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool 
     }
 
     const auto d = ToExtReg(true, Vd, D);
-    const size_t regs = imm8 / 2;
+    const size_t regs = imm8.ZeroExtend() / 2;
 
     if (regs == 0 || regs > 16 || A32::RegNumber(d)+regs > 32) {
         return UnpredictableInstruction();
@@ -884,7 +884,7 @@ bool ArmTranslatorVisitor::vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool 
         return true;
     }
 
-    const u32 imm32 = imm8 << 2;
+    const u32 imm32 = imm8.ZeroExtend() << 2;
     auto address = u ? ir.GetRegister(n) : IR::U32(ir.Sub(ir.GetRegister(n), ir.Imm32(imm32)));
     if (w) {
         ir.SetRegister(n, u ? IR::U32(ir.Add(address, ir.Imm32(imm32))) : address);
@@ -906,7 +906,7 @@ bool ArmTranslatorVisitor::vfp2_VLDM_a1(Cond cond, bool p, bool u, bool D, bool 
 }
 
 // VLDM{mode}<c> <Rn>{!}, <list of single registers>
-bool ArmTranslatorVisitor::vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm8 imm8) {
+bool ArmTranslatorVisitor::vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
     if (!p && !u && !w) {
         ASSERT_MSG(false, "Decode error");
     }
@@ -924,7 +924,7 @@ bool ArmTranslatorVisitor::vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool 
     }
 
     const auto d = ToExtReg(false, Vd, D);
-    const size_t regs = imm8;
+    const size_t regs = imm8.ZeroExtend();
 
     if (regs == 0 || A32::RegNumber(d)+regs > 32) {
         return UnpredictableInstruction();
@@ -934,7 +934,7 @@ bool ArmTranslatorVisitor::vfp2_VLDM_a2(Cond cond, bool p, bool u, bool D, bool 
         return true;
     }
 
-    const u32 imm32 = imm8 << 2;
+    const u32 imm32 = imm8.ZeroExtend() << 2;
     auto address = u ? ir.GetRegister(n) : IR::U32(ir.Sub(ir.GetRegister(n), ir.Imm32(imm32)));
     if (w) {
         ir.SetRegister(n, u ? IR::U32(ir.Add(address, ir.Imm32(imm32))) : address);

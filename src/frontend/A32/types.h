@@ -39,14 +39,6 @@ enum class ExtReg {
     D24, D25, D26, D27, D28, D29, D30, D31,
 };
 
-using Imm3 = u8;
-using Imm4 = u8;
-using Imm5 = u8;
-using Imm7 = u8;
-using Imm8 = u8;
-using Imm11 = u16;
-using Imm12 = u16;
-using Imm24 = u32;
 using RegList = u16;
 
 enum class ShiftType {
