@@ -23,11 +23,11 @@ class DisassemblerVisitor {
 public:
     using instruction_return_type = std::string;
 
-    u32 ArmExpandImm(int rotate, Imm8 imm8) {
+    static u32 ArmExpandImm(int rotate, Imm8 imm8) {
         return Common::RotateRight(static_cast<u32>(imm8), rotate*2);
     }
 
-    std::string ShiftStr(ShiftType shift, Imm5 imm5) {
+    static std::string ShiftStr(ShiftType shift, Imm5 imm5) {
         switch (shift) {
         case ShiftType::LSL:
             if (imm5 == 0) return "";
@@ -46,7 +46,7 @@ public:
         return "<internal error>";
     }
 
-    std::string RsrStr(Reg s, ShiftType shift, Reg m) {
+    static std::string RsrStr(Reg s, ShiftType shift, Reg m) {
         switch (shift){
         case ShiftType::LSL:
             return fmt::format("{}, lsl {}", m, s);
@@ -61,7 +61,7 @@ public:
         return "<internal error>";
     }
 
-    std::string RorStr(Reg m, SignExtendRotation rotate) {
+    static std::string RorStr(Reg m, SignExtendRotation rotate) {
         switch (rotate) {
         case SignExtendRotation::ROR_0:
             return RegToString(m);
@@ -99,7 +99,7 @@ public:
         }
     }
 
-    std::string FPRegStr(bool dp_operation, size_t base, bool bit) {
+    static std::string FPRegStr(bool dp_operation, size_t base, bool bit) {
         size_t reg_num;
         if (dp_operation) {
             reg_num = base + (bit ? 16 : 0);
@@ -109,7 +109,7 @@ public:
         return fmt::format("{}{}", dp_operation ? 'd' : 's', reg_num);
     }
 
-    std::string FPNextRegStr(bool dp_operation, size_t base, bool bit) {
+    static std::string FPNextRegStr(bool dp_operation, size_t base, bool bit) {
         size_t reg_num;
         if (dp_operation) {
             reg_num = base + (bit ? 16 : 0);
@@ -119,7 +119,7 @@ public:
         return fmt::format("{}{}", dp_operation ? 'd' : 's', reg_num + 1);
     }
 
-    std::string CondOrTwo(Cond cond) {
+    static std::string CondOrTwo(Cond cond) {
         return cond == Cond::NV ? "2" : CondToString(cond);
     }
 
