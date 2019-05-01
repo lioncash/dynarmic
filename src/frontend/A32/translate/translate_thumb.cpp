@@ -604,8 +604,8 @@ struct ThumbTranslatorVisitor final {
 
     // STR <Rt>, [<Rn>, #<imm>]
     // Rt cannot encode R15.
-    bool thumb16_STR_imm_t2(Reg t, Imm<5> imm5) {
-        const u32 imm32 = imm5.ZeroExtend() << 2;
+    bool thumb16_STR_imm_t2(Reg t, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend() << 2;
         const Reg n = Reg::SP;
         const auto address = ir.Add(ir.GetRegister(n), ir.Imm32(imm32));
         const auto data = ir.GetRegister(t);
@@ -616,8 +616,8 @@ struct ThumbTranslatorVisitor final {
 
     // LDR <Rt>, [<Rn>, #<imm>]
     // Rt cannot encode R15.
-    bool thumb16_LDR_imm_t2(Reg t, Imm<5> imm5) {
-        const u32 imm32 = imm5.ZeroExtend() << 2;
+    bool thumb16_LDR_imm_t2(Reg t, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend() << 2;
         const Reg n = Reg::SP;
         const auto address = ir.Add(ir.GetRegister(n), ir.Imm32(imm32));
         const auto data = ir.ReadMemory32(address);

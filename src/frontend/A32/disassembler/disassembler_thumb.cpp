@@ -216,13 +216,13 @@ public:
         return fmt::format("ldrh {}, [{}, #{}]", t, n, imm32);
     }
 
-    std::string thumb16_STR_imm_t2(Reg t, Imm<5> imm5) {
-        const u32 imm32 = imm5.ZeroExtend() << 2;
+    std::string thumb16_STR_imm_t2(Reg t, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend() << 2;
         return fmt::format("str {}, [sp, #{}]", t, imm32);
     }
 
-    std::string thumb16_LDR_imm_t2(Reg t, Imm<5> imm5) {
-        const u32 imm32 = imm5.ZeroExtend() << 2;
+    std::string thumb16_LDR_imm_t2(Reg t, Imm<8> imm8) {
+        const u32 imm32 = imm8.ZeroExtend() << 2;
         return fmt::format("ldr {}, [sp, #{}]", t, imm32);
     }
 
