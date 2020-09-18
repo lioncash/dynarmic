@@ -17,6 +17,10 @@ if /i "%1"=="Y" (
 	set OPT2=-DUSE_YASM -DXBYAK64
 	set OPT3=win64
 	set FILTER=normalize_prefix
+) else if /i "%1"=="noexcept" (
+	set EXE=nasm.exe
+	set OPT2=-DXBYAK32 -DXBYAK_NO_EXCEPTION
+	set OPT3=win32
 ) else (
 	set EXE=nasm.exe
 	set OPT2=-DXBYAK32
@@ -27,7 +31,7 @@ bmake -f Makefile.win all
 echo cl -I../ make_nm.cpp %OPT% %OPT2% /EHs
 cl -I../ make_nm.cpp %OPT% %OPT2% /EHs
 make_nm > a.asm
-rm a.lst
+rm -rf a.lst
 echo %EXE% -f %OPT3% -l a.lst a.asm
 %EXE% -f %OPT3% -l a.lst a.asm
 rem connect "?????-" and "??"
@@ -39,5 +43,4 @@ if /i "%Y%"=="1" (
 make_nm jit > nm.cpp
 cl -I../ -DXBYAK_TEST nm_frame.cpp %OPT% %OPT2%
 nm_frame |%FILTER% > x.lst
-diff -w x.lst ok.lst
-wc x.lst
+diff -wb x.lst ok.lst && echo "ok"
