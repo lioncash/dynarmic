@@ -1,22 +1,25 @@
+[![Build Status](https://travis-ci.org/herumi/xbyak.png)](https://travis-ci.org/herumi/xbyak)
 
-# Xbyak 5.78 ; JIT assembler for x86(IA32), x64(AMD64, x86-64) by C++
+# Xbyak 5.97 ; JIT assembler for x86(IA32), x64(AMD64, x86-64) by C++
 
 ## Abstract
 
-This is a header file which enables dynamically to assemble x86(IA32), x64(AMD64, x86-64) mnemonic.
+Xbyak is a C++ header library that enables dynamically to assemble x86(IA32), x64(AMD64, x86-64) mnemonic.
 
 ## Feature
 * header file only
 * Intel/MASM like syntax
 * fully support AVX-512
 
-**Note**: Xbyak uses and(), or(), xor(), not() functions, so `-fno-operator-names` option is necessary for gcc/clang.
+**Note**:
+Use `and_()`, `or_()`, ... instead of `and()`, `or()`.
+If you want to use them, then specify `-fno-operator-names` option to gcc/clang.
 
-Or define `XBYAK_NO_OP_NAMES` before including `xbyak.h` and use and_(), or_(), xor_(), not_() instead of them.
-
-and_(), or_(), xor_(), not_() are always available.
-
-`XBYAK_NO_OP_NAMES` will be defined in the feature version.
+### News
+- (break backward compatibility) `push(byte, imm)` (resp. `push(word, imm)`) forces to cast `imm` to 8(resp. 16) bit.
+- (Windows) `#include <winsock2.h>` has been removed from xbyak.h, so add it explicitly if you need it.
+- support exception-less mode see. [Exception-less mode](#exception-less-mode)
+- `XBYAK_USE_MMAP_ALLOCATOR` will be defined on Linux/macOS unless `XBYAK_DONT_USE_MMAP_ALLOCATOR` is defined.
 
 ### Supported OS
 
@@ -47,7 +50,6 @@ These files are copied into `/usr/local/include/xbyak`.
 
 Inherit `Xbyak::CodeGenerator` class and make the class method.
 ```
-#define XBYAK_NO_OP_NAMES
 #include <xbyak/xbyak.h>
 
 struct Code : Xbyak::CodeGenerator {
@@ -58,6 +60,15 @@ struct Code : Xbyak::CodeGenerator {
     }
 };
 ```
+Or you can pass the instance of CodeGenerator without inheriting.
+```
+void genCode(Xbyak::CodeGenerator& code, int x) {
+    using namespace Xbyak::util;
+    code.mov(eax, x);
+    code.ret();
+}
+```
+
 Make an instance of the class and get the function
 pointer by calling `getCode()` and call it.
 ```
@@ -146,6 +157,8 @@ vfpclassps k5{k3}, [rax+64]{1to4}, 5    --> vfpclassps(k5|k3, yword_b [rax+64], 
 ```
 ### Remark
 * `k1`, ..., `k7` are opmask registers.
+  - `k0` is dealt as no mask.
+  - e.g. `vmovaps(zmm0|k0, ptr[rax]);` and `vmovaps(zmm0|T_z, ptr[rax]);` are same to `vmovaps(zmm0, ptr[rax]);`.
 * use `| T_z`, `| T_sae`, `| T_rn_sae`, `| T_rd_sae`, `| T_ru_sae`, `| T_rz_sae` instead of `,{z}`, `,{sae}`, `,{rn-sae}`, `,{rd-sae}`, `,{ru-sae}`, `,{rz-sae}` respectively.
 * `k4 | k3` is different from `k3 | k4`.
 * use `ptr_b` for broadcast `{1toX}`. X is automatically determined.
@@ -210,6 +223,32 @@ void func1()
     inLocalLabel();
     jmp("aaa"); // jmp to <C>
 }
+```
+
+### short and long jump
+Xbyak deals with jump mnemonics of an undefined label as short jump if no type is specified.
+So if the size between jmp and label is larger than 127 byte, then xbyak will cause an error.
+
+```
+jmp("short-jmp"); // short jmp
+// small code
+L("short-jmp");
+
+jmp("long-jmp");
+// long code
+L("long-jmp"); // throw exception
+```
+Then specify T_NEAR for jmp.
+```
+jmp("long-jmp", T_NEAR); // long jmp
+// long code
+L("long-jmp");
+```
+Or call `setDefaultJmpNEAR(true);` once, then the default type is set to T_NEAR.
+```
+jmp("long-jmp"); // long jmp
+// long code
+L("long-jmp");
 ```
 
 ### Label class
@@ -369,15 +408,22 @@ c.setProtectModeRE();
 Call `readyRE()` instead of `ready()` when using `AutoGrow` mode.
 See [protect-re.cpp](sample/protect-re.cpp).
 
+## Exception-less mode
+If `XBYAK_NO_EXCEPTION` is defined, then gcc/clang can compile xbyak with `-fno-exceptions`.
+In stead of throwing an exception, `Xbyak::GetError()` returns non-zero value (e.g. `ERR_BAD_ADDRESSING`) if there is something wrong.
+The status will not be changed automatically, then you should reset it by `Xbyak::ClearError()`.
+`CodeGenerator::reset()` calls `ClearError()`.
+
 ## Macro
 
 * **XBYAK32** is defined on 32bit.
 * **XBYAK64** is defined on 64bit.
-* **XBYAK64_WIN** is defined on 64bit Windows(VC)
-* **XBYAK64_GCC** is defined on 64bit gcc, cygwin
-* define **XBYAK_NO_OP_NAMES** on gcc without `-fno-operator-names`
-* define **XBYAK_ENABLE_OMITTED_OPERAND** if you use omitted destination such as `vaddps(xmm2, xmm3);`(deprecated in the future)
-* define **XBYAK_UNDEF_JNL** if Bessel function jnl is defined as macro
+* **XBYAK64_WIN** is defined on 64bit Windows(VC).
+* **XBYAK64_GCC** is defined on 64bit gcc, cygwin.
+* define **XBYAK_USE_OP_NAMES** on gcc with `-fno-operator-names` if you want to use `and()`, ....
+* define **XBYAK_ENABLE_OMITTED_OPERAND** if you use omitted destination such as `vaddps(xmm2, xmm3);`(deprecated in the future).
+* define **XBYAK_UNDEF_JNL** if Bessel function jnl is defined as macro.
+* define **XBYAK_NO_EXCEPTION** for a compiler option `-fno-exceptions`.
 
 ## Sample
 
@@ -392,6 +438,31 @@ modified new BSD License
 http://opensource.org/licenses/BSD-3-Clause
 
 ## History
+* 2020/Sep/08 ver 5.97 replace uint32 with uint32_t etc.
+* 2020/Aug/28 ver 5.95 some constructors of register classes support constexpr if C++14 or later
+* 2020/Aug/04 ver 5.941 `CodeGenerator::reset()` calls `ClearError()`.
+* 2020/Jul/28 ver 5.94 remove #include <winsock2.h> (only windows)
+* 2020/Jul/21 ver 5.93 support exception-less mode
+* 2020/Jun/30 ver 5.92 support Intel AMX instruction set (Thanks to nshustrov)
+* 2020/Jun/22 ver 5.913 fix mov(r64, imm64) on 32-bit env with XBYAK64
+* 2020/Jun/19 ver 5.912 define MAP_JIT on macOS regardless of Xcode version (Thanks to rsdubtso)
+* 2020/May/10 ver 5.911 XBYAK_USE_MMAP_ALLOCATOR is defined unless XBYAK_DONT_USE_MMAP_ALLOCATOR is defined.
+* 2020/Apr/20 ver 5.91 accept mask register k0 (it means no mask)
+* 2020/Apr/09 ver 5.90 kmov{b,d,w,q} throws exception for an unsupported register
+* 2020/Feb/26 ver 5.891 fix typo of type
+* 2020/Jan/03 ver 5.89 fix error of vfpclasspd
+* 2019/Dec/20 ver 5.88 fix compile error on Windows
+* 2019/Dec/19 ver 5.87 add setDefaultJmpNEAR(), which deals with `jmp` of an undefined label as T_NEAR if no type is specified.
+* 2019/Dec/13 ver 5.86 [changed] revert to the behavior before v5.84 if -fno-operator-names is defined (and() is available)
+* 2019/Dec/07 ver 5.85 append MAP_JIT flag to mmap for macOS mojave or later
+* 2019/Nov/29 ver 5.84 [changed] XBYAK_NO_OP_NAMES is defined unless XBYAK_USE_OP_NAMES is defined
+* 2019/Oct/12 ver 5.83 exit(1) was removed
+* 2019/Sep/23 ver 5.82 support monitorx, mwaitx, clzero (thanks to @MagurosanTeam)
+* 2019/Sep/14 ver 5.81 support some generic mnemonics.
+* 2019/Aug/01 ver 5.802 fix detection of AVX512_BF16 (thanks to vpirogov)
+* 2019/May/27 support vp2intersectd, vp2intersectq (not tested)
+* 2019/May/26 ver 5.80 support vcvtne2ps2bf16, vcvtneps2bf16, vdpbf16ps
+* 2019/Apr/27 ver 5.79 vcmppd/vcmpps supports ptr_b(thanks to jkopinsky)
 * 2019/Apr/15 ver 5.78 rewrite Reg::changeBit() (thanks to MerryMage)
 * 2019/Mar/06 ver 5.77 fix number of cores that share LLC cache by densamoilov
 * 2019/Jan/17 ver 5.76 add Cpu::getNumCores() by shelleygoel
@@ -530,3 +601,5 @@ http://opensource.org/licenses/BSD-3-Clause
 ## Author
 MITSUNARI Shigeo(herumi@nifty.com)
 
+## Sponsors welcome
+[GitHub Sponsor](https://github.com/sponsors/herumi)

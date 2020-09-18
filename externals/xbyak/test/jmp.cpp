@@ -117,7 +117,7 @@ CYBOZU_TEST_AUTO(test1)
 		int offset;
 		bool isBack;
 		bool isShort;
-		uint8 result[6];
+		uint8_t result[6];
 		int size;
 	} tbl[] = {
 		{ 0, true, true, { 0xeb, 0xfe }, 2 },
@@ -133,7 +133,7 @@ CYBOZU_TEST_AUTO(test1)
 		const Tbl *p = &tbl[i];
 		for (int k = 0; k < 2; k++) {
 			TestJmp jmp(p->offset, p->isBack, p->isShort, k == 0);
-			const uint8 *q = (const uint8*)jmp.getCode();
+			const uint8_t *q = (const uint8_t*)jmp.getCode();
 			if (p->isBack) q += p->offset; /* skip nop */
 			for (int j = 0; j < p->size; j++) {
 				CYBOZU_TEST_EQUAL(q[j], p->result[j]);
@@ -203,6 +203,41 @@ CYBOZU_TEST_AUTO(testJmpCx)
 		TestJmpCx code(buf, j == 0);
 		CYBOZU_TEST_EQUAL(memcmp(buf, tbl.p, tbl.len), 0);
 	}
+}
+
+CYBOZU_TEST_AUTO(loop)
+{
+	const uint8_t ok[] = {
+		// lp:
+		0x31, 0xC0, // xor eax, eax
+		0xE2, 0xFC, // loop lp
+		0xE0, 0xFA, // loopne lp
+		0xE1, 0xF8, // loope lp
+	};
+	struct Code : CodeGenerator {
+		Code(bool useLabel)
+		{
+			if (useLabel) {
+				Xbyak::Label lp = L();
+				xor_(eax, eax);
+				loop(lp);
+				loopne(lp);
+				loope(lp);
+			} else {
+				L("@@");
+				xor_(eax, eax);
+				loop("@b");
+				loopne("@b");
+				loope("@b");
+			}
+		}
+	};
+	Code code1(false);
+	CYBOZU_TEST_EQUAL(code1.getSize(), sizeof(ok));
+	CYBOZU_TEST_EQUAL_ARRAY(code1.getCode(), ok, sizeof(ok));
+	Code code2(true);
+	CYBOZU_TEST_EQUAL(code2.getSize(), sizeof(ok));
+	CYBOZU_TEST_EQUAL_ARRAY(code2.getCode(), ok, sizeof(ok));
 }
 
 #ifdef _MSC_VER
@@ -337,11 +372,11 @@ CYBOZU_TEST_AUTO(test3)
 }
 #endif
 
-Xbyak::uint8 bufL[4096 * 32];
-Xbyak::uint8 bufS[4096 * 2];
+uint8_t bufL[4096 * 32];
+uint8_t bufS[4096 * 2];
 
 struct MyAllocator : Xbyak::Allocator {
-	Xbyak::uint8 *alloc(size_t size)
+	uint8_t *alloc(size_t size)
 	{
 		if (size < sizeof(bufS)) {
 			printf("test use bufS(%d)\n", (int)size);
@@ -354,7 +389,7 @@ struct MyAllocator : Xbyak::Allocator {
 		fprintf(stderr, "no memory %d\n", (int)size);
 		exit(1);
 	}
-	void free(Xbyak::uint8 *)
+	void free(uint8_t *)
 	{
 	}
 } myAlloc;
@@ -393,6 +428,7 @@ CYBOZU_TEST_AUTO(test4)
 	}
 }
 
+#ifndef __APPLE__
 CYBOZU_TEST_AUTO(test5)
 {
 	struct Test5 : Xbyak::CodeGenerator {
@@ -440,8 +476,9 @@ CYBOZU_TEST_AUTO(test5)
 	gm.assign((const char*)gc.getCode(), gc.getSize());
 	CYBOZU_TEST_EQUAL(fm, gm);
 }
+#endif
 
-size_t getValue(const uint8* p)
+size_t getValue(const uint8_t* p)
 {
 	size_t v = 0;
 	for (size_t i = 0; i < sizeof(size_t); i++) {
@@ -450,7 +487,7 @@ size_t getValue(const uint8* p)
 	return v;
 }
 
-void checkAddr(const uint8 *p, size_t offset, size_t expect)
+void checkAddr(const uint8_t *p, size_t offset, size_t expect)
 {
 	size_t v = getValue(p + offset);
 	CYBOZU_TEST_EQUAL(v, size_t(p) + expect);
@@ -498,7 +535,7 @@ CYBOZU_TEST_AUTO(MovLabel)
 
 	const struct {
 		int pos;
-		uint8 ok;
+		uint8_t ok;
 	} tbl[] = {
 #ifdef XBYAK32
 		{ 0x00, 0x90 },
@@ -532,11 +569,11 @@ CYBOZU_TEST_AUTO(MovLabel)
 			const bool useNewLabel = k == 0;
 			MovLabelCode code(grow, useNewLabel);
 			if (grow) code.ready();
-			const uint8* const p = code.getCode();
+			const uint8_t* const p = code.getCode();
 			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 				int pos = tbl[i].pos;
-				uint8 x = p[pos];
-				uint8 ok = tbl[i].ok;
+				uint8_t x = p[pos];
+				uint8_t ok = tbl[i].ok;
 				CYBOZU_TEST_EQUAL(x, ok);
 			}
 #ifdef XBYAK32
@@ -1182,11 +1219,11 @@ CYBOZU_TEST_AUTO(rip_jmp)
 	CYBOZU_TEST_EQUAL(ret, ret1234() + ret9999());
 }
 
-#ifdef XBYAK64_GCC
+#if 0
 CYBOZU_TEST_AUTO(rip_addr)
 {
 	/*
-		assume |&x - &code| < 2GiB
+		we can't assume |&x - &code| < 2GiB anymore
 	*/
 	static int x = 5;
 	struct Code : Xbyak::CodeGenerator {
@@ -1201,6 +1238,8 @@ CYBOZU_TEST_AUTO(rip_addr)
 	CYBOZU_TEST_EQUAL(x, 123);
 }
 #endif
+
+#ifndef __APPLE__
 CYBOZU_TEST_AUTO(rip_addr_with_fixed_buf)
 {
 	MIE_ALIGN(4096) static char buf[8192];
@@ -1224,6 +1263,7 @@ CYBOZU_TEST_AUTO(rip_addr_with_fixed_buf)
 	CYBOZU_TEST_EQUAL(buf[8], 99);
 	code.setProtectModeRW();
 }
+#endif
 #endif
 
 struct ReleaseTestCode : Xbyak::CodeGenerator {
@@ -1268,5 +1308,78 @@ CYBOZU_TEST_AUTO(release_label_after_code)
 		CYBOZU_TEST_ASSERT(L5.getId() == 0);
 		CYBOZU_TEST_ASSERT(L5.getAddress() == 0);
 		printf("id=%d %d %d %d %d\n", L1.getId(), L2.getId(), L3.getId(), L4.getId(), L5.getId());
+	}
+}
+
+struct JmpTypeCode : Xbyak::CodeGenerator {
+	void nops()
+	{
+		for (int i = 0; i < 130; i++) {
+			nop();
+		}
+	}
+	// return jmp code size
+	size_t gen(bool pre, bool large, Xbyak::CodeGenerator::LabelType type)
+	{
+		Label label;
+		if (pre) {
+			L(label);
+			if (large) nops();
+			size_t pos = getSize();
+			jmp(label, type);
+			return getSize() - pos;
+		} else {
+			size_t pos = getSize();
+			jmp(label, type);
+			size_t size = getSize() - pos;
+			if (large) nops();
+			L(label);
+			return size;
+		}
+	}
+};
+
+CYBOZU_TEST_AUTO(setDefaultJmpNEAR)
+{
+	const Xbyak::CodeGenerator::LabelType T_SHORT = Xbyak::CodeGenerator::T_SHORT;
+	const Xbyak::CodeGenerator::LabelType T_NEAR = Xbyak::CodeGenerator::T_NEAR;
+	const Xbyak::CodeGenerator::LabelType T_AUTO = Xbyak::CodeGenerator::T_AUTO;
+	const struct {
+		bool pre;
+		bool large;
+		Xbyak::CodeGenerator::LabelType type;
+		size_t expect1; // 0 means exception
+		size_t expect2;
+	} tbl[] = {
+		{ false, false, T_SHORT, 2, 2 },
+		{ false, false, T_NEAR, 5, 5 },
+		{ false, true, T_SHORT, 0, 0 },
+		{ false, true, T_NEAR, 5, 5 },
+
+		{ true, false, T_SHORT, 2, 2 },
+		{ true, false, T_NEAR, 5, 5 },
+		{ true, true, T_SHORT, 0, 0 },
+		{ true, true, T_NEAR, 5, 5 },
+
+		{ false, false, T_AUTO, 2, 5 },
+		{ false, true, T_AUTO, 0, 5 },
+		{ true, false, T_AUTO, 2, 2 },
+		{ true, true, T_AUTO, 5, 5 },
+	};
+	JmpTypeCode code1, code2;
+	code2.setDefaultJmpNEAR(true);
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		if (tbl[i].expect1) {
+			size_t size = code1.gen(tbl[i].pre, tbl[i].large, tbl[i].type);
+			CYBOZU_TEST_EQUAL(size, tbl[i].expect1);
+		} else {
+			CYBOZU_TEST_EXCEPTION(code1.gen(tbl[i].pre, tbl[i].large, tbl[i].type), std::exception);
+		}
+		if (tbl[i].expect2) {
+			size_t size = code2.gen(tbl[i].pre, tbl[i].large, tbl[i].type);
+			CYBOZU_TEST_EQUAL(size, tbl[i].expect2);
+		} else {
+			CYBOZU_TEST_EXCEPTION(code2.gen(tbl[i].pre, tbl[i].large, tbl[i].type), std::exception);
+		}
 	}
 }
